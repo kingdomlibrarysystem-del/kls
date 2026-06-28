@@ -1,0 +1,96 @@
+"use client";
+import { useState } from "react";
+
+const globalStats = [
+  { icon: "👥", value: "50,000+",  label: "Active Members"    },
+  { icon: "📥", value: "100,000+", label: "Items Borrowed"    },
+  { icon: "🛍️", value: "5,000+",  label: "Resources Sold"    },
+  { icon: "🌍", value: "195+",     label: "Countries Reached" },
+  { icon: "🕐", value: "24/7",     label: "Library Access"    },
+];
+
+const features = [
+  { icon: "🧠", label: "AI Knowledge Engine",  sub: "Smart recommendations"  },
+  { icon: "🗺️", label: "Knowledge Map",        sub: "Visualize connections"   },
+  { icon: "🎙️", label: "Voice Search",         sub: "Search with your voice"  },
+  { icon: "🥽", label: "AR/VR Library",         sub: "Immersive Experience"    },
+  { icon: "🌐", label: "Multi-Language AI",     sub: "Instant Translation"     },
+  { icon: "🔔", label: "Smart Notifications",  sub: "Personalized Alerts"     },
+  { icon: "🎮", label: "Gamified Learning",     sub: "Earn, Learn, Grow"       },
+  { icon: "🔒", label: "Blockchain Security",  sub: "Library in Your Pocket"  },
+];
+
+export function StatsBar() {
+  return (
+    <div style={{ background: "var(--stats-gradient)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 16px", display: "flex", justifyContent: "space-around" }}>
+      {globalStats.map((s) => (
+        <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 24 }}>{s.icon}</span>
+          <div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: "var(--gold)" }}>{s.value}</div>
+            <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>{s.label}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function FooterSection() {
+  const [aiInput, setAiInput] = useState("");
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+      {/* Innovative features */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px 0 0 8px", borderRight: "none", padding: "10px 12px" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8, letterSpacing: 0.3 }}>🚀 WHAT'S NEXT – INNOVATIVE FEATURES</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+          {features.map((f) => (
+            <div key={f.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "var(--bg-subtle)", borderRadius: 6, padding: "8px 4px", border: "1px solid var(--border-light)", textAlign: "center" }}>
+              <span style={{ fontSize: 20 }}>{f.icon}</span>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-primary)" }}>{f.label}</div>
+              <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{f.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* AI + Community */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 8px 0 0", borderLeft: "none", borderBottom: "none", padding: "10px 12px" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "start" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>🤖 AI Kingdom Assistant</div>
+              <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 10, lineHeight: 1.4 }}>
+                Ask me anything about the Kingdom Library. I can help you find resources, recommend books, and much more!
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", background: "var(--bg-hover)", border: "1px solid var(--border)", borderRadius: 5, padding: "0 10px" }}>
+                <input value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Ask Anything" style={{ background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 11, flex: 1, padding: "8px 0" }} />
+                <button className="btn btn-gold btn-sm" style={{ padding: "4px 8px" }}>›</button>
+              </div>
+            </div>
+            <div style={{ width: 160, background: "var(--inspiration-bg)", border: "1px solid var(--border-gold)", borderRadius: 7, padding: "10px", textAlign: "center" }}>
+              <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 700, marginBottom: 4, letterSpacing: 1 }}>DAILY INSPIRATION</div>
+              <div style={{ fontSize: 9, color: "var(--text-secondary)", lineHeight: 1.5, fontStyle: "italic", marginBottom: 6 }}>
+                "For the earth will be filled with the knowledge of the glory of the Lord as the waters cover the sea."
+              </div>
+              <div style={{ fontSize: 8, color: "var(--gold)" }}>Habakkuk 2:14</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 0 8px 0", borderLeft: "none", borderTop: "none", padding: "10px 12px" }}>
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "var(--gold)" }}>KINGDOM COMMUNITY HUB</div>
+            <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Connect. Collaborate. Grow Together.</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+            {["Forums","Study Groups","Live Events","Share Resources","Leaderboard"].map((l) => (
+              <button key={l} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontSize: 10, fontWeight: 600, padding: "2px 0" }}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

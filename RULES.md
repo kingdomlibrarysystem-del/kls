@@ -11,6 +11,9 @@ Frontend:
 - TypeScript
 - Tailwind CSS
 
+## colors in the project
+please use colors defined in global.css [C:\Users\B Sostene\Desktop\Dev_clients\KKH\kingdom-library-system\app\globals.css] never use autside colors 
+
 Preferred UI Library:
 - Shadcn UI
 
@@ -808,4 +811,5 @@ while maintaining scalability, performance, maintainability, and enterprise-leve
 ````
 
 I would further add **Repository Pattern Rules**, **Caching Rules**, and a **Folder Structure Rules section** because with a project as large as Kingdom Library, these three become extremely important.
+
 

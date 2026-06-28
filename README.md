@@ -141,3 +141,4 @@ English · Français · Kinyarwanda
 7. Notifications — email + in-app (borrow approved, due reminders, payment success)
 8. Payments — fine collection, revenue tracking
 9. AI Assistant — OpenAI / Chatbase integration
+

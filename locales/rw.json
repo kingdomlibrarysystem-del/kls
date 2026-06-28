@@ -1,0 +1,56 @@
+{
+  "common": {
+    "app_name": "Isomero ry'Ubwami",
+    "tagline": "Irembo ryawe ry'ubumenyi bwa digitale n'imyigishirize.",
+    "loading": "Iratinda...",
+    "save": "Kubika",
+    "cancel": "Guhagarika",
+    "delete": "Gusiba",
+    "edit": "Guhindura",
+    "search": "Gushaka",
+    "filter": "Gutunganya",
+    "export": "Gusoza hanze",
+    "no_results": "Nta bisubizo byabonetse",
+    "back": "Inyuma",
+    "next": "Ibikurikira",
+    "previous": "Ibibanjirije"
+  },
+  "nav": {
+    "home": "Ahabanza",
+    "dashboard": "Ikibaho",
+    "library": "Isomero rya digitale",
+    "e_learning": "E-Learning",
+    "publishing": "Gutangaza",
+    "research": "Ubushakashatsi",
+    "profile": "Umwirondoro",
+    "settings": "Igenamiterere",
+    "logout": "Gusohoka",
+    "login": "Kwinjira",
+    "register": "Kwiyandikisha"
+  },
+  "dashboard": {
+    "welcome": "Murakaza neza",
+    "kingdom_library": "Isomero ry'Ubwami",
+    "total_collection": "Ikusanyirizo ryose",
+    "items_available": "Ibikoresho bihari",
+    "view_collection": "Reba ikusanyirizo",
+    "search_placeholder": "Shaka ibitabo, amajwi, amashusho, nyapapuro...",
+    "borrow_return": "Gutira & Gusubiza",
+    "inventory": "Ibyo mu bwite",
+    "members": "Abanyamuryango",
+    "reports": "Raporo",
+    "publishing_services": "Serivisi zo gutangaza",
+    "research_services": "Serivisi z'ubushakashatsi",
+    "beauty_wellness": "Ubwiza & Ubutaka"
+  },
+  "theme": {
+    "light": "Urumuri",
+    "dark": "Ujumwe",
+    "appearance": "Isura"
+  },
+  "language": {
+    "english": "English",
+    "french": "Français",
+    "kinyarwanda": "Kinyarwanda"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "common": {
+    "app_name": "Bibliothèque du Royaume",
+    "tagline": "Votre passerelle vers la connaissance numérique et l'apprentissage.",
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "no_results": "Aucun résultat trouvé",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent"
+  },
+  "nav": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "library": "Bibliothèque numérique",
+    "e_learning": "E-Learning",
+    "publishing": "Publication",
+    "research": "Recherche",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "register": "Inscription"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue à la",
+    "kingdom_library": "Bibliothèque du Royaume",
+    "total_collection": "Collection totale",
+    "items_available": "Articles disponibles",
+    "view_collection": "Voir la collection",
+    "search_placeholder": "Rechercher livres, audio, vidéo, journaux...",
+    "borrow_return": "Emprunt & Retour",
+    "inventory": "Inventaire",
+    "members": "Membres",
+    "reports": "Rapports",
+    "publishing_services": "Services d'édition",
+    "research_services": "Services de recherche",
+    "beauty_wellness": "Beauté & Bien-être"
+  },
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre",
+    "appearance": "Apparence"
+  },
+  "language": {
+    "english": "English",
+    "french": "Français",
+    "kinyarwanda": "Kinyarwanda"
+  }
+}

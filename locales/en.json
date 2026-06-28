@@ -1,0 +1,56 @@
+{
+  "common": {
+    "app_name": "Kingdom Library",
+    "tagline": "Your gateway to digital knowledge and learning.",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "no_results": "No results found",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "library": "Digital Library",
+    "e_learning": "E-Learning",
+    "publishing": "Publishing",
+    "research": "Research",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register"
+  },
+  "dashboard": {
+    "welcome": "Welcome to the",
+    "kingdom_library": "Kingdom Library",
+    "total_collection": "Total Collection",
+    "items_available": "Items Available",
+    "view_collection": "View Collection",
+    "search_placeholder": "Search books, audio, video, newspapers...",
+    "borrow_return": "Borrow & Return",
+    "inventory": "Inventory",
+    "members": "Members",
+    "reports": "Reports",
+    "publishing_services": "Publishing Services",
+    "research_services": "Research Services",
+    "beauty_wellness": "Beauty & Wellness"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "appearance": "Appearance"
+  },
+  "language": {
+    "english": "English",
+    "french": "Français",
+    "kinyarwanda": "Kinyarwanda"
+  }
+}

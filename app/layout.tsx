@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Cormorant_Garamond, Lato } from 'next/font/google'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -62,10 +63,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${cormorant.variable} ${lato.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${cinzel.variable} ${cormorant.variable} ${lato.variable}`}>
       <body suppressHydrationWarning className="bg-white text-w-950 antialiased font-lato font-light">
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <ThemeProvider>
+          {children}
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </ThemeProvider>
       </body>
     </html>
   )
