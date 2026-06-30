@@ -1,5 +1,17 @@
 "use client";
 
+import {
+  Package,
+  Plus,
+  User,
+  BarChart3,
+  Database,
+  Bot,
+  Shield,
+  DollarSign,
+  FlaskConical,
+} from "lucide-react";
+
 const slices = [
   { label: "Books",      count: "65,320", pct: 52, color: "#d4a843" },
   { label: "Audio",      count: "24,350", pct: 19, color: "#0ea5e9" },
@@ -10,17 +22,17 @@ const slices = [
 ];
 
 const quickActions = [
-  { icon: "➕", label: "Add New Item",      sub: "Add book, audio, video…"  },
-  { icon: "👤", label: "Register Member",   sub: "Add new library member…"  },
-  { icon: "📊", label: "Generate Report",   sub: "View analytics report…"   },
-  { icon: "💾", label: "Backup Data",       sub: "Library data backup…"     },
+  { icon: <Plus size={18} />, label: "Add New Item",      sub: "Add book, audio, video…"  },
+  { icon: <User size={18} />, label: "Register Member",   sub: "Add new library member…"  },
+  { icon: <BarChart3 size={18} />, label: "Generate Report",   sub: "View analytics report…"   },
+  { icon: <Database size={18} />, label: "Backup Data",       sub: "Library data backup…"     },
 ];
 
 const recentlyAdded = [
-  { icon: "🤖", label: "AI in Kingdom Governance"      },
-  { icon: "✊", label: "The Power of Unity"            },
-  { icon: "💰", label: "Kingdom Finance Guide"         },
-  { icon: "🔬", label: "Virtual Lab: Faith & Science"  },
+  { icon: <Bot size={16} />, label: "AI in Kingdom Governance"      },
+  { icon: <Shield size={16} />, label: "The Power of Unity"            },
+  { icon: <DollarSign size={16} />, label: "Kingdom Finance Guide"         },
+  { icon: <FlaskConical size={16} />, label: "Virtual Lab: Faith & Science"  },
 ];
 
 export default function InventoryOverview() {
@@ -28,7 +40,9 @@ export default function InventoryOverview() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
       {/* Donut */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px 0 0 8px", borderRight: "none", padding: "10px 12px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>📦 Inventory Overview</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <Package size={14} /> Inventory Overview
+        </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <svg width="90" height="90" viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
             {(() => { let offset = 0; return slices.map((s) => { const dash = `${s.pct} ${100 - s.pct}`; const el = (<circle key={s.label} cx="18" cy="18" r="15.9155" fill="none" stroke={s.color} strokeWidth="3.5" strokeDasharray={dash} strokeDashoffset={-offset + 25} />); offset += s.pct; return el; }); })()}
@@ -53,7 +67,9 @@ export default function InventoryOverview() {
 
       {/* Quick Actions */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 0, borderRight: "none", borderLeft: "none", padding: "10px 12px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>⚡ Quick Actions</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <Plus size={14} /> Quick Actions
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           {quickActions.map((a) => (
             <div key={a.label} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px", cursor: "pointer" }}>
@@ -70,10 +86,12 @@ export default function InventoryOverview() {
 
       {/* Recently Added */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 8px 8px 0", borderLeft: "none", padding: "10px 12px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>🆕 Recently Added</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <Plus size={14} /> Recently Added
+        </div>
         {recentlyAdded.map((r) => (
           <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border-light)" }}>
-            <div style={{ width: 32, height: 32, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{r.icon}</div>
+            <div style={{ width: 32, height: 32, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>{r.icon}</div>
             <span style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 500 }}>{r.label}</span>
           </div>
         ))}

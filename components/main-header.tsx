@@ -2,16 +2,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   BookOpen,
+  BookMarked,
   Bookmark,
   CalendarDays,
   Search,
   CheckSquare,
+  CheckCircle,
   ClipboardList,
   Award,
-  FileText,
-  PlusCircle,
   DollarSign,
-  BarChart2,
   FolderOpen,
   Users,
   ChevronDown,
@@ -19,6 +18,8 @@ import {
   ShoppingCart,
   Menu,
   Library,
+  Mail,
+  UploadCloud,
 } from 'lucide-react'
 import { ProfileDropdown } from './profile-dropdown'
 import { LanguageSwitcher } from './language-switcher'
@@ -56,19 +57,16 @@ const navSections: NavSection[] = [
   {
     title: 'Publishing',
     items: [
-      { label: 'My Publications', href: ' ', icon: <FileText size={14} /> },
-      { label: 'Submit Work', href: ' ', icon: <PlusCircle size={14} /> },
-      { label: 'Revenue', href: ' ', icon: <DollarSign size={14} /> },
-      { label: 'Analytics', href: ' ', icon: <BarChart2 size={14} /> },
+      { label: 'Become a Publisher',   href: '/publishing/publishing#publisher', icon: <BookOpen size={14} /> },
+      { label: 'Docs',       href: '/publishing/publishng#docs',      icon: <Mail size={14} /> },
+      { label: 'Benefits',  href: '/publishing/publishing#benefits', icon: <DollarSign size={14} /> }, // Step 2 — Submit Manuscript',    href: '/publishing/submit',        icon: <UploadCloud size={14} /> },
     ],
   },
   {
     title: 'Research',
     items: [
-      { label: 'My Projects', href: ' ', icon: <ClipboardList size={14} /> },
-      { label: 'Submit Paper', href: ' ', icon: <FileText size={14} /> },
-      { label: 'Repository', href: ' ', icon: <FolderOpen size={14} /> },
-      { label: 'Collaborations', href: ' ', icon: <Users size={14} /> },
+      { label: 'Research Papers', href: ' ', icon: <ClipboardList size={14} /> },
+      { label: 'Research Docs', href: ' ', icon: <FolderOpen size={14} /> },
     ],
   },
 ]

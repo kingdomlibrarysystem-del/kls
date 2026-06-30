@@ -2,29 +2,46 @@
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTheme } from "@/components/theme-provider";
-import { Sun, Moon } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  Sun,
+  Moon,
+  RotateCcw,
+  Database,
+  Newspaper,
+  ShoppingCart,
+  Package,
+  Users,
+  BarChart3,
+  Printer,
+  FlaskConical,
+  Sparkles,
+  Brain,
+  Search,
+  Bell,
+} from "lucide-react";
 
 const topLinks = [
-  { icon: "↩️", label: "Borrow & Return", sub: "Books, Audio, Video" },
-  { icon: "💾", label: "E-Resources", sub: "Digital Content" },
-  { icon: "📰", label: "News & Newspapers", sub: "Latest Updates" },
-  { icon: "🛒", label: "Sales & Store", sub: "Media, Books, Merch" },
-  { icon: "📦", label: "Inventory", sub: "Manage Collection" },
-  { icon: "👥", label: "Members", sub: "Manage Users" },
-  { icon: "📊", label: "Reports", sub: "Analytics & Insights" },
+  { icon: <RotateCcw size={14} />, label: "Borrow & Return", sub: "Books, Audio, Video" },
+  { icon: <Database size={14} />, label: "E-Resources", sub: "Digital Content" },
+  { icon: <Newspaper size={14} />, label: "News & Newspapers", sub: "Latest Updates" },
+  { icon: <ShoppingCart size={14} />, label: "Sales & Store", sub: "Media, Books, Merch" },
+  { icon: <Package size={14} />, label: "Inventory", sub: "Manage Collection" },
+  { icon: <Users size={14} />, label: "Members", sub: "Manage Users" },
+  { icon: <BarChart3 size={14} />, label: "Reports", sub: "Analytics & Insights" },
   {
-    icon: "🖨",
+    icon: <Printer size={14} />,
     label: "Publishing Services",
     sub: "Publish, Distribute, Impact.",
   },
   {
-    icon: "🔬",
+    icon: <FlaskConical size={14} />,
     label: "Research Services",
     sub: "Discover, Publish, Transform.",
   },
-  { icon: "✨", label: "Beauty Services", sub: "Beauty, Wellness, Transform." },
+  { icon: <Sparkles size={14} />, label: "Beauty Services", sub: "Beauty, Wellness, Transform." },
   {
-    icon: "🧠",
+    icon: <Brain size={14} />,
     label: "Consultation & Counseling",
     sub: "Care, Counsel, Restore.",
   },
@@ -32,6 +49,7 @@ const topLinks = [
 
 export default function DashboardTopbar() {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <header
@@ -92,7 +110,6 @@ export default function DashboardTopbar() {
               height: 30,
               color: "var(--text-secondary)",
               cursor: "pointer",
-              fontSize: 14,
             }}
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
@@ -103,14 +120,15 @@ export default function DashboardTopbar() {
             style={{
               color: "var(--text-secondary)",
               cursor: "pointer",
-              fontSize: 16,
+              display: "flex",
+              alignItems: "center",
             }}
           >
-            🔍
+            <Search size={18} />
           </div>
           <div style={{ position: "relative", cursor: "pointer" }}>
-            <span style={{ fontSize: 16, color: "var(--text-secondary)" }}>
-              🔔
+            <span style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center" }}>
+              <Bell size={18} />
             </span>
             <span
               style={{
@@ -132,12 +150,14 @@ export default function DashboardTopbar() {
               3
             </span>
           </div>
-          <div
+          <a
+            href="/dashboard/profile"
             style={{
               display: "flex",
               alignItems: "center",
               gap: 8,
               cursor: "pointer",
+              textDecoration: "none",
             }}
           >
             <div
@@ -155,7 +175,7 @@ export default function DashboardTopbar() {
                 color: "white",
               }}
             >
-              J
+              {user ? user.firstName[0] : "G"}
             </div>
             <div>
               <div
@@ -165,13 +185,13 @@ export default function DashboardTopbar() {
                   color: "var(--text-primary)",
                 }}
               >
-                John Doe
+                {user ? `${user.firstName} ${user.lastName}` : "Guest User"}
               </div>
               <div style={{ fontSize: 10, color: "var(--gold)" }}>
-                Kingdom Member
+                {user ? user.roleName : "Not signed in"}
               </div>
             </div>
-          </div>
+          </a>
         </div>
       </div>
 
@@ -214,7 +234,7 @@ export default function DashboardTopbar() {
                 "transparent";
             }}
           >
-            <span>{link.icon}</span>
+            <span style={{ display: "flex", alignItems: "center" }}>{link.icon}</span>
             <div style={{ textAlign: "left" }}>
               <div style={{ fontWeight: 600, fontSize: 11 }}>{link.label}</div>
               <div style={{ fontSize: 9, color: "var(--text-muted)" }}>

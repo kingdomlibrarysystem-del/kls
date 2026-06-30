@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
+import { useTheme } from "@/components/theme-provider"
+
 import {
   User,
   BookOpen,
@@ -12,17 +14,19 @@ import {
   HelpCircle,
   LogOut,
   ChevronDown,
+  Sun,
+  Moon,
 } from "lucide-react"
 
 const menuLinks = [
   {
     label: "My Books",
-    href: "/dashboard/library",
+    href: "/library",
     icon: <BookOpen size={16} />,
   },
   {
     label: "Courses",
-    href: "/dashboard/e-learning",
+    href: "/e-learning",
     icon: <GraduationCap size={16} />,
   },
   {
@@ -35,17 +39,17 @@ const menuLinks = [
 const bottomLinks = [
   {
     label: "My Profile",
-    href: "/dashboard/profile",
+    href: "/profile",
     icon: <User size={16} />,
   },
   {
     label: "Notifications",
-    href: "/dashboard/notifications",
+    href: "/notifications",
     icon: <Bell size={16} />,
   },
   {
     label: "Settings",
-    href: "/dashboard/profile",
+    href: "/profile",
     icon: <Settings size={16} />,
   },
   {
@@ -58,6 +62,7 @@ const bottomLinks = [
 export function ProfileDropdown() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -78,13 +83,6 @@ export function ProfileDropdown() {
         <div className="w-8 h-8 rounded-full bg-w-600 text-white flex items-center justify-center text-sm font-bold">
           <User size={16} />
         </div>
-        <span className="hidden sm:block text-sm font-lato font-semibold">
-          Profile
-        </span>
-        <ChevronDown
-          size={14}
-          className={`transition-transform ${open ? "rotate-180" : ""}`}
-        />
       </button>
 
       {open && (
@@ -134,6 +132,19 @@ export function ProfileDropdown() {
                 {item.label}
               </Link>
             ))}
+          </div>
+
+          {/* Appearance */}
+          <div className="py-1">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-w-950 dark:text-gray-200 hover:bg-w-100 dark:hover:bg-gray-700/50 transition font-lato w-full text-left"
+            >
+              <span className="text-w-600 dark:text-amber-400">
+                {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+              </span>
+              {theme === "light" ? "Dark Mode" : "Light Mode"}
+            </button>
           </div>
 
           {/* Divider */}

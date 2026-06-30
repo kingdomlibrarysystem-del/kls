@@ -1,4 +1,73 @@
 Kingdom Classification System (KCS)
+
+
+Core Pillars of the Kingdom Library (Kingdom Classification System – KCS)
+
+1. Foundation
+
+Constitution of the Kingdom
+
+Genesis – Deuteronomy
+Origins and Covenant
+Lays the foundation of God's Kingdom, creation, covenant, and divine law.
+2. History
+
+Records of the Kingdom
+
+Joshua – Esther
+Leadership and Restoration
+Chronicles the history of God's people, their victories, failures, and restoration.
+3. Wisdom
+
+Knowledge of the Kingdom
+
+Job – Song of Songs
+Life and Principles
+Provides wisdom, worship, practical living, and the fear of the Lord.
+4. Prophetic
+
+Voice of the Kingdom
+
+Isaiah – Malachi
+Warnings and Hope
+Declares God's message through the prophets, calling people to repentance and revealing future hope.
+5. Gospels
+
+Manifestation of the King
+
+Matthew – John
+Life of Christ
+Reveals Jesus Christ as the King and the fulfillment of God's Kingdom.
+6. Acts
+
+Expansion of the Kingdom
+
+Acts of the Apostles
+Early Church
+Describes the growth of the Church through the power of the Holy Spirit.
+7. Epistles
+
+Constitution Explained
+
+Romans – Jude
+Kingdom Living
+Explains Christian doctrine, spiritual growth, leadership, and Kingdom living.
+8. Revelation
+
+Consummation of the Kingdom
+
+Revelation
+Final Victory and Eternal Kingdom
+Reveals the ultimate victory of Christ and the establishment of God's eternal Kingdom.
+
+Core Principle
+
+One Kingdom, One Revelation
+
+The Kingdom Library presents the Bible as one unified revelation centered on God's Kingdom. Each pillar contributes to a continuous story—from Creation to Consummation—revealing God's purpose, His Kingdom, and His plan of redemption through Jesus Christ.
+
+
+
 The Architecture of Divine Knowledge, Healing, and Restoration
 Introduction to the Kingdom Library
 The Rediscovery of the Library

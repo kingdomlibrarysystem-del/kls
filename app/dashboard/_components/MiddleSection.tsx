@@ -1,11 +1,26 @@
 "use client";
 
+import {
+  BookOpen,
+  Music,
+  Landmark,
+  Newspaper,
+  ClipboardList,
+  Bot,
+  Shield,
+  DollarSign,
+  FlaskConical,
+  ShoppingCart,
+  Star,
+  Plus,
+} from "lucide-react";
+
 const popular = [
-  { icon: "📖", label: "The Kingdom Mindset",       type: "Book",      count: 2850 },
-  { icon: "🎵", label: "Sound of Revival",           type: "Audio",     count: 1980 },
-  { icon: "🏛️", label: "Kingdom Foundations",        type: "Video",     count: 1450 },
-  { icon: "📰", label: "Daily Nation – Today",       type: "Newspaper", count: 980  },
-  { icon: "📋", label: "Health & Healing Journal",   type: "Journal",   count: 760  },
+  { icon: <BookOpen size={16} />, label: "The Kingdom Mindset",       type: "Book",      count: 2850 },
+  { icon: <Music size={16} />, label: "Sound of Revival",           type: "Audio",     count: 1980 },
+  { icon: <Landmark size={16} />, label: "Kingdom Foundations",        type: "Video",     count: 1450 },
+  { icon: <Newspaper size={16} />, label: "Daily Nation – Today",       type: "Newspaper", count: 980  },
+  { icon: <ClipboardList size={16} />, label: "Health & Healing Journal",   type: "Journal",   count: 760  },
 ];
 
 const books = [
@@ -22,10 +37,10 @@ const news = [
 ];
 
 const recent = [
-  { icon: "🤖", label: "AI in Kingdom Governance"      },
-  { icon: "✊", label: "The Power of Unity"            },
-  { icon: "💰", label: "Kingdom Finance Guide"         },
-  { icon: "🔬", label: "Virtual Lab: Faith & Science"  },
+  { icon: <Bot size={16} />, label: "AI in Kingdom Governance"      },
+  { icon: <Shield size={16} />, label: "The Power of Unity"            },
+  { icon: <DollarSign size={16} />, label: "Kingdom Finance Guide"         },
+  { icon: <FlaskConical size={16} />, label: "Virtual Lab: Faith & Science"  },
 ];
 
 const card = (extra?: React.CSSProperties): React.CSSProperties => ({
@@ -38,11 +53,13 @@ export default function MiddleSection() {
 
       {/* Sales */}
       <div style={card({ borderRadius: "8px 0 0 8px", borderRight: "none" })}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>🛒 Sales &amp; Store</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <ShoppingCart size={14} /> Sales &amp; Store
+        </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
           {books.map((b) => (
             <div key={b.title} style={{ flex: 1, background: b.color, borderRadius: 6, padding: "8px 6px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ fontSize: 24 }}>📚</div>
+              <BookOpen size={24} color="#fff" />
               <div style={{ fontSize: 8, fontWeight: 700, color: "#fff", textAlign: "center", lineHeight: 1.2 }}>{b.title}</div>
               <div style={{ fontSize: 10, color: "var(--gold)", fontWeight: 700 }}>{b.price}</div>
               <div style={{ fontSize: 8, color: "rgba(255,255,255,0.6)" }}>In Stock</div>
@@ -54,10 +71,12 @@ export default function MiddleSection() {
 
       {/* Popular */}
       <div style={card({ borderRadius: 0, borderRight: "none", borderLeft: "none" })}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>⭐ Popular Resources</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <Star size={14} /> Popular Resources
+        </div>
         {popular.map((r) => (
           <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border-light)" }}>
-            <span style={{ fontSize: 16 }}>{r.icon}</span>
+            <span style={{ display: "flex", alignItems: "center" }}>{r.icon}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text-primary)" }}>{r.label}</div>
               <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{r.type}</div>
@@ -70,10 +89,12 @@ export default function MiddleSection() {
 
       {/* Recently Added */}
       <div style={card({ borderRadius: 0, borderRight: "none", borderLeft: "none" })}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>🆕 Recently Added</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <Plus size={14} /> Recently Added
+        </div>
         {recent.map((r) => (
           <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border-light)" }}>
-            <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{r.icon}</div>
+            <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{r.icon}</div>
             <span style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 500 }}>{r.label}</span>
           </div>
         ))}
@@ -82,7 +103,9 @@ export default function MiddleSection() {
 
       {/* News */}
       <div style={card({ borderRadius: "0 8px 8px 0", borderLeft: "none" })}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>📰 News &amp; Newspapers</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          <Newspaper size={14} /> News &amp; Newspapers
+        </div>
         {news.map((n) => (
           <div key={n.title} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border-light)" }}>
             <div style={{ width: 32, height: 32, background: "var(--bg-section)", borderRadius: 4, flexShrink: 0 }} />

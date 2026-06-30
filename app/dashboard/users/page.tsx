@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { FormSection } from '@/components/ui/form-section'
+import { Users, BookOpen, Plus } from 'lucide-react'
 
 interface User {
   id: string
@@ -192,7 +193,7 @@ export default function AdminPage() {
               : 'text-w-700 hover:text-w-950'
           }`}
         >
-          👥 User Management
+          <Users size={16} className="inline-block mr-1" /> User Management
         </button>
         <button
           onClick={() => setActiveTab('resources')}
@@ -202,7 +203,7 @@ export default function AdminPage() {
               : 'text-w-700 hover:text-w-950'
           }`}
         >
-          📚 Digital Library
+          <BookOpen size={16} className="inline-block mr-1" /> Digital Library
         </button>
       </div>
 
@@ -421,7 +422,7 @@ export default function AdminPage() {
               variant="primary"
               onClick={() => setShowAddResource(!showAddResource)}
             >
-              ➕ Add Resource
+              <Plus size={16} className="inline-block mr-1" /> Add Resource
             </ElegantButton>
           </div>
 

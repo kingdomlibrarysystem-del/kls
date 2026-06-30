@@ -1,23 +1,39 @@
 "use client";
 import { useState } from "react";
+import {
+  Brain,
+  Map,
+  Mic,
+  Glasses,
+  Globe,
+  Bell,
+  Gamepad2,
+  Lock,
+  Users,
+  Download,
+  ShoppingBag,
+  Clock,
+  Bot,
+  Rocket,
+} from "lucide-react";
 
 const globalStats = [
-  { icon: "👥", value: "50,000+",  label: "Active Members"    },
-  { icon: "📥", value: "100,000+", label: "Items Borrowed"    },
-  { icon: "🛍️", value: "5,000+",  label: "Resources Sold"    },
-  { icon: "🌍", value: "195+",     label: "Countries Reached" },
-  { icon: "🕐", value: "24/7",     label: "Library Access"    },
+  { icon: <Users size={24} />, value: "50,000+",  label: "Active Members"    },
+  { icon: <Download size={24} />, value: "100,000+", label: "Items Borrowed"    },
+  { icon: <ShoppingBag size={24} />, value: "5,000+",  label: "Resources Sold"    },
+  { icon: <Globe size={24} />, value: "195+",     label: "Countries Reached" },
+  { icon: <Clock size={24} />, value: "24/7",     label: "Library Access"    },
 ];
 
 const features = [
-  { icon: "🧠", label: "AI Knowledge Engine",  sub: "Smart recommendations"  },
-  { icon: "🗺️", label: "Knowledge Map",        sub: "Visualize connections"   },
-  { icon: "🎙️", label: "Voice Search",         sub: "Search with your voice"  },
-  { icon: "🥽", label: "AR/VR Library",         sub: "Immersive Experience"    },
-  { icon: "🌐", label: "Multi-Language AI",     sub: "Instant Translation"     },
-  { icon: "🔔", label: "Smart Notifications",  sub: "Personalized Alerts"     },
-  { icon: "🎮", label: "Gamified Learning",     sub: "Earn, Learn, Grow"       },
-  { icon: "🔒", label: "Blockchain Security",  sub: "Library in Your Pocket"  },
+  { icon: <Brain size={20} />, label: "AI Knowledge Engine",  sub: "Smart recommendations"  },
+  { icon: <Map size={20} />, label: "Knowledge Map",        sub: "Visualize connections"   },
+  { icon: <Mic size={20} />, label: "Voice Search",         sub: "Search with your voice"  },
+  { icon: <Glasses size={20} />, label: "AR/VR Library",         sub: "Immersive Experience"    },
+  { icon: <Globe size={20} />, label: "Multi-Language AI",     sub: "Instant Translation"     },
+  { icon: <Bell size={20} />, label: "Smart Notifications",  sub: "Personalized Alerts"     },
+  { icon: <Gamepad2 size={20} />, label: "Gamified Learning",     sub: "Earn, Learn, Grow"       },
+  { icon: <Lock size={20} />, label: "Blockchain Security",  sub: "Library in Your Pocket"  },
 ];
 
 export function StatsBar() {
@@ -25,7 +41,7 @@ export function StatsBar() {
     <div style={{ background: "var(--stats-gradient)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 16px", display: "flex", justifyContent: "space-around" }}>
       {globalStats.map((s) => (
         <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 24 }}>{s.icon}</span>
+          <span style={{ display: "flex", alignItems: "center" }}>{s.icon}</span>
           <div>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: "var(--gold)" }}>{s.value}</div>
             <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>{s.label}</div>
@@ -43,11 +59,13 @@ export function FooterSection() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
       {/* Innovative features */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px 0 0 8px", borderRight: "none", padding: "10px 12px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8, letterSpacing: 0.3 }}>🚀 WHAT'S NEXT – INNOVATIVE FEATURES</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8, letterSpacing: 0.3 }}>
+          <Rocket size={14} /> WHAT'S NEXT – INNOVATIVE FEATURES
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
           {features.map((f) => (
             <div key={f.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "var(--bg-subtle)", borderRadius: 6, padding: "8px 4px", border: "1px solid var(--border-light)", textAlign: "center" }}>
-              <span style={{ fontSize: 20 }}>{f.icon}</span>
+              <span style={{ display: "flex", alignItems: "center" }}>{f.icon}</span>
               <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-primary)" }}>{f.label}</div>
               <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{f.sub}</div>
             </div>
@@ -60,7 +78,9 @@ export function FooterSection() {
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 8px 0 0", borderLeft: "none", borderBottom: "none", padding: "10px 12px" }}>
           <div style={{ display: "flex", gap: 12, alignItems: "start" }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>🤖 AI Kingdom Assistant</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>
+                <Bot size={14} /> AI Kingdom Assistant
+              </div>
               <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 10, lineHeight: 1.4 }}>
                 Ask me anything about the Kingdom Library. I can help you find resources, recommend books, and much more!
               </div>

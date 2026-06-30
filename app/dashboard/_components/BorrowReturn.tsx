@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  BookOpen,
+  AlertTriangle,
+  Calendar,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ClipboardList,
+  Bookmark,
+} from "lucide-react";
+
 const loans = [
   { item: "Kingdom Principles",   type: "Book",      borrowed: "May 18, 2024", due: "May 28, 2024", status: "Active"   },
   { item: "The Power of Worship", type: "Audio",     borrowed: "May 17, 2024", due: "May 27, 2024", status: "Active"   },
@@ -16,22 +26,24 @@ const statusColor: Record<string, string> = {
 };
 
 const stats = [
-  { icon: "📚", label: "Currently",     value: 128, color: "var(--teal-light)"   },
-  { icon: "⚠️", label: "Overdue Items", value: 8,   color: "var(--red-light)"    },
-  { icon: "📅", label: "Reservations",  value: 15,  color: "var(--gold)"         },
-  { icon: "📆", label: "Due Today",     value: 23,  color: "var(--orange-light)" },
+  { icon: <BookOpen size={16} />, label: "Currently",     value: 128, color: "var(--teal-light)"   },
+  { icon: <AlertTriangle size={16} />, label: "Overdue Items", value: 8,   color: "var(--red-light)"    },
+  { icon: <Calendar size={16} />, label: "Reservations",  value: 15,  color: "var(--gold)"         },
+  { icon: <Calendar size={16} />, label: "Due Today",     value: 23,  color: "var(--orange-light)" },
 ];
 
 export default function BorrowReturn() {
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>📚 Borrow, Return &amp; Reservations</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+        <BookOpen size={14} /> Borrow, Return &amp; Reservations
+      </div>
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 8 }}>
         {stats.map((s) => (
           <div key={s.label} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px 4px", textAlign: "center" }}>
-            <div style={{ fontSize: 16 }}>{s.icon}</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 2 }}>{s.icon}</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
             <div style={{ fontSize: 9, color: "var(--text-muted)", lineHeight: 1.2 }}>{s.label}</div>
           </div>
@@ -40,10 +52,10 @@ export default function BorrowReturn() {
 
       {/* Buttons */}
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-        <button className="btn btn-gold btn-sm">📥 Borrow Item</button>
-        <button className="btn btn-outline btn-sm">📤 Return Item</button>
-        <button className="btn btn-outline-dim btn-sm">📋 My Loans</button>
-        <button className="btn btn-outline-dim btn-sm" style={{ marginLeft: "auto" }}>🔖 My Reservations</button>
+        <button className="btn btn-gold btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ArrowDownToLine size={12} /> Borrow Item</button>
+        <button className="btn btn-outline btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ArrowUpFromLine size={12} /> Return Item</button>
+        <button className="btn btn-outline-dim btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ClipboardList size={12} /> My Loans</button>
+        <button className="btn btn-outline-dim btn-sm" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}><Bookmark size={12} /> My Reservations</button>
       </div>
 
       {/* Table */}

@@ -774,7 +774,33 @@ Document:
 
 ---
 
-# 26. Future Scalability Rules
+# 26. Icon Rules
+
+Use **lucide-react** for all icons throughout the application.
+
+❌ Never use emoji characters as icons:
+```tsx
+// BAD — emoji as icon
+{ icon: "📚", label: "Library" }
+<span>📚</span>
+"📚 Digital Library"
+```
+
+✅ Always use lucide-react components:
+```tsx
+import { BookOpen } from "lucide-react"
+
+// GOOD
+{ icon: <BookOpen size={14} />, label: "Library" }
+<BookOpen size={16} />
+<span style={{ display: "flex", alignItems: "center" }}><BookOpen size={14} /> Digital Library</span>
+```
+
+Flags and country identifiers (🇬🇧, 🇫🇷, 🇷🇼) are the only exception — they may continue to use emoji.
+
+---
+
+# 27. Future Scalability Rules
 
 Every module must support:
 

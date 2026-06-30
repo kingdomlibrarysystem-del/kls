@@ -1,12 +1,21 @@
 "use client";
 
+import {
+  Brain,
+  ClipboardList,
+  Stethoscope,
+  MessageCircle,
+  FolderOpen,
+  Target,
+} from "lucide-react";
+
 const items = [
-  { icon: "🧠",  label: "Book Consultation", sub: "Schedule a Session" },
-  { icon: "📋",  label: "My Sessions",        sub: "Upcoming & Past"    },
-  { icon: "👨⚕️", label: "Meet Counselors",   sub: "Browse Profiles"    },
-  { icon: "💬",  label: "Live Chat Support",  sub: "Instant Help"       },
-  { icon: "📂",  label: "Session Notes",      sub: "Secure & Private"   },
-  { icon: "🎯",  label: "Goal Tracking",      sub: "Progress & Plans"   },
+  { icon: <Brain size={14} />,  label: "Book Consultation", sub: "Schedule a Session" },
+  { icon: <ClipboardList size={14} />,  label: "My Sessions",        sub: "Upcoming & Past"    },
+  { icon: <Stethoscope size={14} />, label: "Meet Counselors",   sub: "Browse Profiles"    },
+  { icon: <MessageCircle size={14} />,  label: "Live Chat Support",  sub: "Instant Help"       },
+  { icon: <FolderOpen size={14} />,  label: "Session Notes",      sub: "Secure & Private"   },
+  { icon: <Target size={14} />,  label: "Goal Tracking",      sub: "Progress & Plans"   },
 ];
 
 const stats = [
@@ -19,7 +28,7 @@ export default function ConsultationPanel() {
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderTop: "2px solid var(--purple)", borderRadius: 8, padding: "10px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 18 }}>🧠</span>
+        <Brain size={20} color="var(--purple-light)" />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>CONSULTATION &amp; COUNSELING</div>
           <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Care. Counsel. Restore.</div>
@@ -38,7 +47,7 @@ export default function ConsultationPanel() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5, marginBottom: 8 }}>
         {items.map((it) => (
           <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--bg-subtle)", borderRadius: 5, padding: "5px 6px", border: "1px solid var(--border-light)" }}>
-            <span style={{ fontSize: 14 }}>{it.icon}</span>
+            <span style={{ display: "flex", alignItems: "center" }}>{it.icon}</span>
             <div>
               <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text-primary)" }}>{it.label}</div>
               <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{it.sub}</div>
