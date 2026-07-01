@@ -70,7 +70,7 @@ const adminMainNav: NavItem[] = [
       { icon: <BarChart3 size={12} />,  label: "Borrow Reports",     href: "/dashboard/library/reports" },
     ],
   },
-  { icon: <Bot size={14} />, label: "AI & Tools", href: "#" },
+  { icon: <Bot size={14} />, label: "AI & Tools", href: "/dashboard/ai" },
   {
     icon: <GraduationCap size={14} />, label: "E-Learning",
     subItems: [
@@ -99,18 +99,18 @@ const adminMainNav: NavItem[] = [
       { icon: <Users size={12} />,        label: "Collaborations",  href: "/dashboard/research/collaborations" },
     ],
   },
-  { icon: <HeartPulse size={14} />, label: "Health System",          href: "#" },
-  { icon: <Sparkles size={14} />,   label: "Beauty Services",         href: "#" },
-  { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "#" },
-  { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "#" },
-  { icon: <Download size={14} />,   label: "Download Center",          href: "#" },
+  { icon: <HeartPulse size={14} />, label: "Health System",          href: "/dashboard/health" },
+  { icon: <Sparkles size={14} />,   label: "Beauty Services",         href: "/dashboard/beauty" },
+  { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "/dashboard/counseling" },
+  { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "/dashboard/rehabilitation" },
+  { icon: <Download size={14} />,   label: "Download Center",          href: "/dashboard/downloads" },
 ];
 
 const adminMgmtNav: NavItem[] = [
   { icon: <Users size={14} />,    label: "Members",           href: "/dashboard/users" },
-  { icon: <Newspaper size={14} />, label: "News & Newspapers", href: "#" },
-  { icon: <Gift size={14} />,     label: "Donations",          href: "#" },
-  { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "#" },
+  { icon: <Newspaper size={14} />, label: "News & Newspapers", href: "/dashboard/news" },
+  { icon: <Gift size={14} />,     label: "Donations",          href: "/dashboard/donations" },
+  { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={14} />,     label: "Notifications",       href: "/dashboard/notifications" },
 ];
