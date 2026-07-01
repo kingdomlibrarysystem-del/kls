@@ -4,19 +4,12 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import {
   Home,
-  BookOpen,
-  Bookmark,
-  CalendarDays,
-  Search,
-  GraduationCap,
-  CheckSquare,
-  ClipboardList,
-  Award,
-  User,
-  ChevronDown,
-  ChevronLeft,
+  Upload,
   BookCopy,
-  Trophy,
+  DollarSign,
+  GraduationCap,
+  FlaskConical,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -26,38 +19,12 @@ interface NavItem {
   href: string;
 }
 
-interface NavSection {
-  title: string;
-  icon: React.ReactNode;
-  items: NavItem[];
-}
-
-const navSections: NavSection[] = [
-  {
-    title: "Library",
-    icon: <BookOpen size={14} />,
-    items: [
-      { icon: <BookOpen size={12} />, label: "Browse Books", href: "/member/library" },
-      { icon: <Bookmark size={12} />, label: "My Borrowings", href: "/member/borrowings" },
-      { icon: <CalendarDays size={12} />, label: "Reservations", href: "/member/reservations" },
-      { icon: <Search size={12} />, label: "Search Catalog", href: "/member/library" },
-    ],
-  },
-  {
-    title: "E-Learning",
-    icon: <GraduationCap size={14} />,
-    items: [
-      { icon: <GraduationCap size={12} />, label: "Browse Courses", href: "/member/e-learning" },
-      { icon: <CheckSquare size={12} />, label: "My Courses", href: "/member/courses" },
-      { icon: <ClipboardList size={12} />, label: "Assessments", href: "/member/assessments" },
-      { icon: <Award size={12} />, label: "Certificates", href: "/member/certificates" },
-    ],
-  },
-];
-
-const singleItems: NavItem[] = [
-  { icon: <Trophy size={14} />, label: "Leaderboard", href: "/member/leaderboard" },
-  { icon: <User size={14} />, label: "My Profile", href: "/member/profile" },
+const navItems: NavItem[] = [
+  { icon: <Upload size={14} />, label: "Submit a Book", href: "/contributor/publishing/submit" },
+  { icon: <BookCopy size={14} />, label: "My Submissions", href: "/contributor/publishing" },
+  { icon: <DollarSign size={14} />, label: "Earnings", href: "/contributor/earnings" },
+  { icon: <GraduationCap size={14} />, label: "My Courses", href: "/contributor/courses" },
+  { icon: <FlaskConical size={14} />, label: "My Research", href: "/contributor/research" },
 ];
 
 const ROLES = ["admin", "member", "contributor"] as const;
@@ -74,21 +41,17 @@ const roleViewRoute: Record<(typeof ROLES)[number], string> = {
   contributor: "/contributor",
 };
 
-export default function MemberSidebar() {
+/**
+ * Contributor workspace sidebar — mirrors `MemberSidebar`'s structure and
+ * Dialect B styling (collapsible, gold-accented active state, role switcher).
+ */
+export default function ContributorSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    "Library": true,
-    "E-Learning": false,
-  });
   const { user, switchRole } = useAuth();
   const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
 
-  const toggleSection = (title: string) => {
-    setExpandedSections((prev) => ({ ...prev, [title]: !prev[title] }));
-  };
-
   const isActive = (href: string) => {
-    if (href === "/member") return currentRoute === "/member";
+    if (href === "/contributor") return currentRoute === "/contributor";
     return currentRoute.startsWith(href);
   };
 
@@ -141,7 +104,7 @@ export default function MemberSidebar() {
               LIBRARY
             </div>
             <div style={{ fontSize: 8, color: "var(--text-muted)", letterSpacing: 1 }}>
-              MEMBER PORTAL
+              CONTRIBUTOR WORKSPACE
             </div>
           </div>
         )}
@@ -150,7 +113,7 @@ export default function MemberSidebar() {
       <div style={{ flex: 1, overflowY: "auto", padding: "6px 0" }}>
         {/* Dashboard home */}
         <Link
-          href="/member"
+          href="/contributor"
           style={{
             display: "flex",
             alignItems: "center",
@@ -158,9 +121,9 @@ export default function MemberSidebar() {
             padding: "7px 12px",
             textDecoration: "none",
             fontSize: 12,
-            background: isActive("/member") ? "rgba(212,168,67,0.12)" : "transparent",
-            borderLeft: isActive("/member") ? "2px solid var(--gold)" : "2px solid transparent",
-            color: isActive("/member") ? "var(--gold)" : "var(--text-secondary)",
+            background: isActive("/contributor") ? "rgba(212,168,67,0.12)" : "transparent",
+            borderLeft: isActive("/contributor") ? "2px solid var(--gold)" : "2px solid transparent",
+            color: isActive("/contributor") ? "var(--gold)" : "var(--text-secondary)",
             transition: "all 0.15s",
             marginBottom: 4,
           }}
@@ -169,58 +132,8 @@ export default function MemberSidebar() {
           {!collapsed && <span>Dashboard</span>}
         </Link>
 
-        {/* Nav sections */}
-        {!collapsed && navSections.map((section) => (
-          <div key={section.title}>
-            <div
-              onClick={() => toggleSection(section.title)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "7px 12px",
-                cursor: "pointer",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "var(--text-muted)",
-                letterSpacing: 1,
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-            >
-              {section.icon}
-              <span style={{ flex: 1 }}>{section.title}</span>
-              {expandedSections[section.title] ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
-            </div>
-            {expandedSections[section.title] && section.items.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "5px 12px 5px 32px",
-                  textDecoration: "none",
-                  fontSize: 11,
-                  color: isActive(item.href) ? "var(--gold)" : "var(--text-secondary)",
-                  background: isActive(item.href) ? "rgba(212,168,67,0.08)" : "transparent",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => { if (!isActive(item.href)) e.currentTarget.style.color = "var(--text-primary)"; }}
-                onMouseLeave={(e) => { if (!isActive(item.href)) e.currentTarget.style.color = "var(--text-secondary)"; }}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        ))}
-
-        {/* Single items */}
-        {!collapsed && <div style={{ height: 1, background: "var(--border)", margin: "6px 12px" }} />}
-        {singleItems.map((item) => (
+        {/* Nav items */}
+        {navItems.map((item) => (
           <Link
             key={item.label}
             href={item.href}
@@ -270,6 +183,7 @@ export default function MemberSidebar() {
                   if (user?.role !== r) e.currentTarget.style.color = "var(--text-secondary)";
                 }}
               >
+                <Shield size={12} />
                 {roleViewLabel[r]}
               </div>
             ))}

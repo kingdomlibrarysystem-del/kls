@@ -311,10 +311,10 @@ export default function Sidebar() {
             <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
               ROLE SIMULATION
             </div>
-            {(["admin", "member"] as const).map((r) => (
+            {(["admin", "member", "contributor"] as const).map((r) => (
               <div
                 key={r}
-                onClick={() => { switchRole(r); window.location.href = r === "member" ? "/member" : "/dashboard"; }}
+                onClick={() => { switchRole(r); window.location.href = r === "member" ? "/member" : r === "contributor" ? "/contributor" : "/dashboard"; }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -331,7 +331,7 @@ export default function Sidebar() {
                 }}
               >
                 <Shield size={12} />
-                {r === "admin" ? "Admin View" : "Member View"}
+                {r === "admin" ? "Admin View" : r === "member" ? "Member View" : "Contributor View"}
               </div>
             ))}
           </>
