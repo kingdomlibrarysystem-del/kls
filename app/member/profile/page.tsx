@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from "@/contexts/auth-context";
 import { User, Mail, Phone, MapPin, Award, BookOpen, GraduationCap, CreditCard, Calendar, Shield, Edit2, Star, Heart } from "lucide-react";
+import { NotificationPreferencesSection } from "./_components/notification-preferences-section";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -100,6 +101,9 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Notification preferences */}
+      <NotificationPreferencesSection />
     </div>
   );
 }

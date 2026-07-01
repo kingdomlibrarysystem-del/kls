@@ -1,11 +1,11 @@
 "use client";
-import { PlayCircle, GraduationCap, ChevronRight, Clock, Award } from "lucide-react";
+import { PlayCircle, GraduationCap, ChevronRight, Clock, Award, BookOpen, Target, Shield, Music } from "lucide-react";
 
 const mockCourses = [
-  { id: 1, title: "Kingdom Foundations", progress: 75, lessons: 12, completed: 9, instructor: "Dr. Myles Munroe", image: "📚" },
-  { id: 2, title: "Understanding Divine Purpose", progress: 40, lessons: 10, completed: 4, instructor: "Dr. Myles Munroe", image: "🎯" },
-  { id: 3, title: "Leadership & Governance", progress: 10, lessons: 15, completed: 1, instructor: "Dr. Myles Munroe", image: "🛡️" },
-  { id: 4, title: "The Art of Worship", progress: 100, lessons: 8, completed: 8, instructor: "Dr. Myles Munroe", image: "🎵" },
+  { id: 1, title: "Kingdom Foundations", progress: 75, lessons: 12, completed: 9, instructor: "Dr. Elias Nkubito", image: BookOpen },
+  { id: 2, title: "Understanding Divine Purpose", progress: 40, lessons: 10, completed: 4, instructor: "Dr. Elias Nkubito", image: Target },
+  { id: 3, title: "Leadership & Governance", progress: 10, lessons: 15, completed: 1, instructor: "Dr. Elias Nkubito", image: Shield },
+  { id: 4, title: "The Art of Worship", progress: 100, lessons: 8, completed: 8, instructor: "Dr. Elias Nkubito", image: Music },
 ];
 
 export default function MyCoursesPage() {
@@ -46,7 +46,7 @@ export default function MyCoursesPage() {
           </div>
           {inProgress.map((c) => (
             <div key={c.id} style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-light)", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{c.image}</div>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center" }}><c.image size={20} color="var(--gold)" /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{c.title}</div>
                 <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 4 }}>{c.instructor} • {c.completed}/{c.lessons} lessons</div>
@@ -70,7 +70,7 @@ export default function MyCoursesPage() {
           </div>
           {completed.map((c) => (
             <div key={c.id} style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 6, background: "rgba(212,168,67,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.image}</div>
+              <div style={{ width: 32, height: 32, borderRadius: 6, background: "rgba(212,168,67,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><c.image size={16} color="var(--gold)" /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{c.title}</div>
                 <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{c.lessons} lessons • Completed</div>

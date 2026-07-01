@@ -1,10 +1,10 @@
 "use client";
-import { Award, Download, Eye, ChevronRight, Star } from "lucide-react";
+import { Award, Download, Eye, ChevronRight, Star, GraduationCap, ScrollText, Trophy } from "lucide-react";
 
 const mockCertificates = [
-  { id: 1, title: "Kingdom Foundations", issued: "Jun 15, 2026", idStr: "KLS-CERT-2026-001", image: "🎓" },
-  { id: 2, title: "The Art of Worship", issued: "Jun 10, 2026", idStr: "KLS-CERT-2026-002", image: "📜" },
-  { id: 3, title: "Financial Stewardship", issued: "May 28, 2026", idStr: "KLS-CERT-2026-003", image: "🏆" },
+  { id: 1, title: "Kingdom Foundations", issued: "Jun 15, 2026", idStr: "KLS-CERT-2026-001", image: GraduationCap },
+  { id: 2, title: "The Art of Worship", issued: "Jun 10, 2026", idStr: "KLS-CERT-2026-002", image: ScrollText },
+  { id: 3, title: "Financial Stewardship", issued: "May 28, 2026", idStr: "KLS-CERT-2026-003", image: Trophy },
 ];
 
 export default function CertificatesPage() {
@@ -45,7 +45,7 @@ export default function CertificatesPage() {
             onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
           >
             <div style={{ height: 120, background: "linear-gradient(135deg, var(--gold-dim), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 32 }}>{cert.image}</span>
+              <cert.image size={32} color="#fff" />
               <span style={{ fontSize: 8, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>Certificate of Completion</span>
             </div>
             <div style={{ padding: "10px 12px 12px" }}>

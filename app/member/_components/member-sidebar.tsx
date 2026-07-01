@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   BookCopy,
   Trophy,
+  Heart,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -56,6 +57,7 @@ const navSections: NavSection[] = [
 ];
 
 const singleItems: NavItem[] = [
+  { icon: <Heart size={14} />, label: "Favorites", href: "/member/favorites" },
   { icon: <Trophy size={14} />, label: "Leaderboard", href: "/member/leaderboard" },
   { icon: <User size={14} />, label: "My Profile", href: "/member/profile" },
 ];
