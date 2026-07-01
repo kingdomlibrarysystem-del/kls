@@ -33,6 +33,8 @@ import {
   Users,
   FolderOpen,
   Download,
+  Mail,
+  Settings,
 } from "lucide-react";
 
 type SubItem = { icon: React.ReactNode; label: string; href: string }
@@ -113,6 +115,9 @@ const adminMgmtNav: NavItem[] = [
   { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={14} />,     label: "Notifications",       href: "/dashboard/notifications" },
+  { icon: <Mail size={14} />,     label: "Invitations",         href: "/dashboard/invitations" },
+  { icon: <Settings size={14} />, label: "System Settings",     href: "/dashboard/settings" },
+  { icon: <ScrollText size={14} />, label: "Audit Log",         href: "/dashboard/audit-log" },
 ];
 
 const memberNav: NavItem[] = [
