@@ -36,11 +36,10 @@ export default function ContributorMobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40"
+      className="hidden max-md:flex fixed bottom-0 left-0 right-0 z-40"
       style={{
         background: "var(--bg-sidebar)",
         borderTop: "1px solid var(--border)",
-        display: "flex",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="Contributor bottom navigation"

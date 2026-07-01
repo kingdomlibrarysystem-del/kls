@@ -63,16 +63,18 @@ export default function DashboardTopbar() {
     >
       {/* Top bar */}
       <div
+        className="flex-wrap sm:flex-nowrap"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 20px",
-          height: 52,
+          padding: "8px 12px",
+          minHeight: 52,
           borderBottom: "1px solid var(--border)",
+          gap: 8,
         }}
       >
-        <div style={{ flex: 1, textAlign: "center" }}>
+        <div className="hidden md:block" style={{ flex: 1, textAlign: "center", minWidth: 0 }}>
           <div
             className="cinzel"
             style={{
@@ -94,8 +96,13 @@ export default function DashboardTopbar() {
             THE WORLD'S MOST ADVANCED KINGDOM KNOWLEDGE SYSTEM
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <LanguageSwitcher />
+        <div className="cinzel md:hidden" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)" }}>
+          KLS
+        </div>
+        <div className="flex-wrap sm:flex-nowrap" style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+          <div className="hidden sm:block">
+            <LanguageSwitcher />
+          </div>
 
           <button
             onClick={toggleTheme}
@@ -117,10 +124,10 @@ export default function DashboardTopbar() {
           </button>
 
           <div
+            className="hidden sm:flex"
             style={{
               color: "var(--text-secondary)",
               cursor: "pointer",
-              display: "flex",
               alignItems: "center",
             }}
           >
@@ -177,7 +184,7 @@ export default function DashboardTopbar() {
             >
               {user ? user.firstName[0] : "G"}
             </div>
-            <div>
+            <div className="hidden md:block">
               <div
                 style={{
                   fontSize: 12,
