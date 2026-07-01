@@ -59,7 +59,7 @@ export default function ReservationsPage() {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 9, color: r.status === "Ready" ? "var(--green-light)" : "var(--gold)", fontWeight: 600 }}>{r.status}</div>
-                {r.queue > 0 && <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{r.queue} ahead of you</div>}
+                {!!r.queue && r.queue > 0 && <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{r.queue} ahead of you</div>}
               </div>
               {r.status === "Ready" && (
                 <button style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
