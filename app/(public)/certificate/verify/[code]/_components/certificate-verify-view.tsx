@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle2, XCircle, Award } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { mockCertificates } from '@/app/dashboard/e-learning/certificates/_components/certificates-data'
+import { useCertificates } from '@/app/dashboard/e-learning/certificates/_components/use-certificates'
 
 /** Simulated network delay before the mock lookup result becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -19,8 +19,10 @@ interface CertificateVerifyViewProps {
  */
 export function CertificateVerifyView({ code }: CertificateVerifyViewProps) {
   const [loading, setLoading] = useState(true)
+  const certificates = useCertificates()
 
-  const certificate = mockCertificates.find((c) => c.verificationCode.toUpperCase() === code.toUpperCase())
+  const certificate = certificates.find((c) => c.verificationCode.toUpperCase() === code.toUpperCase())
+  const isValid = !!certificate && !certificate.revoked
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -37,13 +39,15 @@ export function CertificateVerifyView({ code }: CertificateVerifyViewProps) {
     )
   }
 
-  if (!certificate) {
+  if (!isValid) {
     return (
       <div className="max-w-md mx-auto text-center">
         <XCircle size={40} className="mx-auto text-red-500 mb-4" />
-        <h1 className="font-cinzel text-xl font-semibold text-w-950 mb-2">Certificate Not Found</h1>
+        <h1 className="font-cinzel text-xl font-semibold text-w-950 mb-2">
+          {certificate ? 'Certificate Revoked' : 'Certificate Not Found'}
+        </h1>
         <p className="font-lato text-sm text-w-700 mb-1">
-          No certificate matches the code:
+          {certificate ? 'This certificate is no longer valid:' : 'No certificate matches the code:'}
         </p>
         <p className="font-mono text-xs text-w-600 bg-w-100 inline-block px-2 py-1 rounded">{code}</p>
       </div>

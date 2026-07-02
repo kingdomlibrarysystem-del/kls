@@ -77,6 +77,7 @@ const adminMainNav: NavItem[] = [
     icon: <GraduationCap size={14} />, label: "E-Learning",
     subItems: [
       { icon: <BookOpen size={12} />,     label: "Courses",         href: "/dashboard/e-learning" },
+      { icon: <BookCopy size={12} />,     label: "Course Catalog",  href: "/dashboard/e-learning/catalog" },
       { icon: <ScrollText size={12} />,   label: "Add Course",      href: "/dashboard/e-learning/add" },
       { icon: <ClipboardList size={12} />, label: "Enrollments",    href: "/dashboard/e-learning/enrollments" },
       { icon: <BarChart3 size={12} />,    label: "Progress",        href: "/dashboard/e-learning/progress" },

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GraduationCap } from 'lucide-react'
+import { GraduationCap, Eye } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { mockEnrollments, enrollmentStatusConfig, type Enrollment, type EnrollmentStatus } from './enrollments-data'
+import { EnrollmentDetailModal } from './enrollment-detail-modal'
 
 /** Simulated network delay before mock enrollments become visible. */
 const LOAD_DELAY_MS = 400
@@ -20,30 +21,40 @@ function LoadingSkeleton() {
   )
 }
 
-const columns: Column<Enrollment>[] = [
-  { key: 'member', label: 'Member', sortable: true, render: (e) => <span className="font-semibold text-w-950">{e.member}</span> },
-  { key: 'course', label: 'Course', sortable: true, render: (e) => <span className="text-w-700 max-w-55 truncate block">{e.course}</span> },
-  { key: 'enrolledAt', label: 'Enrolled', sortable: true, render: (e) => <span className="text-w-700">{e.enrolledAt}</span> },
-  {
-    key: 'status', label: 'Status', sortable: true,
-    render: (e) => (
-      <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${enrollmentStatusConfig[e.status].cls}`}>
-        {enrollmentStatusConfig[e.status].label}
-      </span>
-    ),
-  },
-  {
-    key: 'progress', label: 'Progress', sortable: true,
-    render: (e) => (
-      <div className="flex items-center gap-2 min-w-25">
-        <div className="flex-1 h-1.5 bg-w-200 rounded-full overflow-hidden">
-          <div className="h-full bg-w-600 rounded-full" style={{ width: `${e.progress}%` }} />
+function buildColumns(onView: (e: Enrollment) => void): Column<Enrollment>[] {
+  return [
+    { key: 'member', label: 'Member', sortable: true, render: (e) => <span className="font-semibold text-w-950">{e.member}</span> },
+    { key: 'course', label: 'Course', sortable: true, render: (e) => <span className="text-w-700 max-w-55 truncate block">{e.course}</span> },
+    { key: 'enrolledAt', label: 'Enrolled', sortable: true, render: (e) => <span className="text-w-700">{e.enrolledAt}</span> },
+    {
+      key: 'status', label: 'Status', sortable: true,
+      render: (e) => (
+        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${enrollmentStatusConfig[e.status].cls}`}>
+          {enrollmentStatusConfig[e.status].label}
+        </span>
+      ),
+    },
+    {
+      key: 'progress', label: 'Progress', sortable: true,
+      render: (e) => (
+        <div className="flex items-center gap-2 min-w-25">
+          <div className="flex-1 h-1.5 bg-w-200 rounded-full overflow-hidden">
+            <div className="h-full bg-w-600 rounded-full" style={{ width: `${e.progress}%` }} />
+          </div>
+          <span className="text-xs text-w-700 font-semibold">{e.progress}%</span>
         </div>
-        <span className="text-xs text-w-700 font-semibold">{e.progress}%</span>
-      </div>
-    ),
-  },
-]
+      ),
+    },
+    {
+      key: 'actions', label: 'Actions', className: 'text-right',
+      render: (e) => (
+        <button onClick={() => onView(e)} aria-label={`View enrollment for ${e.member}`} className="flex items-center gap-1 ml-auto px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+          <Eye size={12} /> View
+        </button>
+      ),
+    },
+  ]
+}
 
 /**
  * Enrollments table with a simulated initial load and status filtering.
@@ -53,6 +64,7 @@ const columns: Column<Enrollment>[] = [
 export function EnrollmentsView() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | 'all'>('all')
+  const [viewing, setViewing] = useState<Enrollment | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -90,14 +102,17 @@ export function EnrollmentsView() {
   }
 
   return (
-    <DataTable<Enrollment>
-      data={tableData}
-      columns={columns}
-      rowKey={(e) => e.id}
-      searchPlaceholder="Search member or course..."
-      searchFilter={(e, q) => e.member.toLowerCase().includes(q) || e.course.toLowerCase().includes(q)}
-      filters={statusSelect}
-      emptyMessage="No enrollments match your search."
-    />
+    <>
+      <DataTable<Enrollment>
+        data={tableData}
+        columns={buildColumns(setViewing)}
+        rowKey={(e) => e.id}
+        searchPlaceholder="Search member or course..."
+        searchFilter={(e, q) => e.member.toLowerCase().includes(q) || e.course.toLowerCase().includes(q)}
+        filters={statusSelect}
+        emptyMessage="No enrollments match your search."
+      />
+      <EnrollmentDetailModal enrollment={viewing} onClose={() => setViewing(null)} />
+    </>
   )
 }

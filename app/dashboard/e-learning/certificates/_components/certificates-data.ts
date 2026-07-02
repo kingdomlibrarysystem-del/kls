@@ -5,10 +5,11 @@ export interface Certificate {
   course: string
   issuedAt: string
   verificationCode: string
+  revoked: boolean
 }
 
-export const mockCertificates: Certificate[] = [
-  { id: 'cert-001', member: 'Jean Paul Nkurunziza', course: 'Foundations of Faith',  issuedAt: '2026-05-02', verificationCode: 'KLS-7F3A-91BC' },
-  { id: 'cert-002', member: 'Sarah Uwase',           course: 'Missions & Outreach',   issuedAt: '2026-04-18', verificationCode: 'KLS-2D9E-44A1' },
-  { id: 'cert-003', member: 'David Ndayisenga',      course: 'Foundations of Faith',  issuedAt: '2026-06-10', verificationCode: 'KLS-88C1-0F2D' },
+export const initialCertificates: Certificate[] = [
+  { id: 'cert-001', member: 'Jean Paul Nkurunziza', course: 'Foundations of Faith',  issuedAt: '2026-05-02', verificationCode: 'KLS-7F3A-91BC', revoked: false },
+  { id: 'cert-002', member: 'Sarah Uwase',           course: 'Missions & Outreach',   issuedAt: '2026-04-18', verificationCode: 'KLS-2D9E-44A1', revoked: false },
+  { id: 'cert-003', member: 'David Ndayisenga',      course: 'Foundations of Faith',  issuedAt: '2026-06-10', verificationCode: 'KLS-88C1-0F2D', revoked: false },
 ]

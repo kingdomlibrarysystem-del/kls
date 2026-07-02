@@ -8,6 +8,7 @@ import { FormSection } from '@/components/ui/form-section'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { addCourseToCatalog } from '../../_shared/use-course-catalog'
 import {
   courseSchema,
   courseCategories,
@@ -18,8 +19,9 @@ import {
 } from './course-form-schema'
 
 /**
- * Add/Edit Course form. Fully mocked: on submit, simulates a short network
- * delay then shows an inline success or error confirmation — no persistence.
+ * Add/Edit Course form. On submit, appends the new course to the shared
+ * `/dashboard/e-learning/*` course catalog store so it immediately appears
+ * in the Course Catalog list and becomes available to Enrollments.
  */
 export function CourseFormView() {
   const [submitting, setSubmitting] = useState(false)
@@ -43,6 +45,13 @@ export function CourseFormView() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 500))
       if (!data.title.trim()) throw new Error('Title cannot be empty')
+      addCourseToCatalog({
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        language: data.language,
+        status: data.status,
+      })
       setSubmitSuccess(true)
       reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT' })
       setTimeout(() => setSubmitSuccess(false), 3500)
@@ -59,7 +68,7 @@ export function CourseFormView() {
         <form onSubmit={handleSubmit(onSubmit)}>
           {submitSuccess && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
-              <CheckCircle2 size={15} /> Course saved successfully.
+              <CheckCircle2 size={15} /> Course added to the catalog.
             </div>
           )}
           {submitError && (
