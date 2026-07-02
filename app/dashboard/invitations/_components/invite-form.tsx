@@ -9,9 +9,15 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { invitationSchema, invitableRoles, type InvitationFormData } from './invitation-schema'
+import type { Invitation } from './invitations-data'
 
-/** Invite-by-email form. Fully mocked: simulates a short delay then shows an inline confirmation — no persistence. */
-export function InviteForm() {
+interface InviteFormProps {
+  /** Called with the newly-created invitation so the parent can append it to the visible list. */
+  onInvited: (invitation: Invitation) => void
+}
+
+/** Invite-by-email form. On submit, appends a new PENDING invitation via `onInvited` so it's immediately visible in the invitations table. */
+export function InviteForm({ onInvited }: InviteFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [sentTo, setSentTo] = useState('')
@@ -33,6 +39,13 @@ export function InviteForm() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 500))
       if (!data.email.trim()) throw new Error('Email cannot be empty')
+      onInvited({
+        id: `inv-${Date.now()}`,
+        email: data.email,
+        role: data.role,
+        status: 'PENDING',
+        sentAt: new Date().toISOString().split('T')[0],
+      })
       setSentTo(data.email)
       reset({ email: '', role: 'Staff' })
       setTimeout(() => setSentTo(''), 3500)
