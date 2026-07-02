@@ -5,7 +5,10 @@ import { MyResearchView } from './_components/my-research-view'
  * "Submit Paper" reuses the existing admin form at
  * /dashboard/research/submit rather than a contributor-specific duplicate —
  * the form itself has no admin-only fields, so building a second copy here
- * would just be the same form maintained twice.
+ * would just be the same form maintained twice. Papers submitted there are
+ * attributed to this contributor's persona, so they immediately count
+ * toward the relevant project's paper count on this page too (both read
+ * the same shared admin repository/collaborations data).
  */
 export default function MyResearchPage() {
   return (

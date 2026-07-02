@@ -18,10 +18,15 @@ import {
   type CourseFormData,
 } from './course-form-schema'
 
+/** Author attributed to courses created from this form — the same recurring contributor persona used across contributor mock data. */
+const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
+
 /**
  * Add/Edit Course form. On submit, appends the new course to the shared
  * `/dashboard/e-learning/*` course catalog store so it immediately appears
- * in the Course Catalog list and becomes available to Enrollments.
+ * in the Course Catalog list, becomes available to Enrollments, and — since
+ * it's attributed to the recurring contributor persona — also appears in
+ * that contributor's own `/contributor/courses` list.
  */
 export function CourseFormView() {
   const [submitting, setSubmitting] = useState(false)
@@ -51,6 +56,7 @@ export function CourseFormView() {
         category: data.category,
         language: data.language,
         status: data.status,
+        author: SUBMITTING_AUTHOR,
       })
       setSubmitSuccess(true)
       reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT' })

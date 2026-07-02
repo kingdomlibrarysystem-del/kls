@@ -24,6 +24,8 @@ export interface CourseCatalogEntry {
   status: CourseStatus
   enrolledCount: number
   createdAt: string
+  /** Course author, used by `/contributor/courses` to filter to the signed-in contributor's own courses. */
+  author: string
 }
 
 export const initialCourseCatalog: CourseCatalogEntry[] = [
@@ -36,6 +38,7 @@ export const initialCourseCatalog: CourseCatalogEntry[] = [
     status: 'PUBLISHED',
     enrolledCount: 3,
     createdAt: '2026-01-15',
+    author: 'Kingdom Library System',
   },
   {
     id: 'crs-002',
@@ -46,6 +49,7 @@ export const initialCourseCatalog: CourseCatalogEntry[] = [
     status: 'PUBLISHED',
     enrolledCount: 1,
     createdAt: '2026-02-03',
+    author: 'Kingdom Library System',
   },
   {
     id: 'crs-003',
@@ -56,6 +60,7 @@ export const initialCourseCatalog: CourseCatalogEntry[] = [
     status: 'PUBLISHED',
     enrolledCount: 1,
     createdAt: '2026-02-20',
+    author: 'Kingdom Library System',
   },
   {
     id: 'crs-004',
@@ -66,6 +71,18 @@ export const initialCourseCatalog: CourseCatalogEntry[] = [
     status: 'PUBLISHED',
     enrolledCount: 1,
     createdAt: '2026-03-01',
+    author: 'Kingdom Library System',
+  },
+  {
+    id: 'crs-005',
+    title: 'Leadership for Ministry Teams',
+    description: 'Equipping ministry team leaders with practical, Kingdom-centered leadership skills.',
+    category: 'Leadership',
+    language: 'en',
+    status: 'PUBLISHED',
+    enrolledCount: 12,
+    createdAt: '2026-03-10',
+    author: 'Pastor Emmanuel Rugamba',
   },
   {
     id: 'crs-006',
@@ -76,5 +93,6 @@ export const initialCourseCatalog: CourseCatalogEntry[] = [
     status: 'PUBLISHED',
     enrolledCount: 1,
     createdAt: '2026-03-18',
+    author: 'Kingdom Library System',
   },
 ]

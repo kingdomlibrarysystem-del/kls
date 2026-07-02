@@ -9,12 +9,13 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { bookSchema, bookCategories, bookLanguages, languageLabels, type BookFormData, type SubmitAction } from './book-form-schema'
+import { addMySubmission } from '../../_components/use-my-submissions'
 
 /**
  * Submit a Book form. Two distinct actions produce different resulting
  * Publication statuses: "Save Draft" (DRAFT) and "Submit for Review"
- * (SUBMITTED) — both fully mocked, with a short simulated delay and inline
- * confirmation naming the resulting status.
+ * (SUBMITTED) — both append a new row to the shared My Submissions store so
+ * it's immediately visible in the My Submissions list.
  */
 export function BookFormView() {
   const [pendingAction, setPendingAction] = useState<SubmitAction | null>(null)
@@ -39,6 +40,7 @@ export function BookFormView() {
       await new Promise((resolve) => setTimeout(resolve, 500))
       if (!data.title.trim()) throw new Error('Title cannot be empty')
       const resultStatus = action === 'draft' ? 'DRAFT' : 'SUBMITTED'
+      addMySubmission({ title: data.title, category: data.category, status: resultStatus })
       setSavedStatus(resultStatus)
       reset({ title: '', description: '', category: '', language: 'en' })
       setTimeout(() => setSavedStatus(null), 4000)
