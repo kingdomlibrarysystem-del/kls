@@ -9,11 +9,15 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { paperSchema, parseKeywords, mockProjectOptions, type PaperFormData } from './paper-form-schema'
+import { addPaperToRepository } from '../../repository/_components/use-repository'
+
+/** Author attributed to papers submitted from this form — the same recurring contributor persona used across research/publishing mock data. */
+const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
 
 /**
- * Submit Paper form. Fully mocked: on submit, splits the comma-separated
- * keywords into a tag list, simulates a short network delay, then shows an
- * inline success or error confirmation — no persistence.
+ * Submit Paper form. On submit, splits the comma-separated keywords into a
+ * tag list and appends the new paper (status SUBMITTED) to the shared
+ * Paper Repository store so it's immediately visible there.
  */
 export function PaperFormView() {
   const [submitting, setSubmitting] = useState(false)
@@ -38,6 +42,13 @@ export function PaperFormView() {
       await new Promise((resolve) => setTimeout(resolve, 500))
       const keywords = parseKeywords(data.keywords)
       if (keywords.length === 0) throw new Error('Enter at least one valid keyword')
+      const project = mockProjectOptions.find((p) => p.id === data.projectId)
+      addPaperToRepository({
+        title: data.title,
+        author: SUBMITTING_AUTHOR,
+        project: project?.title ?? 'Unlinked Project',
+        keywords,
+      })
       setSubmittedKeywords(keywords)
       reset({ title: '', abstract: '', keywords: '', projectId: '' })
       setTimeout(() => setSubmittedKeywords(null), 4000)
@@ -55,7 +66,7 @@ export function PaperFormView() {
           {submittedKeywords && (
             <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
               <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
-              <span>Paper submitted for review. Keywords: {submittedKeywords.join(', ')}</span>
+              <span>Paper submitted for review and added to the repository. Keywords: {submittedKeywords.join(', ')}</span>
             </div>
           )}
           {submitError && (
