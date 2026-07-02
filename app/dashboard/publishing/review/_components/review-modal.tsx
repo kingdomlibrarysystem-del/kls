@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import type { PublicationSubmission } from './review-data'
+import { SubmissionPreview } from './submission-preview'
 
 interface ReviewModalProps {
   submission: PublicationSubmission | null
@@ -14,9 +15,12 @@ interface ReviewModalProps {
 }
 
 /**
- * Approve/Reject confirmation modal with a review-notes textarea. Traps Tab
- * focus within the textarea/buttons while open, since `Modal` itself only
- * handles Escape-to-close.
+ * Combined submission detail + Approve/Reject confirmation modal — shows
+ * the full submission (cover, category, language, description) above the
+ * review-notes textarea so a reviewer can see what they're deciding on
+ * without a separate "View Details" step. Traps Tab focus within the
+ * textarea/buttons while open, since `Modal` itself only handles
+ * Escape-to-close.
  */
 export function ReviewModal({ submission, action, onClose, onConfirm }: ReviewModalProps) {
   const [notes, setNotes] = useState('')
@@ -54,8 +58,10 @@ export function ReviewModal({ submission, action, onClose, onConfirm }: ReviewMo
   }
 
   return (
-    <Modal open onClose={onClose} title={isApprove ? 'Approve Submission' : 'Reject Submission'} size="md">
+    <Modal open onClose={onClose} title={isApprove ? 'Approve Submission' : 'Reject Submission'} size="lg">
       <div onKeyDown={handleKeyDown}>
+        <SubmissionPreview submission={submission} />
+
         <p className="font-lato text-sm text-w-700 mb-3">
           {isApprove ? 'Approving' : 'Rejecting'} <span className="font-semibold text-w-950">&ldquo;{submission.title}&rdquo;</span> by {submission.contributor}.
         </p>

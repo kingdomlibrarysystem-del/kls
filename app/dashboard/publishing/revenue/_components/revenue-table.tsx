@@ -5,7 +5,8 @@ import { DollarSign } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { mockRevenue, type RevenueRow } from './revenue-data'
+import { useRevenue } from './use-revenue'
+import type { RevenueRow } from './revenue-data'
 
 /** Simulated network delay before mock revenue rows become visible. */
 const LOAD_DELAY_MS = 400
@@ -24,6 +25,7 @@ const columns: Column<RevenueRow>[] = [
 /** Table of per-publication revenue splits with a simulated initial load. */
 export function RevenueTable() {
   const [loading, setLoading] = useState(true)
+  const revenue = useRevenue()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -40,13 +42,13 @@ export function RevenueTable() {
     )
   }
 
-  if (mockRevenue.length === 0) {
+  if (revenue.length === 0) {
     return <EmptyState icon={DollarSign} title="No revenue recorded yet" description="Revenue will appear here once publications generate sales." />
   }
 
   return (
     <DataTable<RevenueRow>
-      data={mockRevenue}
+      data={revenue}
       columns={columns}
       rowKey={(r) => r.id}
       searchPlaceholder="Search publication or contributor..."

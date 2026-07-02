@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { Search, BookOpen } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { mockCatalog, languageBadgeLabels, type PublishedBook } from './catalog-data'
+import { languageBadgeLabels, type PublishedBook } from './catalog-data'
+import { useCatalog } from './use-catalog'
 import { CatalogCard } from './catalog-card'
 
 /** Simulated network delay before mock catalog entries become visible. */
@@ -15,6 +16,7 @@ export function CatalogView() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [languageFilter, setLanguageFilter] = useState<PublishedBook['language'] | 'all'>('all')
+  const catalog = useCatalog()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -31,7 +33,7 @@ export function CatalogView() {
     )
   }
 
-  const filtered = mockCatalog.filter((b) => {
+  const filtered = catalog.filter((b) => {
     const matchesSearch = b.title.toLowerCase().includes(search.toLowerCase()) || b.contributor.toLowerCase().includes(search.toLowerCase())
     const matchesLanguage = languageFilter === 'all' || b.language === languageFilter
     return matchesSearch && matchesLanguage

@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { mockSubmissions, reviewStatusConfig, type PublicationSubmission } from './review-data'
 import { ReviewModal } from './review-modal'
+import { addRevenueRowForApproval } from '../../revenue/_components/use-revenue'
 
 /** Simulated network delay before mock submissions become visible. */
 const LOAD_DELAY_MS = 400
@@ -45,6 +46,7 @@ export function ReviewQueueView() {
   const handleConfirm = (notes: string) => {
     try {
       if (!modalTarget || !modalAction) throw new Error('No submission selected')
+      if (modalAction === 'approve') addRevenueRowForApproval(modalTarget.title, modalTarget.contributor)
       setQueue((prev) => prev.filter((s) => s.id !== modalTarget.id))
       showToast(
         `${modalAction === 'approve' ? 'Approved' : 'Rejected'} "${modalTarget.title}"${notes ? ` — notes: ${notes}` : ''}`
