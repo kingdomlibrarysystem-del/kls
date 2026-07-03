@@ -8,6 +8,7 @@ import { takeableAssessments } from './assessment-data'
 import { CountdownTimer } from './countdown-timer'
 import { QuestionNavigator } from './question-navigator'
 import { ResultsScreen } from './results-screen'
+import { recordAssessmentAttempt } from '../../../../_shared/use-enrollments'
 
 /** Simulated network delay before the mock assessment becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -34,6 +35,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [submitted, setSubmitted] = useState(false)
   const [autoSubmitted, setAutoSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [result, setResult] = useState<{ score: number; totalMarks: number } | null>(null)
 
   const assessment = takeableAssessments[assessmentId]
 
@@ -50,12 +52,20 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const handleSubmit = useCallback((expired: boolean) => {
     try {
       if (!assessment) throw new Error('Assessment not found')
+      const totalMarks = assessment.questions.reduce((sum, q) => sum + q.marks, 0)
+      const score = assessment.questions.reduce((sum, q) => {
+        if (q.type !== 'MCQ') return sum
+        const answer = answers[q.id]
+        return answer?.optionIndex === q.correctOptionIndex ? sum + q.marks : sum
+      }, 0)
+      recordAssessmentAttempt(assessment.id, assessment.courseId, score, totalMarks)
+      setResult({ score, totalMarks })
       setAutoSubmitted(expired)
       setSubmitted(true)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not submit assessment')
     }
-  }, [assessment])
+  }, [assessment, answers])
 
   if (loading) {
     return (
@@ -70,14 +80,8 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
     return <EmptyState icon={FileX} title="Assessment not found" description="This assessment doesn't exist in the mock catalog." style={{ color: 'var(--text-secondary)' }} />
   }
 
-  if (submitted) {
-    const totalMarks = assessment.questions.reduce((sum, q) => sum + q.marks, 0)
-    const score = assessment.questions.reduce((sum, q) => {
-      if (q.type !== 'MCQ') return sum
-      const answer = answers[q.id]
-      return answer?.optionIndex === q.correctOptionIndex ? sum + q.marks : sum
-    }, 0)
-    return <ResultsScreen assessment={assessment} score={score} totalMarks={totalMarks} autoSubmitted={autoSubmitted} />
+  if (submitted && result) {
+    return <ResultsScreen assessment={assessment} score={result.score} totalMarks={result.totalMarks} autoSubmitted={autoSubmitted} />
   }
 
   const question = assessment.questions[questionIndex]

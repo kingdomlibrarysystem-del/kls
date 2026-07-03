@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { courseLessons } from './lesson-data'
 import { LessonListSidebar } from './lesson-list-sidebar'
 import { LessonContentPane } from './lesson-content-pane'
+import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
 
 /** Simulated network delay before mock lesson data becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -18,31 +19,31 @@ interface LessonViewerViewProps {
 
 /**
  * Lesson viewer: page-local lesson-list sidebar + main content pane for the
- * active lesson. "Mark complete" updates local state only (no persistence
- * across reload).
+ * active lesson. "Mark complete" writes to the shared `/member/*` enrollment
+ * store, so progress is immediately reflected on My Courses.
  */
 export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) {
   const [loading, setLoading] = useState(true)
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [markError, setMarkError] = useState('')
+  const enrollments = useEnrollments()
 
   const course = courseLessons[courseId]
   const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? -1
   const lesson = lessonIndex >= 0 ? course.lessons[lessonIndex] : undefined
+  const enrollment = enrollments.find((e) => e.courseId === courseId)
+  const completedIds = new Set(enrollment?.completedLessonIds ?? [])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (course) setCompletedIds(new Set(course.lessons.filter((l) => l.completed).map((l) => l.id)))
-      setLoading(false)
-    }, LOAD_DELAY_MS)
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [course])
+  }, [])
 
   const handleMarkComplete = () => {
     setMarkError('')
     try {
       if (!lesson) throw new Error('Lesson not found')
-      setCompletedIds((prev) => new Set(prev).add(lesson.id))
+      if (!enrollment) throw new Error('You are not enrolled in this course')
+      markLessonComplete(courseId, lesson.id)
     } catch (error) {
       setMarkError(error instanceof Error ? error.message : 'Could not mark lesson complete')
     }
