@@ -146,7 +146,6 @@ export const kcsPillars: Record<string, KcsPillar> = {
       "This section records the birth and spread of the Kingdom community. It shows how the message expands, how power operates through people, and how communities are formed and transformed. This is the prototype of Kingdom movement.",
     scrolls: [
       { code: 'Act', title: 'Acts of the Apostles', status: 'AVAILABLE' },
-      { code: 'YourScroll', title: 'Your Scroll', status: 'OUT_OF_STOCK' },
     ],
   },
   epistles: {
@@ -169,7 +168,6 @@ export const kcsPillars: Record<string, KcsPillar> = {
       { code: 'James', title: 'James', status: 'AVAILABLE' },
       { code: '1 Pet', title: '1 Peter', status: 'AVAILABLE' },
       { code: 'Jude', title: 'Jude', status: 'AVAILABLE' },
-      { code: 'YourScroll', title: 'Your Scroll', status: 'OUT_OF_STOCK' },
     ],
   },
   revelation: {
@@ -184,7 +182,6 @@ export const kcsPillars: Record<string, KcsPillar> = {
       "This section reveals the final outcome of all things. It includes the throne and courts of heaven, judgment and accountability, spiritual realities beyond the physical world, and the establishment of the eternal Kingdom. This is the conclusion that defines all beginnings.",
     scrolls: [
       { code: 'Rev', title: 'Revelation', status: 'AVAILABLE' },
-      { code: 'YourScroll', title: 'Your Scroll', status: 'OUT_OF_STOCK' },
     ],
   },
 }

@@ -22,28 +22,31 @@ import {
 } from "lucide-react";
 
 const topLinks = [
-  { icon: <RotateCcw size={14} />, label: "Borrow & Return", sub: "Books, Audio, Video" },
-  { icon: <Database size={14} />, label: "E-Resources", sub: "Digital Content" },
-  { icon: <Newspaper size={14} />, label: "News & Newspapers", sub: "Latest Updates" },
-  { icon: <ShoppingCart size={14} />, label: "Sales & Store", sub: "Media, Books, Merch" },
-  { icon: <Package size={14} />, label: "Inventory", sub: "Manage Collection" },
-  { icon: <Users size={14} />, label: "Members", sub: "Manage Users" },
-  { icon: <BarChart3 size={14} />, label: "Reports", sub: "Analytics & Insights" },
+  { icon: <RotateCcw size={14} />, label: "Borrow & Return", sub: "Books, Audio, Video", href: "/dashboard/library/borrowings" },
+  { icon: <Database size={14} />, label: "E-Resources", sub: "Digital Content", href: undefined },
+  { icon: <Newspaper size={14} />, label: "News & Newspapers", sub: "Latest Updates", href: "/dashboard/news" },
+  { icon: <ShoppingCart size={14} />, label: "Sales & Store", sub: "Media, Books, Merch", href: "/dashboard/library/sales" },
+  { icon: <Package size={14} />, label: "Inventory", sub: "Manage Collection", href: "/dashboard/library" },
+  { icon: <Users size={14} />, label: "Members", sub: "Manage Users", href: "/dashboard/users" },
+  { icon: <BarChart3 size={14} />, label: "Reports", sub: "Analytics & Insights", href: "/dashboard/reports" },
   {
     icon: <Printer size={14} />,
     label: "Publishing Services",
     sub: "Publish, Distribute, Impact.",
+    href: "/dashboard/publishing",
   },
   {
     icon: <FlaskConical size={14} />,
     label: "Research Services",
     sub: "Discover, Publish, Transform.",
+    href: "/dashboard/research",
   },
-  { icon: <Sparkles size={14} />, label: "Beauty Services", sub: "Beauty, Wellness, Transform." },
+  { icon: <Sparkles size={14} />, label: "Beauty Services", sub: "Beauty, Wellness, Transform.", href: "/dashboard/beauty" },
   {
     icon: <Brain size={14} />,
     label: "Consultation & Counseling",
     sub: "Care, Counsel, Restore.",
+    href: "/dashboard/counseling",
   },
 ];
 
@@ -212,44 +215,55 @@ export default function DashboardTopbar() {
           scrollbarWidth: "none",
         }}
       >
-        {topLinks.map((link) => (
-          <button
-            key={link.label}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 10px",
-              color: "var(--text-secondary)",
-              whiteSpace: "nowrap",
-              borderBottom: "2px solid transparent",
-              transition: "color 0.15s, border-color 0.15s",
-              fontSize: 11,
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--gold)";
-              (e.currentTarget as HTMLElement).style.borderBottomColor =
-                "var(--gold)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color =
-                "var(--text-secondary)";
-              (e.currentTarget as HTMLElement).style.borderBottomColor =
-                "transparent";
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center" }}>{link.icon}</span>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontWeight: 600, fontSize: 11 }}>{link.label}</div>
-              <div style={{ fontSize: 9, color: "var(--text-muted)" }}>
-                {link.sub}
+        {topLinks.map((link) => {
+          const Tag = link.href ? "a" : "button";
+          return (
+            <Tag
+              key={link.label}
+              href={link.href}
+              aria-label={link.href ? link.label : `${link.label} (coming soon)`}
+              aria-disabled={link.href ? undefined : true}
+              title={link.href ? undefined : "Coming soon"}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: link.href ? "pointer" : "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 10px",
+                color: "var(--text-secondary)",
+                whiteSpace: "nowrap",
+                borderBottom: "2px solid transparent",
+                textDecoration: "none",
+                opacity: link.href ? 1 : 0.55,
+                transition: "color 0.15s, border-color 0.15s",
+                fontSize: 11,
+              }}
+              onMouseEnter={(e) => {
+                if (!link.href) return;
+                (e.currentTarget as HTMLElement).style.color = "var(--gold)";
+                (e.currentTarget as HTMLElement).style.borderBottomColor =
+                  "var(--gold)";
+              }}
+              onMouseLeave={(e) => {
+                if (!link.href) return;
+                (e.currentTarget as HTMLElement).style.color =
+                  "var(--text-secondary)";
+                (e.currentTarget as HTMLElement).style.borderBottomColor =
+                  "transparent";
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center" }}>{link.icon}</span>
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontWeight: 600, fontSize: 11 }}>{link.label}</div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>
+                  {link.sub}
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </Tag>
+          );
+        })}
       </div>
     </header>
   );

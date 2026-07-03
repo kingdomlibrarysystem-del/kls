@@ -166,6 +166,9 @@ export default function Sidebar() {
     setExpandedSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
+  const isSectionActive = (item: NavItem) =>
+    !!item.subItems?.some((sub) => currentRoute.startsWith(sub.href));
+
   return (
     <aside
       style={{
@@ -223,8 +226,10 @@ export default function Sidebar() {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
-        {mainNav.map((item) =>
-          item.subItems && !collapsed ? (
+        {mainNav.map((item) => {
+          const sectionActive = item.subItems ? isSectionActive(item) : false;
+          const sectionExpanded = item.subItems ? expandedSections[item.label] || sectionActive : false;
+          return item.subItems && !collapsed ? (
             <div key={item.label}>
               <div
                 onClick={() => toggleSection(item.label)}
@@ -235,22 +240,22 @@ export default function Sidebar() {
                   padding: "6px 12px",
                   cursor: "pointer",
                   fontSize: 12,
-                  color: expandedSections[item.label] ? "var(--gold)" : "var(--text-secondary)",
-                  borderLeft: "2px solid transparent",
+                  color: sectionExpanded || sectionActive ? "var(--gold)" : "var(--text-secondary)",
+                  borderLeft: sectionActive ? "2px solid var(--gold)" : "2px solid transparent",
                   transition: "all 0.15s",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
                 onMouseLeave={(e) => {
-                  if (!expandedSections[item.label]) e.currentTarget.style.color = "var(--text-secondary)";
+                  if (!sectionExpanded && !sectionActive) e.currentTarget.style.color = "var(--text-secondary)";
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>{item.icon}</span>
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
-                {expandedSections[item.label] ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
+                {sectionExpanded ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
               </div>
-              {expandedSections[item.label] && item.subItems.map((sub) => (
+              {sectionExpanded && item.subItems.map((sub) => (
                 <a
                   key={sub.label}
                   href={sub.href}
@@ -275,8 +280,8 @@ export default function Sidebar() {
             </div>
           ) : (
             <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
-          )
-        )}
+          );
+        })}
 
         {mgmtNav.length > 0 && !collapsed && (
           <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
