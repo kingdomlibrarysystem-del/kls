@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { BookOpen, RotateCcw, AlertTriangle, Calendar, ChevronRight, Clock, CheckCircle2 } from 'lucide-react'
-import { mockBorrowings, type Borrowing } from './borrowings-data'
+import type { Borrowing } from './borrowings-data'
+import { useBorrowings } from '../../_shared/use-borrowings'
 import { BorrowingDetailModal } from './borrowing-detail-modal'
 
 /** This member's borrowings: active/overdue list plus return history, each row opening a details modal. */
 export function BorrowingsView() {
   const [viewing, setViewing] = useState<Borrowing | null>(null)
+  const mockBorrowings = useBorrowings()
   const active = mockBorrowings.filter((b) => b.status === 'Active' || b.status === 'Overdue')
   const returned = mockBorrowings.filter((b) => b.status === 'Returned')
 

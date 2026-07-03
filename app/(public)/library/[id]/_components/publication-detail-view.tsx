@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 import { mockCatalog, languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
-import { PublicationActionModal, type PublicationAction } from './publication-action-modal'
+import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 
 /** Simulated network delay before the mock publication becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -20,7 +21,8 @@ interface PublicationDetailViewProps {
 /** Publication detail: cover, description, contributor, language, availability, Borrow/Reserve actions. */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [loading, setLoading] = useState(true)
-  const [action, setAction] = useState<PublicationAction>(null)
+  const [action, setAction] = useState<BorrowReserveAction>(null)
+  const { isAuthenticated } = useAuth()
 
   const book = mockCatalog.find((b) => b.id === id)
 
@@ -81,27 +83,47 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             <p className="font-lato text-sm text-w-700 leading-relaxed mb-6">{book.description}</p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <ElegantButton
-              variant="primary"
-              disabled={!book.available}
-              onClick={() => setAction('borrow')}
-              className="flex-1 sm:flex-none"
-            >
-              Borrow
-            </ElegantButton>
-            <ElegantButton
-              variant="outline"
-              onClick={() => setAction('reserve')}
-              className="flex-1 sm:flex-none"
-            >
-              Reserve
-            </ElegantButton>
-          </div>
+          {isAuthenticated ? (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <ElegantButton
+                variant="primary"
+                disabled={!book.available}
+                onClick={() => setAction('borrow')}
+                className="flex-1 sm:flex-none"
+              >
+                Borrow
+              </ElegantButton>
+              <ElegantButton
+                variant="outline"
+                onClick={() => setAction('reserve')}
+                className="flex-1 sm:flex-none"
+              >
+                Reserve
+              </ElegantButton>
+            </div>
+          ) : (
+            <div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${book.id}`)}`} className="flex-1 sm:flex-none">
+                  <ElegantButton variant="primary" className="w-full flex items-center justify-center gap-2">
+                    <LogIn size={15} /> Sign In to Borrow
+                  </ElegantButton>
+                </Link>
+                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${book.id}`)}`} className="flex-1 sm:flex-none">
+                  <ElegantButton variant="outline" className="w-full flex items-center justify-center gap-2">
+                    <LogIn size={15} /> Sign In to Reserve
+                  </ElegantButton>
+                </Link>
+              </div>
+              <p className="font-lato text-xs text-w-600 mt-2">
+                Sign in to borrow or reserve this book — you&apos;ll land back here once you&apos;re signed in.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      <PublicationActionModal action={action} bookTitle={book.title} onClose={() => setAction(null)} />
+      <BorrowReserveConfirmModal action={action} bookTitle={book.title} bookAuthor={book.contributor} onClose={() => setAction(null)} />
     </div>
   )
 }

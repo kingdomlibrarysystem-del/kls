@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { CalendarDays, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
-import { mockReservations, type Reservation } from './reservations-data'
+import type { Reservation } from './reservations-data'
+import { useReservations } from '../../_shared/use-reservations'
 import { ReservationDetailModal } from './reservation-detail-modal'
 
 /** This member's reservations: active/waiting list plus fulfilled history, each row opening a details modal. */
 export function ReservationsView() {
   const [viewing, setViewing] = useState<Reservation | null>(null)
+  const mockReservations = useReservations()
   const active = mockReservations.filter((r) => r.status !== 'Fulfilled')
   const fulfilled = mockReservations.filter((r) => r.status === 'Fulfilled')
 

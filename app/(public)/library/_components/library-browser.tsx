@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search, BookOpen, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
+import { BorrowReserveConfirmModal } from './borrow-reserve-confirm-modal'
 
 interface Book {
   id: string
@@ -24,8 +26,9 @@ interface Book {
 const categories = ['All', 'Philosophy', 'Technology', 'History', 'Arts']
 const formats = ['All', 'E-Book', 'PDF Journal', 'Interactive PDF']
 
-function BookCard({ book }: { book: Book }) {
+function BookCard({ book, onAction }: { book: Book; onAction: (book: Book, action: 'borrow' | 'reserve') => void }) {
   const [showSummary, setShowSummary] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
@@ -59,12 +62,21 @@ function BookCard({ book }: { book: Book }) {
           <p className="font-lato text-xs text-w-700 leading-relaxed border-t border-w-300 pt-2">{book.summary}</p>
         )}
         <div className="flex gap-2 mt-auto pt-3">
-          <Link href="/auth/register" className="flex-1">
-            <ElegantButton variant="primary" className="w-full text-xs py-2">Borrow</ElegantButton>
-          </Link>
-          <Link href="/auth/register" className="flex-1">
-            <ElegantButton variant="outline" className="w-full text-xs py-2">Reserve</ElegantButton>
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <ElegantButton variant="primary" className="flex-1 text-xs py-2" onClick={() => onAction(book, 'borrow')}>Borrow</ElegantButton>
+              <ElegantButton variant="outline" className="flex-1 text-xs py-2" onClick={() => onAction(book, 'reserve')}>Reserve</ElegantButton>
+            </>
+          ) : (
+            <>
+              <Link href={`/auth/login?redirect=${encodeURIComponent('/library')}`} className="flex-1">
+                <ElegantButton variant="primary" className="w-full text-xs py-2">Borrow</ElegantButton>
+              </Link>
+              <Link href={`/auth/login?redirect=${encodeURIComponent('/library')}`} className="flex-1">
+                <ElegantButton variant="outline" className="w-full text-xs py-2">Reserve</ElegantButton>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -76,6 +88,7 @@ export function LibraryBrowser({ books }: { books: Book[] }) {
   const [category, setCategory] = useState('All')
   const [format, setFormat] = useState('All')
   const [showFilters, setShowFilters] = useState(false)
+  const [pending, setPending] = useState<{ book: Book; action: 'borrow' | 'reserve' } | null>(null)
 
   const filtered = books.filter((b) => {
     const q = search.toLowerCase()
@@ -138,7 +151,7 @@ export function LibraryBrowser({ books }: { books: Book[] }) {
 
       {filtered.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-          {filtered.map((book) => <BookCard key={book.id} book={book} />)}
+          {filtered.map((book) => <BookCard key={book.id} book={book} onAction={(b, action) => setPending({ book: b, action })} />)}
         </div>
       ) : (
         <div className="text-center py-16">
@@ -149,6 +162,13 @@ export function LibraryBrowser({ books }: { books: Book[] }) {
           </ElegantButton>
         </div>
       )}
+
+      <BorrowReserveConfirmModal
+        action={pending?.action ?? null}
+        bookTitle={pending?.book.title ?? ''}
+        bookAuthor={pending?.book.author ?? ''}
+        onClose={() => setPending(null)}
+      />
     </>
   )
 }
