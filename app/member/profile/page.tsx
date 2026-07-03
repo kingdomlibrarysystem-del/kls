@@ -100,7 +100,7 @@ export default function ProfilePage() {
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>Payment Method</div>
               <div style={{ fontSize: 9, color: "var(--text-muted)" }}>**** 4242 • Expires 12/28</div>
             </div>
-            <span style={{ fontSize: 18 }}>💳</span>
+            <CreditCard size={18} color="var(--text-muted)" />
           </div>
         </div>
       </div>

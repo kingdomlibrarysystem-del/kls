@@ -1,10 +1,13 @@
 "use client";
 import { Award, TrendingUp, BookOpen, Star, Crown, Medal, Trophy } from "lucide-react";
 
+const medalColors = ["#D4AF37", "#A8A9AD", "#CD7F32"];
+const medalIcons = [Trophy, Medal, Award];
+
 const topMembers = [
-  { rank: 1, name: "Sarah Johnson", booksRead: 42, coursesCompleted: 8, points: 2840, badge: "🥇" },
-  { rank: 2, name: "David Mugisha", booksRead: 38, coursesCompleted: 6, points: 2520, badge: "🥈" },
-  { rank: 3, name: "Grace Uwimana", booksRead: 35, coursesCompleted: 7, points: 2310, badge: "🥉" },
+  { rank: 1, name: "Sarah Johnson", booksRead: 42, coursesCompleted: 8, points: 2840 },
+  { rank: 2, name: "David Mugisha", booksRead: 38, coursesCompleted: 6, points: 2520 },
+  { rank: 3, name: "Grace Uwimana", booksRead: 35, coursesCompleted: 7, points: 2310 },
 ];
 
 const otherMembers = [
@@ -36,7 +39,9 @@ export default function LeaderboardPage() {
             transform: m.rank === 1 ? "scale(1.02)" : "none",
             borderColor: m.rank === 1 ? "var(--gold)" : m.rank === 2 ? "var(--text-muted)" : "var(--border)",
           }}>
-            <div style={{ fontSize: 28, marginBottom: 4 }}>{m.badge}</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
+              {(() => { const MedalIcon = medalIcons[m.rank - 1]; return <MedalIcon size={28} color={medalColors[m.rank - 1]} />; })()}
+            </div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{m.name}</div>
             <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 6 }}>{m.points.toLocaleString()} pts</div>
             <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
@@ -65,7 +70,7 @@ export default function LeaderboardPage() {
           }}>
             <div style={{ width: 20, textAlign: "center" }}>
               {m.rank <= 3 ? (
-                <span style={{ fontSize: 16 }}>{["🥇", "🥈", "🥉"][m.rank - 1]}</span>
+                (() => { const MedalIcon = medalIcons[m.rank - 1]; return <MedalIcon size={16} color={medalColors[m.rank - 1]} />; })()
               ) : (
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{m.rank}</span>
               )}

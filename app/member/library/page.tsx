@@ -197,8 +197,8 @@ function ScrollCard({ title, code, section }: { title: string; code: string; sec
       onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.12)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
     >
-      <div style={{ height: 80, background: "linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, position: "relative" }}>
-        📜
+      <div style={{ height: 80, background: "linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        <ScrollText size={28} color="var(--gold)" />
         <button
           onClick={(e) => { e.stopPropagation(); setLiked(!liked); }}
           style={{
@@ -232,7 +232,7 @@ function ScrollListItem({ title, code, section, desc }: { title: string; code: s
       onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
     >
-      <div style={{ fontSize: 20, width: 32, textAlign: "center" }}>📜</div>
+      <div style={{ width: 32, display: "flex", alignItems: "center", justifyContent: "center" }}><ScrollText size={20} color="var(--gold)" /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{title}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 1 }}>

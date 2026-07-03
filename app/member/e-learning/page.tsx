@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { GraduationCap, PlayCircle, Clock, Star, Users, Search, Filter, ChevronRight } from "lucide-react";
+import { GraduationCap, PlayCircle, Clock, Star, Users, Search, Filter, ChevronRight, BookOpen, Landmark, Music, Heart, Coins, HandHeart, Sparkles, Shield, Building2, Leaf } from "lucide-react";
 
 const courseCategories = ["All", "Theology", "Leadership", "Personal Development", "Worship", "Marriage", "Business", "Health"];
 
@@ -13,7 +13,7 @@ const courses = Array.from({ length: 12 }, (_, i) => ({
   duration: `${Math.floor(Math.random() * 10) + 2}h`,
   rating: (4 + Math.random()).toFixed(1),
   students: Math.floor(Math.random() * 500) + 50,
-  image: ["📚", "🎓", "📖", "⭐", "💍", "💰", "🙏", "✨", "🛡️", "🤝", "🏛️", "🌿"][i],
+  image: [BookOpen, GraduationCap, Landmark, Music, Heart, Coins, HandHeart, Sparkles, Shield, Users, Building2, Leaf][i],
   description: "Comprehensive course covering key principles and practical applications for everyday life.",
 }));
 
@@ -76,8 +76,8 @@ export default function ELearningPage() {
             onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
           >
             {/* Header */}
-            <div style={{ height: 100, background: "linear-gradient(135deg, var(--teal-light-transparent, rgba(45,212,191,0.1)), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>
-              {course.image}
+            <div style={{ height: 100, background: "linear-gradient(135deg, var(--teal-light-transparent, rgba(45,212,191,0.1)), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <course.image size={32} color="var(--teal-light)" />
             </div>
             {/* Body */}
             <div style={{ padding: "10px 12px 12px" }}>
