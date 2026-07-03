@@ -44,4 +44,9 @@ export const mockAuditEntries: AuditEntry[] = [
   { id: 'aud-008', actor: 'Manager User', action: 'PUBLICATION_APPROVED', target: 'Voices of the Revival',          timestamp: '2026-06-20 10:30', ipAddress: '41.186.10.45', notes: 'Approved after second review pass.' },
   { id: 'aud-009', actor: 'System',       action: 'PAYMENT_PROCESSED',    target: 'Amina Uwimana — 1,200 RWF (Rental)', timestamp: '2026-06-18 16:52', ipAddress: '—', notes: 'Automated payment gateway callback.' },
   { id: 'aud-010', actor: 'Admin User',   action: 'LOGIN',                target: 'Session',                        timestamp: '2026-06-15 07:58', ipAddress: '41.186.10.22', notes: 'Standard login, no prior failed attempts.' },
+  { id: 'aud-011', actor: 'Staff User',   action: 'BORROW_APPROVED',      target: 'Amina Uwimana — Digital Transformation', timestamp: '2026-06-14 09:20', ipAddress: '196.250.8.3', notes: 'Approved at circulation desk.' },
+  { id: 'aud-012', actor: 'Admin User',   action: 'ROLE_ASSIGNED',        target: 'Carol Davis → Staff',            timestamp: '2026-06-12 13:45', ipAddress: '41.186.10.22', notes: 'Before: Member. After: Staff.' },
+  { id: 'aud-013', actor: 'Manager User', action: 'PUBLICATION_APPROVED', target: 'Leading with Humility',          timestamp: '2026-06-08 16:10', ipAddress: '41.186.10.45', notes: 'Approved after first review pass.' },
+  { id: 'aud-014', actor: 'System',       action: 'PAYMENT_PROCESSED',    target: 'Grace Mukamana — 2,400 RWF (Rental)', timestamp: '2026-06-05 11:33', ipAddress: '—', notes: 'Automated payment gateway callback.' },
+  { id: 'aud-015', actor: 'Admin User',   action: 'USER_CREATED',         target: 'Esther Kabatesi (member)',       timestamp: '2026-06-03 10:02', ipAddress: '41.186.10.22', notes: 'Account created directly by admin, not self-registered.' },
 ]

@@ -16,6 +16,16 @@ export const initialUsers: PlatformUser[] = [
   { id: '2', name: 'Bob Smith', email: 'bob@kingdom.edu', role: 'librarian', status: 'active', joinDate: '2024-02-15' },
   { id: '3', name: 'Carol Davis', email: 'carol@kingdom.edu', role: 'user', status: 'inactive', joinDate: '2024-03-20' },
   { id: '4', name: 'David Wilson', email: 'david@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-04-05' },
+  { id: '5', name: 'Jean Paul Nkurunziza', email: 'jeanpaul@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-04-22' },
+  { id: '6', name: 'Amina Uwimana', email: 'amina@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-05-03' },
+  { id: '7', name: 'Eric Habimana', email: 'eric@kingdom.edu', role: 'librarian', status: 'active', joinDate: '2024-05-18' },
+  { id: '8', name: 'Grace Mukamana', email: 'grace@kingdom.edu', role: 'user', status: 'suspended', joinDate: '2024-06-01' },
+  { id: '9', name: 'Claudine Ingabire', email: 'claudine@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-06-14' },
+  { id: '10', name: 'Patrick Iradukunda', email: 'patrick@kingdom.edu', role: 'user', status: 'inactive', joinDate: '2024-07-02' },
+  { id: '11', name: 'Sarah Uwase', email: 'sarah@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-07-19' },
+  { id: '12', name: 'David Ndayisenga', email: 'davidn@kingdom.edu', role: 'librarian', status: 'active', joinDate: '2024-08-05' },
+  { id: '13', name: 'Emmanuel Rugamba', email: 'emmanuel@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-08-21' },
+  { id: '14', name: 'Alice Mutoni', email: 'alicem@kingdom.edu', role: 'user', status: 'active', joinDate: '2024-09-09' },
 ]
 
 export const roleColors: Record<UserRoleValue, string> = {
