@@ -1,12 +1,13 @@
-import { Trophy, TrendingDown } from 'lucide-react'
+import { Trophy, TrendingDown, ArrowUpRight } from 'lucide-react'
 import type { CourseAnalytics } from './progress-data'
 
 interface CourseAnalyticsCardProps {
   course: CourseAnalytics
+  onViewDetails: (course: CourseAnalytics) => void
 }
 
 /** One course's analytics: enrolled count, average completion, top performers, and dropoff callouts. */
-export function CourseAnalyticsCard({ course }: CourseAnalyticsCardProps) {
+export function CourseAnalyticsCard({ course, onViewDetails }: CourseAnalyticsCardProps) {
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
@@ -51,6 +52,14 @@ export function CourseAnalyticsCard({ course }: CourseAnalyticsCardProps) {
           ))}
         </ul>
       </div>
+
+      <button
+        onClick={() => onViewDetails(course)}
+        aria-label={`View full analytics for ${course.title}`}
+        className="flex items-center gap-1 mt-4 font-lato text-xs font-semibold text-w-700 hover:text-w-950 transition-colors"
+      >
+        View Full Details <ArrowUpRight size={12} />
+      </button>
     </div>
   )
 }

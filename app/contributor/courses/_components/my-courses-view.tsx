@@ -6,6 +6,7 @@ import { GraduationCap, PlusCircle, Users, Eye } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useCourseCatalog } from '@/app/dashboard/e-learning/_shared/use-course-catalog'
+import { EditCourseModal } from '@/app/dashboard/e-learning/catalog/_components/edit-course-modal'
 import { courseStatusConfig, type CourseCatalogEntry } from './my-courses-data'
 import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
 import { MyCourseDetailModal } from './my-course-detail-modal'
@@ -24,6 +25,7 @@ const LOAD_DELAY_MS = 400
 export function MyCoursesView() {
   const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState<CourseCatalogEntry | null>(null)
+  const [editing, setEditing] = useState<CourseCatalogEntry | null>(null)
   const catalog = useCourseCatalog()
   const myCourses = catalog.filter((c) => c.author === CONTRIBUTOR_NAME)
 
@@ -76,7 +78,12 @@ export function MyCoursesView() {
         </div>
       )}
 
-      <MyCourseDetailModal course={viewing} onClose={() => setViewing(null)} />
+      <MyCourseDetailModal
+        course={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={(c) => { setViewing(null); setEditing(c) }}
+      />
+      <EditCourseModal course={editing} onClose={() => setEditing(null)} />
     </div>
   )
 }

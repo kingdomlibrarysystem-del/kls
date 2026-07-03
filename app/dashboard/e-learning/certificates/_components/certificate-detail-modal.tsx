@@ -1,6 +1,7 @@
 import { User, BookOpen, CalendarDays, Hash, ShieldAlert } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import type { Certificate } from './certificates-data'
+import { CertificatePreview } from './certificate-preview'
 
 interface CertificateDetailModalProps {
   certificate: Certificate | null
@@ -17,14 +18,16 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   )
 }
 
-/** Read-only details view for a single issued certificate. */
+/** Details view for a single issued certificate: a real visual certificate preview plus its record metadata. */
 export function CertificateDetailModal({ certificate, onClose }: CertificateDetailModalProps) {
   return (
-    <Modal open={!!certificate} onClose={onClose} title="Certificate Details" size="sm">
+    <Modal open={!!certificate} onClose={onClose} title="Certificate Details" size="md">
       {certificate && (
         <div className="space-y-4">
+          <CertificatePreview certificate={certificate} />
+
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-cinzel text-base font-semibold text-w-950">{certificate.member}</h3>
+            <span className="font-lato text-xs font-semibold text-w-700 uppercase tracking-wide">Record</span>
             {certificate.revoked ? (
               <span className="flex items-center gap-1 px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-red-50 text-red-800 border-red-200 shrink-0">
                 <ShieldAlert size={12} /> Revoked
