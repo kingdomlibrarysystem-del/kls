@@ -1,5 +1,6 @@
 import { PageTransition } from '@/components/ui/page-transition'
 import { DashboardView } from './_components/dashboard-view'
+import { DashboardCharts } from './_components/dashboard-charts'
 
 export default function ContributorDashboardPage() {
   return (
@@ -11,6 +12,9 @@ export default function ContributorDashboardPage() {
         Your submissions, courses, research, and earnings at a glance
       </p>
       <DashboardView />
+      <div style={{ marginTop: 16 }}>
+        <DashboardCharts />
+      </div>
     </PageTransition>
   )
 }
