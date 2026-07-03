@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { CheckCircle2, Circle, PlayCircle, FileText, Download } from 'lucide-react'
-import type { Lesson, LessonContentType } from './lesson-data'
+import type { Lesson, LessonContentType } from '../../../../../_shared/lesson-data'
 
 interface LessonListSidebarProps {
   courseId: string

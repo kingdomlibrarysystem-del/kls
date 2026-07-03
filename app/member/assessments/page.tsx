@@ -6,19 +6,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { courseCatalog } from "../_shared/course-catalog-data";
 import { useAssessmentAttempts } from "../_shared/use-enrollments";
-import { takeableAssessments } from "./[assessmentId]/take/_components/assessment-data";
+import { useAssessmentCatalog } from "../_shared/use-assessments";
 
 /** Simulated network delay before the shared assessment-attempt store's initial snapshot is shown. */
 const LOAD_DELAY_MS = 300;
 
-/** All takeable assessments not yet attempted are treated as "pending/upcoming". */
-function getPendingAssessments(takenIds: Set<string>) {
-  return Object.values(takeableAssessments).filter((a) => !takenIds.has(a.id));
-}
-
 export default function AssessmentsPage() {
   const [loading, setLoading] = useState(true);
   const attempts = useAssessmentAttempts();
+  const takeableAssessments = useAssessmentCatalog();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS);
@@ -35,7 +31,7 @@ export default function AssessmentsPage() {
   }
 
   const takenIds = new Set(attempts.map((a) => a.assessmentId));
-  const pending = getPendingAssessments(takenIds);
+  const pending = Object.values(takeableAssessments).filter((a) => !takenIds.has(a.id));
   const passed = attempts.filter((a) => a.status === "PASSED");
   const failed = attempts.filter((a) => a.status === "FAILED");
   const avgScore = passed.length + failed.length > 0

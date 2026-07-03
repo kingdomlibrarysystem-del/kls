@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import { BookX } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { courseLessons } from './lesson-data'
 import { LessonListSidebar } from './lesson-list-sidebar'
 import { LessonContentPane } from './lesson-content-pane'
 import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
+import { useLessonsByCourse } from '../../../../../_shared/use-lessons'
 
 /** Simulated network delay before mock lesson data becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -26,8 +26,9 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const [loading, setLoading] = useState(true)
   const [markError, setMarkError] = useState('')
   const enrollments = useEnrollments()
+  const lessonsByCourse = useLessonsByCourse()
 
-  const course = courseLessons[courseId]
+  const course = lessonsByCourse[courseId]
   const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? -1
   const lesson = lessonIndex >= 0 ? course.lessons[lessonIndex] : undefined
   const enrollment = enrollments.find((e) => e.courseId === courseId)

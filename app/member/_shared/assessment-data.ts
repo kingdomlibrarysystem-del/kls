@@ -24,8 +24,14 @@ export interface TakeableAssessment {
   questions: Question[]
 }
 
-/** Mock takeable assessments keyed by the numeric IDs used in member/assessments/page.tsx. */
-export const takeableAssessments: Record<string, TakeableAssessment> = {
+/**
+ * Canonical assessments keyed by the IDs used across the member take-flow.
+ * Lives in `_shared` (not under the member take-assessment route) because
+ * both the member take-assessment flow and the admin Quizzes & Exams
+ * management page (/dashboard/e-learning/quizzes) read and, on the admin
+ * side, write this same data.
+ */
+export const initialTakeableAssessments: Record<string, TakeableAssessment> = {
   '1': {
     id: '1',
     title: 'Kingdom Foundations — Quiz 1',

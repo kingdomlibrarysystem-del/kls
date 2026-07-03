@@ -17,13 +17,16 @@ export interface CourseLessons {
 }
 
 /**
- * Mock lessons keyed by the course IDs in course-catalog-data.ts. Every
- * catalog course has 4 lessons so the enroll -> continue -> complete loop
- * works identically across the whole catalog, not just courses 1-2.
- * `completed` here only seeds the initial enrollment store snapshot — after
- * that, completion state lives in the shared enrollment store, not here.
+ * Canonical lesson content keyed by the course IDs in course-catalog-data.ts.
+ * Lives in `_shared` (not under the member lesson-viewer route) because both
+ * the member lesson viewer and the admin Lessons management page
+ * (/dashboard/e-learning/lessons) read and, on the admin side, write this
+ * same data — an admin edit must be visible to the member taking the
+ * course, so this cannot be two separate datasets. `completed` here only
+ * seeds the initial enrollment store snapshot — after that, completion
+ * state lives in the enrollment store, not here.
  */
-export const courseLessons: Record<string, CourseLessons> = {
+export const initialCourseLessons: Record<string, CourseLessons> = {
   '1': {
     courseId: '1',
     courseTitle: 'Kingdom Foundations',

@@ -1,7 +1,7 @@
 'use client'
 
 import { PlayCircle, FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react'
-import type { Lesson } from './lesson-data'
+import type { Lesson } from '../../../../../_shared/lesson-data'
 
 interface LessonContentPaneProps {
   lesson: Lesson

@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { FileX, AlertCircle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { takeableAssessments } from './assessment-data'
 import { CountdownTimer } from './countdown-timer'
 import { QuestionNavigator } from './question-navigator'
 import { ResultsScreen } from './results-screen'
 import { recordAssessmentAttempt } from '../../../../_shared/use-enrollments'
+import { useAssessmentCatalog } from '../../../../_shared/use-assessments'
 
 /** Simulated network delay before the mock assessment becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -37,7 +37,8 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [submitError, setSubmitError] = useState('')
   const [result, setResult] = useState<{ score: number; totalMarks: number } | null>(null)
 
-  const assessment = takeableAssessments[assessmentId]
+  const assessmentCatalog = useAssessmentCatalog()
+  const assessment = assessmentCatalog[assessmentId]
 
   useEffect(() => {
     const timer = setTimeout(() => {

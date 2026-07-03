@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Send } from 'lucide-react'
-import type { Question } from './assessment-data'
+import type { Question } from '../../../../_shared/assessment-data'
 
 interface QuestionNavigatorProps {
   question: Question

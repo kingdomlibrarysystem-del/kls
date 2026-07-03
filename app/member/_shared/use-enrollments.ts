@@ -5,13 +5,15 @@ import {
   initialEnrollments, initialAssessmentAttempts,
   type CourseEnrollment, type AssessmentAttempt, type AssessmentAttemptStatus,
 } from './enrollment-data'
-import { courseLessons } from '../courses/[courseId]/lessons/[lessonId]/_components/lesson-data'
+import { getLessonsSnapshot } from './use-lessons'
 
 /**
  * Module-level mutable store so Browse Courses, My Courses, the lesson
  * viewer, and the assessments flow all share one enrollment/progress state
- * across route navigations, without a backend. Scoped to `/member/*` — not
- * shared with the admin `/dashboard/e-learning/*` catalog store.
+ * across route navigations, without a backend. Enrollment/progress itself
+ * is member-only state — not shared with the admin course-catalog store —
+ * but this module reads the shared lesson catalog (use-lessons.ts) so
+ * "next lesson" reflects any admin edits/reordering.
  */
 let enrollments: CourseEnrollment[] = [...initialEnrollments]
 let attempts: AssessmentAttempt[] = [...initialAssessmentAttempts]
@@ -48,7 +50,7 @@ export function isCertificateEligible(enrollment: CourseEnrollment): boolean {
 
 /** The first lesson not yet in completedLessonIds, or the course's first lesson if all are complete. */
 export function getNextLessonId(enrollment: CourseEnrollment): string | undefined {
-  const lessons = courseLessons[enrollment.courseId]?.lessons
+  const lessons = getLessonsSnapshot()[enrollment.courseId]?.lessons
   if (!lessons || lessons.length === 0) return undefined
   const next = lessons.find((l) => !enrollment.completedLessonIds.includes(l.id))
   return (next ?? lessons[0]).id

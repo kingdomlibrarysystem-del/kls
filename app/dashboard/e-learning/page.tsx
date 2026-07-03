@@ -13,8 +13,8 @@ const sections: ELearningSection[] = [
   { icon: <PlusCircle size={20} />,     title: 'Add / Edit Course',    desc: 'Create or update a course in the KLS e-learning catalog.',                href: '/dashboard/e-learning/add' },
   { icon: <BookOpen size={20} />,       title: 'Browse Courses',       desc: 'Explore available courses across all categories and languages.',        href: '/dashboard/e-learning/catalog' },
   { icon: <GraduationCap size={20} />,  title: 'Enrollments',          desc: 'Track member enrollments, status, and course progress.',                  href: '/dashboard/e-learning/enrollments' },
-  { icon: <Video size={20} />,          title: 'Lessons',              desc: 'Access text, video, and file-based lesson content.' },
-  { icon: <ClipboardList size={20} />,  title: 'Quizzes & Exams',      desc: 'Take quizzes and formal examinations linked to your courses.' },
+  { icon: <Video size={20} />,          title: 'Lessons',              desc: 'Manage text, video, and file-based lesson content per course.',           href: '/dashboard/e-learning/lessons' },
+  { icon: <ClipboardList size={20} />,  title: 'Quizzes & Exams',      desc: 'Manage quizzes and formal examinations linked to courses.',               href: '/dashboard/e-learning/quizzes' },
   { icon: <BarChart2 size={20} />,      title: 'My Progress',          desc: 'View completion rates, top performers, and dropoff points per course.',    href: '/dashboard/e-learning/progress' },
   { icon: <Award size={20} />,          title: 'Certificates',         desc: 'View issued certificates and verify by code.',                             href: '/dashboard/e-learning/certificates' },
 ]

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
-import type { TakeableAssessment } from './assessment-data'
+import type { TakeableAssessment } from '../../../../_shared/assessment-data'
 
 interface ResultsScreenProps {
   assessment: TakeableAssessment
