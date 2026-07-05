@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { BookCopy, Search, ScrollText } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -89,7 +90,13 @@ export function KcsPillarView({ pillarKey }: KcsPillarViewProps) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((scroll) => (
-            <div key={scroll.code} className="card card-hover" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Link
+              key={scroll.code}
+              href={`/dashboard/kcs/${pillarKey}/${encodeURIComponent(scroll.code)}`}
+              aria-label={`View details for ${scroll.title}`}
+              className="card card-hover"
+              style={{ display: 'flex', flexDirection: 'column', gap: 6, textDecoration: 'none' }}
+            >
               <div className="flex items-center justify-between">
                 <span className="stat-chip">{scroll.code}</span>
                 <span style={{ fontSize: 9, fontWeight: 700, color: statusConfig[scroll.status].color, background: statusConfig[scroll.status].bg, borderRadius: 4, padding: '1px 6px' }}>
@@ -97,7 +104,7 @@ export function KcsPillarView({ pillarKey }: KcsPillarViewProps) {
                 </span>
               </div>
               <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{scroll.title}</p>
-            </div>
+            </Link>
           ))}
         </div>
       )}

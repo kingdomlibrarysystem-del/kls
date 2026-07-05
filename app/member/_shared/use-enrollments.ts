@@ -6,6 +6,17 @@ import {
   type CourseEnrollment, type AssessmentAttempt, type AssessmentAttemptStatus,
 } from './enrollment-data'
 import { getLessonsSnapshot } from './use-lessons'
+import { courseCatalog } from './course-catalog-data'
+import { issueCertificate } from '@/app/dashboard/e-learning/certificates/_components/use-certificates'
+
+/**
+ * This mock auth system has a single member persona ("John Doe") — see
+ * contexts/auth-context.tsx's mockUsers.member. Certificate issuance needs
+ * a member display name, but this module is a plain store (not a React
+ * component), so it can't call useAuth(); hardcoding the one mock member
+ * name here mirrors how CONTRIBUTOR_NAME is used on the contributor side.
+ */
+const CURRENT_MEMBER_NAME = 'John Doe'
 
 /**
  * Module-level mutable store so Browse Courses, My Courses, the lesson
@@ -73,8 +84,16 @@ export function enrollInCourse(courseId: string, totalLessons: number): CourseEn
   return created
 }
 
-/** Marks a lesson complete for a course's enrollment; auto-flips status to COMPLETED once every lesson is done. */
+/**
+ * Marks a lesson complete for a course's enrollment; auto-flips status to
+ * COMPLETED once every lesson is done, and issues a certificate if that
+ * completion is what flips eligibility to true (e.g. the member already
+ * passed the assessment before finishing the last lesson).
+ */
 export function markLessonComplete(courseId: string, lessonId: string) {
+  const before = enrollments.find((e) => e.courseId === courseId)
+  const wasEligible = !!before && isCertificateEligible(before)
+
   enrollments = enrollments.map((e) => {
     if (e.courseId !== courseId) return e
     if (e.completedLessonIds.includes(lessonId)) return e
@@ -82,17 +101,41 @@ export function markLessonComplete(courseId: string, lessonId: string) {
     const status: CourseEnrollment['status'] = completedLessonIds.length >= e.totalLessons ? 'COMPLETED' : 'ENROLLED'
     return { ...e, completedLessonIds, status }
   })
+
+  const after = enrollments.find((e) => e.courseId === courseId)
+  if (after && !wasEligible && isCertificateEligible(after)) {
+    const course = courseCatalog.find((c) => c.id === courseId)
+    if (course) issueCertificate(CURRENT_MEMBER_NAME, course.title, courseId)
+  }
+
   emitChange()
 }
 
-/** Records an assessment attempt and, if passed, marks the linked course's enrollment eligible for a certificate. */
+/**
+ * Records an assessment attempt and, if passed, marks the linked course's
+ * enrollment eligible for a certificate — and, if that flips eligibility
+ * from false to true, issues the certificate automatically (see
+ * use-certificates.ts's `issueCertificate` docstring for why this is
+ * automatic rather than requiring a separate manual admin approval step).
+ */
 export function recordAssessmentAttempt(assessmentId: string, courseId: string, score: number, totalMarks: number) {
   const status: AssessmentAttemptStatus = totalMarks > 0 && score / totalMarks >= 0.5 ? 'PASSED' : 'FAILED'
   const attempt: AssessmentAttempt = { assessmentId, status, score, totalMarks, takenAt: new Date().toISOString().slice(0, 10) }
   attempts = [attempt, ...attempts.filter((a) => a.assessmentId !== assessmentId)]
+
+  const before = enrollments.find((e) => e.courseId === courseId)
+  const wasEligible = !!before && isCertificateEligible(before)
+
   if (status === 'PASSED') {
     enrollments = enrollments.map((e) => (e.courseId === courseId ? { ...e, assessmentPassed: true } : e))
   }
+
+  const after = enrollments.find((e) => e.courseId === courseId)
+  if (after && !wasEligible && isCertificateEligible(after)) {
+    const course = courseCatalog.find((c) => c.id === courseId)
+    if (course) issueCertificate(CURRENT_MEMBER_NAME, course.title, courseId)
+  }
+
   emitChange()
   return attempt
 }

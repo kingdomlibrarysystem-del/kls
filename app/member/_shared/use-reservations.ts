@@ -44,6 +44,14 @@ export function addReservation(title: string, author: string): Reservation {
   return created
 }
 
+/** Marks a reservation Fulfilled — used when a Ready reservation is converted into a real borrowing. */
+export function fulfillReservation(id: number) {
+  reservations = reservations.map((r) =>
+    r.id === id ? { ...r, status: 'Fulfilled', fulfilled: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) } : r
+  )
+  emitChange()
+}
+
 /** Live-subscribes to the shared reservations store. */
 export function useReservations() {
   return useSyncExternalStore(subscribe, getSnapshot, () => initialReservations)

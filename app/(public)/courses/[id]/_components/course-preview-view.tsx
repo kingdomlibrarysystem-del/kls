@@ -58,7 +58,9 @@ export function CoursePreviewView({ id }: CoursePreviewViewProps) {
     )
   }
 
-  const enrollHref = isAuthenticated ? `/member/courses/${course.id}` : '/auth/login'
+  const enrollHref = isAuthenticated
+    ? `/member/courses/${course.id}`
+    : `/auth/login?redirect=${encodeURIComponent(`/courses/${course.id}`)}`
   const enrollLabel = isAuthenticated ? 'Go to Course' : 'Sign In to Enroll'
 
   return (

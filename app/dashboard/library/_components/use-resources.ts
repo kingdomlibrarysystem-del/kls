@@ -45,3 +45,16 @@ export function archiveResource(id: string) {
 export function useResources() {
   return useSyncExternalStore(subscribe, getSnapshot, () => initialResources)
 }
+
+/**
+ * Finds canonical library resources matching a KCS scroll by title — e.g.
+ * the "Genesis" scroll in the Foundation pillar matches the "Genesis"
+ * Resource record (same title, category "Foundation (KCS-FND)"). Used by
+ * both the admin KCS Map detail pages and the member Kingdom Library
+ * detail pages so "related resources" is one real relationship, not two
+ * separately-implemented lookups. Archived/apocryphal scrolls with no
+ * matching Resource correctly return an empty array — no fabrication.
+ */
+export function findResourcesForScroll(scrollTitle: string, resources: Resource[]): Resource[] {
+  return resources.filter((r) => r.title === scrollTitle && r.status !== 'archived')
+}

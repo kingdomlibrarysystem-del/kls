@@ -1,17 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
+import { CalendarDays, BookOpen, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { Reservation } from './reservations-data'
-import { useReservations } from '../../_shared/use-reservations'
+import { useReservations, fulfillReservation } from '../../_shared/use-reservations'
+import { addBorrowing } from '../../_shared/use-borrowings'
 import { ReservationDetailModal } from './reservation-detail-modal'
 
 /** This member's reservations: active/waiting list plus fulfilled history, each row opening a details modal. */
 export function ReservationsView() {
   const [viewing, setViewing] = useState<Reservation | null>(null)
+  const [borrowError, setBorrowError] = useState('')
   const mockReservations = useReservations()
   const active = mockReservations.filter((r) => r.status !== 'Fulfilled')
   const fulfilled = mockReservations.filter((r) => r.status === 'Fulfilled')
+
+  const handleBorrow = (r: Reservation) => {
+    setBorrowError('')
+    try {
+      if (r.status !== 'Ready') throw new Error('This reservation is not ready to borrow yet.')
+      addBorrowing(r.title, r.author)
+      fulfillReservation(r.id)
+    } catch (error) {
+      setBorrowError(error instanceof Error ? error.message : 'Could not convert this reservation to a borrowing.')
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -30,6 +43,12 @@ export function ReservationsView() {
           </div>
         ))}
       </div>
+
+      {borrowError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
+          <AlertCircle size={13} /> {borrowError}
+        </div>
+      )}
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -58,7 +77,11 @@ export function ReservationsView() {
                 </div>
               </button>
               {r.status === 'Ready' && (
-                <button style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                <button
+                  onClick={() => handleBorrow(r)}
+                  aria-label={`Borrow ${r.title}`}
+                  style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+                >
                   Borrow
                 </button>
               )}

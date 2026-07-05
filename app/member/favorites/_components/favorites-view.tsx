@@ -4,38 +4,34 @@ import { useState, useEffect } from 'react'
 import { Heart, BookOpen, GraduationCap, X } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { initialFavorites, type FavoriteItem } from './favorites-data'
+import { useFavorites, removeFavorite } from '@/app/member/_shared/use-favorites'
+import type { FavoriteItem } from './favorites-data'
 import { FavoriteDetailModal } from './favorite-detail-modal'
 
-/** Simulated network delay before mock favorites become visible. */
+/** Simulated network delay before the shared favorites store's initial snapshot is shown. */
 const LOAD_DELAY_MS = 400
 
 /**
- * Favorites list with a "Remove from favorites" action per item. Removal is
- * local component state only — it does not persist across a reload.
+ * Favorites list with a real "Remove from favorites" action — reads/writes
+ * the shared use-favorites store, so removing here (or favoriting from the
+ * library page) stays in sync across both pages.
  */
 export function FavoritesView() {
   const [loading, setLoading] = useState(true)
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([])
   const [removeError, setRemoveError] = useState('')
   const [viewing, setViewing] = useState<FavoriteItem | null>(null)
+  const favorites = useFavorites()
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setFavorites(initialFavorites)
-      setLoading(false)
-    }, LOAD_DELAY_MS)
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
 
   const handleRemove = (id: string) => {
     setRemoveError('')
     try {
-      setFavorites((prev) => {
-        const exists = prev.some((f) => f.id === id)
-        if (!exists) throw new Error('Favorite not found')
-        return prev.filter((f) => f.id !== id)
-      })
+      if (!favorites.some((f) => f.id === id)) throw new Error('Favorite not found')
+      removeFavorite(id)
     } catch (error) {
       setRemoveError(error instanceof Error ? error.message : 'Could not remove favorite')
     }
