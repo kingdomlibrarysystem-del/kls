@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
+import { useResources } from '@/app/dashboard/library/_components/use-resources'
+import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 import { mockCatalog, languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 
@@ -18,13 +20,21 @@ interface PublicationDetailViewProps {
   id: string
 }
 
-/** Publication detail: cover, description, contributor, language, availability, Borrow/Reserve actions. */
+/**
+ * Publication detail: looks up the book by ID against both the shared
+ * resources store (browse-grid IDs, e.g. '1'-'16') and the publishing
+ * catalog (admin-catalog IDs, e.g. 'cat-001') — the browse grid and the
+ * admin Published Catalog page both link here, using their own ID spaces,
+ * so both must resolve rather than picking one and breaking the other.
+ */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const { isAuthenticated } = useAuth()
+  const resources = useResources()
 
-  const book = mockCatalog.find((b) => b.id === id)
+  const resource = resources.find((r) => r.id === id)
+  const catalogBook = mockCatalog.find((b) => b.id === id)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -44,7 +54,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
     )
   }
 
-  if (!book) {
+  if (!resource && !catalogBook) {
     return (
       <EmptyState
         icon={BookX}
@@ -54,40 +64,58 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
     )
   }
 
+  const title = resource?.title ?? catalogBook!.title
+  const author = resource?.author ?? catalogBook!.contributor
+  const coverImage = resource?.coverImages[0] ?? catalogBook!.coverImages[0]
+  const description = resource?.description ?? catalogBook?.description
+  const bindingType = resource?.bindingType ?? catalogBook!.bindingType
+  const mediaType = resource?.mediaType ?? catalogBook!.mediaType
+  const price = resource?.price ?? catalogBook!.price
+  const quantity = resource ? resource.availableQty : catalogBook!.quantity
+  const available = resource ? resource.availableQty > 0 && resource.status !== 'archived' : !!catalogBook?.available
+  const language = catalogBook ? languageBadgeLabels[catalogBook.language] : resource!.language
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
         <div className="relative w-full h-96 bg-w-200 rounded-lg overflow-hidden">
-          <Image src={book.coverImage} alt={book.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 280px" />
+          <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 280px" />
         </div>
 
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold">
-              {languageBadgeLabels[book.language]}
-            </span>
+            <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold">{language}</span>
             <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-lato font-semibold ${
-              book.available ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              available ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
             }`}>
-              {book.available ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-              {book.available ? 'Available' : 'Unavailable'}
+              {available ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+              {available ? 'Available' : 'Unavailable'}
+            </span>
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold"><BookMarked size={12} /> {bindingTypeLabels[bindingType]}</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold"><Film size={12} /> {mediaTypeLabels[mediaType]}</span>
+          </div>
+
+          <h1 className="font-cinzel text-2xl font-semibold text-w-950 mb-2">{title}</h1>
+          <p className="font-lato text-sm text-w-700 mb-2">
+            by <Link href={`/library?contributor=${encodeURIComponent(author)}`} className="text-w-600 hover:text-w-950 underline">{author}</Link>
+          </p>
+
+          <div className="flex items-center gap-4 mb-4">
+            <span className="font-cinzel text-lg font-bold text-w-600">{price.toLocaleString()} RWF</span>
+            <span className={`flex items-center gap-1 text-sm font-lato ${quantity === 0 ? 'text-red-700 font-semibold' : 'text-w-700'}`}>
+              <Package size={13} /> {quantity} available
             </span>
           </div>
 
-          <h1 className="font-cinzel text-2xl font-semibold text-w-950 mb-2">{book.title}</h1>
-          <p className="font-lato text-sm text-w-700 mb-4">
-            by <Link href={`/library?contributor=${encodeURIComponent(book.contributor)}`} className="text-w-600 hover:text-w-950 underline">{book.contributor}</Link>
-          </p>
-
-          {book.description && (
-            <p className="font-lato text-sm text-w-700 leading-relaxed mb-6">{book.description}</p>
+          {description && (
+            <p className="font-lato text-sm text-w-700 leading-relaxed mb-6">{description}</p>
           )}
 
           {isAuthenticated ? (
             <div className="flex flex-col sm:flex-row gap-3">
               <ElegantButton
                 variant="primary"
-                disabled={!book.available}
+                disabled={!available}
                 onClick={() => setAction('borrow')}
                 className="flex-1 sm:flex-none"
               >
@@ -104,12 +132,12 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           ) : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${book.id}`)}`} className="flex-1 sm:flex-none">
+                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
                   <ElegantButton variant="primary" className="w-full flex items-center justify-center gap-2">
                     <LogIn size={15} /> Sign In to Borrow
                   </ElegantButton>
                 </Link>
-                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${book.id}`)}`} className="flex-1 sm:flex-none">
+                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
                   <ElegantButton variant="outline" className="w-full flex items-center justify-center gap-2">
                     <LogIn size={15} /> Sign In to Reserve
                   </ElegantButton>
@@ -123,7 +151,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={action} bookTitle={book.title} bookAuthor={book.contributor} onClose={() => setAction(null)} />
+      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} onClose={() => setAction(null)} />
     </div>
   )
 }

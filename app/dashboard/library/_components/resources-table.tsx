@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { Eye, Pencil, Archive } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { statusConfig, type Resource } from './resources-data'
+import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from './resources-data'
 
 interface ResourcesTableProps {
   data: Resource[]
@@ -30,7 +30,7 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
       render: (r) => (
         <div className="flex items-center gap-3">
           <div className="relative w-9 h-12 shrink-0 rounded overflow-hidden bg-w-200">
-            <Image src={r.coverImage} alt={r.title} fill className="object-cover" />
+            <Image src={r.coverImages[0]} alt={r.title} fill className="object-cover" />
           </div>
           <div>
             <p className="font-semibold text-w-950 max-w-45 truncate">{r.title}</p>
@@ -53,6 +53,15 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
       },
     },
     { key: 'language', label: 'Lang', sortable: true, render: (r) => <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{r.language}</span> },
+    {
+      key: 'bindingType', label: 'Binding / Media', sortable: true,
+      render: (r) => (
+        <div className="flex flex-wrap gap-1">
+          <span className="px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato">{bindingTypeLabels[r.bindingType]}</span>
+          <span className="px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato">{mediaTypeLabels[r.mediaType]}</span>
+        </div>
+      ),
+    },
     {
       key: 'availableQty', label: 'Stock', sortable: true,
       render: (r) => (

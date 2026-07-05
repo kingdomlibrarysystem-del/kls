@@ -5,7 +5,8 @@ import { PlusCircle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { mockResources, type Resource } from './resources-data'
+import { type Resource } from './resources-data'
+import { useResources, addResource, updateResource, archiveResource } from './use-resources'
 import { ResourcesStats } from './resources-stats'
 import { ResourcesTable } from './resources-table'
 import { ResourceDetailModal } from './resource-detail-modal'
@@ -15,26 +16,25 @@ import { ResourceFormModal } from './resource-form-modal'
 const LOAD_DELAY_MS = 400
 
 /**
- * Book Inventory: full CRUD over the mocked KCS resource list — Create (via
- * modal, appended to local state), Details (existing modal, now wired to
- * Edit), Edit (pre-filled modal writing back to state), soft-Delete
- * (Archive, already functional and left unchanged).
+ * Book Inventory: full CRUD over the shared resources store — Create (via
+ * modal, appended to the store), Details (existing modal, now wired to
+ * Edit), Edit (pre-filled modal writing back to the store), soft-Delete
+ * (Archive, already functional and left unchanged). The public library
+ * browse/detail pages read this same store, so changes here are
+ * immediately visible there.
  */
 export function LibraryView() {
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<Resource[]>([])
   const [selected, setSelected] = useState<Resource | null>(null)
   const [statusFilter, setStatusFilter] = useState<Resource['status'] | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [toast, setToast] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Resource | null>(null)
+  const data = useResources()
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setData(mockResources)
-      setLoading(false)
-    }, LOAD_DELAY_MS)
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
 
@@ -42,7 +42,7 @@ export function LibraryView() {
 
   const handleArchive = (r: Resource) => {
     try {
-      setData((prev) => prev.map((item) => (item.id === r.id ? { ...item, status: 'archived' } : item)))
+      archiveResource(r.id)
       setSelected(null)
       showToast(`"${r.title}" archived.`)
     } catch {
@@ -56,7 +56,7 @@ export function LibraryView() {
   const handleSave = (formData: { title: string; author: string; category: string; isbn: string; totalQty: number }, editingId: string | null) => {
     try {
       if (editingId) {
-        setData((prev) => prev.map((r) => (r.id === editingId ? { ...r, ...formData } : r)))
+        updateResource(editingId, formData)
         showToast(`Updated "${formData.title}".`)
       } else {
         const newResource: Resource = {
@@ -71,11 +71,13 @@ export function LibraryView() {
           price: 0,
           availableQty: formData.totalQty,
           status: 'available',
-          coverImage: '/images/book-A.jpg',
+          coverImages: ['/images/book-A.jpg'],
+          bindingType: 'SOFT',
+          mediaType: 'TEXT',
           description: '',
           tags: [],
         }
-        setData((prev) => [newResource, ...prev])
+        addResource(newResource)
         showToast(`Added "${formData.title}".`)
       }
       setFormOpen(false)

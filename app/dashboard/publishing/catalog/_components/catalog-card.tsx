@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, Eye } from 'lucide-react'
+import { Star, Eye, BookMarked, Film, Package } from 'lucide-react'
 import type { PublishedBook } from './catalog-data'
-import { languageBadgeLabels } from './catalog-data'
+import { languageBadgeLabels, bindingTypeLabels, mediaTypeLabels } from './catalog-data'
 import { toggleFeatured } from './use-catalog'
 
 interface CatalogCardProps {
@@ -19,7 +19,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col group">
       <div className="relative w-full h-56 bg-w-200 overflow-hidden">
         <Image
-          src={book.coverImage}
+          src={book.coverImages[0]}
           alt={book.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -37,7 +37,19 @@ export function CatalogCard({ book }: CatalogCardProps) {
       </div>
       <div className="p-4 flex flex-col gap-1 flex-1">
         <h3 className="font-cinzel text-sm font-semibold text-w-950 leading-snug line-clamp-2">{book.title}</h3>
-        <p className="font-lato text-xs text-w-700 mb-2">by {book.contributor}</p>
+        <p className="font-lato text-xs text-w-700 mb-1">by {book.contributor}</p>
+
+        <div className="flex flex-wrap gap-1 mb-1">
+          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
+          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato"><Film size={10} /> {mediaTypeLabels[book.mediaType]}</span>
+        </div>
+
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-cinzel text-sm font-bold text-w-600">{book.price.toLocaleString()} RWF</span>
+          <span className={`flex items-center gap-1 text-xs font-lato ${book.quantity === 0 ? 'text-red-700' : 'text-w-700'}`}>
+            <Package size={11} /> {book.quantity} in stock
+          </span>
+        </div>
 
         <div className="mt-auto flex items-center gap-1.5">
           <Link

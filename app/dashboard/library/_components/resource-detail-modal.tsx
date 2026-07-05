@@ -1,8 +1,8 @@
 import Image from 'next/image'
-import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy } from 'lucide-react'
+import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { statusConfig, type Resource } from './resources-data'
+import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from './resources-data'
 
 interface ResourceDetailModalProps {
   resource: Resource | null
@@ -29,8 +29,17 @@ export function ResourceDetailModal({ resource, onClose, onEdit, onArchive }: Re
         <div className="flex flex-col md:flex-row gap-6">
           <div className="shrink-0">
             <div className="relative w-40 h-56 rounded-lg overflow-hidden border border-w-300 bg-w-200">
-              <Image src={resource.coverImage} alt={resource.title} fill className="object-cover" />
+              <Image src={resource.coverImages[0]} alt={resource.title} fill className="object-cover" />
             </div>
+            {resource.coverImages.length > 1 && (
+              <div className="flex gap-1.5 mt-2">
+                {resource.coverImages.slice(1).map((src, i) => (
+                  <div key={src} className="relative w-9 h-12 rounded overflow-hidden border border-w-300 bg-w-200">
+                    <Image src={src} alt={`${resource.title} — additional cover ${i + 2}`} fill className="object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className={`mt-3 text-center py-1.5 rounded text-xs font-lato font-semibold border ${statusConfig[resource.status].cls}`}>
               {resource.availableQty} / {resource.totalQty} available
             </div>
@@ -56,6 +65,8 @@ export function ResourceDetailModal({ resource, onClose, onEdit, onArchive }: Re
               <DetailRow icon={<Hash size={13} />} label="ISBN" value={resource.isbn} />
               <DetailRow icon={<Copy size={13} />} label="Publisher" value={resource.publisher} />
               <DetailRow icon={<Layers size={13} />} label="Status" value={statusConfig[resource.status].label} />
+              <DetailRow icon={<BookMarked size={13} />} label="Binding" value={bindingTypeLabels[resource.bindingType]} />
+              <DetailRow icon={<Film size={13} />} label="Media" value={mediaTypeLabels[resource.mediaType]} />
             </div>
 
             {resource.tags.length > 0 && (
