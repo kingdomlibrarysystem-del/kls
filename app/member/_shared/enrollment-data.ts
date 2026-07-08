@@ -16,14 +16,31 @@ export interface CourseEnrollment {
 
 export type AssessmentAttemptStatus = 'PASSED' | 'FAILED'
 
+/**
+ * Review lifecycle, independent of pass/fail: AUTO_GRADED means every
+ * question was auto-gradable (no OPEN questions) so `status`/`score` are
+ * final at submission time. PENDING_REVIEW means at least one OPEN answer
+ * still needs a manager's score — `score` is a partial total (auto-gradable
+ * questions only) and `status` is not yet meaningful for pass/fail purposes
+ * until a manager grades it and flips this to GRADED.
+ */
+export type AttemptStatus = 'AUTO_GRADED' | 'PENDING_REVIEW' | 'GRADED'
+
 export interface AssessmentAttempt {
   /** Matches TakeableAssessment.id from assessment-data.ts. */
   assessmentId: string
+  /** Pass/fail outcome. Only authoritative once reviewStatus !== 'PENDING_REVIEW'. */
   status: AssessmentAttemptStatus
+  reviewStatus: AttemptStatus
+  /** Auto-gradable score while PENDING_REVIEW; final score once GRADED/AUTO_GRADED. */
   score: number
   totalMarks: number
   /** ISO date, stamped at submission time. */
   takenAt: string
+  /** Raw OPEN-question answer text, keyed by Question.id — the data a manager reviews. */
+  openAnswers?: Record<string, string>
+  /** Manager-entered per-question scores for OPEN questions, keyed by Question.id — populated once GRADED. */
+  openScores?: Record<string, number>
 }
 
 /**
@@ -40,6 +57,6 @@ export const initialEnrollments: CourseEnrollment[] = [
 
 /** Seed attempt history so Assessments' history section isn't empty on first load. */
 export const initialAssessmentAttempts: AssessmentAttempt[] = [
-  { assessmentId: '1', status: 'PASSED', score: 17, totalMarks: 20, takenAt: '2026-06-20' },
-  { assessmentId: '3', status: 'PASSED', score: 14, totalMarks: 20, takenAt: '2026-06-15' },
+  { assessmentId: '1', status: 'PASSED', reviewStatus: 'AUTO_GRADED', score: 17, totalMarks: 20, takenAt: '2026-06-20' },
+  { assessmentId: '3', status: 'PASSED', reviewStatus: 'AUTO_GRADED', score: 14, totalMarks: 20, takenAt: '2026-06-15' },
 ]

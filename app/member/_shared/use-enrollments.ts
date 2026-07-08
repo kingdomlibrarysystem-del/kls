@@ -1,10 +1,7 @@
 'use client'
 
 import { useSyncExternalStore } from 'react'
-import {
-  initialEnrollments, initialAssessmentAttempts,
-  type CourseEnrollment, type AssessmentAttempt, type AssessmentAttemptStatus,
-} from './enrollment-data'
+import { initialEnrollments, type CourseEnrollment, type AssessmentAttemptStatus } from './enrollment-data'
 import { getLessonsSnapshot } from './use-lessons'
 import { courseCatalog } from './course-catalog-data'
 import { issueCertificate } from '@/app/dashboard/e-learning/certificates/_components/use-certificates'
@@ -27,7 +24,6 @@ const CURRENT_MEMBER_NAME = 'John Doe'
  * "next lesson" reflects any admin edits/reordering.
  */
 let enrollments: CourseEnrollment[] = [...initialEnrollments]
-let attempts: AssessmentAttempt[] = [...initialAssessmentAttempts]
 const listeners = new Set<() => void>()
 
 function emitChange() {
@@ -41,10 +37,6 @@ function subscribe(listener: () => void) {
 
 function getEnrollmentsSnapshot() {
   return enrollments
-}
-
-function getAttemptsSnapshot() {
-  return attempts
 }
 
 /** Percentage complete, derived from completedLessonIds — never stored directly. */
@@ -112,17 +104,16 @@ export function markLessonComplete(courseId: string, lessonId: string) {
 }
 
 /**
- * Records an assessment attempt and, if passed, marks the linked course's
- * enrollment eligible for a certificate — and, if that flips eligibility
- * from false to true, issues the certificate automatically (see
- * use-certificates.ts's `issueCertificate` docstring for why this is
- * automatic rather than requiring a separate manual admin approval step).
+ * Re-flips `assessmentPassed` on a course's enrollment when a PASSED
+ * attempt lands, and issues a certificate the moment that flips eligibility
+ * from false to true (see use-certificates.ts's `issueCertificate`
+ * docstring for why issuance is automatic rather than a manual admin
+ * approval step). Exported for use-assessment-attempts.ts, which calls this
+ * from both the auto-graded path and the post-review grading path — pass/
+ * fail can become final at either point depending on whether the attempt
+ * had OPEN questions.
  */
-export function recordAssessmentAttempt(assessmentId: string, courseId: string, score: number, totalMarks: number) {
-  const status: AssessmentAttemptStatus = totalMarks > 0 && score / totalMarks >= 0.5 ? 'PASSED' : 'FAILED'
-  const attempt: AssessmentAttempt = { assessmentId, status, score, totalMarks, takenAt: new Date().toISOString().slice(0, 10) }
-  attempts = [attempt, ...attempts.filter((a) => a.assessmentId !== assessmentId)]
-
+export function applyAttemptOutcome(courseId: string, status: AssessmentAttemptStatus) {
   const before = enrollments.find((e) => e.courseId === courseId)
   const wasEligible = !!before && isCertificateEligible(before)
 
@@ -135,17 +126,10 @@ export function recordAssessmentAttempt(assessmentId: string, courseId: string, 
     const course = courseCatalog.find((c) => c.id === courseId)
     if (course) issueCertificate(CURRENT_MEMBER_NAME, course.title, courseId)
   }
-
   emitChange()
-  return attempt
 }
 
 /** Live-subscribes to the shared enrollment store. */
 export function useEnrollments() {
   return useSyncExternalStore(subscribe, getEnrollmentsSnapshot, () => initialEnrollments)
-}
-
-/** Live-subscribes to the shared assessment-attempt history. */
-export function useAssessmentAttempts() {
-  return useSyncExternalStore(subscribe, getAttemptsSnapshot, () => initialAssessmentAttempts)
 }

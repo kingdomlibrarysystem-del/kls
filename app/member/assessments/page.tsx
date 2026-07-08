@@ -5,7 +5,7 @@ import { ClipboardList, CheckCircle2, XCircle, Clock, FileText } from "lucide-re
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { courseCatalog } from "../_shared/course-catalog-data";
-import { useAssessmentAttempts } from "../_shared/use-enrollments";
+import { useAssessmentAttempts } from "../_shared/use-assessment-attempts";
 import { useAssessmentCatalog } from "../_shared/use-assessments";
 
 /** Simulated network delay before the shared assessment-attempt store's initial snapshot is shown. */
@@ -32,10 +32,12 @@ export default function AssessmentsPage() {
 
   const takenIds = new Set(attempts.map((a) => a.assessmentId));
   const pending = Object.values(takeableAssessments).filter((a) => !takenIds.has(a.id));
-  const passed = attempts.filter((a) => a.status === "PASSED");
-  const failed = attempts.filter((a) => a.status === "FAILED");
-  const avgScore = passed.length + failed.length > 0
-    ? Math.round(attempts.reduce((s, a) => s + (a.totalMarks > 0 ? (a.score / a.totalMarks) * 100 : 0), 0) / attempts.length)
+  const underReview = attempts.filter((a) => a.reviewStatus === "PENDING_REVIEW");
+  const decided = attempts.filter((a) => a.reviewStatus !== "PENDING_REVIEW");
+  const passed = decided.filter((a) => a.status === "PASSED");
+  const failed = decided.filter((a) => a.status === "FAILED");
+  const avgScore = decided.length > 0
+    ? Math.round(decided.reduce((s, a) => s + (a.totalMarks > 0 ? (a.score / a.totalMarks) * 100 : 0), 0) / decided.length)
     : 0;
 
   const courseTitleFor = (assessmentId: string) => {
@@ -55,11 +57,12 @@ export default function AssessmentsPage() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4" style={{ display: "grid", gap: 10 }}>
+      <div className="grid grid-cols-2 md:grid-cols-5" style={{ display: "grid", gap: 10 }}>
         {[
           { icon: <ClipboardList size={16} />, label: "Total Taken", value: attempts.length.toString(), color: "var(--text-primary)" },
           { icon: <CheckCircle2 size={16} />, label: "Passed", value: passed.length.toString(), color: "var(--green-light)" },
           { icon: <XCircle size={16} />, label: "Failed", value: failed.length.toString(), color: "var(--red-light)" },
+          { icon: <Clock size={16} />, label: "Under Review", value: underReview.length.toString(), color: "var(--gold)" },
           { icon: <FileText size={16} />, label: "Avg Score", value: `${avgScore}%`, color: "var(--gold)" },
         ].map((s) => (
           <div key={s.label} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -105,25 +108,29 @@ export default function AssessmentsPage() {
           <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>
             Assessment History
           </div>
-          {attempts.map((a) => (
-            <div key={a.assessmentId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {a.status === "PASSED" ? <CheckCircle2 size={16} color="var(--green-light)" /> : <XCircle size={16} color="var(--red-light)" />}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{takeableAssessments[a.assessmentId]?.title ?? a.assessmentId}</div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{courseTitleFor(a.assessmentId)} • {a.takenAt}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: a.status === "PASSED" ? "var(--green-light)" : "var(--red-light)" }}>
-                  {a.score}/{a.totalMarks}
+          {attempts.map((a) => {
+            const isPending = a.reviewStatus === "PENDING_REVIEW";
+            const statusColor = isPending ? "var(--gold)" : a.status === "PASSED" ? "var(--green-light)" : "var(--red-light)";
+            return (
+              <div key={a.assessmentId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px", borderBottom: "1px solid var(--border-light)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {isPending ? <Clock size={16} color={statusColor} /> : a.status === "PASSED" ? <CheckCircle2 size={16} color={statusColor} /> : <XCircle size={16} color={statusColor} />}
                 </div>
-                <div style={{ fontSize: 9, color: a.status === "PASSED" ? "var(--green-light)" : "var(--red-light)" }}>
-                  {a.status === "PASSED" ? "Passed" : "Failed"}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{takeableAssessments[a.assessmentId]?.title ?? a.assessmentId}</div>
+                  <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{courseTitleFor(a.assessmentId)} • {a.takenAt}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: statusColor }}>
+                    {a.score}/{a.totalMarks}
+                  </div>
+                  <div style={{ fontSize: 9, color: statusColor }}>
+                    {isPending ? "Under Review" : a.status === "PASSED" ? "Passed" : "Failed"}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : pending.length === 0 ? (
         <EmptyState

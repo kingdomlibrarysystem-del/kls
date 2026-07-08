@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ClipboardList, Eye, Pencil, Trash2, PlusCircle } from 'lucide-react'
+import Link from 'next/link'
+import { ClipboardList, ClipboardCheck, Eye, Pencil, Trash2, PlusCircle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAssessmentCatalog } from '@/app/member/_shared/use-assessments'
+import { useAssessmentAttempts } from '@/app/member/_shared/use-assessment-attempts'
 import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
 import { kindConfig, type TakeableAssessment, type AssessmentKind } from './quizzes-config'
 import { AddQuizModal } from './add-quiz-modal'
@@ -45,6 +47,8 @@ export function QuizzesView() {
   const [deleting, setDeleting] = useState<TakeableAssessment | null>(null)
 
   const catalog = useAssessmentCatalog()
+  const attempts = useAssessmentAttempts()
+  const pendingReviewCount = attempts.filter((a) => a.reviewStatus === 'PENDING_REVIEW').length
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -118,7 +122,16 @@ export function QuizzesView() {
 
   return (
     <div>
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end items-center gap-2 mb-3">
+        <Link
+          href="/dashboard/e-learning/quizzes/review"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-lato font-semibold border border-w-400 rounded text-w-700 hover:bg-w-100 transition-colors"
+        >
+          <ClipboardCheck size={15} /> Review Queue
+          {pendingReviewCount > 0 && (
+            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">{pendingReviewCount}</span>
+          )}
+        </Link>
         <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
           <PlusCircle size={15} /> Add Quiz / Exam
         </ElegantButton>

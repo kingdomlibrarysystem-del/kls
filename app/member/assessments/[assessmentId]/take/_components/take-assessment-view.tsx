@@ -7,8 +7,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { CountdownTimer } from './countdown-timer'
 import { QuestionNavigator } from './question-navigator'
 import { ResultsScreen } from './results-screen'
-import { recordAssessmentAttempt } from '../../../../_shared/use-enrollments'
+import { recordAssessmentAttempt, type SubmittedAnswer } from '../../../../_shared/use-assessment-attempts'
 import { useAssessmentCatalog } from '../../../../_shared/use-assessments'
+import type { AssessmentAttempt } from '../../../../_shared/enrollment-data'
 
 /** Simulated network delay before the mock assessment becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -17,35 +18,23 @@ interface TakeAssessmentViewProps {
   assessmentId: string
 }
 
-interface AnswerState {
-  optionIndex?: number
-  optionIndices?: number[]
-  openText?: string
-}
-
-/** True if two option-index sets contain exactly the same values, order-independent. */
-function isExactSetMatch(submitted: number[] | undefined, correct: number[] | undefined): boolean {
-  if (!correct || correct.length === 0) return false
-  if (!submitted || submitted.length !== correct.length) return false
-  const correctSet = new Set(correct)
-  return submitted.every((i) => correctSet.has(i))
-}
-
 /**
  * Quiz/exam-taking flow: question-by-question navigation, an exam-only
- * countdown timer that auto-submits at zero, and a results screen scoring
- * single-/multi-select questions immediately (open-ended questions still
- * contribute 0 and are marked pending review — Phase B adds real grading).
+ * countdown timer that auto-submits at zero, and a results screen that
+ * reflects the recorded attempt's real review status — auto-graded
+ * single-/multi-select questions score immediately, while any attempt
+ * containing an OPEN question is recorded as PENDING_REVIEW (its answer
+ * text persisted, not discarded) until a manager grades it.
  */
 export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [loading, setLoading] = useState(true)
   const [questionIndex, setQuestionIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, AnswerState>>({})
+  const [answers, setAnswers] = useState<Record<string, SubmittedAnswer>>({})
   const [secondsRemaining, setSecondsRemaining] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [autoSubmitted, setAutoSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [result, setResult] = useState<{ score: number; totalMarks: number } | null>(null)
+  const [result, setResult] = useState<AssessmentAttempt | null>(null)
 
   const assessmentCatalog = useAssessmentCatalog()
   const assessment = assessmentCatalog[assessmentId]
@@ -63,19 +52,8 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const handleSubmit = useCallback((expired: boolean) => {
     try {
       if (!assessment) throw new Error('Assessment not found')
-      const totalMarks = assessment.questions.reduce((sum, q) => sum + q.marks, 0)
-      const score = assessment.questions.reduce((sum, q) => {
-        const answer = answers[q.id]
-        if (q.type === 'SINGLE_SELECT') {
-          return answer?.optionIndex === q.correctOptionIndex ? sum + q.marks : sum
-        }
-        if (q.type === 'MULTI_SELECT') {
-          return isExactSetMatch(answer?.optionIndices, q.correctOptionIndices) ? sum + q.marks : sum
-        }
-        return sum
-      }, 0)
-      recordAssessmentAttempt(assessment.id, assessment.courseId, score, totalMarks)
-      setResult({ score, totalMarks })
+      const attempt = recordAssessmentAttempt(assessment.id, assessment.courseId, assessment.questions, answers)
+      setResult(attempt)
       setAutoSubmitted(expired)
       setSubmitted(true)
     } catch (error) {
@@ -97,7 +75,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   }
 
   if (submitted && result) {
-    return <ResultsScreen assessment={assessment} score={result.score} totalMarks={result.totalMarks} autoSubmitted={autoSubmitted} />
+    return <ResultsScreen assessment={assessment} attempt={result} autoSubmitted={autoSubmitted} />
   }
 
   const question = assessment.questions[questionIndex]
