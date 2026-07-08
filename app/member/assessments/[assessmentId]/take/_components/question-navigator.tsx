@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Send } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, CheckSquare, Square } from 'lucide-react'
 import type { Question } from '../../../../_shared/assessment-data'
 
 interface QuestionNavigatorProps {
@@ -6,8 +6,10 @@ interface QuestionNavigatorProps {
   index: number
   total: number
   selectedOptionIndex?: number
+  selectedOptionIndices?: number[]
   openAnswer?: string
   onSelectOption: (optionIndex: number) => void
+  onToggleMultiOption: (optionIndex: number) => void
   onOpenAnswerChange: (value: string) => void
   onPrev: () => void
   onNext: () => void
@@ -16,8 +18,8 @@ interface QuestionNavigatorProps {
 
 /** Renders one question at a time with Previous/Next navigation and a Submit action on the last question. */
 export function QuestionNavigator({
-  question, index, total, selectedOptionIndex, openAnswer,
-  onSelectOption, onOpenAnswerChange, onPrev, onNext, onSubmit,
+  question, index, total, selectedOptionIndex, selectedOptionIndices, openAnswer,
+  onSelectOption, onToggleMultiOption, onOpenAnswerChange, onPrev, onNext, onSubmit,
 }: QuestionNavigatorProps) {
   const isLast = index === total - 1
 
@@ -26,9 +28,14 @@ export function QuestionNavigator({
       <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
         Question {index + 1} of {total} · {question.marks} marks
       </p>
+      {question.context && (
+        <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 10, padding: '8px 10px', background: 'var(--bg-section)', borderRadius: 6 }}>
+          {question.context}
+        </p>
+      )}
       <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>{question.text}</p>
 
-      {question.type === 'MCQ' && question.options && (
+      {question.type === 'SINGLE_SELECT' && question.options && (
         <div role="radiogroup" aria-label={`Answer options for question ${index + 1}`} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
           {question.options.map((option, optionIndex) => {
             const selected = selectedOptionIndex === optionIndex
@@ -50,6 +57,37 @@ export function QuestionNavigator({
                   transition: 'all 0.15s',
                 }}
               >
+                {option}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {question.type === 'MULTI_SELECT' && question.options && (
+        <div role="group" aria-label={`Answer options for question ${index + 1} — select all that apply`} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          {question.options.map((option, optionIndex) => {
+            const selected = (selectedOptionIndices ?? []).includes(optionIndex)
+            return (
+              <button
+                key={option}
+                role="checkbox"
+                aria-checked={selected}
+                onClick={() => onToggleMultiOption(optionIndex)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  textAlign: 'left',
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  border: `1px solid ${selected ? 'var(--gold)' : 'var(--border)'}`,
+                  background: selected ? 'rgba(212,168,67,0.1)' : 'var(--bg-card)',
+                  color: selected ? 'var(--gold)' : 'var(--text-secondary)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {selected ? <CheckSquare size={14} /> : <Square size={14} />}
                 {option}
               </button>
             )

@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { emptyQuestion, type QuizFormData } from './quiz-form-schema'
+import { QuestionAnswerFields } from './question-answer-fields'
 
 interface QuestionBuilderProps {
   control: Control<QuizFormData>
@@ -14,18 +15,15 @@ interface QuestionBuilderProps {
 }
 
 /**
- * Dynamic MCQ question builder shared by Add and Edit quiz/exam forms —
- * at minimum question text + answer options per assessment-data.ts's shape.
- * Open-ended questions aren't supported by this builder yet; only MCQ,
- * which is the format this task's minimum bar calls for.
+ * Dynamic question builder shared by Add and Edit quiz/exam forms. Each
+ * question picks a type (single-select, multi-select, open-ended); the
+ * answer-input area below the text/context fields switches shape per type
+ * via `QuestionAnswerFields`. Open-ended questions intentionally have no
+ * correct-answer input — they aren't auto-gradeable yet (Phase B).
  */
 export function QuestionBuilder({ control, register, setValue, errors }: QuestionBuilderProps) {
   const { fields, append, remove } = useFieldArray({ control, name: 'questions' })
   const watchedQuestions = useWatch({ control, name: 'questions' })
-
-  const setCorrectOption = (qIndex: number, oIndex: number) => {
-    setValue(`questions.${qIndex}.correctOptionIndex`, oIndex, { shouldValidate: true })
-  }
 
   return (
     <div className="space-y-3">
@@ -41,6 +39,31 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
             )}
           </div>
 
+          <div>
+            <FieldLabel htmlFor={`question-${qIndex}-type`}>Question type</FieldLabel>
+            <select
+              id={`question-${qIndex}-type`}
+              className="w-full px-3 py-2 font-lato text-xs border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              {...register(`questions.${qIndex}.type`)}
+            >
+              <option value="SINGLE_SELECT">Single-select</option>
+              <option value="MULTI_SELECT">Multi-select</option>
+              <option value="OPEN">Open-ended</option>
+            </select>
+          </div>
+
+          <div>
+            <FieldLabel htmlFor={`question-${qIndex}-context`}>Scenario / context (optional)</FieldLabel>
+            <textarea
+              id={`question-${qIndex}-context`}
+              rows={2}
+              placeholder="Longer prompt or scenario shown above the question — leave blank for a plain question"
+              aria-label={`Question ${qIndex + 1} scenario context`}
+              className="w-full px-3 py-2 font-lato text-xs border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none resize-vertical"
+              {...register(`questions.${qIndex}.context`)}
+            />
+          </div>
+
           <FormInput
             placeholder="Question text"
             aria-label={`Question ${qIndex + 1} text`}
@@ -48,26 +71,15 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
             {...register(`questions.${qIndex}.text`)}
           />
 
-          <div className="space-y-1.5">
-            {[0, 1, 2, 3].map((oIndex) => (
-              <div key={oIndex} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name={`question-${qIndex}-correct`}
-                  aria-label={`Mark option ${oIndex + 1} as correct for question ${qIndex + 1}`}
-                  checked={watchedQuestions?.[qIndex]?.correctOptionIndex === oIndex}
-                  onChange={() => setCorrectOption(qIndex, oIndex)}
-                />
-                <FormInput
-                  placeholder={`Option ${oIndex + 1}${oIndex >= 2 ? ' (optional)' : ''}`}
-                  aria-label={`Question ${qIndex + 1} option ${oIndex + 1}`}
-                  className="flex-1"
-                  {...register(`questions.${qIndex}.options.${oIndex}`)}
-                />
-              </div>
-            ))}
-          </div>
-          {errors.questions?.[qIndex]?.options && <p className="text-red-600 text-xs font-lato">{errors.questions[qIndex]?.options?.message}</p>}
+          <QuestionAnswerFields
+            qIndex={qIndex}
+            type={watchedQuestions?.[qIndex]?.type ?? 'SINGLE_SELECT'}
+            correctOptionIndex={watchedQuestions?.[qIndex]?.correctOptionIndex}
+            correctOptionIndices={watchedQuestions?.[qIndex]?.correctOptionIndices}
+            register={register}
+            setValue={setValue}
+            errors={errors}
+          />
 
           <div className="w-32">
             <FieldLabel htmlFor={`question-${qIndex}-marks`}>Marks</FieldLabel>

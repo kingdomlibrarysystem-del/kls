@@ -40,9 +40,12 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         kind: assessment.kind,
         durationMinutes: assessment.durationSeconds ? Math.round(assessment.durationSeconds / 60) : undefined,
         questions: assessment.questions.map((q) => ({
+          type: q.type,
           text: q.text,
+          context: q.context ?? '',
           options: q.options && q.options.length > 0 ? [...q.options, '', '', '', ''].slice(0, 4) : ['', '', '', ''],
           correctOptionIndex: q.correctOptionIndex ?? 0,
+          correctOptionIndices: q.correctOptionIndices ?? [],
           marks: q.marks,
         })),
       })
@@ -60,9 +63,11 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         questions: data.questions.map((q, i) => ({
           id: assessment.questions[i]?.id ?? `q${i + 1}`,
           text: q.text,
-          type: 'MCQ',
-          options: q.options.filter((o) => o.trim().length > 0),
-          correctOptionIndex: q.correctOptionIndex,
+          type: q.type,
+          context: q.context?.trim() ? q.context : undefined,
+          options: q.type === 'OPEN' ? undefined : q.options?.filter((o) => o.trim().length > 0),
+          correctOptionIndex: q.type === 'SINGLE_SELECT' ? q.correctOptionIndex : undefined,
+          correctOptionIndices: q.type === 'MULTI_SELECT' ? q.correctOptionIndices : undefined,
           marks: q.marks,
         })),
       })

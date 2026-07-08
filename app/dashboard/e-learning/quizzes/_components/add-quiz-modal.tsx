@@ -43,9 +43,11 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
         questions: data.questions.map((q, i) => ({
           id: `q${i + 1}`,
           text: q.text,
-          type: 'MCQ',
-          options: q.options.filter((o) => o.trim().length > 0),
-          correctOptionIndex: q.correctOptionIndex,
+          type: q.type,
+          context: q.context?.trim() ? q.context : undefined,
+          options: q.type === 'OPEN' ? undefined : q.options?.filter((o) => o.trim().length > 0),
+          correctOptionIndex: q.type === 'SINGLE_SELECT' ? q.correctOptionIndex : undefined,
+          correctOptionIndices: q.type === 'MULTI_SELECT' ? q.correctOptionIndices : undefined,
           marks: q.marks,
         })),
       })

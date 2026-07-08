@@ -32,15 +32,19 @@ export function QuizDetailModal({ assessment, onClose }: QuizDetailModalProps) {
           <div className="space-y-2">
             {assessment.questions.map((q, i) => (
               <div key={q.id} className="bg-w-100 border border-w-300 rounded p-3">
+                {q.context && <p className="text-xs text-w-600 italic mb-1.5">{q.context}</p>}
                 <p className="text-xs font-semibold text-w-950 mb-1.5">Q{i + 1}. {q.text} <span className="text-w-600 font-normal">({q.marks} marks)</span></p>
-                {q.type === 'MCQ' && q.options ? (
+                {(q.type === 'SINGLE_SELECT' || q.type === 'MULTI_SELECT') && q.options ? (
                   <ul className="space-y-1">
-                    {q.options.map((opt, oIndex) => (
-                      <li key={oIndex} className={`flex items-center gap-1.5 text-xs ${oIndex === q.correctOptionIndex ? 'text-green-700 font-semibold' : 'text-w-700'}`}>
-                        {oIndex === q.correctOptionIndex ? <CheckCircle2 size={12} /> : <Circle size={12} />}
-                        {opt}
-                      </li>
-                    ))}
+                    {q.options.map((opt, oIndex) => {
+                      const isCorrect = q.type === 'SINGLE_SELECT' ? oIndex === q.correctOptionIndex : (q.correctOptionIndices ?? []).includes(oIndex)
+                      return (
+                        <li key={oIndex} className={`flex items-center gap-1.5 text-xs ${isCorrect ? 'text-green-700 font-semibold' : 'text-w-700'}`}>
+                          {isCorrect ? <CheckCircle2 size={12} /> : <Circle size={12} />}
+                          {opt}
+                        </li>
+                      )
+                    })}
                   </ul>
                 ) : (
                   <p className="text-xs text-w-600 italic">Open-ended — requires manual review.</p>

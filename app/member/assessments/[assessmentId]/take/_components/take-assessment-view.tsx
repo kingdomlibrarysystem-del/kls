@@ -19,13 +19,23 @@ interface TakeAssessmentViewProps {
 
 interface AnswerState {
   optionIndex?: number
+  optionIndices?: number[]
   openText?: string
+}
+
+/** True if two option-index sets contain exactly the same values, order-independent. */
+function isExactSetMatch(submitted: number[] | undefined, correct: number[] | undefined): boolean {
+  if (!correct || correct.length === 0) return false
+  if (!submitted || submitted.length !== correct.length) return false
+  const correctSet = new Set(correct)
+  return submitted.every((i) => correctSet.has(i))
 }
 
 /**
  * Quiz/exam-taking flow: question-by-question navigation, an exam-only
  * countdown timer that auto-submits at zero, and a results screen scoring
- * MCQs immediately (open-ended questions are marked pending review).
+ * single-/multi-select questions immediately (open-ended questions still
+ * contribute 0 and are marked pending review — Phase B adds real grading).
  */
 export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [loading, setLoading] = useState(true)
@@ -55,9 +65,14 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
       if (!assessment) throw new Error('Assessment not found')
       const totalMarks = assessment.questions.reduce((sum, q) => sum + q.marks, 0)
       const score = assessment.questions.reduce((sum, q) => {
-        if (q.type !== 'MCQ') return sum
         const answer = answers[q.id]
-        return answer?.optionIndex === q.correctOptionIndex ? sum + q.marks : sum
+        if (q.type === 'SINGLE_SELECT') {
+          return answer?.optionIndex === q.correctOptionIndex ? sum + q.marks : sum
+        }
+        if (q.type === 'MULTI_SELECT') {
+          return isExactSetMatch(answer?.optionIndices, q.correctOptionIndices) ? sum + q.marks : sum
+        }
+        return sum
       }, 0)
       recordAssessmentAttempt(assessment.id, assessment.courseId, score, totalMarks)
       setResult({ score, totalMarks })
@@ -111,8 +126,14 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
         index={questionIndex}
         total={assessment.questions.length}
         selectedOptionIndex={answers[question.id]?.optionIndex}
+        selectedOptionIndices={answers[question.id]?.optionIndices}
         openAnswer={answers[question.id]?.openText}
         onSelectOption={(optionIndex) => setAnswers((prev) => ({ ...prev, [question.id]: { ...prev[question.id], optionIndex } }))}
+        onToggleMultiOption={(optionIndex) => setAnswers((prev) => {
+          const current = prev[question.id]?.optionIndices ?? []
+          const next = current.includes(optionIndex) ? current.filter((i) => i !== optionIndex) : [...current, optionIndex]
+          return { ...prev, [question.id]: { ...prev[question.id], optionIndices: next } }
+        })}
         onOpenAnswerChange={(value) => setAnswers((prev) => ({ ...prev, [question.id]: { ...prev[question.id], openText: value } }))}
         onPrev={() => setQuestionIndex((i) => Math.max(0, i - 1))}
         onNext={() => setQuestionIndex((i) => Math.min(assessment.questions.length - 1, i + 1))}
