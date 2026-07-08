@@ -1,7 +1,7 @@
 'use client'
 
 import { useSyncExternalStore } from 'react'
-import { initialTakeableAssessments, type TakeableAssessment, type Question } from './assessment-data'
+import { initialTakeableAssessments, type TakeableAssessment, type Question, type ProjectSubmissionFormat } from './assessment-data'
 
 /**
  * Module-level mutable store so the member take-assessment flow and the
@@ -40,6 +40,10 @@ export interface AddAssessmentInput {
   courseId: string
   durationSeconds?: number
   questions: Question[]
+  /** PROJECT only. */
+  brief?: string
+  submissionFormat?: ProjectSubmissionFormat
+  projectMarks?: number
 }
 
 /** Creates a new quiz/exam and adds it to the shared catalog. */

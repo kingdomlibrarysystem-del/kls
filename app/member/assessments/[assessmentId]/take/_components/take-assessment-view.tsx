@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { CountdownTimer } from './countdown-timer'
 import { QuestionNavigator } from './question-navigator'
 import { ResultsScreen } from './results-screen'
+import { ProjectSubmissionView } from './project-submission-view'
 import { recordAssessmentAttempt, type SubmittedAnswer } from '../../../../_shared/use-assessment-attempts'
 import { useAssessmentCatalog } from '../../../../_shared/use-assessments'
 import type { AssessmentAttempt } from '../../../../_shared/enrollment-data'
@@ -19,12 +20,16 @@ interface TakeAssessmentViewProps {
 }
 
 /**
- * Quiz/exam-taking flow: question-by-question navigation, an exam-only
- * countdown timer that auto-submits at zero, and a results screen that
- * reflects the recorded attempt's real review status — auto-graded
- * single-/multi-select questions score immediately, while any attempt
- * containing an OPEN question is recorded as PENDING_REVIEW (its answer
- * text persisted, not discarded) until a manager grades it.
+ * Entry point for taking any assessment kind. QUIZ/EXAM render
+ * question-by-question navigation (with an exam-only countdown timer that
+ * auto-submits at zero); PROJECT branches early to `ProjectSubmissionView`
+ * — a single brief + one submission field, never touching
+ * `QuestionNavigator`/`CountdownTimer` at all, since a project has no
+ * question list and is never timed. The results screen reflects the
+ * recorded attempt's real review status in all cases: auto-graded single-/
+ * multi-select questions score immediately, while any attempt containing
+ * an OPEN question or any PROJECT submission is recorded as PENDING_REVIEW
+ * (its answer text persisted, not discarded) until a manager grades it.
  */
 export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [loading, setLoading] = useState(true)
@@ -76,6 +81,10 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
 
   if (submitted && result) {
     return <ResultsScreen assessment={assessment} attempt={result} autoSubmitted={autoSubmitted} />
+  }
+
+  if (assessment.kind === 'PROJECT') {
+    return <ProjectSubmissionView assessment={assessment} onSubmitted={(attempt) => { setResult(attempt); setSubmitted(true) }} />
   }
 
   const question = assessment.questions[questionIndex]

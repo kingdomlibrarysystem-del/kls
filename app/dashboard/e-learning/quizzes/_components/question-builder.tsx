@@ -102,7 +102,7 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
       >
         <Plus size={13} /> Add Question
       </button>
-      {errors.questions?.root && <p className="text-red-600 text-xs font-lato">{errors.questions.root.message}</p>}
+      {errors.questions?.message && <p className="text-red-600 text-xs font-lato">{errors.questions.message}</p>}
     </div>
   )
 }

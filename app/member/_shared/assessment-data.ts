@@ -1,5 +1,23 @@
-/** Assessment kind, per kls-product-spec Task 6.4/6.5 — only exams are timed. */
-export type AssessmentKind = 'QUIZ' | 'EXAM'
+/**
+ * Assessment kind, per kls-product-spec Task 6.4/6.5 — only exams are
+ * timed. PROJECT is a hackathon-style, question-less assessment: a single
+ * brief the member submits a text/link response to, always reviewed
+ * manually (see `brief`/`submissionFormat` below and use-assessment-
+ * attempts.ts's PROJECT branch — there's no correct answer to auto-grade
+ * against, unlike SINGLE_SELECT/MULTI_SELECT, or even OPEN which still
+ * grades against a per-question mark).
+ */
+export type AssessmentKind = 'QUIZ' | 'EXAM' | 'PROJECT'
+
+/** Shape the member's PROJECT submission must take — determines which input the submission view renders. */
+export type ProjectSubmissionFormat = 'TEXT' | 'LINK' | 'FILE_REF'
+
+/** Shared by the admin authoring form and the member submission view so both describe formats identically. */
+export const projectSubmissionFormatLabels: Record<ProjectSubmissionFormat, string> = {
+  TEXT: 'Free text',
+  LINK: 'Link (URL)',
+  FILE_REF: 'File reference',
+}
 
 /**
  * Question type, per kls-product-spec Task 6.4 / Prisma `Question.type`.
@@ -32,7 +50,14 @@ export interface TakeableAssessment {
   courseId: string
   /** Countdown duration in seconds — only meaningful when `kind === 'EXAM'`. */
   durationSeconds?: number
+  /** Empty for PROJECT — a project assessment has no per-question structure at all. */
   questions: Question[]
+  /** PROJECT only — the hackathon-style prompt shown on the one-screen submission view instead of a question list. */
+  brief?: string
+  /** PROJECT only — which input the submission view renders (free text, a URL, or a reference to an uploaded file). */
+  submissionFormat?: ProjectSubmissionFormat
+  /** PROJECT only — total marks for the single manager-graded score, since there's no `questions[]` to sum marks from. */
+  projectMarks?: number
 }
 
 /**
@@ -99,5 +124,15 @@ export const initialTakeableAssessments: Record<string, TakeableAssessment> = {
       { id: 'q1', text: 'Worship is best described as:', type: 'SINGLE_SELECT', options: ['A single weekly act', 'A continuous lifestyle', 'Only musical expression', 'A private emotion only'], correctOptionIndex: 1, marks: 10 },
       { id: 'q2', text: 'Corporate worship primarily builds:', type: 'SINGLE_SELECT', options: ['Individual talent', 'Shared identity and community', 'Musical skill only', 'Competition'], correctOptionIndex: 1, marks: 10 },
     ],
+  },
+  '5': {
+    id: '5',
+    title: 'Leadership & Governance — Capstone Project',
+    kind: 'PROJECT',
+    courseId: '3',
+    questions: [],
+    brief: 'Design a governance structure for a 50-person ministry team: define at least three leadership roles, a decision-making process, and one conflict-resolution mechanism. Submit a link to your document or a written summary.',
+    submissionFormat: 'LINK',
+    projectMarks: 100,
   },
 }

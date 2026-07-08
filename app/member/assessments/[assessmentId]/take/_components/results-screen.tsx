@@ -43,7 +43,7 @@ export function ResultsScreen({ assessment, attempt, autoSubmitted }: ResultsScr
       </h1>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
         {isPending
-          ? 'Submitted — awaiting manager review for open-ended questions.'
+          ? 'Submitted — awaiting manager review.'
           : passed ? 'Well done — you passed.' : 'You did not reach the passing threshold this time.'}
       </p>
 
@@ -52,8 +52,10 @@ export function ResultsScreen({ assessment, attempt, autoSubmitted }: ResultsScr
       </div>
       <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 20 }}>
         {isPending
-          ? 'This score covers auto-graded questions only — it will update once your open-ended answers are reviewed.'
-          : 'Final score, including any manager-reviewed open-ended questions.'}
+          ? assessment.kind === 'PROJECT'
+            ? 'Your score will appear once a manager reviews this submission.'
+            : 'This score covers auto-graded questions only — it will update once your open-ended answers are reviewed.'
+          : 'Final score, including any manager-reviewed portion.'}
       </p>
 
       <Link href="/member/assessments" className="btn btn-gold btn-sm" style={{ display: 'inline-flex' }}>

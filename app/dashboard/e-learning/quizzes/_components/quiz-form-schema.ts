@@ -39,13 +39,40 @@ export const questionSchema = z
     }
   })
 
-export const quizFormSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-  courseId: z.string().min(1, 'Select a course'),
-  kind: z.enum(['QUIZ', 'EXAM']),
-  durationMinutes: z.number().min(1, 'Duration must be at least 1 minute').optional(),
-  questions: z.array(questionSchema).min(1, 'At least 1 question is required'),
-})
+export const projectSubmissionFormatSchema = z.enum(['TEXT', 'LINK', 'FILE_REF'])
+
+/**
+ * `questions` stays a plain array (not `.min(1)` at the base level) because
+ * PROJECT assessments intentionally have zero questions — the `min(1)`
+ * requirement is enforced in `.superRefine` below, scoped to QUIZ/EXAM
+ * only, alongside PROJECT's own `brief`/`submissionFormat` requirement.
+ */
+export const quizFormSchema = z
+  .object({
+    title: z.string().min(3, 'Title must be at least 3 characters'),
+    courseId: z.string().min(1, 'Select a course'),
+    kind: z.enum(['QUIZ', 'EXAM', 'PROJECT']),
+    durationMinutes: z.number().min(1, 'Duration must be at least 1 minute').optional(),
+    questions: z.array(questionSchema),
+    brief: z.string().optional(),
+    submissionFormat: projectSubmissionFormatSchema.optional(),
+    projectMarks: z.number().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.kind === 'PROJECT') {
+      if (!data.brief || data.brief.trim().length < 10) {
+        ctx.addIssue({ code: 'custom', path: ['brief'], message: 'Brief must be at least 10 characters' })
+      }
+      if (!data.submissionFormat) {
+        ctx.addIssue({ code: 'custom', path: ['submissionFormat'], message: 'Select a submission format' })
+      }
+      if (!data.projectMarks || data.projectMarks < 1) {
+        ctx.addIssue({ code: 'custom', path: ['projectMarks'], message: 'Total marks must be at least 1' })
+      }
+    } else if (data.questions.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['questions'], message: 'At least 1 question is required' })
+    }
+  })
 
 export type QuizFormData = z.infer<typeof quizFormSchema>
 

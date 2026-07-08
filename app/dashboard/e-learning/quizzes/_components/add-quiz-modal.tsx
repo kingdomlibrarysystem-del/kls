@@ -10,6 +10,7 @@ import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
 import { addAssessment } from '@/app/member/_shared/use-assessments'
 import { quizFormSchema, emptyQuestion, type QuizFormData } from './quiz-form-schema'
 import { QuestionBuilder } from './question-builder'
+import { ProjectFields } from './project-fields'
 
 interface AddQuizModalProps {
   open: boolean
@@ -40,7 +41,7 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
         courseId: data.courseId,
         kind: data.kind,
         durationSeconds: data.kind === 'EXAM' && data.durationMinutes ? data.durationMinutes * 60 : undefined,
-        questions: data.questions.map((q, i) => ({
+        questions: data.kind === 'PROJECT' ? [] : data.questions.map((q, i) => ({
           id: `q${i + 1}`,
           text: q.text,
           type: q.type,
@@ -50,6 +51,9 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
           correctOptionIndices: q.type === 'MULTI_SELECT' ? q.correctOptionIndices : undefined,
           marks: q.marks,
         })),
+        brief: data.kind === 'PROJECT' ? data.brief : undefined,
+        submissionFormat: data.kind === 'PROJECT' ? data.submissionFormat : undefined,
+        projectMarks: data.kind === 'PROJECT' ? data.projectMarks : undefined,
       })
       reset({ courseId: courseCatalog[0]?.id ?? '', kind: 'QUIZ', title: '', questions: [emptyQuestion] })
       onClose()
@@ -78,6 +82,7 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
             <select id="add-quiz-kind" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('kind')}>
               <option value="QUIZ">Quiz</option>
               <option value="EXAM">Exam</option>
+              <option value="PROJECT">Project</option>
             </select>
           </div>
           {kind === 'EXAM' && (
@@ -88,7 +93,11 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
           )}
         </div>
 
-        <QuestionBuilder control={control} register={register} setValue={setValue} errors={errors} />
+        {kind === 'PROJECT' ? (
+          <ProjectFields register={register} errors={errors} />
+        ) : (
+          <QuestionBuilder control={control} register={register} setValue={setValue} errors={errors} />
+        )}
 
         <div className="flex justify-end gap-2 pt-2">
           <ElegantButton type="button" variant="outline" onClick={onClose}>Cancel</ElegantButton>

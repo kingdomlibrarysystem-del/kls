@@ -18,9 +18,10 @@ const LOAD_DELAY_MS = 400
 const MEMBER_NAME = 'John Doe'
 
 /**
- * Admin review queue for OPEN-question assessment attempts: lists every
- * PENDING_REVIEW attempt, and opens `GradeAttemptModal` to score each
- * open-ended answer — grading transitions the attempt to GRADED, which
+ * Admin review queue for anything a manager must manually grade: OPEN-
+ * question answers and PROJECT (hackathon-style) submissions alike, since
+ * both land as PENDING_REVIEW. Opens `GradeAttemptModal`, which branches
+ * per assessment kind — grading transitions the attempt to GRADED, which
  * flows back into the member's Assessment History and, if it completes
  * the course, certificate eligibility (see gradeOpenAnswers docstring).
  */
@@ -73,11 +74,14 @@ export function ReviewQueueView() {
       render: (a) => <span className="text-w-700">{a.score} / {a.totalMarks}</span>,
     },
     {
-      key: 'openCount', label: 'Open Questions', render: (a) => (
-        <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-xs font-lato">
-          <Clock size={11} /> {Object.keys(a.openAnswers ?? {}).length} pending
-        </span>
-      ),
+      key: 'openCount', label: 'Pending Review', render: (a) => {
+        const isProject = catalog[a.assessmentId]?.kind === 'PROJECT'
+        return (
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-xs font-lato">
+            <Clock size={11} /> {isProject ? 'Project submission' : `${Object.keys(a.openAnswers ?? {}).length} open question(s)`}
+          </span>
+        )
+      },
     },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
@@ -104,7 +108,7 @@ export function ReviewQueueView() {
       )}
 
       {pending.length === 0 ? (
-        <EmptyState icon={ClipboardCheck} title="Review queue is empty" description="No open-ended assessment answers are awaiting review." />
+        <EmptyState icon={ClipboardCheck} title="Review queue is empty" description="No open-ended answers or project submissions are awaiting review." />
       ) : (
         <DataTable<AssessmentAttempt>
           data={pending}

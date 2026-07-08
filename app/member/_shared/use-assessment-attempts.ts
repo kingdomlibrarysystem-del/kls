@@ -86,11 +86,46 @@ export function recordAssessmentAttempt(assessmentId: string, courseId: string, 
 }
 
 /**
+ * Synthetic question id used to key a PROJECT submission's text/link inside
+ * the same `openAnswers`/`openScores` `Record<string, string|number>` shape
+ * OPEN questions already use — a PROJECT assessment has no real question
+ * ids (`questions` is empty), but the shapes are otherwise identical (one
+ * answer, one manager-entered score), so reusing them avoids a third
+ * parallel answer-storage field on `AssessmentAttempt`.
+ */
+export const PROJECT_SUBMISSION_KEY = 'project'
+
+/**
+ * Records a PROJECT (hackathon-style) submission. Always PENDING_REVIEW —
+ * there is no correct answer to compare a text/link submission against, so
+ * unlike SINGLE_SELECT/MULTI_SELECT (and even OPEN, which still contributes
+ * an auto-graded 0 alongside other auto-gradable questions), a PROJECT
+ * attempt has zero auto-graded component and never calls
+ * `applyAttemptOutcome` at submission time — only `gradeOpenAnswers` (via
+ * the review queue) can finalize it.
+ */
+export function recordProjectSubmission(assessmentId: string, projectMarks: number, submissionText: string) {
+  const attempt: AssessmentAttempt = {
+    assessmentId,
+    status: 'FAILED', // provisional — score is always 0/projectMarks pre-review, same math recordAssessmentAttempt would produce
+    reviewStatus: 'PENDING_REVIEW',
+    score: 0,
+    totalMarks: projectMarks,
+    takenAt: new Date().toISOString().slice(0, 10),
+    openAnswers: { [PROJECT_SUBMISSION_KEY]: submissionText },
+  }
+  attempts = [attempt, ...attempts.filter((a) => a.assessmentId !== assessmentId)]
+  emitChange()
+  return attempt
+}
+
+/**
  * A manager grades a PENDING_REVIEW attempt's OPEN questions (one score per
  * question, bounded by that question's marks by the caller/UI), finalizes
  * its total score and pass/fail status, and — only now — applies the
  * outcome to certificate eligibility, matching the same path an
- * auto-graded PASSED attempt already goes through.
+ * auto-graded PASSED attempt already goes through. Also used for PROJECT
+ * attempts, keyed by `PROJECT_SUBMISSION_KEY` with `autoGradedScore` always 0.
  */
 export function gradeOpenAnswers(assessmentId: string, courseId: string, openScores: Record<string, number>, autoGradedScore: number, totalMarks: number) {
   const openTotal = Object.values(openScores).reduce((sum, s) => sum + s, 0)

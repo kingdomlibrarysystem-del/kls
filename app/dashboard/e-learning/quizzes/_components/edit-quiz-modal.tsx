@@ -11,6 +11,7 @@ import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
 import { updateAssessment } from '@/app/member/_shared/use-assessments'
 import { quizFormSchema, type QuizFormData } from './quiz-form-schema'
 import { QuestionBuilder } from './question-builder'
+import { ProjectFields } from './project-fields'
 import type { TakeableAssessment } from './quizzes-config'
 
 interface EditQuizModalProps {
@@ -48,6 +49,9 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
           correctOptionIndices: q.correctOptionIndices ?? [],
           marks: q.marks,
         })),
+        brief: assessment.brief ?? '',
+        submissionFormat: assessment.submissionFormat,
+        projectMarks: assessment.projectMarks,
       })
     }
   }, [assessment, reset])
@@ -60,7 +64,7 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         courseId: data.courseId,
         kind: data.kind,
         durationSeconds: data.kind === 'EXAM' && data.durationMinutes ? data.durationMinutes * 60 : undefined,
-        questions: data.questions.map((q, i) => ({
+        questions: data.kind === 'PROJECT' ? [] : data.questions.map((q, i) => ({
           id: assessment.questions[i]?.id ?? `q${i + 1}`,
           text: q.text,
           type: q.type,
@@ -70,6 +74,9 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
           correctOptionIndices: q.type === 'MULTI_SELECT' ? q.correctOptionIndices : undefined,
           marks: q.marks,
         })),
+        brief: data.kind === 'PROJECT' ? data.brief : undefined,
+        submissionFormat: data.kind === 'PROJECT' ? data.submissionFormat : undefined,
+        projectMarks: data.kind === 'PROJECT' ? data.projectMarks : undefined,
       })
       onClose()
     } catch {
@@ -97,6 +104,7 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
             <select id="edit-quiz-kind" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('kind')}>
               <option value="QUIZ">Quiz</option>
               <option value="EXAM">Exam</option>
+              <option value="PROJECT">Project</option>
             </select>
           </div>
           {kind === 'EXAM' && (
@@ -107,7 +115,11 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
           )}
         </div>
 
-        <QuestionBuilder control={control} register={register} setValue={setValue} errors={errors} />
+        {kind === 'PROJECT' ? (
+          <ProjectFields register={register} errors={errors} />
+        ) : (
+          <QuestionBuilder control={control} register={register} setValue={setValue} errors={errors} />
+        )}
 
         <div className="flex justify-end gap-2 pt-2">
           <ElegantButton type="button" variant="outline" onClick={onClose}>Cancel</ElegantButton>

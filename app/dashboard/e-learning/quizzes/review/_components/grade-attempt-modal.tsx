@@ -5,8 +5,9 @@ import { CheckCircle, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAssessmentCatalog } from '@/app/member/_shared/use-assessments'
-import { gradeOpenAnswers } from '@/app/member/_shared/use-assessment-attempts'
+import { gradeOpenAnswers, PROJECT_SUBMISSION_KEY } from '@/app/member/_shared/use-assessment-attempts'
 import type { AssessmentAttempt } from '@/app/member/_shared/enrollment-data'
+import { ProjectGradeFields } from './project-grade-fields'
 
 interface GradeAttemptModalProps {
   attempt: AssessmentAttempt | null
@@ -15,12 +16,15 @@ interface GradeAttemptModalProps {
 }
 
 /**
- * Grades every OPEN question on one PENDING_REVIEW attempt: shows each
- * question's scenario context, text, and the member's raw answer, with a
- * marks-bounded numeric score input per question. Confirming sums the
- * entered scores with the attempt's already-auto-graded score and calls
- * `gradeOpenAnswers`, which finalizes pass/fail and re-applies certificate
- * eligibility — the same path an auto-graded PASSED attempt already uses.
+ * Grades one PENDING_REVIEW attempt. For a QUIZ/EXAM attempt, shows every
+ * OPEN question's scenario context, text, and raw answer, with a
+ * marks-bounded score input per question. For a PROJECT attempt (no
+ * question list at all), delegates to `ProjectGradeFields` for a single
+ * score bounded by the assessment's total marks instead. Either way,
+ * confirming sums the entered score(s) with the attempt's already-
+ * auto-graded score (always 0 for PROJECT) and calls `gradeOpenAnswers`,
+ * which finalizes pass/fail and re-applies certificate eligibility — the
+ * same path an auto-graded PASSED attempt already uses.
  */
 export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptModalProps) {
   const [scores, setScores] = useState<Record<string, number>>({})
@@ -28,11 +32,12 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
   const catalog = useAssessmentCatalog()
 
   const assessment = attempt ? catalog[attempt.assessmentId] : undefined
-  const openQuestions = assessment?.questions.filter((q) => q.type === 'OPEN') ?? []
+  const isProject = assessment?.kind === 'PROJECT'
+  const openQuestions = !isProject ? assessment?.questions.filter((q) => q.type === 'OPEN') ?? [] : []
 
   useEffect(() => {
     if (attempt) {
-      setScores(Object.fromEntries(openQuestions.map((q) => [q.id, 0])))
+      setScores(isProject ? { [PROJECT_SUBMISSION_KEY]: 0 } : Object.fromEntries(openQuestions.map((q) => [q.id, 0])))
       setError('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,7 +52,7 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
 
   const handleConfirm = () => {
     try {
-      if (openQuestions.some((q) => scores[q.id] === undefined)) {
+      if (!isProject && openQuestions.some((q) => scores[q.id] === undefined)) {
         throw new Error('Enter a score for every open-ended question')
       }
       gradeOpenAnswers(attempt.assessmentId, assessment.courseId, scores, attempt.score, attempt.totalMarks)
@@ -61,35 +66,46 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
   const finalScore = attempt.score + openTotal
 
   return (
-    <Modal open onClose={onClose} title="Grade Open-Ended Answers" size="lg">
+    <Modal open onClose={onClose} title={isProject ? 'Grade Project Submission' : 'Grade Open-Ended Answers'} size="lg">
       <div className="space-y-3">
-        <p className="font-lato text-sm text-w-700">
-          <span className="font-semibold text-w-950">{assessment.title}</span> — auto-graded score so far: {attempt.score} / {attempt.totalMarks}
-        </p>
+        {!isProject && (
+          <p className="font-lato text-sm text-w-700">
+            <span className="font-semibold text-w-950">{assessment.title}</span> — auto-graded score so far: {attempt.score} / {attempt.totalMarks}
+          </p>
+        )}
 
-        {openQuestions.map((q, i) => (
-          <div key={q.id} className="bg-w-100 border border-w-300 rounded p-3 space-y-2">
-            {q.context && <p className="text-xs text-w-600 italic">{q.context}</p>}
-            <p className="text-xs font-semibold text-w-950">Q{i + 1}. {q.text} <span className="text-w-600 font-normal">({q.marks} marks)</span></p>
-            <div className="bg-white border border-w-300 rounded p-2">
-              <p className="text-xs text-w-700 whitespace-pre-wrap">{attempt.openAnswers?.[q.id] || <span className="italic text-w-500">No answer submitted.</span>}</p>
+        {isProject ? (
+          <ProjectGradeFields
+            assessment={assessment}
+            attempt={attempt}
+            score={scores[PROJECT_SUBMISSION_KEY] ?? 0}
+            onScoreChange={(value) => setScoreFor(PROJECT_SUBMISSION_KEY, value, assessment.projectMarks ?? attempt.totalMarks)}
+          />
+        ) : (
+          openQuestions.map((q, i) => (
+            <div key={q.id} className="bg-w-100 border border-w-300 rounded p-3 space-y-2">
+              {q.context && <p className="text-xs text-w-600 italic">{q.context}</p>}
+              <p className="text-xs font-semibold text-w-950">Q{i + 1}. {q.text} <span className="text-w-600 font-normal">({q.marks} marks)</span></p>
+              <div className="bg-white border border-w-300 rounded p-2">
+                <p className="text-xs text-w-700 whitespace-pre-wrap">{attempt.openAnswers?.[q.id] || <span className="italic text-w-500">No answer submitted.</span>}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor={`score-${q.id}`} className="text-xs font-lato font-semibold text-w-700">Score</label>
+                <input
+                  id={`score-${q.id}`}
+                  type="number"
+                  min={0}
+                  max={q.marks}
+                  value={scores[q.id] ?? 0}
+                  onChange={(e) => setScoreFor(q.id, Number(e.target.value), q.marks)}
+                  aria-label={`Score for question ${i + 1}, out of ${q.marks}`}
+                  className="w-20 px-2 py-1 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+                />
+                <span className="text-xs text-w-600">/ {q.marks}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor={`score-${q.id}`} className="text-xs font-lato font-semibold text-w-700">Score</label>
-              <input
-                id={`score-${q.id}`}
-                type="number"
-                min={0}
-                max={q.marks}
-                value={scores[q.id] ?? 0}
-                onChange={(e) => setScoreFor(q.id, Number(e.target.value), q.marks)}
-                aria-label={`Score for question ${i + 1}, out of ${q.marks}`}
-                className="w-20 px-2 py-1 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
-              />
-              <span className="text-xs text-w-600">/ {q.marks}</span>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
 
         <p className="font-lato text-sm text-w-950 font-semibold">Final score: {finalScore} / {attempt.totalMarks}</p>
 
