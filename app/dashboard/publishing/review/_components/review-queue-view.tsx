@@ -5,9 +5,10 @@ import { CheckCircle, XCircle, ClipboardList } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { mockSubmissions, reviewStatusConfig, type PublicationSubmission } from './review-data'
+import { reviewStatusConfig, type PublicationSubmission } from './review-data'
 import { ReviewModal } from './review-modal'
 import { addRevenueRowForApproval } from '../../revenue/_components/use-revenue'
+import { useReviewQueue, removeSubmissionFromQueue } from './use-review-queue'
 
 /** Simulated network delay before mock submissions become visible. */
 const LOAD_DELAY_MS = 400
@@ -16,21 +17,20 @@ type ModalAction = 'approve' | 'reject' | null
 
 /**
  * Review Queue: submissions with SUBMITTED/UNDER_REVIEW status, Approve/Reject
- * buttons that open a confirmation modal. Approving/rejecting removes the row
- * from the local queue for the session only — no persistence.
+ * buttons that open a confirmation modal. Reads the shared `useReviewQueue()`
+ * store so a decision survives a reload, instead of a local `useState` copy
+ * that reset the moment the component remounted.
  */
 export function ReviewQueueView() {
   const [loading, setLoading] = useState(true)
-  const [queue, setQueue] = useState<PublicationSubmission[]>([])
   const [toast, setToast] = useState('')
   const [modalTarget, setModalTarget] = useState<PublicationSubmission | null>(null)
   const [modalAction, setModalAction] = useState<ModalAction>(null)
 
+  const queue = useReviewQueue()
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setQueue(mockSubmissions)
-      setLoading(false)
-    }, LOAD_DELAY_MS)
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
 
@@ -47,7 +47,7 @@ export function ReviewQueueView() {
     try {
       if (!modalTarget || !modalAction) throw new Error('No submission selected')
       if (modalAction === 'approve') addRevenueRowForApproval(modalTarget.title, modalTarget.contributor)
-      setQueue((prev) => prev.filter((s) => s.id !== modalTarget.id))
+      removeSubmissionFromQueue(modalTarget.id)
       showToast(
         `${modalAction === 'approve' ? 'Approved' : 'Rejected'} "${modalTarget.title}"${notes ? ` — notes: ${notes}` : ''}`
       )

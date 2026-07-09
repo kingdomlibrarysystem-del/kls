@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/ui/page-header'
+import { PageTransition } from '@/components/ui/page-transition'
 import { ProfileInfoForm } from './_components/profile-info-form'
 import { PasswordChangeForm } from './_components/password-change-form'
 import { AccountInfoSection } from './_components/account-info-section'
@@ -8,7 +9,7 @@ import { LoginHistorySection } from './_components/login-history-section'
 
 export default function ProfilePage() {
   return (
-    <div>
+    <PageTransition>
       <PageHeader
         title="Profile Settings"
         subtitle="Manage your account information"
@@ -28,6 +29,6 @@ export default function ProfilePage() {
         {/* Login history */}
         <LoginHistorySection />
       </div>
-    </div>
+    </PageTransition>
   )
 }

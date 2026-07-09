@@ -1,11 +1,12 @@
 import { AlertTriangle, TrendingUp, Receipt } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
+import { PageTransition } from '@/components/ui/page-transition'
 import { ReportsSummaryCards } from './_components/reports-summary-cards'
 import { OverdueTable, TopResourcesChart, TopResourcesTable, FineCollectionTable } from './_components/reports-table'
 
 export default function BorrowReportsPage() {
   return (
-    <div>
+    <PageTransition>
       <PageHeader title="Borrow Reports" subtitle="Overdue items, top-borrowed resources, and fine collections" />
 
       <ReportsSummaryCards />
@@ -35,6 +36,6 @@ export default function BorrowReportsPage() {
           <FineCollectionTable />
         </section>
       </div>
-    </div>
+    </PageTransition>
   )
 }

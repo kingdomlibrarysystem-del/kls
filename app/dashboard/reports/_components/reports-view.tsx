@@ -5,7 +5,7 @@ import { Users, BookOpen, GraduationCap, FileText, FlaskConical } from 'lucide-r
 import { Skeleton } from '@/components/ui/skeleton'
 import { mockEnrollments } from '@/app/dashboard/e-learning/enrollments/_components/enrollments-data'
 import { useEnrollments } from '@/app/member/_shared/use-enrollments'
-import { mockSubmissions } from '@/app/dashboard/publishing/review/_components/review-data'
+import { useReviewQueue } from '@/app/dashboard/publishing/review/_components/use-review-queue'
 import { mockProjects } from '@/app/dashboard/research/collaborations/_components/collaborations-data'
 import { TOTAL_MEMBERS, ACTIVE_LOANS, buildModuleTrends } from './cross-module-data'
 
@@ -21,6 +21,7 @@ const LOAD_DELAY_MS = 400
 export function ReportsView() {
   const [loading, setLoading] = useState(true)
   const liveEnrollments = useEnrollments()
+  const reviewQueue = useReviewQueue()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -33,7 +34,7 @@ export function ReportsView() {
   const activeEnrollments =
     mockEnrollments.filter((e) => e.status === 'ACTIVE').length +
     liveEnrollments.filter((e) => e.status !== 'COMPLETED').length
-  const pendingPublications = mockSubmissions.length
+  const pendingPublications = reviewQueue.length
   const activeResearchProjects = mockProjects.filter((p) => p.status === 'ACTIVE').length
 
   const stats = [

@@ -1,4 +1,5 @@
-import { Shield, X, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { Modal } from '@/components/ui/modal'
 import { defaultPermissions, permissionLabels } from './roles-data'
 
 export interface NewRoleForm {
@@ -17,24 +18,14 @@ interface RoleCreateModalProps {
 
 /** Create modal for a brand-new role. */
 export function RoleCreateModal({ open, form, onChange, onClose, onCreate }: RoleCreateModalProps) {
-  if (!open) return null
-
   const togglePerm = (perm: string) => onChange({
     ...form,
     permissions: form.permissions.includes(perm) ? form.permissions.filter((p) => p !== perm) : [...form.permissions, perm],
   })
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20, width: 450 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <Shield size={18} color="var(--gold)" />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Create New Role</span>
-          <button onClick={onClose} aria-label="Close" style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-            <X size={16} />
-          </button>
-        </div>
-
+    <Modal open={open} onClose={onClose} title="Create New Role">
+      <div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Role Name</label>
           <input value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} placeholder="e.g. Editor" style={{ width: '100%', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 5, padding: '8px 10px', fontSize: 12, color: 'var(--text-primary)', outline: 'none' }} />
@@ -62,6 +53,6 @@ export function RoleCreateModal({ open, form, onChange, onClose, onCreate }: Rol
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

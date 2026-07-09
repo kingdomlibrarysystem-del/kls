@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Bell, BookOpen, CalendarClock, GraduationCap, BookCopy, AlertCircle, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
+import { PageTransition } from '@/components/ui/page-transition'
 import { mockNotifications, type NotificationType } from './_components/notifications-data'
 
 const iconMap: Record<NotificationType, React.ReactNode> = {
@@ -24,7 +25,7 @@ export default function NotificationsPage() {
   const unread = mockNotifications.filter((n) => !n.read).length
 
   return (
-    <div>
+    <PageTransition>
       <PageHeader
         title="Notifications"
         subtitle={unread > 0 ? `${unread} unread notification${unread > 1 ? 's' : ''}` : 'All caught up'}
@@ -55,6 +56,6 @@ export default function NotificationsPage() {
           </Link>
         ))}
       </div>
-    </div>
+    </PageTransition>
   )
 }

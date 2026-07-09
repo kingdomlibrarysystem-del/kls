@@ -3,6 +3,7 @@
 import { AlertTriangle, TrendingUp } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { RankingBarChart } from '@/components/ui/ranking-bar-chart'
+import { exportToCsv } from '@/lib/utils'
 import { overdueList, topResources, fineCollection, type OverdueEntry, type TopResourceEntry, type FineEntry, type FineStatus } from './reports-data'
 
 const fineStatusConfig: Record<FineStatus, { label: string; cls: string }> = {
@@ -96,6 +97,16 @@ export function TopResourcesTable() {
   )
 }
 
+function exportFineCollection() {
+  exportToCsv('fine-collection', [
+    { label: 'Member', get: (r: FineEntry) => r.memberName },
+    { label: 'Resource', get: (r: FineEntry) => r.resourceTitle },
+    { label: 'Days Overdue', get: (r: FineEntry) => r.daysOverdue },
+    { label: 'Amount (RWF)', get: (r: FineEntry) => r.amount },
+    { label: 'Status', get: (r: FineEntry) => fineStatusConfig[r.status].label },
+  ], fineCollection)
+}
+
 export function FineCollectionTable() {
   return (
     <DataTable<FineEntry>
@@ -104,7 +115,7 @@ export function FineCollectionTable() {
       rowKey={(r) => r.id}
       searchPlaceholder="Search member or resource..."
       searchFilter={(r, q) => r.memberName.toLowerCase().includes(q) || r.resourceTitle.toLowerCase().includes(q)}
-      onExport={() => console.log('TODO: export CSV')}
+      onExport={exportFineCollection}
       emptyMessage="No fines recorded."
     />
   )

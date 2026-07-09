@@ -9,7 +9,7 @@ import { initialData as initialBorrowings } from '@/app/dashboard/library/borrow
  *  - Total Members       ← dashboard/users initialUsers.length
  *  - Active Loans         ← dashboard/library/borrowings initialData (status === 'active')
  *  - Enrollments (Active) ← dashboard/e-learning/enrollments mockEnrollments (status === 'ACTIVE')
- *  - Publications Pending ← dashboard/publishing/review mockSubmissions.length
+ *  - Publications Pending ← dashboard/publishing/review useReviewQueue().length (live store, not the static mockSubmissions seed)
  *  - Research Projects    ← dashboard/research/collaborations mockProjects (status === 'ACTIVE')
  *
  * Previously TOTAL_MEMBERS/ACTIVE_LOANS were hardcoded literals mirroring a
