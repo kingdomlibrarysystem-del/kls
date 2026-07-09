@@ -5,11 +5,47 @@ import { GraduationCap, Eye } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useEnrollments, getProgressPercent } from '@/app/member/_shared/use-enrollments'
 import { mockEnrollments, enrollmentStatusConfig, type Enrollment, type EnrollmentStatus } from './enrollments-data'
 import { EnrollmentDetailModal } from './enrollment-detail-modal'
 
+/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
+const LIVE_MEMBER_NAME = 'John Doe'
+
 /** Simulated network delay before mock enrollments become visible. */
 const LOAD_DELAY_MS = 400
+
+/** Row shape actually rendered by the table — `Enrollment` plus its resolved course title, looked up once here rather than in every consumer. */
+export interface DisplayEnrollment extends Enrollment {
+  courseTitle: string
+}
+
+function courseTitleFor(courseId: string): string {
+  return courseCatalog.find((c) => c.id === courseId)?.title ?? 'Unknown course'
+}
+
+/**
+ * Builds the live "John Doe" rows from the real member enrollment store —
+ * the same store/derivation (`getProgressPercent`) `ELearningProgress.tsx`
+ * already uses — so this admin table's one real-persona row reflects
+ * genuine enroll/complete-lesson/pass-assessment activity instead of a
+ * frozen mock snapshot. `CourseEnrollment.status` ('ENROLLED' | 'COMPLETED')
+ * maps onto this admin type's status vocabulary; the real store has no
+ * DROPPED concept, so a live row is never DROPPED.
+ */
+function useLiveEnrollmentRows(): DisplayEnrollment[] {
+  const enrollments = useEnrollments()
+  return enrollments.map((e) => ({
+    id: `live-${e.courseId}`,
+    member: LIVE_MEMBER_NAME,
+    courseId: e.courseId,
+    courseTitle: courseTitleFor(e.courseId),
+    enrolledAt: e.enrolledAt,
+    status: e.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE',
+    progress: getProgressPercent(e),
+  }))
+}
 
 function LoadingSkeleton() {
   return (
@@ -21,10 +57,10 @@ function LoadingSkeleton() {
   )
 }
 
-function buildColumns(onView: (e: Enrollment) => void): Column<Enrollment>[] {
+function buildColumns(onView: (e: DisplayEnrollment) => void): Column<DisplayEnrollment>[] {
   return [
     { key: 'member', label: 'Member', sortable: true, render: (e) => <span className="font-semibold text-w-950">{e.member}</span> },
-    { key: 'course', label: 'Course', sortable: true, render: (e) => <span className="text-w-700 max-w-55 truncate block">{e.course}</span> },
+    { key: 'courseTitle', label: 'Course', sortable: true, render: (e) => <span className="text-w-700 max-w-55 truncate block">{e.courseTitle}</span> },
     { key: 'enrolledAt', label: 'Enrolled', sortable: true, render: (e) => <span className="text-w-700">{e.enrolledAt}</span> },
     {
       key: 'status', label: 'Status', sortable: true,
@@ -58,13 +94,19 @@ function buildColumns(onView: (e: Enrollment) => void): Column<Enrollment>[] {
 
 /**
  * Enrollments table with a simulated initial load and status filtering.
- * Shows a skeleton while "loading," then the table, or an EmptyState if a
- * filter yields zero rows.
+ * Combines the 5 static mock members (real course IDs, no real backing
+ * store) with the live "John Doe" row(s) derived from the real member
+ * enrollment store, so this admin view is genuinely correct for the one
+ * persona that has real data instead of universally mock.
  */
 export function EnrollmentsView() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | 'all'>('all')
-  const [viewing, setViewing] = useState<Enrollment | null>(null)
+  const [viewing, setViewing] = useState<DisplayEnrollment | null>(null)
+
+  const liveRows = useLiveEnrollmentRows()
+  const staticRows: DisplayEnrollment[] = mockEnrollments.map((e) => ({ ...e, courseTitle: courseTitleFor(e.courseId) }))
+  const allRows = [...liveRows, ...staticRows]
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -73,7 +115,7 @@ export function EnrollmentsView() {
 
   if (loading) return <LoadingSkeleton />
 
-  const tableData = statusFilter === 'all' ? mockEnrollments : mockEnrollments.filter((e) => e.status === statusFilter)
+  const tableData = statusFilter === 'all' ? allRows : allRows.filter((e) => e.status === statusFilter)
 
   const statusSelect = (
     <select
@@ -88,7 +130,7 @@ export function EnrollmentsView() {
     </select>
   )
 
-  if (mockEnrollments.length > 0 && tableData.length === 0) {
+  if (allRows.length > 0 && tableData.length === 0) {
     return (
       <div>
         <div className="mb-3">{statusSelect}</div>
@@ -103,12 +145,12 @@ export function EnrollmentsView() {
 
   return (
     <>
-      <DataTable<Enrollment>
+      <DataTable<DisplayEnrollment>
         data={tableData}
         columns={buildColumns(setViewing)}
         rowKey={(e) => e.id}
         searchPlaceholder="Search member or course..."
-        searchFilter={(e, q) => e.member.toLowerCase().includes(q) || e.course.toLowerCase().includes(q)}
+        searchFilter={(e, q) => e.member.toLowerCase().includes(q) || e.courseTitle.toLowerCase().includes(q)}
         filters={statusSelect}
         emptyMessage="No enrollments match your search."
       />

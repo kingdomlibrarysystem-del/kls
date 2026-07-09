@@ -1,9 +1,10 @@
 import { User, BookOpen, CalendarDays, Percent } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { enrollmentStatusConfig, type Enrollment } from './enrollments-data'
+import { enrollmentStatusConfig } from './enrollments-data'
+import type { DisplayEnrollment } from './enrollments-view'
 
 interface EnrollmentDetailModalProps {
-  enrollment: Enrollment | null
+  enrollment: DisplayEnrollment | null
   onClose: () => void
 }
 
@@ -31,7 +32,7 @@ export function EnrollmentDetailModal({ enrollment, onClose }: EnrollmentDetailM
           </div>
 
           <div className="bg-form-highlight border border-w-300 rounded p-3 space-y-2">
-            <DetailRow icon={<BookOpen size={13} />} label="Course" value={enrollment.course} />
+            <DetailRow icon={<BookOpen size={13} />} label="Course" value={enrollment.courseTitle} />
             <DetailRow icon={<CalendarDays size={13} />} label="Enrolled" value={enrollment.enrolledAt} />
             <DetailRow icon={<Percent size={13} />} label="Progress" value={`${enrollment.progress}%`} />
             <DetailRow icon={<User size={13} />} label="ID" value={enrollment.id} />

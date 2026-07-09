@@ -24,9 +24,13 @@ const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
 /**
  * Add/Edit Course form. On submit, appends the new course to the shared
  * `/dashboard/e-learning/*` course catalog store so it immediately appears
- * in the Course Catalog list, becomes available to Enrollments, and — since
- * it's attributed to the recurring contributor persona — also appears in
- * that contributor's own `/contributor/courses` list.
+ * in the Course Catalog list, and — since it's attributed to the recurring
+ * contributor persona — also in that contributor's own `/contributor/courses`
+ * list. Does NOT appear in Enrollments: that page is keyed to the separate
+ * member course catalog (`app/member/_shared/course-catalog-data.ts`), which
+ * this admin catalog is intentionally not unified with — they represent
+ * different lifecycles (authoring/business vs. the taken-course experience
+ * lessons/quizzes/progress/certificates are all built against).
  */
 export function CourseFormView() {
   const [submitting, setSubmitting] = useState(false)
