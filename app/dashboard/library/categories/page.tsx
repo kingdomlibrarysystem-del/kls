@@ -9,6 +9,7 @@ import { CategoryFormPanel } from './_components/category-form-panel'
 import { CategoriesTable } from './_components/categories-table'
 import { CategoryDetailModal } from './_components/category-detail-modal'
 import { DeleteCategoryModal } from './_components/delete-category-modal'
+import { CategoriesStats } from './_components/categories-stats'
 
 /** KCS Categories: full CRUD plus a details view over the mocked category taxonomy. */
 export default function CategoriesPage() {
@@ -118,6 +119,8 @@ export default function CategoriesPage() {
           {toast.msg}
         </div>
       )}
+
+      <CategoriesStats categories={categories} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
         <div>

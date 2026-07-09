@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { mockAuditEntries, auditActionLabels, type AuditEntry, type AuditAction } from './audit-log-data'
 import { AuditEntryDetailModal } from './audit-entry-detail-modal'
+import { AuditLogStats } from './audit-log-stats'
 
 /** Simulated network delay before mock audit entries become visible. */
 const LOAD_DELAY_MS = 400
@@ -60,6 +61,7 @@ export function AuditLogView() {
 
   return (
     <>
+      <AuditLogStats />
       <DataTable<AuditEntry>
         data={tableData}
         columns={buildColumns(setViewing)}

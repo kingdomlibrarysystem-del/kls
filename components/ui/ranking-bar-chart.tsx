@@ -15,6 +15,8 @@ interface RankingBarChartProps {
   height?: number
   /** Suffix appended to the tooltip/axis value, e.g. "%". */
   unit?: string
+  /** X-axis upper bound. Defaults to 100 for the common percentage case; pass the data's own max (or a rounded-up value) for non-percentage metrics like counts. */
+  maxValue?: number
   /** Accessible label for the chart region. */
   ariaLabel: string
 }
@@ -26,7 +28,7 @@ interface RankingBarChartProps {
  * recharts' default rainbow palette. Wrapped in ResponsiveContainer so it
  * never overflows on mobile.
  */
-export function RankingBarChart({ data, height = 220, unit = '%', ariaLabel }: RankingBarChartProps) {
+export function RankingBarChart({ data, height = 220, unit = '%', maxValue = 100, ariaLabel }: RankingBarChartProps) {
   return (
     <div role="img" aria-label={ariaLabel} style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -34,7 +36,7 @@ export function RankingBarChart({ data, height = 220, unit = '%', ariaLabel }: R
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
           <XAxis
             type="number"
-            domain={[0, 100]}
+            domain={[0, maxValue]}
             tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}

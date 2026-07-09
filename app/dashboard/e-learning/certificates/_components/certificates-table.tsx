@@ -9,6 +9,7 @@ import { useCertificates, revokeCertificate } from './use-certificates'
 import type { Certificate } from './certificates-data'
 import { CertificateDetailModal } from './certificate-detail-modal'
 import { RevokeCertificateModal } from './revoke-certificate-modal'
+import { CertificatesStats } from './certificates-stats'
 
 /** Simulated network delay before mock certificates become visible. */
 const LOAD_DELAY_MS = 400
@@ -74,6 +75,7 @@ export function CertificatesTable() {
 
   return (
     <>
+      <CertificatesStats data={certificates} />
       <DataTable<Certificate>
         data={certificates}
         columns={buildColumns(setViewing, setRevoking)}

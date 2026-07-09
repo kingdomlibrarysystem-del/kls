@@ -10,6 +10,7 @@ import { initialUsers, roleColors, statusColors, type PlatformUser } from './use
 import { UserFormModal } from './user-form-modal'
 import { UserDetailModal } from './user-detail-modal'
 import { DeleteUserModal } from './delete-user-modal'
+import { UsersStats } from './users-stats'
 
 /** Simulated network delay before mock users become visible. */
 const LOAD_DELAY_MS = 400
@@ -108,6 +109,8 @@ export function UsersView() {
 
   return (
     <div>
+      <UsersStats data={users} />
+
       <div className="flex items-center justify-between mb-4">
         <p className="font-lato text-xs text-w-600 uppercase tracking-wider font-semibold">{users.length} users total</p>
         <ElegantButton variant="primary" onClick={openCreate} className="flex items-center gap-1.5 text-sm py-2">

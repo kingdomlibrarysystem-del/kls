@@ -5,6 +5,7 @@ import { Shield, Plus } from 'lucide-react'
 import { PageTransition } from '@/components/ui/page-transition'
 import { initialRoles, type Role } from './_components/roles-data'
 import { RoleCards } from './_components/role-cards'
+import { RolesStats } from './_components/roles-stats'
 import { RoleDetailModal } from './_components/role-detail-modal'
 import { RoleEditModal } from './_components/role-edit-modal'
 import { RoleCreateModal, type NewRoleForm } from './_components/role-create-modal'
@@ -59,6 +60,8 @@ export default function RolesPage() {
             <Plus size={14} /> New Role
           </button>
         </div>
+
+        <RolesStats roles={roles} />
 
         <RoleCards roles={roles} onView={setViewing} onEdit={handleEdit} onDelete={handleDelete} />
       </div>

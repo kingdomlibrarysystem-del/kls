@@ -1,7 +1,7 @@
 import { AlertTriangle, TrendingUp, Receipt } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { ReportsSummaryCards } from './_components/reports-summary-cards'
-import { OverdueTable, TopResourcesTable, FineCollectionTable } from './_components/reports-table'
+import { OverdueTable, TopResourcesChart, TopResourcesTable, FineCollectionTable } from './_components/reports-table'
 
 export default function BorrowReportsPage() {
   return (
@@ -22,6 +22,9 @@ export default function BorrowReportsPage() {
           <h2 className="flex items-center gap-2 font-cinzel text-sm font-semibold text-w-950 mb-3">
             <TrendingUp size={16} className="text-w-600" /> Top-Borrowed Resources
           </h2>
+          <div className="bg-form-highlight border border-w-300 rounded-lg p-4 mb-4">
+            <TopResourcesChart />
+          </div>
           <TopResourcesTable />
         </section>
 

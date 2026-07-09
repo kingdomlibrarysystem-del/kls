@@ -5,6 +5,7 @@ import { Eye, ShoppingCart, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { CategoryBarChart } from '@/components/ui/category-bar-chart'
 import { initialData, typeConfig, type Transaction, type TransactionType } from './_components/sales-data'
 import { TransactionDetailModal } from './_components/transaction-detail-modal'
 
@@ -15,6 +16,14 @@ export default function SalesRentalsPage() {
   const [viewing, setViewing] = useState<Transaction | null>(null)
 
   const tableData = typeFilter === 'all' ? data : data.filter((r) => r.type === typeFilter)
+
+  // All 8 transactions fall within one month (Jun 2-24, 2026) — too sparse for a
+  // monthly revenue trend (it would be a single bar), so this compares revenue by
+  // transaction type instead, which has real variance across the actual mock data.
+  const revenueByType = (Object.keys(typeConfig) as TransactionType[]).map((t) => ({
+    name: typeConfig[t].label,
+    value: data.filter((r) => r.type === t).reduce((sum, r) => sum + r.amount, 0),
+  }))
 
   const stats = [
     { label: 'Total Transactions', value: data.length, color: 'text-w-950' },
@@ -69,6 +78,15 @@ export default function SalesRentalsPage() {
             <p className="font-lato text-xs text-w-700 mt-1 leading-tight">{s.label}</p>
           </div>
         ))}
+      </div>
+
+      <div className="bg-form-highlight border border-w-300 rounded-lg p-4 mb-6">
+        <h2 className="font-cinzel text-sm font-semibold text-w-950 mb-3">Revenue by Type</h2>
+        <CategoryBarChart
+          data={revenueByType}
+          valueFormatter={(v) => `${v.toLocaleString()} RWF`}
+          ariaLabel="Total revenue split between sales and rentals"
+        />
       </div>
 
       <DataTable<Transaction>

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { mockProjects, type ResearchProjectSummary } from './collaborations-data'
 import { ProjectCollaborationCard } from './project-collaboration-card'
 import { ProjectDetailModal } from './project-detail-modal'
+import { CollaborationsStats } from './collaborations-stats'
 
 /** Simulated network delay before mock project data becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -37,6 +38,7 @@ export function CollaborationsView() {
 
   return (
     <>
+      <CollaborationsStats />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {mockProjects.map((project) => (
           <ProjectCollaborationCard key={project.id} project={project} onViewDetails={setViewing} />

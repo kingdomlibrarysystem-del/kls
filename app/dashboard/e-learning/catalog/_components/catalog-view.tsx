@@ -13,6 +13,7 @@ import { CourseDetailModal } from './course-detail-modal'
 import { EditCourseModal } from './edit-course-modal'
 import { ArchiveCourseModal } from './archive-course-modal'
 import { statusConfig, type CourseCatalogEntry, type CourseStatus } from './catalog-config'
+import { CatalogStats } from './catalog-stats'
 
 /** Simulated network delay before the catalog becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -115,6 +116,8 @@ export function CatalogView() {
 
   return (
     <div>
+      <CatalogStats />
+
       <div className="flex justify-end mb-3">
         <Link href="/dashboard/e-learning/add" aria-label="Add a new course">
           <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm">

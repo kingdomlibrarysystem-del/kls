@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useRepository } from './use-repository'
 import { paperStatusConfig, type ResearchPaper } from './repository-data'
 import { PaperDetailModal } from './paper-detail-modal'
+import { RepositoryStats } from './repository-stats'
 
 /** Simulated network delay before mock papers become visible. */
 const LOAD_DELAY_MS = 400
@@ -78,6 +79,7 @@ export function RepositoryView() {
 
   return (
     <>
+      <RepositoryStats />
       <DataTable<ResearchPaper>
         data={papers}
         columns={buildColumns(setViewing)}

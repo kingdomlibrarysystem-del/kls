@@ -2,6 +2,7 @@
 
 import { AlertTriangle, TrendingUp } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { RankingBarChart } from '@/components/ui/ranking-bar-chart'
 import { overdueList, topResources, fineCollection, type OverdueEntry, type TopResourceEntry, type FineEntry, type FineStatus } from './reports-data'
 
 const fineStatusConfig: Record<FineStatus, { label: string; cls: string }> = {
@@ -61,6 +62,23 @@ export function OverdueTable() {
       searchPlaceholder="Search overdue member or resource..."
       searchFilter={(r, q) => r.memberName.toLowerCase().includes(q) || r.resourceTitle.toLowerCase().includes(q)}
       emptyMessage="No overdue items."
+    />
+  )
+}
+
+/** Ranking chart of the same top-borrowed resources shown in the table below, sized to the data's own max borrow count rather than a fixed percentage scale. */
+export function TopResourcesChart() {
+  const maxValue = Math.max(...topResources.map((r) => r.borrowCount))
+  const data = topResources
+    .map((r) => ({ name: r.title, value: r.borrowCount }))
+    .sort((a, b) => b.value - a.value)
+  return (
+    <RankingBarChart
+      data={data}
+      unit=""
+      maxValue={Math.ceil(maxValue / 5) * 5}
+      height={Math.max(160, data.length * 40)}
+      ariaLabel="Top-borrowed resources ranked by number of times borrowed"
     />
   )
 }

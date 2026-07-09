@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { languageBadgeLabels, type PublishedBook } from './catalog-data'
 import { useCatalog } from './use-catalog'
 import { CatalogCard } from './catalog-card'
+import { CatalogStats } from './catalog-stats'
 
 /** Simulated network delay before mock catalog entries become visible. */
 const LOAD_DELAY_MS = 400
@@ -41,6 +42,8 @@ export function CatalogView() {
 
   return (
     <div>
+      <CatalogStats data={catalog} />
+
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-w-600" />

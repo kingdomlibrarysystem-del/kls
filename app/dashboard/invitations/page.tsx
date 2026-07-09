@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
 import { InviteForm } from './_components/invite-form'
 import { InvitationsTable } from './_components/invitations-table'
+import { InvitationsStats } from './_components/invitations-stats'
 import { mockInvitations, type Invitation } from './_components/invitations-data'
 
 /**
@@ -18,6 +19,7 @@ export default function InvitationsPage() {
   return (
     <PageTransition>
       <PageHeader title="Invitations" subtitle="Invite new users and track invitation status" />
+      <InvitationsStats invitations={invitations} />
       <InviteForm onInvited={(invitation) => setInvitations((prev) => [invitation, ...prev])} />
       <div className="mt-8">
         <InvitationsTable invitations={invitations} onUpdateInvitation={(updated) =>

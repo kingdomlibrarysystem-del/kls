@@ -9,6 +9,7 @@ import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
 import { useEnrollments, getProgressPercent } from '@/app/member/_shared/use-enrollments'
 import { mockEnrollments, enrollmentStatusConfig, type Enrollment, type EnrollmentStatus } from './enrollments-data'
 import { EnrollmentDetailModal } from './enrollment-detail-modal'
+import { EnrollmentsStats } from './enrollments-stats'
 
 /** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
 const LIVE_MEMBER_NAME = 'John Doe'
@@ -133,6 +134,7 @@ export function EnrollmentsView() {
   if (allRows.length > 0 && tableData.length === 0) {
     return (
       <div>
+        <EnrollmentsStats data={allRows} />
         <div className="mb-3">{statusSelect}</div>
         <EmptyState
           icon={GraduationCap}
@@ -145,6 +147,7 @@ export function EnrollmentsView() {
 
   return (
     <>
+      <EnrollmentsStats data={allRows} />
       <DataTable<DisplayEnrollment>
         data={tableData}
         columns={buildColumns(setViewing)}
