@@ -1,20 +1,40 @@
 "use client";
 import { useAuth } from "@/contexts/auth-context";
 import { User, Mail, Phone, MapPin, Award, BookOpen, GraduationCap, CreditCard, Calendar, Shield, Edit2, Star, Heart } from "lucide-react";
+import { useBorrowings } from "@/app/member/_shared/use-borrowings";
+import { useFavorites } from "@/app/member/_shared/use-favorites";
+import { useEnrollments } from "@/app/member/_shared/use-enrollments";
+import { useAssessmentAttempts } from "@/app/member/_shared/use-assessment-attempts";
+import { useCertificates } from "@/app/dashboard/e-learning/certificates/_components/use-certificates";
 import { NotificationPreferencesSection } from "./_components/notification-preferences-section";
 import { TwoFactorSection } from "./_components/two-factor-section";
 import { SessionsSection } from "./_components/sessions-section";
 import { LoginHistorySection } from "./_components/login-history-section";
 
+/** This mock has a single member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
+const MEMBER_NAME = "John Doe";
+
 export default function ProfilePage() {
   const { user } = useAuth();
+  const borrowings = useBorrowings();
+  const favorites = useFavorites();
+  const enrollments = useEnrollments();
+  const attempts = useAssessmentAttempts();
+  const certificates = useCertificates();
+
+  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const memberCertificates = certificates.filter((c) => c.member === MEMBER_NAME && !c.revoked).length;
+  const decidedAttempts = attempts.filter((a) => a.reviewStatus !== "PENDING_REVIEW");
+  const avgScore = decidedAttempts.length
+    ? Math.round(decidedAttempts.reduce((s, a) => s + (a.totalMarks > 0 ? (a.score / a.totalMarks) * 100 : 0), 0) / decidedAttempts.length)
+    : 0;
 
   const stats = [
-    { icon: <BookOpen size={16} />, label: "Books Read", value: "12", color: "var(--gold)" },
-    { icon: <Heart size={16} />, label: "Favorites", value: "8", color: "var(--red-light)" },
-    { icon: <GraduationCap size={16} />, label: "Courses Enrolled", value: "4", color: "var(--teal-light)" },
-    { icon: <Award size={16} />, label: "Certificates", value: "3", color: "var(--purple-light)" },
-    { icon: <Star size={16} />, label: "Avg Quiz Score", value: "72%", color: "var(--gold)" },
+    { icon: <BookOpen size={16} />, label: "Books Read", value: String(booksRead), color: "var(--gold)" },
+    { icon: <Heart size={16} />, label: "Favorites", value: String(favorites.length), color: "var(--red-light)" },
+    { icon: <GraduationCap size={16} />, label: "Courses Enrolled", value: String(enrollments.length), color: "var(--teal-light)" },
+    { icon: <Award size={16} />, label: "Certificates", value: String(memberCertificates), color: "var(--purple-light)" },
+    { icon: <Star size={16} />, label: "Avg Quiz Score", value: `${avgScore}%`, color: "var(--gold)" },
     { icon: <CreditCard size={16} />, label: "Payments", value: "2", color: "var(--green-light)" },
   ];
 

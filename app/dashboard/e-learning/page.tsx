@@ -53,13 +53,14 @@ export default function ELearningPage() {
 
       <div className="mt-8 bg-form-section border border-w-400 rounded-lg p-5">
         <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
+        <p className="font-lato text-xs text-w-600 mb-2">
+          Quiz submission and certificate verification are already fully working against mock data (see Quizzes &amp; Exams and Certificates above, and <code>/certificate/verify/[code]</code>) — these are the remaining endpoints with no real backend yet.
+        </p>
         <ul className="font-lato text-xs text-w-700 space-y-1">
           <li>GET /api/courses — list courses with pagination, filters</li>
           <li>POST /api/courses/:id/enroll — enroll in a course</li>
-          <li>GET /api/enrollments — member's enrolled courses + progress</li>
+          <li>GET /api/enrollments — member&apos;s enrolled courses + progress</li>
           <li>GET /api/courses/:id/lessons — lessons for a course</li>
-          <li>POST /api/quizzes/:id/submit — submit quiz answers</li>
-          <li>GET /api/certificates/:code/verify — public certificate verification</li>
         </ul>
       </div>
     </div>

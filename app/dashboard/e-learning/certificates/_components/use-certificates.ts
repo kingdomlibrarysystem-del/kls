@@ -47,12 +47,17 @@ export function revokeCertificate(id: string) {
  * one already exists for that member+course (dedup by courseId, since
  * eligibility can be recomputed multiple times as the enrollment store
  * changes). Issuance is automatic, fired the moment
- * `isCertificateEligible()` flips true — see use-enrollments.ts's
- * `recordAssessmentAttempt`, the only path that can flip it — rather than
- * requiring a manual admin approval step, since eligibility already
- * encodes the real approval condition (full completion + a passing
- * score) and the data model has no separate review/approval state for
- * certificates the way Publishing submissions do.
+ * `isCertificateEligible()` flips true via `applyAttemptOutcome`
+ * (use-enrollments.ts) — reached from three paths in
+ * use-assessment-attempts.ts: `recordAssessmentAttempt` (auto-graded
+ * SINGLE_SELECT/MULTI_SELECT attempts), `gradeOpenAnswers` (a manager
+ * grading a PENDING_REVIEW attempt's OPEN questions), and
+ * `recordProjectSubmission`'s later grading via the same `gradeOpenAnswers`
+ * call for PROJECT submissions. Automatic issuance (rather than a manual
+ * admin approval step) is correct because eligibility already encodes the
+ * real approval condition (full completion + a passing score, however it
+ * was reached) and the data model has no separate review/approval state
+ * for certificates the way Publishing submissions do.
  */
 export function issueCertificate(member: string, course: string, courseId: string): Certificate | undefined {
   const alreadyIssued = certificates.some((c) => c.courseId === courseId && c.member === member)
