@@ -87,6 +87,7 @@ const adminMainNav: NavItem[] = [
       { icon: <ClipboardList size={12} />, label: "Enrollments",    href: "/dashboard/e-learning/enrollments" },
       { icon: <BarChart3 size={12} />,    label: "Progress",        href: "/dashboard/e-learning/progress" },
       { icon: <BookCopy size={12} />,     label: "Certificates",    href: "/dashboard/e-learning/certificates" },
+      { icon: <Video size={12} />,        label: "Live Sessions",   href: "/dashboard/e-learning/sessions" },
     ],
   },
   {

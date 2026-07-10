@@ -22,14 +22,17 @@ interface AppTopbarProps {
  * shape of `app/dashboard/_components/topbar.tsx` (Dialect B) without
  * dashboard's admin-only quick-link row.
  *
- * The unread badge reads the real shared `useNotifications()` store
- * instead of a hardcoded prop — previously each layout passed its own
- * fabricated `notificationCount` (member: 3, contributor: 1, lecturer: 0)
- * with no connection to the actual notifications list.
+ * The unread badge reads the real shared `useNotifications()` store,
+ * filtered to the signed-in user's own role — instead of a hardcoded prop
+ * (previously each layout passed its own fabricated `notificationCount`:
+ * member 3, contributor 1, lecturer 0, with no connection to the actual
+ * list) and instead of the unscoped global count (which briefly meant one
+ * role's notification — e.g. a learner's session request addressed to the
+ * lecturer — inflated every other portal's badge too).
  */
 export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
   const { user } = useAuth()
-  const notifications = useNotifications()
+  const notifications = useNotifications(user?.role)
   const notificationCount = notifications.filter((n) => !n.read).length
 
   return (

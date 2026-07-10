@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Bell, BookOpen, CalendarClock, GraduationCap, BookCopy, AlertCircle, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
+import { useAuth } from '@/contexts/auth-context'
 import type { NotificationType } from './_components/notifications-data'
 import { useNotifications, markNotificationRead } from './_components/use-notifications'
 
@@ -23,7 +24,8 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
  * mock data before being wired up.
  */
 export default function NotificationsPage() {
-  const notifications = useNotifications()
+  const { user } = useAuth()
+  const notifications = useNotifications(user?.role)
   const unread = notifications.filter((n) => !n.read).length
 
   return (

@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { PlayCircle, GraduationCap, ChevronRight, Award, BookX, Sparkles } from "lucide-react";
+import { PlayCircle, GraduationCap, Award, BookX, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { courseCatalog } from "../_shared/course-catalog-data";
 import { useEnrollments, getProgressPercent, isCertificateEligible, getNextLessonId } from "../_shared/use-enrollments";
+import { CompletedCoursesSection } from "./_components/completed-courses-section";
 
 /** Simulated network delay before the shared enrollment store's initial snapshot is shown. */
 const LOAD_DELAY_MS = 300;
@@ -128,28 +129,7 @@ export default function MyCoursesPage() {
       )}
 
       {/* Completed */}
-      {completed.length > 0 && (
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Award size={14} color="var(--gold)" /> Completed
-          </div>
-          {completed.map(({ enrollment, course }) => (
-            <div key={course.id} style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 6, position: "relative", overflow: "hidden", background: "rgba(212,168,67,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <RemoteImage src={course.image} alt={course.title} fill sizes="32px" style={{ objectFit: "cover" }} fallback={<GraduationCap size={16} color="var(--gold)" />} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{course.title}</div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>
-                  {course.lessons} lessons • Completed
-                  {!isCertificateEligible(enrollment) && " • Pass the assessment for a certificate"}
-                </div>
-              </div>
-              {isCertificateEligible(enrollment) ? <GraduationCap size={14} color="var(--gold)" /> : <ChevronRight size={14} color="var(--text-muted)" />}
-            </div>
-          ))}
-        </div>
-      )}
+      <CompletedCoursesSection completed={completed} />
     </div>
   );
 }

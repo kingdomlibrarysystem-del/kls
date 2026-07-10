@@ -19,6 +19,7 @@ import {
   BookCopy,
   Trophy,
   Heart,
+  CalendarClock,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -53,6 +54,7 @@ const navSections: NavSection[] = [
       { icon: <CheckSquare size={12} />, label: "My Courses", href: "/member/courses" },
       { icon: <ClipboardList size={12} />, label: "Assessments", href: "/member/assessments" },
       { icon: <Award size={12} />, label: "Certificates", href: "/member/certificates" },
+      { icon: <CalendarClock size={12} />, label: "My Sessions", href: "/member/sessions" },
     ],
   },
 ];
