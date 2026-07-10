@@ -5,13 +5,21 @@ import { DollarSign, Receipt, Eye } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { bookRevenue, payoutHistory, payoutStatusConfig, type BookRevenueRow, type PayoutRow } from './earnings-data'
+import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
+import { useRevenue } from '@/app/dashboard/publishing/revenue/_components/use-revenue'
+import type { RevenueRow } from '@/app/dashboard/publishing/revenue/_components/revenue-data'
+import { payoutHistory, payoutStatusConfig, type PayoutRow } from './earnings-data'
 import { RevenueDetailModal } from './revenue-detail-modal'
 
-/** Simulated network delay before mock earnings data becomes visible. */
+/** Simulated network delay before the shared revenue store's initial snapshot is shown. */
 const LOAD_DELAY_MS = 400
 
-function buildRevenueColumns(onView: (r: BookRevenueRow) => void): Column<BookRevenueRow>[] {
+/** `RevenueRow` plus the one field this view needs that the admin table doesn't show — a pure derived number, not independent data. */
+export interface ContributorRevenueRow extends RevenueRow {
+  contributorEarnings: number
+}
+
+function buildRevenueColumns(onView: (r: ContributorRevenueRow) => void): Column<ContributorRevenueRow>[] {
   return [
     { key: 'publication', label: 'Publication', sortable: true, render: (r) => <span className="font-semibold text-w-950 max-w-55 truncate block">{r.publication}</span> },
     { key: 'contributorShare', label: 'Your Share', sortable: true, render: (r) => <span className="text-w-700">{r.contributorShare}%</span> },
@@ -52,10 +60,23 @@ function LoadingRows() {
   )
 }
 
-/** Per-book revenue breakdown and payout history for the signed-in contributor. */
+/**
+ * Per-book revenue breakdown and payout history for the signed-in
+ * contributor. Revenue rows are read directly from the same `useRevenue()`
+ * store `/dashboard/publishing/revenue` renders — filtered to this
+ * contributor — so an admin approving a submission in the Review Queue
+ * (which calls `addRevenueRowForApproval`) is reflected here immediately,
+ * instead of this page showing a frozen, hand-authored copy that could
+ * silently drift from (or contradict) the admin-side pending/approved state.
+ */
 export function EarningsView() {
   const [loading, setLoading] = useState(true)
-  const [viewing, setViewing] = useState<BookRevenueRow | null>(null)
+  const [viewing, setViewing] = useState<ContributorRevenueRow | null>(null)
+  const revenue = useRevenue()
+
+  const bookRevenue: ContributorRevenueRow[] = revenue
+    .filter((r) => r.contributor === CONTRIBUTOR_NAME)
+    .map((r) => ({ ...r, contributorEarnings: Math.round((r.totalRevenue * r.contributorShare) / 100) }))
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -75,7 +96,7 @@ export function EarningsView() {
         ) : bookRevenue.length === 0 ? (
           <EmptyState icon={DollarSign} title="No revenue yet" description="Earnings appear here once a published book generates sales." style={{ color: 'var(--text-secondary)' }} />
         ) : (
-          <DataTable<BookRevenueRow>
+          <DataTable<ContributorRevenueRow>
             data={bookRevenue}
             columns={buildRevenueColumns(setViewing)}
             rowKey={(r) => r.id}

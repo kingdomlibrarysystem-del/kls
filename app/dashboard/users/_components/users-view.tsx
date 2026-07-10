@@ -6,6 +6,8 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
+import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
 import { initialUsers, roleColors, statusColors, type PlatformUser } from './users-data'
 import { UserFormModal } from './user-form-modal'
 import { UserDetailModal } from './user-detail-modal'
@@ -29,6 +31,8 @@ export function UsersView() {
   const [editing, setEditing] = useState<PlatformUser | null>(null)
   const [viewing, setViewing] = useState<PlatformUser | null>(null)
   const [deleting, setDeleting] = useState<PlatformUser | null>(null)
+  const { user: currentUser } = useAuth()
+  const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin User'
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -46,11 +50,26 @@ export function UsersView() {
   const handleSave = (data: { name: string; email: string; role: PlatformUser['role']; status: PlatformUser['status'] }, editingId: string | null) => {
     try {
       if (editingId) {
+        const before = users.find((u) => u.id === editingId)
         setUsers((prev) => prev.map((u) => (u.id === editingId ? { ...u, ...data } : u)))
+        if (before && before.role !== data.role) {
+          logAuditEvent({
+            actor: actorName,
+            action: 'ROLE_ASSIGNED',
+            target: `${data.name} → ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
+            notes: `Before: ${before.role.charAt(0).toUpperCase() + before.role.slice(1)}. After: ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}.`,
+          })
+        }
         showToast(`Updated "${data.name}".`)
       } else {
         const newUser: PlatformUser = { id: crypto.randomUUID(), joinDate: new Date().toISOString().split('T')[0], ...data }
         setUsers((prev) => [newUser, ...prev])
+        logAuditEvent({
+          actor: actorName,
+          action: 'USER_CREATED',
+          target: `${data.name} (${data.role})`,
+          notes: 'Account created directly by admin, not self-registered.',
+        })
         showToast(`Added "${data.name}".`)
       }
       setFormOpen(false)

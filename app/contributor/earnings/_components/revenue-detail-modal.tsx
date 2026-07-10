@@ -1,9 +1,10 @@
 import { Percent, DollarSign, Receipt } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { payoutStatusConfig, type BookRevenueRow, type PayoutRow } from './earnings-data'
+import { payoutStatusConfig, type PayoutRow } from './earnings-data'
+import type { ContributorRevenueRow } from './earnings-view'
 
 interface RevenueDetailModalProps {
-  row: BookRevenueRow | null
+  row: ContributorRevenueRow | null
   /** The payout matching this row's earnings amount, if one has been issued yet. */
   matchingPayout: PayoutRow | undefined
   onClose: () => void

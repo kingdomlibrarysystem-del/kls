@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
+import { useAuth } from '@/contexts/auth-context'
+import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
 import { initialData, daysOverdue, type Borrowing, type BorrowStatus } from './_components/borrowings-data'
 import { BorrowingsStats } from './_components/borrowings-stats'
 import { BorrowingsTable } from './_components/borrowings-table'
@@ -14,13 +16,24 @@ export default function AdminBorrowingsPage() {
   const [statusFilter, setStatusFilter] = useState<BorrowStatus | 'all'>('all')
   const [toast, setToast] = useState('')
   const [viewing, setViewing] = useState<Borrowing | null>(null)
+  const { user: currentUser } = useAuth()
+  const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Staff User'
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
   const updateRow = (id: string, patch: Partial<Borrowing>) =>
     setData((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
 
-  const handleApprove = (b: Borrowing) => { updateRow(b.id, { status: 'active' }); showToast(`Approved borrow for ${b.memberName}`) }
+  const handleApprove = (b: Borrowing) => {
+    updateRow(b.id, { status: 'active' })
+    logAuditEvent({
+      actor: actorName,
+      action: 'BORROW_APPROVED',
+      target: `${b.memberName} — ${b.resourceTitle}`,
+      notes: 'Approved at circulation desk.',
+    })
+    showToast(`Approved borrow for ${b.memberName}`)
+  }
   const handleReject = (b: Borrowing) => { updateRow(b.id, { status: 'rejected' }); showToast(`Rejected borrow for ${b.memberName}`) }
   const handleReturn = (b: Borrowing) => {
     const fine = b.status === 'overdue' ? daysOverdue(b.dueDate) * 200 : null

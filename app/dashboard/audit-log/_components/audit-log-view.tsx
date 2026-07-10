@@ -5,7 +5,8 @@ import { ScrollText, Eye } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { mockAuditEntries, auditActionLabels, type AuditEntry, type AuditAction } from './audit-log-data'
+import { auditActionLabels, type AuditEntry, type AuditAction } from './audit-log-data'
+import { useAuditLog } from './use-audit-log'
 import { AuditEntryDetailModal } from './audit-entry-detail-modal'
 import { AuditLogStats } from './audit-log-stats'
 
@@ -37,6 +38,7 @@ export function AuditLogView() {
   const [loading, setLoading] = useState(true)
   const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all')
   const [viewing, setViewing] = useState<AuditEntry | null>(null)
+  const entries = useAuditLog()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -53,11 +55,11 @@ export function AuditLogView() {
     )
   }
 
-  if (mockAuditEntries.length === 0) {
+  if (entries.length === 0) {
     return <EmptyState icon={ScrollText} title="No audit entries yet" description="Audit events will appear here as they occur." />
   }
 
-  const tableData = actionFilter === 'all' ? mockAuditEntries : mockAuditEntries.filter((e) => e.action === actionFilter)
+  const tableData = actionFilter === 'all' ? entries : entries.filter((e) => e.action === actionFilter)
 
   return (
     <>

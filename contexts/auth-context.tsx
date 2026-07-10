@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { logAuditEvent } from "@/app/dashboard/audit-log/_components/use-audit-log";
 
 export type UserRole = "admin" | "manager" | "staff" | "contributor" | "member";
 
@@ -60,13 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const u = found ?? mockUsers.member;
     setUser(u);
     localStorage.setItem("kcs_user", JSON.stringify(u));
+    logAuditEvent({ actor: `${u.firstName} ${u.lastName}`, action: "LOGIN", target: "Session", notes: "Standard login, no prior failed attempts." });
     setIsLoading(false);
   }, []);
 
   const logout = useCallback(() => {
+    if (user) {
+      logAuditEvent({ actor: `${user.firstName} ${user.lastName}`, action: "LOGOUT", target: "Session", notes: "Session ended by user." });
+    }
     setUser(null);
     localStorage.removeItem("kcs_user");
-  }, []);
+  }, [user]);
 
   const switchRole = useCallback((role: UserRole) => {
     const u = mockUsers[role];
@@ -93,8 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const forgotPassword = useCallback(async (_email: string) => {
+  const forgotPassword = useCallback(async (email: string) => {
     await new Promise((r) => setTimeout(r, 300));
+    logAuditEvent({ actor: email, action: "PASSWORD_RESET", target: email, notes: 'Reset requested via "Forgot Password" flow.' });
   }, []);
 
   const verifyEmail = useCallback(async (_token: string) => {

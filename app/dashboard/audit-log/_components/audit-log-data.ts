@@ -1,4 +1,9 @@
-/** Audit event category, per RULES.md §10 (required audit-log events). */
+/**
+ * Audit event category, per RULES.md §10 (required audit-log events).
+ * `PUBLICATION_REJECTED` was added alongside the write path so a Reject
+ * decision in the Review Queue has its own real category instead of being
+ * silently folded into `PUBLICATION_APPROVED`.
+ */
 export type AuditAction =
   | 'LOGIN'
   | 'LOGOUT'
@@ -7,6 +12,7 @@ export type AuditAction =
   | 'ROLE_ASSIGNED'
   | 'BORROW_APPROVED'
   | 'PUBLICATION_APPROVED'
+  | 'PUBLICATION_REJECTED'
   | 'PAYMENT_PROCESSED'
 
 export interface AuditEntry {
@@ -29,6 +35,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   ROLE_ASSIGNED: 'Role Assigned',
   BORROW_APPROVED: 'Borrow Approved',
   PUBLICATION_APPROVED: 'Publication Approved',
+  PUBLICATION_REJECTED: 'Publication Rejected',
   PAYMENT_PROCESSED: 'Payment Processed',
 }
 

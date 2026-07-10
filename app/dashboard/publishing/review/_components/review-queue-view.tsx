@@ -5,6 +5,8 @@ import { CheckCircle, XCircle, ClipboardList } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { useAuth } from '@/contexts/auth-context'
+import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
 import { reviewStatusConfig, type PublicationSubmission } from './review-data'
 import { ReviewModal } from './review-modal'
 import { addRevenueRowForApproval } from '../../revenue/_components/use-revenue'
@@ -28,6 +30,8 @@ export function ReviewQueueView() {
   const [modalAction, setModalAction] = useState<ModalAction>(null)
 
   const queue = useReviewQueue()
+  const { user: currentUser } = useAuth()
+  const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Manager User'
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -48,6 +52,12 @@ export function ReviewQueueView() {
       if (!modalTarget || !modalAction) throw new Error('No submission selected')
       if (modalAction === 'approve') addRevenueRowForApproval(modalTarget.title, modalTarget.contributor)
       removeSubmissionFromQueue(modalTarget.id)
+      logAuditEvent({
+        actor: actorName,
+        action: modalAction === 'approve' ? 'PUBLICATION_APPROVED' : 'PUBLICATION_REJECTED',
+        target: modalTarget.title,
+        notes: notes || (modalAction === 'approve' ? 'Approved after review.' : 'Rejected after review.'),
+      })
       showToast(
         `${modalAction === 'approve' ? 'Approved' : 'Rejected'} "${modalTarget.title}"${notes ? ` — notes: ${notes}` : ''}`
       )

@@ -1,18 +1,21 @@
 import { CategoryBarChart } from '@/components/ui/category-bar-chart'
-import { mockAuditEntries, auditActionLabels, type AuditAction } from './audit-log-data'
+import { auditActionLabels, type AuditAction } from './audit-log-data'
+import { useAuditLog } from './use-audit-log'
 
 /**
  * Summary for the audit log: total-event stat cards (one per action type,
- * 8 categories per RULES.md §10) plus an events-by-action-type chart —
- * both derived from the same real `mockAuditEntries` the table below reads,
- * so counts can never disagree with the rows a manager can actually see.
+ * 9 categories per RULES.md §10, now including PUBLICATION_REJECTED) plus
+ * an events-by-action-type chart — both derived from the same live
+ * `useAuditLog()` store the table below reads, so a real action logged in
+ * this session immediately moves its category's count.
  */
 export function AuditLogStats() {
+  const entries = useAuditLog()
   const actions = Object.keys(auditActionLabels) as AuditAction[]
   const countsByAction = actions.map((a) => ({
     action: a,
     label: auditActionLabels[a],
-    count: mockAuditEntries.filter((e) => e.action === a).length,
+    count: entries.filter((e) => e.action === a).length,
   }))
 
   const chartData = countsByAction.map((c) => ({ name: c.label, value: c.count }))

@@ -1,14 +1,14 @@
-/** Per-book revenue split, per APP_DOC Task 5.4 / Prisma `RevenueShare`. */
-export interface BookRevenueRow {
-  id: string
-  publication: string
-  contributorShare: number
-  platformShare: number
-  totalRevenue: number
-  contributorEarnings: number
-}
-
-/** A single payout, per APP_DOC Task 5.4 / Prisma `Transaction`. */
+/**
+ * A single payout, per APP_DOC Task 5.4 / Prisma `Transaction`. No admin-side
+ * equivalent exists anywhere in this app (no payment/payout processing page
+ * — confirmed via the same "no payments/subscription data model" finding
+ * documented in final-quality-audit.md's Batch 4), so payout history stays
+ * contributor-local mock data rather than a cross-role store. Per-publication
+ * revenue itself is NOT duplicated here anymore — see earnings-view.tsx,
+ * which now reads the real, shared `useRevenue()` store (the same one
+ * `/dashboard/publishing/revenue` renders) filtered to this contributor,
+ * instead of this file's own frozen copy.
+ */
 export type PayoutStatus = 'PENDING' | 'PAID'
 
 export interface PayoutRow {
@@ -18,13 +18,6 @@ export interface PayoutRow {
   method: string
   status: PayoutStatus
 }
-
-/** Mock revenue/payout data for the signed-in contributor ("Pastor Emmanuel Rugamba"). */
-export const bookRevenue: BookRevenueRow[] = [
-  { id: 'rev-001', publication: 'Walking in Covenant', contributorShare: 70, platformShare: 30, totalRevenue: 245000, contributorEarnings: 171500 },
-  { id: 'rev-004', publication: 'Leading with Humility', contributorShare: 70, platformShare: 30, totalRevenue: 138000, contributorEarnings: 96600 },
-  { id: 'rev-006', publication: 'The Weight of Servant Leadership', contributorShare: 65, platformShare: 35, totalRevenue: 176000, contributorEarnings: 114400 },
-]
 
 export const payoutHistory: PayoutRow[] = [
   { id: 'pay-001', date: '2026-04-05', amount: 96600, method: 'Mobile Money', status: 'PAID' },
