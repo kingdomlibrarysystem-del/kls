@@ -5,7 +5,7 @@ import LecturerMobileBottomNav from "./_components/lecturer-mobile-bottom-nav";
 export default function LecturerLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <AppTopbar portalLabel="Lecturer Portal" profileHref="/lecturer" notificationCount={0} />
+      <AppTopbar portalLabel="Lecturer Portal" profileHref="/lecturer" />
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
           <LecturerSidebar />

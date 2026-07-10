@@ -4,27 +4,33 @@ import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useAuth } from '@/contexts/auth-context'
+import { useNotifications } from '@/app/dashboard/notifications/_components/use-notifications'
 
 interface AppTopbarProps {
   /** Portal name shown at the left, e.g. "Member Portal" or "Contributor Workspace". */
   portalLabel: string
   /** Where the avatar/identity block links to, e.g. "/member/profile". */
   profileHref: string
-  /** Mock unread notification count shown as a badge. */
-  notificationCount?: number
 }
 
 /**
- * Shared topbar for authenticated app areas (member, contributor) —
- * portal label, language switch, notifications, and user identity. This is
- * intentionally not the public storefront `MainHeader`: no category
- * dropdown, cart, or favorites icons, since those are irrelevant once a
- * user is inside their own portal. Mirrors the content shape of
- * `app/dashboard/_components/topbar.tsx` (Dialect B) without dashboard's
- * admin-only quick-link row.
+ * Shared topbar for authenticated app areas (member, contributor,
+ * lecturer) — portal label, language switch, notifications, and user
+ * identity. This is intentionally not the public storefront `MainHeader`:
+ * no category dropdown, cart, or favorites icons, since those are
+ * irrelevant once a user is inside their own portal. Mirrors the content
+ * shape of `app/dashboard/_components/topbar.tsx` (Dialect B) without
+ * dashboard's admin-only quick-link row.
+ *
+ * The unread badge reads the real shared `useNotifications()` store
+ * instead of a hardcoded prop — previously each layout passed its own
+ * fabricated `notificationCount` (member: 3, contributor: 1, lecturer: 0)
+ * with no connection to the actual notifications list.
  */
-export function AppTopbar({ portalLabel, profileHref, notificationCount = 0 }: AppTopbarProps) {
+export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
   const { user } = useAuth()
+  const notifications = useNotifications()
+  const notificationCount = notifications.filter((n) => !n.read).length
 
   return (
     <header
@@ -49,10 +55,10 @@ export function AppTopbar({ portalLabel, profileHref, notificationCount = 0 }: A
       <div className="flex items-center" style={{ gap: 14, marginLeft: 'auto' }}>
         <LanguageSwitcher minimal />
 
-        <button
-          type="button"
+        <Link
+          href="/dashboard/notifications"
           aria-label={notificationCount > 0 ? `Notifications, ${notificationCount} unread` : 'Notifications'}
-          style={{ position: 'relative', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
+          style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
         >
           <Bell size={18} />
           {notificationCount > 0 && (
@@ -66,7 +72,7 @@ export function AppTopbar({ portalLabel, profileHref, notificationCount = 0 }: A
               {notificationCount}
             </span>
           )}
-        </button>
+        </Link>
 
         <Link
           href={profileHref}

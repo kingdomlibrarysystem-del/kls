@@ -5,7 +5,7 @@ import MemberMobileBottomNav from "./_components/mobile-bottom-nav";
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <AppTopbar portalLabel="Member Portal" profileHref="/member/profile" notificationCount={3} />
+      <AppTopbar portalLabel="Member Portal" profileHref="/member/profile" />
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
           <MemberSidebar />

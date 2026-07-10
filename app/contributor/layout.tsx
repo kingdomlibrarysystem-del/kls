@@ -5,7 +5,7 @@ import ContributorMobileBottomNav from "./_components/contributor-mobile-bottom-
 export default function ContributorLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <AppTopbar portalLabel="Contributor Workspace" profileHref="/contributor" notificationCount={1} />
+      <AppTopbar portalLabel="Contributor Workspace" profileHref="/contributor" />
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
           <ContributorSidebar />

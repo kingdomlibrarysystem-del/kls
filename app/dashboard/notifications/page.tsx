@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { Bell, BookOpen, CalendarClock, GraduationCap, BookCopy, AlertCircle, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
-import { mockNotifications, type NotificationType } from './_components/notifications-data'
+import type { NotificationType } from './_components/notifications-data'
+import { useNotifications, markNotificationRead } from './_components/use-notifications'
 
 const iconMap: Record<NotificationType, React.ReactNode> = {
   borrow:      <BookOpen size={16} className="text-green-600" />,
@@ -22,7 +23,8 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
  * mock data before being wired up.
  */
 export default function NotificationsPage() {
-  const unread = mockNotifications.filter((n) => !n.read).length
+  const notifications = useNotifications()
+  const unread = notifications.filter((n) => !n.read).length
 
   return (
     <PageTransition>
@@ -32,10 +34,11 @@ export default function NotificationsPage() {
       />
 
       <div className="space-y-2">
-        {mockNotifications.map((n) => (
+        {notifications.map((n) => (
           <Link
             key={n.id}
             href={n.href}
+            onClick={() => markNotificationRead(n.id)}
             aria-label={`View details for: ${n.title}`}
             className={`flex items-start gap-4 p-4 rounded-lg border transition-colors hover:border-w-500 ${
               n.read ? 'bg-white border-w-300' : 'bg-form-highlight border-w-400'
