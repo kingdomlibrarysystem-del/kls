@@ -10,6 +10,7 @@ import { FormContainer } from '@/components/ui/form-container'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,6 +22,7 @@ export default function ForgotPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const { forgotPassword } = useAuth()
 
   const {
     register,
@@ -35,8 +37,7 @@ export default function ForgotPasswordPage() {
     setSubmitError('')
 
     try {
-      // TODO: Call forgot password API
-      console.log('[v0] Forgot password request:', data)
+      await forgotPassword(data.email)
       setSubmitSuccess(true)
     } catch (error) {
       setSubmitError(

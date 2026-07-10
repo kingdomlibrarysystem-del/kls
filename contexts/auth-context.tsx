@@ -21,6 +21,14 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
+  /** Merges a partial edit (e.g. name/email from a profile form) into the current user and persists it, same as login/switchRole. */
+  updateUser: (updates: Partial<Pick<User, "firstName" | "lastName" | "email">>) => void;
+  /** Creates a new mock member account and logs them in immediately, same as login. */
+  register: (fullName: string, email: string, _password: string) => Promise<void>;
+  /** Simulates sending a reset email — no real email/token flow exists to model, so this just resolves after a delay. */
+  forgotPassword: (email: string) => Promise<void>;
+  /** Simulates confirming a verification token — resolves after a delay, no real token check. */
+  verifyEmail: (token: string) => Promise<void>;
 }
 
 const mockUsers: Record<UserRole, User> = {
@@ -66,8 +74,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("kcs_user", JSON.stringify(u));
   }, []);
 
+  const updateUser = useCallback((updates: Partial<Pick<User, "firstName" | "lastName" | "email">>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updates };
+      localStorage.setItem("kcs_user", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const register = useCallback(async (fullName: string, email: string, _password: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+    const [firstName, ...rest] = fullName.trim().split(/\s+/);
+    const u: User = { id: crypto.randomUUID(), firstName: firstName || fullName, lastName: rest.join(" "), email, role: "member", roleName: "Kingdom Member" };
+    setUser(u);
+    localStorage.setItem("kcs_user", JSON.stringify(u));
+    setIsLoading(false);
+  }, []);
+
+  const forgotPassword = useCallback(async (_email: string) => {
+    await new Promise((r) => setTimeout(r, 300));
+  }, []);
+
+  const verifyEmail = useCallback(async (_token: string) => {
+    await new Promise((r) => setTimeout(r, 300));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, switchRole, updateUser, register, forgotPassword, verifyEmail }}>
       {children}
     </AuthContext.Provider>
   );

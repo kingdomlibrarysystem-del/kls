@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { User, Mail, Phone, MapPin, Award, BookOpen, GraduationCap, CreditCard, Calendar, Shield, Edit2, Star, Heart } from "lucide-react";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
@@ -10,12 +11,14 @@ import { NotificationPreferencesSection } from "./_components/notification-prefe
 import { TwoFactorSection } from "./_components/two-factor-section";
 import { SessionsSection } from "./_components/sessions-section";
 import { LoginHistorySection } from "./_components/login-history-section";
+import { EditProfileModal } from "./_components/edit-profile-modal";
 
 /** This mock has a single member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
 const MEMBER_NAME = "John Doe";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [editingProfile, setEditingProfile] = useState(false);
   const borrowings = useBorrowings();
   const favorites = useFavorites();
   const enrollments = useEnrollments();
@@ -71,7 +74,11 @@ export default function ProfilePage() {
                 <Shield size={10} /> Member since June 2026
               </div>
             </div>
-            <button style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              onClick={() => setEditingProfile(true)}
+              aria-label="Edit profile"
+              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+            >
               <Edit2 size={12} /> Edit Profile
             </button>
           </div>
@@ -136,6 +143,8 @@ export default function ProfilePage() {
 
       {/* Login history */}
       <LoginHistorySection />
+
+      <EditProfileModal open={editingProfile} onClose={() => setEditingProfile(false)} />
     </div>
   );
 }
