@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { Search, BookOpen, ChevronDown, ChevronUp, X, BookMarked, Film, Package } from 'lucide-react'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
@@ -12,21 +13,35 @@ import { BorrowReserveConfirmModal } from './borrow-reserve-confirm-modal'
 
 const formats = ['All', ...Object.values(mediaTypeLabels)]
 
+/**
+ * The identity portion (cover, title, price, badges) is wrapped in a real
+ * `<Link>` to the detail page — previously this grid had no click-through
+ * to `/library/[id]` at all. The "show more"/Borrow/Reserve controls stay
+ * as siblings outside that link (not nested inside it), so a real `<button>`
+ * or a real `<Link>` (signed-out state) never ends up nested inside another
+ * `<a>`, which HTML disallows — same reasoning `scroll-card.tsx` uses,
+ * just via sibling placement here instead of `stopPropagation` since none
+ * of the actions need to happen "through" the link area.
+ */
 function BookCard({ book, onAction }: { book: Resource; onAction: (book: Resource, action: 'borrow' | 'reserve') => void }) {
   const [showSummary, setShowSummary] = useState(false)
   const { isAuthenticated } = useAuth()
   const outOfStock = book.availableQty === 0
+  const detailHref = `/library/${book.id}`
+  const loginHref = `/auth/login?redirect=${encodeURIComponent(detailHref)}`
 
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-      <div className="relative w-full h-52 bg-w-200">
-        <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" />
-      </div>
+      <Link href={detailHref} aria-label={`View details for ${book.title}`}>
+        <div className="relative w-full h-52 bg-w-200">
+          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" />
+        </div>
+      </Link>
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <div>
+        <Link href={detailHref} className="hover:text-w-600 transition-colors">
           <h3 className="font-cinzel text-sm font-semibold text-w-950 leading-snug mb-1">{book.title}</h3>
           <p className="font-lato text-xs text-w-700">by {book.author}</p>
-        </div>
+        </Link>
         <p className="font-cinzel text-base font-bold text-w-600">{book.price.toLocaleString('en-RW')} RWF</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{book.category}</span>
@@ -56,10 +71,10 @@ function BookCard({ book, onAction }: { book: Resource; onAction: (book: Resourc
             </>
           ) : (
             <>
-              <Link href={`/auth/login?redirect=${encodeURIComponent('/library')}`} className="flex-1">
+              <Link href={loginHref} className="flex-1">
                 <ElegantButton variant="primary" className="w-full text-xs py-2">Borrow</ElegantButton>
               </Link>
-              <Link href={`/auth/login?redirect=${encodeURIComponent('/library')}`} className="flex-1">
+              <Link href={loginHref} className="flex-1">
                 <ElegantButton variant="outline" className="w-full text-xs py-2">Reserve</ElegantButton>
               </Link>
             </>
@@ -70,13 +85,20 @@ function BookCard({ book, onAction }: { book: Resource; onAction: (book: Resourc
   )
 }
 
-/** Public book browse grid — search + category + media-type filter over the shared resources store. */
+/**
+ * Public book browse grid — search + category + media-type filter over the
+ * shared resources store. Seeds its initial search text from `?q=`, so the
+ * header's global search bar (which just navigates to `/library?q=...`)
+ * actually produces filtered results on arrival, not just a page reload.
+ */
 export function LibraryBrowser() {
   const books = useResources()
-  const [search, setSearch] = useState('')
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams.get('q') ?? ''
+  const [search, setSearch] = useState(initialQuery)
   const [category, setCategory] = useState('All')
   const [format, setFormat] = useState('All')
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(!!initialQuery)
   const [pending, setPending] = useState<{ book: Resource; action: 'borrow' | 'reserve' } | null>(null)
 
   const categories = ['All', ...Array.from(new Set(books.map((b) => b.category)))]

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/ui/page-header'
 import { ElegantButton } from '@/components/ui/elegant-button'
@@ -19,7 +20,9 @@ export default function LibraryPage() {
           subtitle="Discover books, journals, and digital resources"
           className="text-center"
         />
-        <LibraryBrowser />
+        <Suspense fallback={null}>
+          <LibraryBrowser />
+        </Suspense>
         <div className="mt-14 text-center border-t border-w-300 pt-10">
           <p className="font-lato text-w-700 mb-4">
             Want to borrow or reserve books? Create a free account.

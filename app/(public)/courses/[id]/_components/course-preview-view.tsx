@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { GraduationCap, BookX, Clock, ListChecks, User } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
+import { enrollInCourse, useEnrollments } from '@/app/member/_shared/use-enrollments'
 import { coursePreviews } from './course-preview-data'
 
 /** Simulated network delay before the mock course preview becomes visible. */
@@ -29,14 +31,25 @@ function formatDuration(totalMinutes: number): string {
  */
 export function CoursePreviewView({ id }: CoursePreviewViewProps) {
   const [loading, setLoading] = useState(true)
+  const [enrolling, setEnrolling] = useState(false)
   const { isAuthenticated } = useAuth()
+  const router = useRouter()
+  const enrollments = useEnrollments()
 
   const course = coursePreviews[id]
+  const alreadyEnrolled = isAuthenticated && enrollments.some((e) => e.courseId === id)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
+
+  const handleEnroll = () => {
+    if (!course) return
+    setEnrolling(true)
+    enrollInCourse(course.id, course.lessons)
+    router.push(`/member/courses/${course.id}`)
+  }
 
   if (loading) {
     return (
@@ -58,10 +71,7 @@ export function CoursePreviewView({ id }: CoursePreviewViewProps) {
     )
   }
 
-  const enrollHref = isAuthenticated
-    ? `/member/courses/${course.id}`
-    : `/auth/login?redirect=${encodeURIComponent(`/courses/${course.id}`)}`
-  const enrollLabel = isAuthenticated ? 'Go to Course' : 'Sign In to Enroll'
+  const loginHref = `/auth/login?redirect=${encodeURIComponent(`/courses/${course.id}`)}`
 
   return (
     <div className="max-w-2xl">
@@ -86,9 +96,20 @@ export function CoursePreviewView({ id }: CoursePreviewViewProps) {
         </span>
       </div>
 
-      <Link href={enrollHref}>
-        <ElegantButton variant="primary" aria-label={enrollLabel}>{enrollLabel}</ElegantButton>
-      </Link>
+      {isAuthenticated ? (
+        <ElegantButton
+          variant="primary"
+          loading={enrolling}
+          aria-label={alreadyEnrolled ? 'Continue Course' : 'Enroll in this course'}
+          onClick={handleEnroll}
+        >
+          {alreadyEnrolled ? 'Continue Course' : 'Enroll Now'}
+        </ElegantButton>
+      ) : (
+        <Link href={loginHref}>
+          <ElegantButton variant="primary" aria-label="Sign In to Enroll">Sign In to Enroll</ElegantButton>
+        </Link>
+      )}
     </div>
   )
 }
