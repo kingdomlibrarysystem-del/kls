@@ -15,6 +15,7 @@ export const defaultPermissions = [
   'publications:submit', 'publications:approve',
   'reports:view',
   'roles:manage',
+  'sessions:approve',
 ]
 
 export const permissionLabels: Record<string, string> = {
@@ -35,6 +36,7 @@ export const permissionLabels: Record<string, string> = {
   'publications:approve': 'Approve Publications',
   'reports:view': 'View Reports',
   'roles:manage': 'Manage Roles',
+  'sessions:approve': 'Approve Session Requests',
 }
 
 export const initialRoles: Role[] = [
@@ -43,4 +45,5 @@ export const initialRoles: Role[] = [
   { id: '3', name: 'Staff', description: 'Day-to-day operations: borrow/return, content moderation', userCount: 8, permissions: ['library:view', 'library:create', 'library:edit', 'borrow:approve', 'borrow:return', 'users:view'] },
   { id: '4', name: 'Contributor', description: 'Authors and researchers', userCount: 12, permissions: ['library:view', 'borrow:request', 'courses:view', 'courses:enroll', 'publications:submit'] },
   { id: '5', name: 'Member', description: 'Students and readers', userCount: 1240, permissions: ['library:view', 'borrow:request', 'courses:view', 'courses:enroll'] },
+  { id: '6', name: 'Lecturer', description: 'Teaches courses, hosts live sessions, messages learners', userCount: 1, permissions: ['library:view', 'courses:view', 'courses:create', 'sessions:approve'] },
 ]

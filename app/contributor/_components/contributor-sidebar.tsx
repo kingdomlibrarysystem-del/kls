@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
   Home,
   Upload,
@@ -26,20 +27,6 @@ const navItems: NavItem[] = [
   { icon: <GraduationCap size={14} />, label: "My Courses", href: "/contributor/courses" },
   { icon: <FlaskConical size={14} />, label: "My Research", href: "/contributor/research" },
 ];
-
-const ROLES = ["admin", "member", "contributor"] as const;
-
-const roleViewLabel: Record<(typeof ROLES)[number], string> = {
-  admin: "Admin View",
-  member: "Member View",
-  contributor: "Contributor View",
-};
-
-const roleViewRoute: Record<(typeof ROLES)[number], string> = {
-  admin: "/dashboard",
-  member: "/member",
-  contributor: "/contributor",
-};
 
 /**
  * Contributor workspace sidebar — mirrors `MemberSidebar`'s structure and
@@ -164,7 +151,7 @@ export default function ContributorSidebar() {
             <div style={{ padding: "6px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1 }}>
               SWITCH VIEW
             </div>
-            {ROLES.map((r) => (
+            {SWITCHABLE_ROLES.map((r) => (
               <div
                 key={r}
                 onClick={() => { switchRole(r); window.location.href = roleViewRoute[r]; }}

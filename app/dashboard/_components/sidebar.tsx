@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
   LayoutDashboard,
   Map,
@@ -326,10 +327,10 @@ export default function Sidebar() {
             <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
               ROLE SIMULATION
             </div>
-            {(["admin", "member", "contributor"] as const).map((r) => (
+            {SWITCHABLE_ROLES.map((r) => (
               <div
                 key={r}
-                onClick={() => { switchRole(r); window.location.href = r === "member" ? "/member" : r === "contributor" ? "/contributor" : "/dashboard"; }}
+                onClick={() => { switchRole(r); window.location.href = roleViewRoute[r]; }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -346,7 +347,7 @@ export default function Sidebar() {
                 }}
               >
                 <Shield size={12} />
-                {r === "admin" ? "Admin View" : r === "member" ? "Member View" : "Contributor View"}
+                {roleViewLabel[r]}
               </div>
             ))}
           </>
