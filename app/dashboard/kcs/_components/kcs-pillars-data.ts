@@ -30,6 +30,8 @@ export interface KcsPillar {
   description: string
   /** Longer description from the pillar's dedicated section further in the document. */
   detail: string
+  /** Real Unsplash photo URL for the pillar header — tasteful/generic (e.g. a scroll, a horizon), not a literal Bible-scene illustration. */
+  heroImage: string
   scrolls: Scroll[]
 }
 
@@ -44,6 +46,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: "Lays the foundation of God's Kingdom, creation, covenant, and divine law.",
     detail:
       "This section establishes the origin of all things. It defines creation, identity of man, authority and dominion, laws of the kingdom, and covenant relationship between the King and His people. This is the constitutional root. Every principle in the Kingdom must be traced back to this foundation.",
+    heroImage: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Gen', title: 'Genesis', status: 'AVAILABLE' },
       { code: 'Exo', title: 'Exodus', status: 'AVAILABLE' },
@@ -62,6 +65,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: "Chronicles the history of God's people, their victories, failures, and restoration.",
     detail:
       "This section records the practical outworking of Kingdom principles in real life. It reveals leadership patterns, national and personal decisions, consequences of obedience and disobedience, and cycles of corruption (kubora) and restoration. History is not just information, it is evidence.",
+    heroImage: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Josh', title: 'Joshua', status: 'AVAILABLE' },
       { code: 'Judg', title: 'Judges', status: 'AVAILABLE' },
@@ -85,6 +89,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: 'Provides wisdom, worship, practical living, and the fear of the Lord.',
     detail:
       "This section focuses on the internal life of man and the principles that govern it. It addresses the mind, heart, and soul, relationships and emotions, health, discipline, and prosperity, and the practical application of truth in daily life. This is the operational knowledge of the Kingdom.",
+    heroImage: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Job', title: 'Job', status: 'AVAILABLE' },
       { code: 'Ps', title: 'Psalms (includes Psalm 151)', status: 'AVAILABLE' },
@@ -105,6 +110,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: "Declares God's message through the prophets, calling people to repentance and revealing future hope.",
     detail:
       "This section serves as the voice of correction and direction. It reveals exposure of corruption, calls to repentance, warnings of judgment, and promises of restoration and future hope. The prophetic system ensures that the Kingdom remains aligned with truth.",
+    heroImage: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Isa', title: 'Isaiah', status: 'AVAILABLE' },
       { code: 'Jer', title: 'Jeremiah', status: 'AVAILABLE' },
@@ -127,6 +133,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: "Reveals Jesus Christ as the King and the fulfillment of God's Kingdom.",
     detail:
       "This section reveals the King Himself. It demonstrates the nature and character of the King, the perfect model of Kingdom living, authority over sickness, sin, and systems, and the visible expression of invisible truth. Everything in the Kingdom is measured against this standard.",
+    heroImage: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Matt', title: 'Matthew', status: 'AVAILABLE' },
       { code: 'Mark', title: 'Mark', status: 'AVAILABLE' },
@@ -144,6 +151,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: 'Describes the growth of the Church through the power of the Holy Spirit.',
     detail:
       "This section records the birth and spread of the Kingdom community. It shows how the message expands, how power operates through people, and how communities are formed and transformed. This is the prototype of Kingdom movement.",
+    heroImage: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Act', title: 'Acts of the Apostles', status: 'AVAILABLE' },
     ],
@@ -158,6 +166,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: 'Explains Christian doctrine, spiritual growth, leadership, and Kingdom living.',
     detail:
       "This section provides clarity, interpretation, and application. It explains identity of Kingdom citizens, responsibilities and conduct, structure of the community (church as a colony of the Kingdom), and practical application of Kingdom laws. This is where understanding is deepened and confusion is removed.",
+    heroImage: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Ram', title: 'Romans', status: 'AVAILABLE' },
       { code: '1 Cor', title: '1 Corinthians', status: 'AVAILABLE' },
@@ -180,6 +189,7 @@ export const kcsPillars: Record<string, KcsPillar> = {
     description: "Reveals the ultimate victory of Christ and the establishment of God's eternal Kingdom.",
     detail:
       "This section reveals the final outcome of all things. It includes the throne and courts of heaven, judgment and accountability, spiritual realities beyond the physical world, and the establishment of the eternal Kingdom. This is the conclusion that defines all beginnings.",
+    heroImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&h=300&fit=crop',
     scrolls: [
       { code: 'Rev', title: 'Revelation', status: 'AVAILABLE' },
     ],

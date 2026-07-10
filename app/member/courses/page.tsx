@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PlayCircle, GraduationCap, ChevronRight, Award, BookX, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { RemoteImage } from "@/components/ui/remote-image";
 import { courseCatalog } from "../_shared/course-catalog-data";
 import { useEnrollments, getProgressPercent, isCertificateEligible, getNextLessonId } from "../_shared/use-enrollments";
 
@@ -99,7 +100,9 @@ export default function MyCoursesPage() {
             const nextLessonId = getNextLessonId(enrollment);
             return (
               <div key={course.id} style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-light)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><course.image size={20} color="var(--gold)" /></div>
+                <div style={{ width: 40, height: 40, borderRadius: 8, position: "relative", overflow: "hidden", background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <RemoteImage src={course.image} alt={course.title} fill sizes="40px" style={{ objectFit: "cover" }} fallback={<GraduationCap size={20} color="var(--gold)" />} />
+                </div>
                 <div style={{ flex: 1, minWidth: 160 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{course.title}</div>
                   <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 4 }}>{course.instructor} • {enrollment.completedLessonIds.length}/{enrollment.totalLessons} lessons</div>
@@ -132,7 +135,9 @@ export default function MyCoursesPage() {
           </div>
           {completed.map(({ enrollment, course }) => (
             <div key={course.id} style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 6, background: "rgba(212,168,67,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><course.image size={16} color="var(--gold)" /></div>
+              <div style={{ width: 32, height: 32, borderRadius: 6, position: "relative", overflow: "hidden", background: "rgba(212,168,67,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <RemoteImage src={course.image} alt={course.title} fill sizes="32px" style={{ objectFit: "cover" }} fallback={<GraduationCap size={16} color="var(--gold)" />} />
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{course.title}</div>
                 <div style={{ fontSize: 9, color: "var(--text-muted)" }}>

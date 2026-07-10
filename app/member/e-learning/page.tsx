@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { PlayCircle, Clock, Star, Search, CheckCircle2 } from "lucide-react";
+import { PlayCircle, Clock, Star, Search, CheckCircle2, GraduationCap } from "lucide-react";
+import { RemoteImage } from "@/components/ui/remote-image";
 import { courseCatalog, courseCategories } from "../_shared/course-catalog-data";
 import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
 
@@ -84,8 +85,15 @@ export default function ELearningPage() {
               onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
             >
               {/* Header */}
-              <div style={{ height: 100, background: "linear-gradient(135deg, var(--teal-light-transparent, rgba(45,212,191,0.1)), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <course.image size={32} color="var(--teal-light)" />
+              <div style={{ height: 100, position: "relative", background: "linear-gradient(135deg, var(--teal-light-transparent, rgba(45,212,191,0.1)), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <RemoteImage
+                  src={course.image}
+                  alt={course.title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  style={{ objectFit: "cover" }}
+                  fallback={<GraduationCap size={32} color="var(--teal-light)" />}
+                />
               </div>
               {/* Body */}
               <div style={{ padding: "10px 12px 12px" }}>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { BookCopy, Search, ScrollText } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { kcsPillars, type ScrollStatus } from './kcs-pillars-data'
 
 /** Simulated network delay before mock scrolls become visible. */
@@ -43,22 +44,33 @@ export function KcsPillarView({ pillarKey }: KcsPillarViewProps) {
   return (
     <div>
       {/* Header */}
-      <div className="card mb-4" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div className="flex items-center gap-2">
-          <div style={{ width: 40, height: 40, borderRadius: 8, background: 'linear-gradient(135deg, var(--gold-dim), var(--gold))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <BookCopy size={20} color="#fff" />
-          </div>
-          <div>
-            <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)', lineHeight: 1.2 }}>{pillar.name}</h1>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pillar.code} · {pillar.subtitle}</p>
+      <div className="card mb-4" style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden', padding: 0 }}>
+        <div style={{ position: 'relative', height: 120, background: 'linear-gradient(135deg, var(--gold-dim), var(--gold))' }}>
+          <RemoteImage
+            src={pillar.heroImage}
+            alt={`${pillar.name} pillar header`}
+            fill
+            sizes="(max-width: 768px) 100vw, 800px"
+            style={{ objectFit: 'cover' }}
+            fallback={<div />}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(0,0,0,0.55), rgba(0,0,0,0.15))' }} />
+          <div style={{ position: 'absolute', left: 14, bottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <BookCopy size={18} color="#fff" />
+            </div>
+            <div>
+              <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{pillar.name}</h1>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>{pillar.code} · {pillar.subtitle}</p>
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 mt-1">
+        <div className="flex flex-wrap gap-2 mt-1" style={{ padding: '0 14px' }}>
           <span className="stat-chip">{pillar.range}</span>
           <span className="stat-chip">{pillar.theme}</span>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 4 }}>{pillar.description}</p>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>{pillar.detail}</p>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 4, padding: '0 14px' }}>{pillar.description}</p>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, padding: '0 14px 14px' }}>{pillar.detail}</p>
       </div>
 
       {/* Search */}
