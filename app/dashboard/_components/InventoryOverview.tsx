@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Package,
   Plus,
@@ -22,8 +23,8 @@ const slices = [
 ];
 
 const quickActions = [
-  { icon: <Plus size={18} />, label: "Add New Item",      sub: "Add book, audio, video…"  },
-  { icon: <User size={18} />, label: "Register Member",   sub: "Add new library member…"  },
+  { icon: <Plus size={18} />, label: "Add New Item",      sub: "Add book, audio, video…",  href: "/dashboard/library"  },
+  { icon: <User size={18} />, label: "Register Member",   sub: "Add new library member…",  href: "/dashboard/users"    },
   { icon: <BarChart3 size={18} />, label: "Generate Report",   sub: "View analytics report…"   },
   { icon: <Database size={18} />, label: "Backup Data",       sub: "Library data backup…"     },
 ];
@@ -71,13 +72,24 @@ export default function InventoryOverview() {
           <Plus size={14} /> Quick Actions
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-          {quickActions.map((a) => (
-            <div key={a.label} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px", cursor: "pointer" }}>
-              <div style={{ fontSize: 18, marginBottom: 4 }}>{a.icon}</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-primary)" }}>{a.label}</div>
-              <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{a.sub}</div>
-            </div>
-          ))}
+          {quickActions.map((a) => {
+            const content = (
+              <>
+                <div style={{ fontSize: 18, marginBottom: 4 }}>{a.icon}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-primary)" }}>{a.label}</div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{a.sub}</div>
+              </>
+            );
+            return a.href ? (
+              <Link key={a.label} href={a.href} aria-label={a.label} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px", cursor: "pointer", textDecoration: "none" }}>
+                {content}
+              </Link>
+            ) : (
+              <div key={a.label} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px", cursor: "pointer" }}>
+                {content}
+              </div>
+            );
+          })}
         </div>
         <div style={{ marginTop: 8 }}>
           <button className="btn btn-outline-dim btn-sm">All Actions →</button>

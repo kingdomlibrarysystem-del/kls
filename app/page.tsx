@@ -6,6 +6,7 @@ import { HeroSection } from '@/components/home/hero-section'
 import { TrendingBooks } from '@/components/home/trending-books'
 import { ELearningSection } from '@/components/home/elearning-section'
 import { ResearchSection } from '@/components/home/research-section'
+import { NewsletterSection } from '@/components/home/newsletter-section'
 import { MainHeader } from '@/components/main-header'
 import { MainFooter } from '@/components/main-footer'
 
@@ -132,29 +133,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Newsletter Section */}
-      <div className="py-16 px-4 bg-form-highlight">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-cinzel text-3xl font-bold text-w-950 mb-4">Stay Updated</h2>
-          <p className="font-lato text-w-700 mb-8">
-            Get recommendations, new arrivals, and exclusive content delivered to your inbox monthly.
-          </p>
-          <form className="flex flex-col md:flex-row gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Your email address"
-              className="flex-1 px-6 py-3 font-lato text-sm border border-w-400 bg-white rounded focus:outline-none focus:border-w-600"
-              required
-            />
-            <button
-              type="submit"
-              className="px-8 py-3 bg-w-600 text-white font-lato font-semibold rounded hover:bg-w-700 transition-colors"
-            >
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </div>
+      <NewsletterSection />
      <MainFooter />
     </main>
   )

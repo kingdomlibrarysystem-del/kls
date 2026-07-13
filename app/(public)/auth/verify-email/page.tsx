@@ -6,17 +6,19 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/ui/page-header'
 import { FormContainer } from '@/components/ui/form-container'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const { verifyEmail } = useAuth()
   const [verificationStatus, setVerificationStatus] = useState<
     'verifying' | 'success' | 'error'
   >('verifying')
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    const verifyEmail = async () => {
+    const runVerification = async () => {
       if (!token) {
         setVerificationStatus('error')
         setErrorMessage('No verification token provided')
@@ -24,8 +26,7 @@ function VerifyEmailContent() {
       }
 
       try {
-        // TODO: Call verify email API with token
-        console.log('[v0] Verifying email with token:', token)
+        await verifyEmail(token)
         setVerificationStatus('success')
       } catch (error) {
         setVerificationStatus('error')
@@ -35,8 +36,8 @@ function VerifyEmailContent() {
       }
     }
 
-    verifyEmail()
-  }, [token])
+    runVerification()
+  }, [token, verifyEmail])
 
   if (verificationStatus === 'verifying') {
     return (

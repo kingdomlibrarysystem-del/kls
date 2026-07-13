@@ -35,7 +35,7 @@ const articles = [
     author: 'Dr. Sarah Chen',
     role: 'Research Scholar, MIT',
     readTime: '6 min read',
-    href: '/dashboard/research/collaborate',
+    href: '/dashboard/research/collaborations',
     highlight: false,
   },
 ]
@@ -152,7 +152,7 @@ export function ResearchSection() {
             </p>
           </div>
           <Link
-            href="/dashboard/research/new-paper"
+            href="/dashboard/research/submit"
             className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-w-accent dark:bg-amber-500 text-w-950 dark:text-[#0a0d1a] rounded font-lato font-bold hover:bg-w-300 dark:hover:bg-amber-400 transition"
           >
             Submit Your Paper <ArrowRight size={16} />

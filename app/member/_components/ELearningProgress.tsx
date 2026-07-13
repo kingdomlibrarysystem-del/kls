@@ -1,15 +1,30 @@
 "use client";
 
-import { GraduationCap, ChevronRight, PlayCircle, Award } from "lucide-react";
+import { GraduationCap, ChevronRight, Award } from "lucide-react";
+import { RankingBarChart } from "@/components/ui/ranking-bar-chart";
+import { courseCatalog } from "@/app/member/_shared/course-catalog-data";
+import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enrollments";
 
-const mockCourses = [
-  { title: "Kingdom Foundations", progress: 75, lessons: 12, completed: 9 },
-  { title: "Understanding Divine Purpose", progress: 40, lessons: 10, completed: 4 },
-  { title: "Leadership & Governance", progress: 10, lessons: 15, completed: 1 },
-];
-
+/**
+ * Dashboard-home widget showing real per-course progress from the shared
+ * `/member/*` enrollment store (not a local mock array), rendered as a
+ * horizontal ranking bar chart so multiple courses can be compared at a
+ * glance instead of stacked flat progress bars.
+ */
 export default function ELearningProgress() {
-  const totalProgress = mockCourses.length ? Math.round(mockCourses.reduce((s, c) => s + c.progress, 0) / mockCourses.length) : 0;
+  const enrollments = useEnrollments();
+
+  const rows = enrollments
+    .map((e) => ({ enrollment: e, course: courseCatalog.find((c) => c.id === e.courseId) }))
+    .filter((r): r is { enrollment: typeof enrollments[number]; course: NonNullable<typeof r.course> } => !!r.course);
+
+  const totalProgress = rows.length
+    ? Math.round(rows.reduce((s, r) => s + getProgressPercent(r.enrollment), 0) / rows.length)
+    : 0;
+
+  const chartData = rows
+    .map((r) => ({ name: r.course.title, value: getProgressPercent(r.enrollment) }))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
@@ -20,24 +35,17 @@ export default function ELearningProgress() {
           <Award size={12} /> {totalProgress}% overall
         </span>
       </div>
-      {mockCourses.length === 0 ? (
+      {rows.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 11 }}>
           Not enrolled in any courses yet.{" "}
           <a href="/member/e-learning" style={{ color: "var(--gold)", textDecoration: "underline" }}>Explore courses</a>
         </div>
       ) : (
-        mockCourses.map((c) => (
-          <div key={c.title} style={{ marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <PlayCircle size={12} color="var(--teal-light)" />
-              <span style={{ flex: 1, fontSize: 10, fontWeight: 600, color: "var(--text-primary)" }}>{c.title}</span>
-              <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{c.completed}/{c.lessons} lessons</span>
-            </div>
-            <div style={{ width: "100%", height: 4, background: "var(--bg-section)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: `${c.progress}%`, height: "100%", background: "var(--teal-light)", borderRadius: 2, transition: "width 0.3s" }} />
-            </div>
-          </div>
-        ))
+        <RankingBarChart
+          data={chartData}
+          height={Math.max(100, chartData.length * 36)}
+          ariaLabel="Course completion percentage, ranked highest to lowest"
+        />
       )}
       <a href="/member/courses" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 10, color: "var(--gold)", textDecoration: "none" }}>
         View all courses <ChevronRight size={12} />
