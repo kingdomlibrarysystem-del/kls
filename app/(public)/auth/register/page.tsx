@@ -11,6 +11,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { FormSection } from '@/components/ui/form-section'
+import { useAuth } from '@/contexts/auth-context'
 
 const registerSchema = z
   .object({
@@ -30,6 +31,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const { register: registerUser } = useAuth()
 
   const {
     register,
@@ -44,8 +46,7 @@ export default function RegisterPage() {
     setSubmitError('')
 
     try {
-      // TODO: Call registration API
-      console.log('[v0] Register data:', data)
+      await registerUser(data.fullName, data.email, data.password)
       setSubmitSuccess(true)
     } catch (error) {
       setSubmitError(

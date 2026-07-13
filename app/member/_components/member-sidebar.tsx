@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
   Home,
   BookOpen,
@@ -17,6 +18,9 @@ import {
   ChevronLeft,
   BookCopy,
   Trophy,
+  Heart,
+  CalendarClock,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -51,16 +55,17 @@ const navSections: NavSection[] = [
       { icon: <CheckSquare size={12} />, label: "My Courses", href: "/member/courses" },
       { icon: <ClipboardList size={12} />, label: "Assessments", href: "/member/assessments" },
       { icon: <Award size={12} />, label: "Certificates", href: "/member/certificates" },
+      { icon: <CalendarClock size={12} />, label: "My Sessions", href: "/member/sessions" },
     ],
   },
 ];
 
 const singleItems: NavItem[] = [
+  { icon: <MessageSquare size={14} />, label: "Messages", href: "/member/messages" },
+  { icon: <Heart size={14} />, label: "Favorites", href: "/member/favorites" },
   { icon: <Trophy size={14} />, label: "Leaderboard", href: "/member/leaderboard" },
   { icon: <User size={14} />, label: "My Profile", href: "/member/profile" },
 ];
-
-const ROLES = ["admin", "member"] as const;
 
 export default function MemberSidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -239,10 +244,10 @@ export default function MemberSidebar() {
             <div style={{ padding: "6px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1 }}>
               SWITCH VIEW
             </div>
-            {ROLES.map((r) => (
+            {SWITCHABLE_ROLES.map((r) => (
               <div
                 key={r}
-                onClick={() => { switchRole(r); window.location.href = r === "member" ? "/member" : "/dashboard"; }}
+                onClick={() => { switchRole(r); window.location.href = roleViewRoute[r]; }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -258,7 +263,7 @@ export default function MemberSidebar() {
                   if (user?.role !== r) e.currentTarget.style.color = "var(--text-secondary)";
                 }}
               >
-                {r === "admin" ? "⚙ Admin View" : "🏠 Member View"}
+                {roleViewLabel[r]}
               </div>
             ))}
           </>

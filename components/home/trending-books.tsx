@@ -27,8 +27,8 @@ const books = [
       text2: 'text-w-300 dark:text-amber-100',
       border: 'border-w-accent dark:border-amber-400',
     },
-    shopHref: '/reservations',
-    rentHref: '/reservations',
+    shopHref: '/library',
+    rentHref: '/library',
   },
   {
     src: '/images/book-A.jpg',

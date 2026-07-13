@@ -1,16 +1,43 @@
 "use client";
+import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { User, Mail, Phone, MapPin, Award, BookOpen, GraduationCap, CreditCard, Calendar, Shield, Edit2, Star, Heart } from "lucide-react";
+import { useBorrowings } from "@/app/member/_shared/use-borrowings";
+import { useFavorites } from "@/app/member/_shared/use-favorites";
+import { useEnrollments } from "@/app/member/_shared/use-enrollments";
+import { useAssessmentAttempts } from "@/app/member/_shared/use-assessment-attempts";
+import { useCertificates } from "@/app/dashboard/e-learning/certificates/_components/use-certificates";
+import { NotificationPreferencesSection } from "./_components/notification-preferences-section";
+import { TwoFactorSection } from "./_components/two-factor-section";
+import { SessionsSection } from "./_components/sessions-section";
+import { LoginHistorySection } from "./_components/login-history-section";
+import { EditProfileModal } from "./_components/edit-profile-modal";
+
+/** This mock has a single member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
+const MEMBER_NAME = "John Doe";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [editingProfile, setEditingProfile] = useState(false);
+  const borrowings = useBorrowings();
+  const favorites = useFavorites();
+  const enrollments = useEnrollments();
+  const attempts = useAssessmentAttempts();
+  const certificates = useCertificates();
+
+  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const memberCertificates = certificates.filter((c) => c.member === MEMBER_NAME && !c.revoked).length;
+  const decidedAttempts = attempts.filter((a) => a.reviewStatus !== "PENDING_REVIEW");
+  const avgScore = decidedAttempts.length
+    ? Math.round(decidedAttempts.reduce((s, a) => s + (a.totalMarks > 0 ? (a.score / a.totalMarks) * 100 : 0), 0) / decidedAttempts.length)
+    : 0;
 
   const stats = [
-    { icon: <BookOpen size={16} />, label: "Books Read", value: "12", color: "var(--gold)" },
-    { icon: <Heart size={16} />, label: "Favorites", value: "8", color: "var(--red-light)" },
-    { icon: <GraduationCap size={16} />, label: "Courses Enrolled", value: "4", color: "var(--teal-light)" },
-    { icon: <Award size={16} />, label: "Certificates", value: "3", color: "var(--purple-light)" },
-    { icon: <Star size={16} />, label: "Avg Quiz Score", value: "72%", color: "var(--gold)" },
+    { icon: <BookOpen size={16} />, label: "Books Read", value: String(booksRead), color: "var(--gold)" },
+    { icon: <Heart size={16} />, label: "Favorites", value: String(favorites.length), color: "var(--red-light)" },
+    { icon: <GraduationCap size={16} />, label: "Courses Enrolled", value: String(enrollments.length), color: "var(--teal-light)" },
+    { icon: <Award size={16} />, label: "Certificates", value: String(memberCertificates), color: "var(--purple-light)" },
+    { icon: <Star size={16} />, label: "Avg Quiz Score", value: `${avgScore}%`, color: "var(--gold)" },
     { icon: <CreditCard size={16} />, label: "Payments", value: "2", color: "var(--green-light)" },
   ];
 
@@ -47,7 +74,11 @@ export default function ProfilePage() {
                 <Shield size={10} /> Member since June 2026
               </div>
             </div>
-            <button style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              onClick={() => setEditingProfile(true)}
+              aria-label="Edit profile"
+              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+            >
               <Edit2 size={12} /> Edit Profile
             </button>
           </div>
@@ -96,10 +127,24 @@ export default function ProfilePage() {
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>Payment Method</div>
               <div style={{ fontSize: 9, color: "var(--text-muted)" }}>**** 4242 • Expires 12/28</div>
             </div>
-            <span style={{ fontSize: 18 }}>💳</span>
+            <CreditCard size={18} color="var(--text-muted)" />
           </div>
         </div>
       </div>
+
+      {/* Notification preferences */}
+      <NotificationPreferencesSection />
+
+      {/* Two-factor authentication (admin/manager/staff only) */}
+      <TwoFactorSection />
+
+      {/* Sessions & devices */}
+      <SessionsSection />
+
+      {/* Login history */}
+      <LoginHistorySection />
+
+      <EditProfileModal open={editingProfile} onClose={() => setEditingProfile(false)} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
   LayoutDashboard,
   Map,
@@ -30,9 +31,13 @@ import {
   RotateCcw,
   Database,
   ClipboardList,
+  ClipboardCheck,
+  Video,
   Users,
   FolderOpen,
   Download,
+  Mail,
+  Settings,
 } from "lucide-react";
 
 type SubItem = { icon: React.ReactNode; label: string; href: string }
@@ -70,15 +75,19 @@ const adminMainNav: NavItem[] = [
       { icon: <BarChart3 size={12} />,  label: "Borrow Reports",     href: "/dashboard/library/reports" },
     ],
   },
-  { icon: <Bot size={14} />, label: "AI & Tools", href: "#" },
+  { icon: <Bot size={14} />, label: "AI & Tools", href: "/dashboard/ai" },
   {
     icon: <GraduationCap size={14} />, label: "E-Learning",
     subItems: [
       { icon: <BookOpen size={12} />,     label: "Courses",         href: "/dashboard/e-learning" },
+      { icon: <BookCopy size={12} />,     label: "Course Catalog",  href: "/dashboard/e-learning/catalog" },
       { icon: <ScrollText size={12} />,   label: "Add Course",      href: "/dashboard/e-learning/add" },
+      { icon: <Video size={12} />,        label: "Lessons",         href: "/dashboard/e-learning/lessons" },
+      { icon: <ClipboardCheck size={12} />, label: "Quizzes & Exams", href: "/dashboard/e-learning/quizzes" },
       { icon: <ClipboardList size={12} />, label: "Enrollments",    href: "/dashboard/e-learning/enrollments" },
       { icon: <BarChart3 size={12} />,    label: "Progress",        href: "/dashboard/e-learning/progress" },
       { icon: <BookCopy size={12} />,     label: "Certificates",    href: "/dashboard/e-learning/certificates" },
+      { icon: <Video size={12} />,        label: "Live Sessions",   href: "/dashboard/e-learning/sessions" },
     ],
   },
   {
@@ -99,20 +108,23 @@ const adminMainNav: NavItem[] = [
       { icon: <Users size={12} />,        label: "Collaborations",  href: "/dashboard/research/collaborations" },
     ],
   },
-  { icon: <HeartPulse size={14} />, label: "Health System",          href: "#" },
-  { icon: <Sparkles size={14} />,   label: "Beauty Services",         href: "#" },
-  { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "#" },
-  { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "#" },
-  { icon: <Download size={14} />,   label: "Download Center",          href: "#" },
+  { icon: <HeartPulse size={14} />, label: "Health System",          href: "/dashboard/health" },
+  { icon: <Sparkles size={14} />,   label: "Beauty Services",         href: "/dashboard/beauty" },
+  { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "/dashboard/counseling" },
+  { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "/dashboard/rehabilitation" },
+  { icon: <Download size={14} />,   label: "Download Center",          href: "/dashboard/downloads" },
 ];
 
 const adminMgmtNav: NavItem[] = [
   { icon: <Users size={14} />,    label: "Members",           href: "/dashboard/users" },
-  { icon: <Newspaper size={14} />, label: "News & Newspapers", href: "#" },
-  { icon: <Gift size={14} />,     label: "Donations",          href: "#" },
-  { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "#" },
+  { icon: <Newspaper size={14} />, label: "News & Newspapers", href: "/dashboard/news" },
+  { icon: <Gift size={14} />,     label: "Donations",          href: "/dashboard/donations" },
+  { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={14} />,     label: "Notifications",       href: "/dashboard/notifications" },
+  { icon: <Mail size={14} />,     label: "Invitations",         href: "/dashboard/invitations" },
+  { icon: <Settings size={14} />, label: "System Settings",     href: "/dashboard/settings" },
+  { icon: <ScrollText size={14} />, label: "Audit Log",         href: "/dashboard/audit-log" },
 ];
 
 const memberNav: NavItem[] = [
@@ -159,6 +171,9 @@ export default function Sidebar() {
   const toggleSection = (label: string) => {
     setExpandedSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
+
+  const isSectionActive = (item: NavItem) =>
+    !!item.subItems?.some((sub) => currentRoute.startsWith(sub.href));
 
   return (
     <aside
@@ -217,8 +232,10 @@ export default function Sidebar() {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
-        {mainNav.map((item) =>
-          item.subItems && !collapsed ? (
+        {mainNav.map((item) => {
+          const sectionActive = item.subItems ? isSectionActive(item) : false;
+          const sectionExpanded = item.subItems ? expandedSections[item.label] || sectionActive : false;
+          return item.subItems && !collapsed ? (
             <div key={item.label}>
               <div
                 onClick={() => toggleSection(item.label)}
@@ -229,22 +246,22 @@ export default function Sidebar() {
                   padding: "6px 12px",
                   cursor: "pointer",
                   fontSize: 12,
-                  color: expandedSections[item.label] ? "var(--gold)" : "var(--text-secondary)",
-                  borderLeft: "2px solid transparent",
+                  color: sectionExpanded || sectionActive ? "var(--gold)" : "var(--text-secondary)",
+                  borderLeft: sectionActive ? "2px solid var(--gold)" : "2px solid transparent",
                   transition: "all 0.15s",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
                 onMouseLeave={(e) => {
-                  if (!expandedSections[item.label]) e.currentTarget.style.color = "var(--text-secondary)";
+                  if (!sectionExpanded && !sectionActive) e.currentTarget.style.color = "var(--text-secondary)";
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>{item.icon}</span>
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
-                {expandedSections[item.label] ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
+                {sectionExpanded ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
               </div>
-              {expandedSections[item.label] && item.subItems.map((sub) => (
+              {sectionExpanded && item.subItems.map((sub) => (
                 <a
                   key={sub.label}
                   href={sub.href}
@@ -269,8 +286,8 @@ export default function Sidebar() {
             </div>
           ) : (
             <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
-          )
-        )}
+          );
+        })}
 
         {mgmtNav.length > 0 && !collapsed && (
           <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
@@ -311,10 +328,10 @@ export default function Sidebar() {
             <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
               ROLE SIMULATION
             </div>
-            {(["admin", "member"] as const).map((r) => (
+            {SWITCHABLE_ROLES.map((r) => (
               <div
                 key={r}
-                onClick={() => { switchRole(r); window.location.href = r === "member" ? "/member" : "/dashboard"; }}
+                onClick={() => { switchRole(r); window.location.href = roleViewRoute[r]; }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -331,7 +348,7 @@ export default function Sidebar() {
                 }}
               >
                 <Shield size={12} />
-                {r === "admin" ? "Admin View" : "Member View"}
+                {roleViewLabel[r]}
               </div>
             ))}
           </>

@@ -103,7 +103,7 @@ export function ELearningSection() {
         {/* CTA */}
         <div className="flex justify-center">
           <Link
-            href="/courses"
+            href="/member/e-learning"
             className="inline-flex items-center gap-2 px-8 py-3 bg-w-950 dark:bg-amber-500 text-w-accent dark:text-[#0a0d1a] font-lato font-bold rounded hover:bg-w-800 dark:hover:bg-amber-400 transition"
           >
             <PlayCircle size={18} />

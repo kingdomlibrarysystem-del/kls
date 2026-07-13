@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   BookOpen,
   AlertTriangle,
@@ -52,7 +53,7 @@ export default function BorrowReturn() {
 
       {/* Buttons */}
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-        <button className="btn btn-gold btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ArrowDownToLine size={12} /> Borrow Item</button>
+        <Link href="/dashboard/library/borrowings" className="btn btn-gold btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ArrowDownToLine size={12} /> Borrow Item</Link>
         <button className="btn btn-outline btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ArrowUpFromLine size={12} /> Return Item</button>
         <button className="btn btn-outline-dim btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}><ClipboardList size={12} /> My Loans</button>
         <button className="btn btn-outline-dim btn-sm" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}><Bookmark size={12} /> My Reservations</button>
@@ -73,7 +74,7 @@ export default function BorrowReturn() {
         </div>
       ))}
       <div style={{ marginTop: 8 }}>
-        <button className="btn btn-outline-dim btn-sm">View All Loans →</button>
+        <Link href="/dashboard/library/borrowings" className="btn btn-outline-dim btn-sm">View All Loans →</Link>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   BookOpen,
   Music,
@@ -84,7 +85,7 @@ export default function MiddleSection() {
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)" }}>{r.count.toLocaleString()}</div>
           </div>
         ))}
-        <div style={{ marginTop: 8 }}><button className="btn btn-outline-dim btn-sm">View All Resources →</button></div>
+        <div style={{ marginTop: 8 }}><Link href="/dashboard/library" className="btn btn-outline-dim btn-sm">View All Resources →</Link></div>
       </div>
 
       {/* Recently Added */}
@@ -115,7 +116,7 @@ export default function MiddleSection() {
             </div>
           </div>
         ))}
-        <div style={{ marginTop: 8 }}><button className="btn btn-outline-dim btn-sm">View All News →</button></div>
+        <div style={{ marginTop: 8 }}><Link href="/dashboard/news" className="btn btn-outline-dim btn-sm">View All News →</Link></div>
       </div>
 
     </div>
