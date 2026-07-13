@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getLecturerStats } from './dashboard-data'
+import { useLecturerStats } from './dashboard-data'
 
 /** Simulated network delay before mock stats become visible. */
 const LOAD_DELAY_MS = 400
 
-/** Lecturer dashboard stat cards: courses, enrolled students, session requests, upcoming sessions. */
+/**
+ * Lecturer dashboard stat cards: courses, enrolled students, session
+ * requests, upcoming sessions. Reads `useLecturerStats()` (a hook, not a
+ * one-time snapshot call) so a session request/approval made elsewhere in
+ * the same session — e.g. a learner requesting a session, or this
+ * lecturer approving one from the queue — updates these cards live,
+ * without needing a navigation/remount to pick up the change.
+ */
 export function DashboardView() {
   const [loading, setLoading] = useState(true)
+  const stats = useLecturerStats()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -25,8 +33,6 @@ export function DashboardView() {
       </div>
     )
   }
-
-  const stats = getLecturerStats()
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
