@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AlertCircle } from 'lucide-react'
@@ -10,16 +9,8 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { categoryOptions, type Resource } from './resources-data'
-
-const resourceSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters'),
-  author: z.string().min(2, 'Author is required'),
-  category: z.string().min(1, 'Select a category'),
-  isbn: z.string().min(3, 'ISBN is required'),
-  totalQty: z.number().int().min(0, 'Must be 0 or more'),
-})
-
-type ResourceFormData = z.infer<typeof resourceSchema>
+import { resourceSchema, defaultResourceFormValues, type ResourceFormData } from './resource-form-schema'
+import { ResourceFormDetails } from './resource-form-details'
 
 interface ResourceFormModalProps {
   open: boolean
@@ -29,24 +20,41 @@ interface ResourceFormModalProps {
   onSave: (data: ResourceFormData, editingId: string | null) => void
 }
 
-/** Create/Edit modal for a digital library resource. */
+/** Create/Edit modal for a digital library resource — covers the full canonical Resource shape the Detail modal already displays. */
 export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFormModalProps) {
   const [submitError, setSubmitError] = useState('')
   const {
     register,
+    control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ResourceFormData>({
     resolver: zodResolver(resourceSchema),
-    defaultValues: { title: '', author: '', category: categoryOptions[0], isbn: '', totalQty: 1 },
+    defaultValues: defaultResourceFormValues,
   })
 
   useEffect(() => {
     if (open) {
       reset(editing
-        ? { title: editing.title, author: editing.author, category: editing.category, isbn: editing.isbn, totalQty: editing.totalQty }
-        : { title: '', author: '', category: categoryOptions[0], isbn: '', totalQty: 1 })
+        ? {
+            title: editing.title,
+            author: editing.author,
+            category: editing.category,
+            isbn: editing.isbn,
+            totalQty: editing.totalQty,
+            description: editing.description,
+            publisher: editing.publisher,
+            language: editing.language,
+            pages: editing.pages,
+            price: editing.price,
+            bindingType: editing.bindingType,
+            mediaType: editing.mediaType,
+            tags: editing.tags,
+            coverImage: editing.coverImages[0] ?? '',
+          }
+        : { ...defaultResourceFormValues, category: categoryOptions[0] })
       setSubmitError('')
     }
   }, [open, editing, reset])
@@ -95,6 +103,8 @@ export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFo
           <FieldLabel htmlFor="totalQty" required>Total Quantity</FieldLabel>
           <FormInput id="totalQty" type="number" min={0} error={errors.totalQty?.message} {...register('totalQty', { valueAsNumber: true })} />
         </div>
+
+        <ResourceFormDetails register={register} control={control} errors={errors} coverImageValue={watch('coverImage')} />
 
         <div className="flex gap-2 pt-2">
           <ElegantButton type="submit" variant="primary" className="flex-1 text-sm py-2">

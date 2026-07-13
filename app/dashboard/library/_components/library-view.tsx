@@ -11,6 +11,7 @@ import { ResourcesStats } from './resources-stats'
 import { ResourcesTable } from './resources-table'
 import { ResourceDetailModal } from './resource-detail-modal'
 import { ResourceFormModal } from './resource-form-modal'
+import type { ResourceFormData } from './resource-form-schema'
 
 /** Simulated network delay before mock resources become visible. */
 const LOAD_DELAY_MS = 400
@@ -53,29 +54,22 @@ export function LibraryView() {
   const openCreate = () => { setEditing(null); setFormOpen(true) }
   const openEdit = (r: Resource) => { setEditing(r); setSelected(null); setFormOpen(true) }
 
-  const handleSave = (formData: { title: string; author: string; category: string; isbn: string; totalQty: number }, editingId: string | null) => {
+  const handleSave = (formData: ResourceFormData, editingId: string | null) => {
     try {
+      const { coverImage, ...rest } = formData
       if (editingId) {
-        updateResource(editingId, formData)
+        updateResource(editingId, { ...rest, coverImages: [coverImage] })
         showToast(`Updated "${formData.title}".`)
       } else {
         const newResource: Resource = {
           id: crypto.randomUUID(),
-          ...formData,
-          publisher: 'Kingdom Library',
+          ...rest,
           type: 'Scroll',
           format: 'Physical',
-          language: 'EN',
           year: new Date().getFullYear(),
-          pages: 0,
-          price: 0,
           availableQty: formData.totalQty,
           status: 'available',
-          coverImages: ['/images/book-A.jpg'],
-          bindingType: 'SOFT',
-          mediaType: 'TEXT',
-          description: '',
-          tags: [],
+          coverImages: [coverImage],
         }
         addResource(newResource)
         showToast(`Added "${formData.title}".`)
