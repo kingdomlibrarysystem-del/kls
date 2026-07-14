@@ -1,17 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BookOpen, RotateCcw, AlertTriangle, Calendar, ChevronRight, Clock, CheckCircle2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { Borrowing } from './borrowings-data'
 import { useBorrowings } from '../../_shared/use-borrowings'
 import { BorrowingDetailModal } from './borrowing-detail-modal'
 
+/** Simulated network delay before mock borrowings become visible. */
+const LOAD_DELAY_MS = 400
+
 /** This member's borrowings: active/overdue list plus return history, each row opening a details modal. */
 export function BorrowingsView() {
+  const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState<Borrowing | null>(null)
   const mockBorrowings = useBorrowings()
   const active = mockBorrowings.filter((b) => b.status === 'Active' || b.status === 'Overdue')
   const returned = mockBorrowings.filter((b) => b.status === 'Returned')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading borrowings">
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} style={{ height: 64, borderRadius: 8 }} />)}
+        </div>
+        <Skeleton style={{ height: 160, borderRadius: 8 }} />
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -36,7 +58,7 @@ export function BorrowingsView() {
           <RotateCcw size={14} color="var(--gold)" /> Currently Borrowed
         </div>
         {active.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 11 }}>You have no active borrowings.</div>
+          <EmptyState icon={BookOpen} title="No active borrowings" description="Books you borrow will appear here until they're returned." style={{ color: 'var(--text-secondary)' }} />
         ) : (
           active.map((b) => {
             const isOverdue = b.status === 'Overdue'
