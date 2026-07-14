@@ -33,6 +33,7 @@ Branch: `auto-wip` (not `main`). Each phase = one commit, pushed after
 
 1. **Decorative gradient avatar fixed** — `components/session-room/participant-tile.tsx:37`. Replaced `linear-gradient(135deg, var(--purple), var(--teal))` with solid `var(--gold)`, matching the page-builder color-discipline rule (no decorative non-status hues). Build + `tsc --noEmit` clean.
 2. **Tailwind-in-Dialect-B fixed** — `app/lecturer/_shared/session-requests-data.ts:21-26`. `sessionStatusConfig` fed both Dialect-A consumers (`sessions-view.tsx`, `sessions-stats.tsx` — Tailwind `cls` correct there, kept unchanged) and one Dialect-B consumer (`session-card.tsx`, pure inline-style component) off the same Tailwind class string. Added `bg`/`color`/`border` CSS-variable tokens to each status entry and switched `session-card.tsx`'s badge to inline `style={{...}}` using those tokens, leaving `cls` untouched for the two Dialect-A files. Build + `tsc --noEmit` clean.
+3. **Assessment discoverability nudge added** — `lesson-viewer-view.tsx` now detects when every lesson in the current course is complete and looks up the course's linked assessment via `useAssessmentCatalog()` (matched on `courseId`). When found, `LessonContentPane` renders a gold-accented nudge card with the assessment title and a "Take Assessment" link to `/member/assessments`, so a member no longer has to separately know to look there. Build + `tsc --noEmit` clean.
 
 ## Needs human input
 

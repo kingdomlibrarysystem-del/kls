@@ -8,6 +8,7 @@ import { LessonListSidebar } from './lesson-list-sidebar'
 import { LessonContentPane } from './lesson-content-pane'
 import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
 import { useLessonsByCourse } from '../../../../../_shared/use-lessons'
+import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
 
 /** Simulated network delay before mock lesson data becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -27,12 +28,18 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const [markError, setMarkError] = useState('')
   const enrollments = useEnrollments()
   const lessonsByCourse = useLessonsByCourse()
+  const assessmentCatalog = useAssessmentCatalog()
 
   const course = lessonsByCourse[courseId]
   const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? -1
   const lesson = lessonIndex >= 0 ? course.lessons[lessonIndex] : undefined
   const enrollment = enrollments.find((e) => e.courseId === courseId)
   const completedIds = new Set(enrollment?.completedLessonIds ?? [])
+
+  const allLessonsComplete = !!course && course.lessons.length > 0 && course.lessons.every((l) => completedIds.has(l.id))
+  const linkedAssessment = allLessonsComplete
+    ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId)
+    : undefined
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -80,6 +87,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         completed={completedIds.has(lesson.id)}
         markError={markError}
         onMarkComplete={handleMarkComplete}
+        courseCompleteAssessmentTitle={linkedAssessment?.title}
       />
     </div>
   )

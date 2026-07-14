@@ -1,6 +1,7 @@
 'use client'
 
-import { PlayCircle, FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { PlayCircle, FileText, Download, CheckCircle2, AlertCircle, ClipboardList } from 'lucide-react'
 import type { Lesson } from '../../../../../_shared/lesson-data'
 
 interface LessonContentPaneProps {
@@ -8,10 +9,12 @@ interface LessonContentPaneProps {
   completed: boolean
   markError: string
   onMarkComplete: () => void
+  /** Set once every lesson in the course is complete and a linked assessment exists — nudges the member to take it. */
+  courseCompleteAssessmentTitle?: string
 }
 
 /** Renders a lesson's content based on its `contentType` — video placeholder, text, or file download. */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle }: LessonContentPaneProps) {
   return (
     <div className="card">
       <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
@@ -59,6 +62,18 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
       >
         <CheckCircle2 size={13} /> {completed ? 'Completed' : 'Mark Complete'}
       </button>
+
+      {courseCompleteAssessmentTitle && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>
+          <ClipboardList size={16} color="#7a5c00" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: '#3a2e00', flex: 1 }}>
+            You&apos;ve completed all lessons — take <strong>{courseCompleteAssessmentTitle}</strong> to finish the course.
+          </span>
+          <Link href="/member/assessments" className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
+            Take Assessment
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
