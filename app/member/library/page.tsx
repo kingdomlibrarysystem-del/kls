@@ -3,12 +3,15 @@ import { useState } from "react";
 import { Search, Grid3X3, List, Feather, Info } from "lucide-react";
 import { kcsSections, allBooks } from "./_components/library-data";
 import { ScrollCard, ScrollListItem } from "./_components/scroll-card";
+import { WriteScrollModal } from "./_components/write-scroll-modal";
 
 export default function MemberLibraryPage() {
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState("All");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showAbout, setShowAbout] = useState(false);
+  const [writeOpen, setWriteOpen] = useState(false);
+  const [toast, setToast] = useState("");
 
   const sections = activeSection === "All" ? kcsSections : kcsSections.filter((s) => s.label === activeSection);
 
@@ -157,10 +160,29 @@ export default function MemberLibraryPage() {
         <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 10, maxWidth: 400, margin: "0 auto 10px", lineHeight: 1.5 }}>
           Every citizen of the Kingdom can contribute — write your own Acts (actions), Epistles (letters), and Revelations (visions). Add your story to the living archive.
         </div>
-        <button style={{ padding: "8px 20px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+        <button
+          onClick={() => setWriteOpen(true)}
+          style={{ padding: "8px 20px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+        >
           Write Your Scroll
         </button>
       </div>
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--green-dim)", color: "var(--green-light)", border: "1px solid var(--green)", borderRadius: 8, padding: "10px 16px", fontSize: 12, zIndex: 60 }}>
+          {toast}
+        </div>
+      )}
+
+      <WriteScrollModal
+        open={writeOpen}
+        onClose={() => setWriteOpen(false)}
+        onSubmitted={() => {
+          setWriteOpen(false);
+          setToast("Your scroll has been submitted for review.");
+          setTimeout(() => setToast(""), 3000);
+        }}
+      />
     </div>
   );
 }
