@@ -39,7 +39,7 @@ export function MySessionsView() {
       <EmptyState
         icon={CalendarClock}
         title="No session requests yet"
-        description='Complete a course, then use "Request Session" on My Courses to ask for a live Q&A with your lecturer.'
+        description='Use "Request Session" on My Courses to ask for a live Q&A with your lecturer.'
         style={{ color: 'var(--text-secondary)' }}
       />
     )

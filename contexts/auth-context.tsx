@@ -19,7 +19,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /** Returns `matched: false` when the email doesn't match a seed account — login still succeeds as the generic member persona (this is a mocked prototype with no real credential check), but the caller can now tell the caller apart from a real match to surface honest feedback instead of pretending it recognized the address. */
+  login: (email: string, password: string) => Promise<{ matched: boolean }>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
   /** Merges a partial edit (e.g. name/email from a profile form) into the current user and persists it, same as login/switchRole. */
@@ -63,8 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const u = found ?? mockUsers.member;
     setUser(u);
     localStorage.setItem("kcs_user", JSON.stringify(u));
-    logAuditEvent({ actor: `${u.firstName} ${u.lastName}`, action: "LOGIN", target: "Session", notes: "Standard login, no prior failed attempts." });
+    logAuditEvent({
+      actor: `${u.firstName} ${u.lastName}`,
+      action: "LOGIN",
+      target: "Session",
+      notes: found ? "Standard login, no prior failed attempts." : `Email "${email}" did not match a seed account — signed in as the default member persona.`,
+    });
     setIsLoading(false);
+    return { matched: !!found };
   }, []);
 
   const logout = useCallback(() => {

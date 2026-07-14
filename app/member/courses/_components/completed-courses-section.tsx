@@ -1,27 +1,25 @@
 'use client'
 
-import { useState } from 'react'
 import { Award, GraduationCap, ChevronRight, CalendarPlus } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { isCertificateEligible } from '@/app/member/_shared/use-enrollments'
 import { courseCatalog, type CatalogCourse } from '@/app/member/_shared/course-catalog-data'
 import type { CourseEnrollment } from '@/app/member/_shared/enrollment-data'
-import { RequestSessionModal } from './request-session-modal'
 
 interface CompletedCoursesSectionProps {
   completed: { enrollment: CourseEnrollment; course: CatalogCourse }[]
+  onRequestSession: (course: CatalogCourse) => void
 }
 
 /**
  * Completed-courses list, extracted from MyCoursesPage to keep that file
- * under the 200-line cap while adding the new "Request Session" action —
- * real per the Phase 3 design: only enabled once `enrollment.status ===
- * 'COMPLETED'`, reusing the same completion gate `getProgressPercent`
- * already establishes elsewhere, not a new invented eligibility concept.
+ * under the 200-line cap. "Request Session" is a "Slack huddle"-style open
+ * action per product decision — any authenticated member can request a
+ * live session with any lecturer for any enrolled course, not gated to
+ * completion (see in-progress-courses-section.tsx, which offers the same
+ * action on courses still in progress).
  */
-export function CompletedCoursesSection({ completed }: CompletedCoursesSectionProps) {
-  const [requesting, setRequesting] = useState<CatalogCourse | null>(null)
-
+export function CompletedCoursesSection({ completed, onRequestSession }: CompletedCoursesSectionProps) {
   if (completed.length === 0) return null
 
   return (
@@ -44,7 +42,7 @@ export function CompletedCoursesSection({ completed }: CompletedCoursesSectionPr
               </div>
             </div>
             <button
-              onClick={() => setRequesting(course)}
+              onClick={() => onRequestSession(course)}
               aria-label={`Request a live session with ${lecturerName ?? 'the lecturer'} for ${course.title}`}
               style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
             >
@@ -54,8 +52,6 @@ export function CompletedCoursesSection({ completed }: CompletedCoursesSectionPr
           </div>
         )
       })}
-
-      <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} />
     </div>
   )
 }

@@ -8,7 +8,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
-import { initialUsers, roleColors, statusColors, type PlatformUser } from './users-data'
+import { roleColors, statusColors, type PlatformUser } from './users-data'
+import { useUsers, addUser, updateUser, removeUser } from './use-users'
 import { UserFormModal } from './user-form-modal'
 import { UserDetailModal } from './user-detail-modal'
 import { DeleteUserModal } from './delete-user-modal'
@@ -18,14 +19,15 @@ import { UsersStats } from './users-stats'
 const LOAD_DELAY_MS = 400
 
 /**
- * User Management: full CRUD over the mocked platform-user list — Create
- * (via modal, appended to local state), Details (read-only modal), Edit
- * (pre-filled modal writing back to state), Delete (confirmation modal
- * removing the row).
+ * User Management: full CRUD over the shared platform-user store — Create
+ * (via modal, appended to the store), Details (read-only modal), Edit
+ * (pre-filled modal writing back to the store), Delete (confirmation modal
+ * removing the row). Backed by `useUsers()` so the list survives a route
+ * remount instead of resetting to the seed data.
  */
 export function UsersView() {
   const [loading, setLoading] = useState(true)
-  const [users, setUsers] = useState<PlatformUser[]>([])
+  const users = useUsers()
   const [toast, setToast] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformUser | null>(null)
@@ -35,10 +37,7 @@ export function UsersView() {
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin User'
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setUsers(initialUsers)
-      setLoading(false)
-    }, LOAD_DELAY_MS)
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
 
@@ -51,7 +50,7 @@ export function UsersView() {
     try {
       if (editingId) {
         const before = users.find((u) => u.id === editingId)
-        setUsers((prev) => prev.map((u) => (u.id === editingId ? { ...u, ...data } : u)))
+        updateUser(editingId, data)
         if (before && before.role !== data.role) {
           logAuditEvent({
             actor: actorName,
@@ -62,8 +61,7 @@ export function UsersView() {
         }
         showToast(`Updated "${data.name}".`)
       } else {
-        const newUser: PlatformUser = { id: crypto.randomUUID(), joinDate: new Date().toISOString().split('T')[0], ...data }
-        setUsers((prev) => [newUser, ...prev])
+        addUser(data)
         logAuditEvent({
           actor: actorName,
           action: 'USER_CREATED',
@@ -81,7 +79,7 @@ export function UsersView() {
 
   const handleDelete = (user: PlatformUser) => {
     try {
-      setUsers((prev) => prev.filter((u) => u.id !== user.id))
+      removeUser(user.id)
       showToast(`Deleted "${user.name}".`)
       setDeleting(null)
     } catch {

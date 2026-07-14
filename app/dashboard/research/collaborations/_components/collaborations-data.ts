@@ -61,8 +61,8 @@ export const mockProjects: ResearchProjectSummary[] = [
   },
 ]
 
-export const projectStatusConfig: Record<ProjectStatus, { label: string; cls: string }> = {
-  ACTIVE:    { label: 'Active',    cls: 'bg-green-50 text-green-800 border-green-200' },
-  COMPLETED: { label: 'Completed', cls: 'bg-w-100    text-w-700     border-w-300'     },
-  SUSPENDED: { label: 'Suspended', cls: 'bg-red-50   text-red-800   border-red-200'   },
+export const projectStatusConfig: Record<ProjectStatus, { label: string; cls: string; bg: string; color: string; border: string }> = {
+  ACTIVE:    { label: 'Active',    cls: 'bg-green-50 text-green-800 border-green-200', bg: 'var(--green-dim)',  color: 'var(--green)',           border: 'var(--green)'  },
+  COMPLETED: { label: 'Completed', cls: 'bg-w-100    text-w-700     border-w-300',     bg: 'var(--bg-section)', color: 'var(--text-secondary)',  border: 'var(--border)' },
+  SUSPENDED: { label: 'Suspended', cls: 'bg-red-50   text-red-800   border-red-200',   bg: 'var(--red-dim)',    color: 'var(--red)',             border: 'var(--red)'    },
 }

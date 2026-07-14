@@ -18,8 +18,10 @@ interface RequestSessionModalProps {
 }
 
 /**
- * Request-a-live-session form for a completed course. On submit, creates a
- * real PENDING SessionRequest and a real notification addressed to that
+ * Request-a-live-session form for an enrolled course, in progress or
+ * completed — per product decision this is an open "Slack huddle"-style
+ * action with no completion precondition. On submit, creates a real
+ * PENDING SessionRequest and a real notification addressed to that
  * course's lecturer — the notification's `href` points at the lecturer's
  * real request queue, matching the "verified against real data" convention
  * every other notification in notifications-data.ts already follows.

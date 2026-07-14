@@ -1,19 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { PlayCircle, GraduationCap, Award, BookX, Sparkles } from "lucide-react";
+import { Award, BookX, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { RemoteImage } from "@/components/ui/remote-image";
-import { courseCatalog } from "../_shared/course-catalog-data";
-import { useEnrollments, getProgressPercent, isCertificateEligible, getNextLessonId } from "../_shared/use-enrollments";
+import { courseCatalog, type CatalogCourse } from "../_shared/course-catalog-data";
+import { useEnrollments, getProgressPercent, isCertificateEligible } from "../_shared/use-enrollments";
+import { InProgressCoursesSection } from "./_components/in-progress-courses-section";
 import { CompletedCoursesSection } from "./_components/completed-courses-section";
+import { RequestSessionModal } from "./_components/request-session-modal";
 
 /** Simulated network delay before the shared enrollment store's initial snapshot is shown. */
 const LOAD_DELAY_MS = 300;
 
 export default function MyCoursesPage() {
   const [loading, setLoading] = useState(true);
+  const [requesting, setRequesting] = useState<CatalogCourse | null>(null);
   const enrollments = useEnrollments();
 
   useEffect(() => {
@@ -91,45 +93,12 @@ export default function MyCoursesPage() {
       )}
 
       {/* In progress */}
-      {inProgress.length > 0 && (
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-            <PlayCircle size={14} color="var(--teal-light)" /> Continue Learning
-          </div>
-          {inProgress.map(({ enrollment, course }) => {
-            const progress = getProgressPercent(enrollment);
-            const nextLessonId = getNextLessonId(enrollment);
-            return (
-              <div key={course.id} style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-light)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 8, position: "relative", overflow: "hidden", background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <RemoteImage src={course.image} alt={course.title} fill sizes="40px" style={{ objectFit: "cover" }} fallback={<GraduationCap size={20} color="var(--gold)" />} />
-                </div>
-                <div style={{ flex: 1, minWidth: 160 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{course.title}</div>
-                  <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 4 }}>{course.instructor} • {enrollment.completedLessonIds.length}/{enrollment.totalLessons} lessons</div>
-                  <div style={{ width: "100%", height: 4, background: "var(--bg-section)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ width: `${progress}%`, height: "100%", background: "var(--teal-light)", borderRadius: 2, transition: "width 0.3s" }} />
-                  </div>
-                </div>
-                {nextLessonId ? (
-                  <Link
-                    href={`/member/courses/${course.id}/lessons/${nextLessonId}`}
-                    aria-label={`Resume ${course.title}`}
-                    style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--teal-light)", background: "transparent", color: "var(--teal-light)", fontSize: 10, fontWeight: 600, textDecoration: "none" }}
-                  >
-                    Resume
-                  </Link>
-                ) : (
-                  <span style={{ fontSize: 9, color: "var(--text-muted)" }}>No lessons available</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <InProgressCoursesSection inProgress={inProgress} onRequestSession={setRequesting} />
 
       {/* Completed */}
-      <CompletedCoursesSection completed={completed} />
+      <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} />
+
+      <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} />
     </div>
   );
 }

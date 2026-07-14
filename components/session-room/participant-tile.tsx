@@ -34,7 +34,7 @@ export function ParticipantTile({ name, isYou, state }: ParticipantTileProps) {
         <div
           style={{
             width: 64, height: 64, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--purple), var(--teal))',
+            background: 'var(--gold)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 22, fontWeight: 700, color: '#fff',
           }}

@@ -25,20 +25,21 @@ export function SessionsSection() {
     {
       key: 'device', label: 'Device', sortable: true,
       render: (s) => (
-        <span className="flex items-center gap-1.5 font-semibold text-w-950">
-          <Monitor size={13} className="text-w-600" /> {s.device} {s.current && <span className="text-xs font-normal text-green-700">(this device)</span>}
+        <span className="flex items-center gap-1.5" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+          <Monitor size={13} color="var(--text-muted)" /> {s.device} {s.current && <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--green)' }}>(this device)</span>}
         </span>
       ),
     },
-    { key: 'location', label: 'Location', sortable: true, render: (s) => <span className="text-w-700">{s.location}</span> },
-    { key: 'lastActive', label: 'Last Active', sortable: true, render: (s) => <span className="text-w-700">{s.lastActive}</span> },
+    { key: 'location', label: 'Location', sortable: true, render: (s) => <span style={{ color: 'var(--text-secondary)' }}>{s.location}</span> },
+    { key: 'lastActive', label: 'Last Active', sortable: true, render: (s) => <span style={{ color: 'var(--text-secondary)' }}>{s.lastActive}</span> },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (s) => s.current ? null : (
         <button
           onClick={() => handleRevoke(s)}
           aria-label={`Revoke session on ${s.device}`}
-          className="flex items-center gap-1 px-2.5 py-1 ml-auto bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"
+          className="flex items-center gap-1 ml-auto transition-colors"
+          style={{ padding: '4px 10px', background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 4, fontSize: 11 }}
         >
           <ShieldOff size={12} /> Revoke
         </button>

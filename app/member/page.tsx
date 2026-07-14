@@ -3,6 +3,7 @@ import DashboardStats from "@/app/member/_components/DashboardStats";
 import BorrowedBooks from "@/app/member/_components/BorrowedBooks";
 import FavoriteBooks from "@/app/member/_components/FavoriteBooks";
 import ELearningProgress from "@/app/member/_components/ELearningProgress";
+import CurrentlyReading from "@/app/member/_components/CurrentlyReading";
 import QuickActions from "@/app/member/_components/QuickActions";
 
 export default function MemberDashboardPage() {
@@ -16,6 +17,7 @@ export default function MemberDashboardPage() {
         <BorrowedBooks />
         <FavoriteBooks />
         <ELearningProgress />
+        <CurrentlyReading />
       </div>
       <QuickActions />
     </div>

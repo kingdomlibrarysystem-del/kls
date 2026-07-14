@@ -5,8 +5,10 @@ import { BookOpen } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { RemoteImage } from '@/components/ui/remote-image'
+import { FilePickerField } from '@/components/ui/file-picker-field'
 import { bindingTypeLabels, mediaTypeLabels, type BindingType, type MediaType } from './resources-data'
 import { TagInput } from './tag-input'
+import { ResourceFormMediaFiles } from './resource-form-media-files'
 import type { ResourceFormData } from './resource-form-schema'
 
 interface ResourceFormDetailsProps {
@@ -19,9 +21,11 @@ interface ResourceFormDetailsProps {
 /**
  * The fields the canonical Resource shape has that the form previously
  * never captured (description, publisher, language, pages, price,
- * bindingType, mediaType, tags, cover image) — split into its own file to
- * keep resource-form-modal.tsx under the 200-line cap now that the form
- * covers the full model the Detail modal already displays.
+ * bindingType, mediaType, tags, cover image, document/audio/video files) —
+ * split into its own file to keep resource-form-modal.tsx under the 200-line
+ * cap now that the form covers the full model the Detail modal already
+ * displays. Document/audio/video use FilePickerField (local blob: URLs) —
+ * there is no real backend in this prototype to upload to.
  */
 export function ResourceFormDetails({ register, control, errors, coverImageValue }: ResourceFormDetailsProps) {
   return (
@@ -78,21 +82,44 @@ export function ResourceFormDetails({ register, control, errors, coverImageValue
       </div>
 
       <div>
-        <FieldLabel htmlFor="coverImage" required>Cover Image URL</FieldLabel>
-        <FormInput id="coverImage" type="text" placeholder="https://images.unsplash.com/..." error={errors.coverImage?.message} {...register('coverImage')} />
+        <FieldLabel htmlFor="coverImage" required>Cover Image</FieldLabel>
+        <FormInput id="coverImage" type="text" placeholder="https://images.unsplash.com/... (or upload below)" error={errors.coverImage?.message} {...register('coverImage')} />
+        <Controller
+          name="coverImage"
+          control={control}
+          render={({ field }) => (
+            <div className="mt-2">
+              <FilePickerField
+                id="coverImageFile"
+                accept="image/*"
+                label="Upload cover image"
+                value={field.value.startsWith('blob:') ? field.value : ''}
+                onChange={(blobUrl) => field.onChange(blobUrl)}
+                onClear={() => field.onChange('')}
+              />
+            </div>
+          )}
+        />
         {coverImageValue && (
           <div className="relative w-16 h-22 mt-2 rounded overflow-hidden border border-w-300 bg-w-200">
-            <RemoteImage
-              src={coverImageValue}
-              alt="Cover preview"
-              fill
-              sizes="64px"
-              className="object-cover"
-              fallback={<div className="w-full h-full flex items-center justify-center"><BookOpen size={16} className="text-w-400" /></div>}
-            />
+            {coverImageValue.startsWith('blob:') ? (
+              // eslint-disable-next-line @next/next/no-img-element -- next/image's optimizer can't load blob: URLs
+              <img src={coverImageValue} alt="Cover preview" className="w-full h-full object-cover" />
+            ) : (
+              <RemoteImage
+                src={coverImageValue}
+                alt="Cover preview"
+                fill
+                sizes="64px"
+                className="object-cover"
+                fallback={<div className="w-full h-full flex items-center justify-center"><BookOpen size={16} className="text-w-400" /></div>}
+              />
+            )}
           </div>
         )}
       </div>
+
+      <ResourceFormMediaFiles control={control} />
 
       <div>
         <FieldLabel htmlFor="tags">Tags</FieldLabel>

@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { kcsPillars, type ScrollStatus } from './kcs-pillars-data'
+import { KcsPillarTabs } from './kcs-pillar-tabs'
 
 /** Simulated network delay before mock scrolls become visible. */
 const LOAD_DELAY_MS = 400
@@ -20,22 +21,27 @@ const statusConfig: Record<ScrollStatus, { label: string; color: string; bg: str
 interface KcsPillarViewProps {
   /** Key into `kcsPillars`, e.g. "foundation". */
   pillarKey: string
+  /** Called when the reader picks a different pillar from the tab bar. */
+  onPillarChange: (pillarKey: string) => void
 }
 
 /**
- * Shared view for all 8 KCS pillar pages: header (code, name, theme) plus a
- * searchable grid of the pillar's scrolls. Shows a brief simulated loading
- * state, then the grid, or an EmptyState if a search yields no results.
+ * Single consolidated view for all 8 KCS pillars: a tab bar to switch
+ * pillars (replacing the previous 8 separate routes/page.tsx files) plus
+ * the header (code, name, theme) and a searchable grid of the active
+ * pillar's scrolls. Shows a brief simulated loading state, then the grid,
+ * or an EmptyState if a search yields no results.
  */
-export function KcsPillarView({ pillarKey }: KcsPillarViewProps) {
+export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps) {
   const pillar = kcsPillars[pillarKey]
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
+    setLoading(true)
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [])
+  }, [pillarKey])
 
   if (!pillar) return null
 
@@ -43,6 +49,8 @@ export function KcsPillarView({ pillarKey }: KcsPillarViewProps) {
 
   return (
     <div>
+      <KcsPillarTabs activeKey={pillarKey} onChange={onPillarChange} />
+
       {/* Header */}
       <div className="card mb-4" style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden', padding: 0 }}>
         <div style={{ position: 'relative', height: 120, background: 'linear-gradient(135deg, var(--gold-dim), var(--gold))' }}>

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
@@ -51,19 +52,7 @@ type NavItem = {
 
 const adminMainNav: NavItem[] = [
   { icon: <LayoutDashboard size={14} />, label: "Dashboard", href: "/dashboard", active: true },
-  {
-    icon: <Map size={14} />, label: "KCS Map",
-    subItems: [
-      { icon: <BookCopy size={12} />, label: "FND – Foundation", href: "/dashboard/kcs/foundation" },
-      { icon: <BookCopy size={12} />, label: "HIS – History", href: "/dashboard/kcs/history" },
-      { icon: <BookCopy size={12} />, label: "WIS – Wisdom", href: "/dashboard/kcs/wisdom" },
-      { icon: <BookCopy size={12} />, label: "PRP – Prophetic", href: "/dashboard/kcs/prophetic" },
-      { icon: <BookCopy size={12} />, label: "GOS – Gospel", href: "/dashboard/kcs/gospel" },
-      { icon: <BookCopy size={12} />, label: "ACT – Acts", href: "/dashboard/kcs/acts" },
-      { icon: <BookCopy size={12} />, label: "EPI – Epistles", href: "/dashboard/kcs/epistles" },
-      { icon: <BookCopy size={12} />, label: "REV – Revelation", href: "/dashboard/kcs/revelation" },
-    ],
-  },
+  { icon: <Map size={14} />, label: "KCS Map", href: "/dashboard/kcs" },
   {
     icon: <BookOpen size={14} />, label: "Digital Library",
     subItems: [
@@ -157,7 +146,6 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     "Digital Library": true,
-    "KCS Map": false,
     "E-Learning": false,
     "Publishing": false,
     "Research": false,
@@ -166,7 +154,7 @@ export default function Sidebar() {
   const isMember = user?.role === "member";
   const mainNav = isMember ? memberNav : adminMainNav;
   const mgmtNav = isMember ? [] : adminMgmtNav;
-  const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
+  const currentRoute = usePathname();
 
   const toggleSection = (label: string) => {
     setExpandedSections((prev) => ({ ...prev, [label]: !prev[label] }));

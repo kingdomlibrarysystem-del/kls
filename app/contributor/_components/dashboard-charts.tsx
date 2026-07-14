@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { BookCopy, Receipt } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CategoryBarChart } from '@/components/ui/category-bar-chart'
-import { mySubmissions, publicationStatusConfig, type PublicationStatus } from '@/app/contributor/publishing/_components/my-submissions-data'
+import { publicationStatusConfig, type PublicationStatus } from '@/app/contributor/publishing/_components/my-submissions-data'
+import { useMySubmissions } from '@/app/contributor/publishing/_components/use-my-submissions'
 import { payoutHistory } from '@/app/contributor/earnings/_components/earnings-data'
 
 /** Simulated network delay before mock chart data becomes visible. */
@@ -20,6 +21,7 @@ const LOAD_DELAY_MS = 400
  */
 export function DashboardCharts() {
   const [loading, setLoading] = useState(true)
+  const mySubmissions = useMySubmissions()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)

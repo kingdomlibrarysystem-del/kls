@@ -17,11 +17,11 @@ export const mySubmissions: MySubmission[] = [
   { id: 'pub-006', title: 'The Weight of Servant Leadership', category: 'Leadership', submittedAt: '2026-03-10', status: 'PUBLISHED' },
 ]
 
-export const publicationStatusConfig: Record<PublicationStatus, { label: string; cls: string }> = {
-  DRAFT:        { label: 'Draft',        cls: 'bg-w-100     text-w-700      border-w-300'      },
-  SUBMITTED:    { label: 'Submitted',    cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  UNDER_REVIEW: { label: 'Under Review', cls: 'bg-teal-50   text-teal-800   border-teal-200'   },
-  APPROVED:     { label: 'Approved',     cls: 'bg-blue-50   text-blue-800   border-blue-200'   },
-  REJECTED:     { label: 'Rejected',     cls: 'bg-red-50    text-red-800    border-red-200'    },
-  PUBLISHED:    { label: 'Published',    cls: 'bg-green-50  text-green-800  border-green-200'  },
+export const publicationStatusConfig: Record<PublicationStatus, { label: string; cls: string; bg: string; color: string; border: string }> = {
+  DRAFT:        { label: 'Draft',        cls: 'bg-w-100     text-w-700      border-w-300',      bg: 'var(--bg-section)', color: 'var(--text-secondary)', border: 'var(--border)' },
+  SUBMITTED:    { label: 'Submitted',    cls: 'bg-yellow-50 text-yellow-800 border-yellow-200', bg: 'var(--gold-light)', color: '#7a5c00',               border: 'var(--gold)'   },
+  UNDER_REVIEW: { label: 'Under Review', cls: 'bg-teal-50   text-teal-800   border-teal-200',   bg: 'var(--teal-dim)', color: 'var(--teal)', border: 'var(--teal)' },
+  APPROVED:     { label: 'Approved',     cls: 'bg-blue-50   text-blue-800   border-blue-200',   bg: 'rgba(59,130,246,0.15)', color: '#1d4ed8',               border: '#3b82f6'       },
+  REJECTED:     { label: 'Rejected',     cls: 'bg-red-50    text-red-800    border-red-200',    bg: 'var(--red-dim)',   color: 'var(--red)',             border: 'var(--red)'    },
+  PUBLISHED:    { label: 'Published',    cls: 'bg-green-50  text-green-800  border-green-200',  bg: 'var(--green-dim)', color: 'var(--green)',           border: 'var(--green)'  },
 }

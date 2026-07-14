@@ -18,13 +18,18 @@ const WITHDRAWABLE_STATUSES: MySubmission['status'][] = ['DRAFT', 'SUBMITTED']
 
 function buildColumns(onView: (s: MySubmission) => void, onWithdraw: (s: MySubmission) => void): Column<MySubmission>[] {
   return [
-    { key: 'title', label: 'Title', sortable: true, render: (s) => <span className="font-semibold text-w-950">{s.title}</span> },
-    { key: 'category', label: 'Category', sortable: true, render: (s) => <span className="text-w-700">{s.category}</span> },
-    { key: 'submittedAt', label: 'Submitted', sortable: true, render: (s) => <span className="text-w-700">{s.submittedAt}</span> },
+    { key: 'title', label: 'Title', sortable: true, render: (s) => <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.title}</span> },
+    { key: 'category', label: 'Category', sortable: true, render: (s) => <span style={{ color: 'var(--text-secondary)' }}>{s.category}</span> },
+    { key: 'submittedAt', label: 'Submitted', sortable: true, render: (s) => <span style={{ color: 'var(--text-secondary)' }}>{s.submittedAt}</span> },
     {
       key: 'status', label: 'Status', sortable: true,
       render: (s) => (
-        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${publicationStatusConfig[s.status].cls}`}>
+        <span
+          style={{
+            padding: '2px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+            border: `1px solid ${publicationStatusConfig[s.status].border}`, background: publicationStatusConfig[s.status].bg, color: publicationStatusConfig[s.status].color,
+          }}
+        >
           {publicationStatusConfig[s.status].label}
         </span>
       ),
@@ -33,11 +38,11 @@ function buildColumns(onView: (s: MySubmission) => void, onWithdraw: (s: MySubmi
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (s) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => onView(s)} aria-label={`View ${s.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
+          <button onClick={() => onView(s)} aria-label={`View ${s.title}`} style={{ padding: 6, borderRadius: 6, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
             <Eye size={14} />
           </button>
           {WITHDRAWABLE_STATUSES.includes(s.status) && (
-            <button onClick={() => onWithdraw(s)} aria-label={`Withdraw ${s.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+            <button onClick={() => onWithdraw(s)} aria-label={`Withdraw ${s.title}`} style={{ padding: 6, borderRadius: 6, color: 'var(--red-light)', background: 'none', border: 'none', cursor: 'pointer' }}>
               <XCircle size={14} />
             </button>
           )}

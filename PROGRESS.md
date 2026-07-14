@@ -1,0 +1,791 @@
+# Autonomous Run Progress
+
+Working through the combined remaining backlog from
+`.claude/skills/kls-page-builder/references/lecturer-feature-audit.md`
+(2 Rough items) and `.claude/skills/kls-page-builder/references/ux-journey-audit.md`
+(8 Rough + 8 Polish items), per CLAUDE.md's Autonomous Mode protocol.
+
+Branch: `auto-wip` (not `main`). Each phase = one commit, pushed after
+`npm run build` + `npx tsc --noEmit` pass clean.
+
+## Phase list (18 items)
+
+1. Decorative purple/teal gradient avatar — `components/session-room/participant-tile.tsx:37`
+2. Tailwind status classes in a Dialect-B data file — `app/lecturer/_shared/session-requests-data.ts:22-25`
+3. Course completion → assessment discoverability nudge missing
+4. Reservation stuck at `Waiting` forever — no path to `Ready`
+5. Reserve queue "ahead of you" off-by-one copy
+6. `/contributor` dashboard stat cards hardcoded, not live
+7. Roles/Users/Invitations/Audit-log CRUD state lost on remount (not a shared store)
+8. Lesson content pane "Download" button inert
+9. `/member/library` "Write Your Scroll" CTA inert
+10. Review Queue empty-by-default (seed-data reachability)
+11. Scroll detail → Reserve unreachable from `/member/library/[section]/[scrollId]`
+12. Add Course doesn't auto-navigate to catalog after success
+13. `/dashboard/reports` "Total Members" reads a plain constant, not live
+14. `/member/borrowings` + `/member/reservations` missing Skeleton/EmptyState
+15. `/dashboard/roles` missing Skeleton loading phase
+16. Dialect A classes hardcoded inside DataTable render callbacks (systemic, ~5+ files)
+17. `/contributor` charts read static imports, not subscribable hooks
+18. Login accepts any email silently, no validation feedback for non-seed addresses
+
+## Log
+
+1. **Decorative gradient avatar fixed** — `components/session-room/participant-tile.tsx:37`. Replaced `linear-gradient(135deg, var(--purple), var(--teal))` with solid `var(--gold)`, matching the page-builder color-discipline rule (no decorative non-status hues). Build + `tsc --noEmit` clean.
+2. **Tailwind-in-Dialect-B fixed** — `app/lecturer/_shared/session-requests-data.ts:21-26`. `sessionStatusConfig` fed both Dialect-A consumers (`sessions-view.tsx`, `sessions-stats.tsx` — Tailwind `cls` correct there, kept unchanged) and one Dialect-B consumer (`session-card.tsx`, pure inline-style component) off the same Tailwind class string. Added `bg`/`color`/`border` CSS-variable tokens to each status entry and switched `session-card.tsx`'s badge to inline `style={{...}}` using those tokens, leaving `cls` untouched for the two Dialect-A files. Build + `tsc --noEmit` clean.
+3. **Assessment discoverability nudge added** — `lesson-viewer-view.tsx` now detects when every lesson in the current course is complete and looks up the course's linked assessment via `useAssessmentCatalog()` (matched on `courseId`). When found, `LessonContentPane` renders a gold-accented nudge card with the assessment title and a "Take Assessment" link to `/member/assessments`, so a member no longer has to separately know to look there. Build + `tsc --noEmit` clean.
+4. **Reservation `Waiting` → `Ready` dead end fixed, together with the queue off-by-one (items 4 and 5 — same function, fixed as one coherent change)** — `app/member/_shared/use-reservations.ts`. `addReservation()` used to always create `status: 'Waiting'` with `queue: queueAhead + 1`, and nothing anywhere ever promoted a reservation to `Ready`. Now: (a) `addReservation()` computes `queue` as the literal count of reservations ahead (no `+1`) and sets `status: 'Ready'` immediately if that count is 0; (b) `fulfillReservation()` — the existing trigger point for freeing up a copy — now also decrements the `queue` of every other `Waiting` reservation for that same title and promotes whichever reaches `queue === 0` to `Ready`. This keeps the fix self-contained inside the reservations store rather than wiring a new cross-module link to the separate admin-side borrowings/resources data (which would have been a larger, riskier shared-data-model change out of scope for this item). Build + `tsc --noEmit` clean.
+5. **Reserve queue off-by-one** — fixed as part of item 4 above (same commit/function).
+6. **`/contributor` dashboard stat cards wired to live data** — `dashboard-data.ts` no longer stores hardcoded `value`s; `dashboard-view.tsx` now computes each stat from the same shared store its own dedicated page already reads: submission count from `useMySubmissions()`, course count from `useCourseCatalog()` filtered by `CONTRIBUTOR_NAME`, project count from `mockProjects` filtered by contributor membership, and earnings from `useRevenue()` filtered by contributor and reduced the same way `earnings-view.tsx` already does. The dashboard summary can no longer drift from what My Submissions/My Courses/My Research/Earnings individually show. Build + `tsc --noEmit` clean.
+7. **Roles/Users/Invitations CRUD converted to shared `useSyncExternalStore` stores** — Audit-log was already correctly wired to `use-audit-log.ts` in a prior session (verified: `audit-log-view.tsx` already calls `useAuditLog()`), so the actual remaining scope was 3 pages, not 4. Created `use-users.ts`, `use-roles.ts`, `use-invitations.ts`, each a module-level mutable store following the exact `use-audit-log.ts` pattern already used elsewhere (`use-resources.ts`, `use-reservations.ts`, etc.). `users-view.tsx`, `roles/page.tsx`, and `invitations/page.tsx` now read from `useUsers()`/`useRoles()`/`useInvitations()` instead of page-local `useState` seeded from the static arrays, so Create/Edit/Delete on all three pages now survive a route remount instead of silently resetting to seed data. Build + `tsc --noEmit` clean.
+8. **Lesson content pane "Download" button wired** — `lesson-content-pane.tsx`. There's no real backing file anywhere in this mocked prototype (`lesson.content` is only ever a filename string like `foundation-reading-guide.pdf`), so faking a `fetch` would have violated the frontend-only rule. Added a `downloadLessonFile()` helper that builds a small text `Blob` client-side and triggers a real browser download via a temporary `<a download>` element — the button now does something real instead of being inert, without any network call. Build + `tsc --noEmit` clean.
+9. **`/member/library` "Write Your Scroll" CTA wired** — new `write-scroll-modal.tsx` (Act/Epistle/Revelation type picker, title, body — this is personal reflective writing, distinct from the contributor-only publishing submission flow, so no existing flow was reused). Fully mocked: submitting shows a confirmation toast and closes, since there's no "My Scrolls" list page yet to append to. `page.tsx` stayed under the 200-line cap (188 lines) by keeping the modal in its own file. Build + `tsc --noEmit` clean.
+10. **Review Queue empty-by-default fixed** — `app/member/_shared/enrollment-data.ts`. Seeded a third `initialAssessmentAttempts` row for assessment `'2'` (the Midterm with an OPEN question) with `reviewStatus: 'PENDING_REVIEW'` and a real `openAnswers.q4` entry, matching exactly the shape `recordAssessmentAttempt()` itself would produce (auto-graded score 30/50 from q1–q3, q4 awaiting a manager grade). `/dashboard/e-learning/quizzes/review` now has something to review by default instead of only after a member takes that assessment in the same session. `/member/assessments` correctly buckets it under "Under Review," not a fabricated pass/fail. Build + `tsc --noEmit` clean.
+11. **Scroll detail → Reserve wired** — `scroll-detail-view.tsx` (`/member/library/[section]/[scrollId]`). Previously only rendered a Borrow button, and only when `availableQty > 0` — Reserve was completely unreachable from this entry point, and out-of-stock resources showed no action at all. Now shows both Borrow (when in stock) and Reserve (always, when authenticated) per matched resource, mirroring the exact pattern `publication-detail-view.tsx` already uses. Also fixed a related latent bug this surfaced: the modal was keyed off a single `matches.find(r => r.availableQty > 0)` guess, which meant it would never render at all for an all-out-of-stock scroll even with the new Reserve button — replaced with an explicit `actionTarget` set by whichever resource's button was actually clicked. Build + `tsc --noEmit` clean.
+12. **Add Course auto-navigates to catalog** — `course-form-view.tsx`. After a successful submit, briefly shows the existing success banner then `router.push('/dashboard/e-learning/catalog')` after 1.2s, instead of leaving the admin stranded on the empty form with only an inline banner as the only signal the course was saved. Build + `tsc --noEmit` clean.
+13. **`/dashboard/reports` "Total Members" wired to live data** — `cross-module-data.ts`'s `TOTAL_MEMBERS` was `initialUsers.length`, a snapshot constant computed once at import time — Add User/Delete User on `/dashboard/users` (now backed by `useUsers()` since Phase 7) never changed it without a full reload. `reports-view.tsx` now reads `useUsers().length` directly, matching the live pattern already used for enrollments/review-queue on the same page. `ACTIVE_LOANS` stays a static constant — no live borrowings store exists yet, and this item's audit scope was Total Members specifically, not a general Reports rewrite. Build + `tsc --noEmit` clean.
+14. **`/member/borrowings` + `/member/reservations` given Skeleton/EmptyState** — both views previously rendered instantly with no loading phase at all, and their empty states were hand-rolled `<div>`s instead of the shared `EmptyState` component every other module in this codebase uses. Added the standard `LOAD_DELAY_MS` + `useState`/`useEffect` loading pattern with stat-card + list `Skeleton`s, and swapped the hand-rolled "no active borrowings/reservations" divs for `EmptyState`, matching the pattern already used on `library-view.tsx`, `sessions-view.tsx`, etc. Build + `tsc --noEmit` clean.
+15. **`/dashboard/roles` given a Skeleton loading phase** — `role-cards.tsx` already had a real `EmptyState` for zero roles, but `roles/page.tsx` itself rendered instantly with no loading phase at all, unlike its sibling pages `/users`, `/invitations`, `/audit-log`. Added the same `LOAD_DELAY_MS` pattern with stat-card + role-card grid `Skeleton`s, gating `RolesStats`/`RoleCards` behind it. Build + `tsc --noEmit` clean.
+16. **Dialect A classes removed from Dialect B `DataTable` render callbacks** — the audit's own file list (`users-view.tsx`, `invitations-table.tsx` among the 5 named) turned out to include two false positives on re-check: both are genuinely Dialect-A pages (Tailwind `PageHeader`/`ElegantButton` chrome throughout, confirmed earlier this session), so Tailwind `text-w-*` inside their `DataTable` callbacks is correct and consistent with their own page, not a violation — left unchanged. The 3 genuinely Dialect-B files (plus 3 sibling detail-modal/data files the same status configs feed, caught during the fix) were converted: `earnings-view.tsx` + `revenue-detail-modal.tsx` (added `bg`/`color`/`border` tokens to `payoutStatusConfig`), `my-submissions-view.tsx` + `submission-detail-modal.tsx` (same for `publicationStatusConfig`), `login-history-section.tsx`, `sessions-section.tsx` — all now use inline `style={{ color: 'var(--text-secondary)', ... }}` matching their own page's dialect instead of `text-w-950`/`bg-w-100`/etc. `DataTable`'s own internal chrome (headers, pagination, search bar) is intentionally left as Tailwind — it's a documented dialect-agnostic shared primitive, not part of this finding. Build + `tsc --noEmit` clean.
+17. **`/contributor` charts wired to a subscribable hook** — `dashboard-charts.tsx` imported `mySubmissions` as a static array, so "Submissions by Status" never reflected a book submitted via Submit a Book in the same session. Switched to `useMySubmissions()` (the same store `my-submissions-view.tsx` and the dashboard stat cards from Phase 6 already read). `payoutHistory` stays a static import — confirmed (Phase 16) there is no live payout store anywhere, by design, since no admin-side payout-processing page exists. Confirmed only one chart file exists under `/contributor` — no other chart to fix. Build + `tsc --noEmit` clean.
+18. **Login validation feedback for non-seed emails** — this item touches `contexts/auth-context.tsx` (auth), so per the Autonomous Mode protocol I judged the fix carefully before proceeding rather than treating it as routine: the previous audit pass had explicitly left it "unchanged, not in scope for that pass," not because it was unsafe, but because it was out of that pass's scope — the user's later "both backlogs, in full" instruction brought it back into scope for this run. Confirmed this is genuinely low-risk: there is no real password/credential check to begin with (`_password` was already ignored, per `CLAUDE.md`'s "auth is a `localStorage` + in-memory mock" note), so no security control exists to weaken. Considered hard-blocking login for unrecognized emails, but rejected it — this prototype's entire point is letting any visitor explore any role's UI, so a hard block would break the mock's purpose. Instead: `login()` now returns `{ matched: boolean }`; `LoginForm` shows a non-blocking amber banner naming the unrecognized email with a "Continue as a member anyway" action when `matched` is false, instead of silently redirecting as if the address were recognized. The audit-log entry for a fallback login now also records the real email that didn't match, instead of a generic note. Build + `tsc --noEmit` clean.
+
+## Needs human input
+
+None. Every phase was either a self-contained, reversible frontend
+change or (Phase 18, auth-adjacent) a change judged low-risk before
+proceeding rather than skipped or guessed — see that phase's log entry
+for the reasoning. Nothing was deferred to this section.
+
+## Final summary
+
+All 18 phases complete, each individually committed, built
+(`npm run build`), type-checked (`npx tsc --noEmit`), and pushed to
+`auto-wip`. Both source audit documents
+(`.claude/skills/kls-page-builder/references/lecturer-feature-audit.md`
+and `ux-journey-audit.md`) have been updated in place, marking every
+item from this run's scope as resolved with a one-line pointer back to
+the fix.
+
+**What's intentionally still open (by design, not oversight):**
+- `lecturer-feature-audit.md`'s 5 Polish items (admin sidebar `isMember`
+  binary flag, `Video` icon reuse, Tailwind-in-inline-style in
+  `session-card.tsx`, decorative stat-icon colors, decorative button
+  accent) — these were never part of this run's 18-item combined scope;
+  the user's instruction was "2 Rough + [ux-journey-audit's] 8 Rough + 8
+  Polish," not this document's own Polish backlog.
+- `ux-journey-audit.md`'s explicitly-deferred architectural item: no
+  `middleware.ts` exists anywhere in the repo, so every `/dashboard/*`
+  route is reachable by an anonymous visitor with zero auth gate. This
+  was flagged by a prior session as "a substantially larger
+  architectural task... intentionally not attempted," and stayed out of
+  scope for this run for the same reason — it's a real-auth/routing
+  change, not a mocked-frontend fix, and doesn't fit this phase list.
+
+**Notable judgment calls made along the way** (each logged in more
+detail against its own phase above):
+- Phases 4 and 5 (reservation dead-end + queue off-by-one) were fixed
+  together in one commit since they're the same function — logged as
+  two phase entries for traceability against the original 18-item list.
+- Phase 7 turned out to be 3 pages of work, not 4 — Audit-Log was
+  already correctly store-backed from an earlier session.
+- Phase 16 turned out to be 4 genuinely-affected files, not the 5 named
+  in the audit — 2 of the named files (`users-view.tsx`,
+  `invitations-table.tsx`) are genuinely Dialect-A pages where the
+  "violation" wasn't actually one; fixing them would have introduced a
+  real inconsistency rather than removing one.
+- Phase 18 (login validation) touches auth-context, so its risk was
+  explicitly assessed rather than treated as routine — judged low-risk
+  since no real credential check exists to weaken in this mocked
+  prototype, and a hard block was rejected in favor of non-blocking
+  feedback to preserve the prototype's "explore any role" purpose.
+
+**Recommended next step for a human reviewer:** review this branch's 16
+phase commits (`957261d`..`404e188` on `auto-wip`, following the initial
+`f6321ea` setup commit), then decide whether to merge into
+`feat/ui-setup` or `main`. No further autonomous work is planned unless
+a new phase list is provided.
+
+---
+
+# Reading Feature Arc
+
+New autonomous run, same branch (`auto-wip`), same protocol. Grounded in
+`.claude/skills/kls-page-builder/references/reading-feature-gap-audit.md`,
+which confirmed: real multi-view card/list/table infrastructure exists to
+build on, but reading access, highlighting, reading progress, notes, and
+readable body content are all green-field — nothing partial to build
+from. 6 phases, in order, each committed/built/type-checked/pushed
+individually.
+
+## Phase 0 — Readable content model (design note)
+
+**Content shape decision: chapters, not raw pages.** `Resource.pages` is
+already a physical page *count* used only for display (per the audit) —
+reusing it as a content-array length would conflate two unrelated
+concepts (a printed page count vs. a content unit to track progress
+against). Chapters are the natural atomic unit a Bible-like scroll
+already has (per KCS_LIBRARY.md's own framing), and they map cleanly
+onto the lesson-progress precedent: `completedLessonIds: string[]` +
+`totalLessons: number` becomes `completedChapterIds: string[]` +
+`totalChapters: number` in Phase 2, one-to-one.
+
+**Store shape**: `readable-content-data.ts` (types + seed data) +
+`use-readable-content.ts` (module-level `Record<resourceId, ReadableContent>`
+store), following `use-lessons.ts` exactly — same `structuredClone` seed,
+same `subscribe`/`emitChange`/`getSnapshot` triplet, same non-hook
+`getReadableContentSnapshot()` accessor for other store modules (Phase 2's
+progress store will need this the same way `use-enrollments.ts` reads
+`getLessonsSnapshot()`). Read-only for now — no admin authoring UI exists
+yet for chapter content, so no add/update/remove mutators were added
+speculatively; only what Phase 1 needs.
+
+**Why these 4 resources**: Genesis (id `1`, Foundation), Psalms (id `7`,
+Wisdom), Matthew (id `11`, Gospel), Revelation (id `16`, Revelation) —
+spans 4 of the 8 KCS pillars for real variety, all four are recognizable
+canonical titles already in `initialResources`, and Matthew/Revelation
+are `mediaType: 'COMBINATION'` while Genesis/Psalms are `'TEXT'`/mixed —
+enough spread to exercise the reader without seeding all 16 up front.
+Each resource got 3 chapters of original placeholder prose (not lorem
+ipsum) in the Kingdom Library's established voice — matching how every
+other seed `description` in this app is real prose, not filler text.
+
+## Log
+
+0. **Readable content model + store shipped** — see design note above.
+   `app/member/_shared/readable-content-data.ts` +
+   `use-readable-content.ts`. Build + `tsc --noEmit` clean.
+1. **Reader entry point + basic reader view shipped.** New route
+   `/member/library/read/[resourceId]` (`page.tsx` +
+   `_components/reader-view.tsx`) — chosen as a flat route keyed
+   directly to canonical `Resource.id`, not nested under the KCS
+   `[section]/[scrollId]` path, since the audit confirmed those are a
+   separate synthetic ID space (`KCS-FND-0`, etc.) resolved to a
+   `Resource` only by title match — the reader only ever needs the
+   `Resource.id` `useReadableContent()` is keyed by. `ReaderView` renders
+   one chapter at a time (title + paragraphs split on blank lines) with
+   Previous/Next buttons and a "Chapter X of Y" indicator; shows the
+   existing `EmptyState` pattern for a resource with no seeded chapters
+   yet (expected for 12 of 16 resources — not a bug).
+   "Read Online" was added to all 4 components the audit named, reusing
+   each one's existing card/detail shell rather than inventing a new
+   entry-point pattern:
+   - `scroll-card.tsx` (member `ScrollCard`/`ScrollListItem`) — resolves
+     the readable resource via a new `useReadableResourceId()` helper
+     that mirrors `findResourcesForScroll`'s existing title-match
+     relationship, filtered to resources with seeded chapters.
+   - `scroll-detail-view.tsx` (member scroll detail) — added a
+     gold "Read Online" link above Borrow/Reserve inside the existing
+     `RelatedResourceCard` action slot per matched resource; Borrow's
+     styling was demoted to a neutral background so Read Online reads as
+     the primary action when both are present.
+   - `library-browser.tsx`'s `BookCard` (public) — extracted `BookCard`
+     into its own file (`book-card.tsx`) as part of this change, since
+     adding the new action pushed the original file over the 200-line
+     cap; "Read Online" (authenticated) / "Sign In to Read" (signed out,
+     preserving `?redirect=` back to the reader) shown above Borrow/Reserve.
+   - `publication-detail-view.tsx` (public detail page) — same
+     Read Online / Sign In to Read treatment above Borrow/Reserve.
+   - `resource-detail-modal.tsx` (admin inventory) — added a
+     "Preview Reader" button (opens in a new tab) alongside Edit/Archive;
+     this is genuinely a preview affordance for an admin, not the
+     member-facing "Read Online" label, since admins manage inventory
+     rather than read for themselves.
+   Verified live via `npm run dev` + `curl`, not just a build-passing
+   assumption: `/member/library/read/1` (Genesis, has content) returns
+   200 with no error markers; `/member/library/read/99` (no matching
+   resource) also returns 200, rendering the "not available to read
+   online yet" `EmptyState` rather than crashing. Build + `tsc --noEmit`
+   clean.
+2. **Reading progress store shipped**, mirroring `use-enrollments.ts`
+   exactly. `reading-progress-data.ts` (`ReadingProgress` type:
+   `completedChapterIds: string[]` + `totalChapters: number`, percentage
+   always derived via `getReadingProgressPercent()`, never stored — plus
+   `lastChapterId`/`lastReadAt` for resume and Phase 6's "recently read"
+   ordering) + `use-reading-progress.ts` (module-level store,
+   `startReading()`/`markChapterRead()` mutators). Seeded 2 rows (Genesis
+   in-progress, Psalms completed) so Phase 3's "Continue Reading" isn't
+   empty by default — matching `initialEnrollments`' own seeded pattern,
+   corrected from an earlier draft comment that incorrectly claimed
+   enrollments start empty.
+   `reader-view.tsx` now calls `startReading()` once per mount and
+   `markChapterRead()` on every chapter view (viewing a chapter of prose
+   is the natural completion signal, unlike a lesson's separate "Mark
+   Complete" button) — auto-flips to `COMPLETED` once every chapter is
+   viewed, same auto-flip pattern `markLessonComplete` uses. Resumes at
+   `lastChapterId` when no `?chapter=` is explicitly given, so leaving
+   and returning to the reader lands back where the member stopped. A
+   live progress bar (derived percentage) now shows in the reader header.
+   Verified live via `npm run dev` + `curl` for both `?chapter=` present
+   and absent; true cross-navigation resume needs a real browser session
+   (progress is in-memory only, same as every other store in this app,
+   so a fresh `curl` process can't observe persistence within one dev
+   session — this is expected, not a gap). Build + `tsc --noEmit` clean.
+3. **Multi-view integration shipped** — reading progress now surfaces
+   on the existing card/list views the audit cataloged, plus a new
+   "Continue Reading" section, matching `/member/courses`'s existing
+   "Continue Learning" pattern exactly (real per-item progress bar +
+   Resume link, not decorative).
+   - `scroll-card.tsx` — both `ScrollCard` (grid) and `ScrollListItem`
+     (list) now show a live progress bar / percentage chip via a new
+     `useReadingPercent()` helper, and the "Read Online" label switches to
+     `Continue Reading (N%)` once reading has started.
+   - New `continue-reading-section.tsx`, wired into
+     `/member/library/page.tsx` — lists every `READING`-status resource
+     with a per-item progress bar and a "Resume" link straight into the
+     reader at `lastChapterId`; scoped to in-progress only, mirroring how
+     `completed-courses-section.tsx` is kept separate from the courses
+     page's own "Continue Learning" card. Renders nothing (not an empty
+     state) when no resource is in progress, same as the courses page's
+     own `inProgress.length > 0` gate.
+   - `scroll-detail-view.tsx`'s Related Resources cards were left as-is
+     for this phase — the phase spec named `ScrollCard` and a
+     library-level "Continue Reading" affordance specifically, and that
+     file is already close to the 200-line cap; not adding scope beyond
+     what was asked.
+   Verified live via `npm run dev` + `curl`: `/member/library` renders
+   the literal string "Continue Reading" in its server-rendered HTML
+   (this page has no client-side loading skeleton gating it, unlike the
+   reader). Build + `tsc --noEmit` clean.
+4. **Highlighting shipped: data model + store + real text-selection UI.**
+   `highlight-data.ts` (`Highlight`: `resourceId`, `chapterId`,
+   `startOffset`/`endOffset` — character positions within that chapter's
+   `body` string, `text` snapshotted at creation for Phase 6's
+   highlights-list view, `color` from a small closed
+   `HighlightColor` set using CSS vars already in `globals.css`
+   — gold/green/teal/pink, a functional multi-value choice like a
+   category chip, not decoration) + `use-highlights.ts` (same
+   `useSyncExternalStore` module-store pattern as everything else; no
+   seed rows, since a seeded highlight's offsets would silently desync
+   the moment its chapter's placeholder prose is ever edited — unlike
+   `initialFavorites`/`initialEnrollments`, which don't carry that
+   fragile a dependency).
+   Real text-selection UI in the reader, not a placeholder: a new
+   `useChapterSelection()` hook converts a real `window.getSelection()`
+   range into chapter-relative character offsets (walking the DOM text
+   nodes before the selection start within its paragraph, then adding
+   that paragraph's own chapter-relative start offset — correctly
+   accounts for trimmed leading whitespace so stored offsets exactly
+   match the trimmed highlighted text). `HighlightPicker` shows a small
+   floating color-swatch popover anchored to the selection's bounding
+   rect. `HighlightedParagraph` splices `<mark>`-styled spans into each
+   paragraph for any highlight whose range overlaps it, re-deriving
+   paragraph-local slice points from the chapter-relative offsets on
+   every render — so highlights survive chapter navigation and stay
+   correctly positioned regardless of how paragraphs are split for
+   display.
+   Verified: build + `tsc --noEmit` clean, `/member/library/read/1`
+   returns 200 live via `npm run dev` + `curl`. The actual
+   select-text-and-click-a-color interaction was traced logically
+   through the offset-computation code (confirmed correct on manual
+   trace against Genesis's real seed prose) rather than driven by an
+   actual browser session — Playwright isn't installed in this project
+   and adding it as a new dependency solely for a one-off interaction
+   check isn't warranted; flagging this honestly rather than claiming a
+   browser-verified interaction that didn't happen.
+5. **Notes/annotations shipped**, same shape family as highlights but
+   free-text and attachable two ways, per the phase spec: `note-data.ts`
+   (`Note`: `resourceId`/`chapterId` always, optional `highlightId` when
+   the note is on a specific highlighted passage rather than the chapter
+   generally) + `use-notes.ts` (same store pattern, no seed rows for the
+   same reason as highlights — a real note is written about content a
+   member actually read). New `NotesPanel` component serves both modes:
+   rendered inline under the chapter body with no `highlight` prop for
+   general chapter notes, and as a scoped panel titled with the
+   highlighted text when opened by clicking a `<mark>` in the reader
+   (added `onHighlightClick` to `HighlightedParagraph` for this).
+   Verified: build + `tsc --noEmit` clean, `/member/library/read/1`
+   returns 200 with no error markers via `npm run dev` + `curl` (the
+   panel itself isn't visible in the raw HTML response since the reader
+   is fully client-rendered behind a loading skeleton, consistent with
+   Phase 1/2/4's same verification approach).
+6. **Polish: all 3 named items shipped.**
+   - New `CurrentlyReading.tsx` dashboard widget, wired into
+     `/member/page.tsx`'s existing 3-column widget grid as a 4th item.
+     Deliberately modeled after `ELearningProgress.tsx`'s genuinely
+     live-wired pattern rather than copying `BorrowedBooks.tsx`, which
+     (noted here, not touched — out of scope) is itself still a static
+     `mockBorrows` array despite the real `use-borrowings.ts` store
+     existing; this new widget reads `useReadingProgress()` +
+     `useResources()` directly so it can't drift from what the reader
+     itself shows.
+   - New `chapter-search.tsx` ("search within this book"): a query box
+     that matches chapter title or body text, shows a snippet per match,
+     and jumps the reader to that chapter on click. Scoped to the
+     current book's own (few) chapters — no cross-book search, since
+     that wasn't what "search-within-book" asked for.
+   - New `highlights-notes-list.tsx` ("My Highlights & Notes"): a
+     collapsible panel listing every highlight and note for the whole
+     book (not just the current chapter), each entry jumping back to its
+     chapter on click, with its own delete action. Renders nothing when
+     both are empty, matching the same "don't show an empty affordance"
+     convention `continue-reading-section.tsx` already established in
+     Phase 3.
+   Verified live via `npm run dev` + `curl`: `/member` (dashboard)
+   renders the literal string "Currently Reading" in its server-rendered
+   HTML; `/member/library/read/1` and `/member/library/read/7` (the
+   Psalms `COMPLETED` seed row) both return 200. Build + `tsc --noEmit`
+   clean.
+
+## Reading Feature Arc — final summary
+
+All 6 phases complete, each individually committed, built, type-checked,
+and pushed to `auto-wip`. The arc took the reading-feature-gap-audit's 6
+confirmed-absent areas (reading access, highlighting, reading progress,
+notes, readable body content, and the multi-view infrastructure that
+*did* exist to build on) and closed every one:
+
+- **Readable content**: 4 resources (Genesis, Psalms, Matthew,
+  Revelation) now have real chapter body text, not just metadata.
+- **Reading access**: a real reader at `/member/library/read/[resourceId]`,
+  reachable from all 4 components the audit named (plus an admin
+  preview action), not a decorative or dead button anywhere.
+- **Reading progress**: a full store mirroring the lesson/enrollment
+  precedent, surfaced on cards, a dedicated "Continue Reading" section,
+  and now a dashboard widget too.
+- **Highlighting**: real text-selection → chapter-relative offsets →
+  persisted, colored, positionally-stable marks that survive chapter
+  navigation.
+- **Notes**: free-text, attachable per-chapter or per-highlight.
+- **Polish**: a dashboard summary, in-book search, and a full
+  highlights/notes review list.
+
+**What's intentionally out of scope, not overlooked:**
+- `BorrowedBooks.tsx`'s pre-existing static `mockBorrows` array (noted in
+  Phase 6, not fixed — unrelated to this arc's brief).
+- Cross-book search, and a dedicated top-level "My Highlights" page
+  spanning every book at once — the phase spec's "search-within-book"
+  and "highlights/notes list view" were both scoped to one open book,
+  not the whole library; a library-wide version of either would be a
+  reasonable future phase but wasn't asked for here.
+- Real browser-driven interaction testing (actual mouse-drag text
+  selection, actual color-pick clicks) for Phases 4/5 — Playwright isn't
+  installed in this project; offset/selection logic was verified by
+  manual trace against real seed prose instead, and every route was
+  confirmed live via `npm run dev` + `curl` at every phase.
+
+**Recommended next step for a human reviewer:** review this arc's 7
+commits (`ce75b2f`..HEAD on `auto-wip`, following the prior 18-phase
+audit-remediation run), test the actual selection/highlight/note flow
+in a real browser, then decide whether to merge into `feat/ui-setup` or
+`main`.
+
+---
+
+# Contributor Workspace Richness Pass + Hydration Fix
+
+Same branch (`auto-wip`), triggered by user-reported screenshots showing
+`/contributor/research` and `/contributor/courses` reading noticeably
+thinner than sibling modules (KCS Map, e-learning, reporting), plus a
+persistent "1 Issue" dev-tooling badge visible across many screenshots
+that had never been investigated.
+
+## 1. "1 Issue" indicator — root cause found and fixed
+
+The badge was Next.js's dev-mode error overlay, and it was flagging a
+real, reproducible hydration mismatch, not a false positive. Root cause:
+all 4 sidebars (`app/lecturer/_components/lecturer-sidebar.tsx`,
+`app/contributor/_components/contributor-sidebar.tsx`,
+`app/member/_components/member-sidebar.tsx`,
+`app/dashboard/_components/sidebar.tsx`) computed their "which nav item
+is active" state with:
+
+```js
+const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
+```
+
+On the server, `window` is undefined, so `currentRoute` is always `""`
+and no nav item is ever marked active in the server-rendered HTML. On
+the client's first paint (before React hydrates), `window.location.pathname`
+is already the real route, so React computes a different active item
+with different background/color/border-left styling — a genuine
+server/client attribute mismatch, exactly the class of bug the console
+error described (`components/session-room/control-bar.tsx`'s sibling
+issue, but here in every sidebar). `app/contributor/_components/contributor-mobile-bottom-nav.tsx`
+had the same underlying anti-pattern in a `useState`+`useEffect` form
+that avoided a hard mismatch (server always renders `""`) but still
+caused a one-frame flash of incorrect active state on every load.
+
+**Fix:** replaced `window.location.pathname` with Next.js's built-in
+`usePathname()` hook in all 5 files — it resolves correctly and
+identically on both server and client with no window check needed, so
+there's no mismatch and no flash. Verified by comparing server-rendered
+HTML before/after: `/lecturer/messages` (the exact route the reported
+error came from) now renders `rgba(212,168,67,0.12)` (the active-state
+background) around the Messages link in the raw HTML, meaning the
+server and client will agree from the very first paint. Cross-checked
+`/contributor/research` (1 active match), `/member` (1 active match),
+and `/member/library` (3 matches once the nested sub-item's distinct
+`0.08`-opacity active style — a real, intentional visual difference
+from top-level items, not a bug — was accounted for). Build + `tsc --noEmit`
+clean.
+
+## 2/3. Contributor Workspace richness audit + fix
+
+Confirmed the report's read: `/contributor/research` cards showed only
+title/status/paper-count/View-Details despite `ResearchProjectSummary`
+already carrying `description`, `startDate`, and `contributors` —
+unused fields, not missing data. `/contributor/courses` cards were the
+same shape gap (`CourseCatalogEntry.description` unused on the card).
+The `Course Details` modal was a bare key-value list with no enrollment
+trend or roster link, despite a real, matching analytics dataset
+(`courseAnalytics` in `app/dashboard/e-learning/progress/_components/progress-data.ts`,
+keyed by the exact same course IDs — `crs-001` etc. — as `CourseCatalogEntry`)
+sitting completely unconsumed by the contributor side. Both status
+configs (`projectStatusConfig`, `courseStatusConfig`) also had the same
+Tailwind-in-Dialect-B bug fixed elsewhere in this run.
+
+**Fix — My Research** (`my-research-view.tsx`, `my-research-detail-modal.tsx`):
+cards now show description, start date, and contributor initials (new
+`contributor-initials.tsx` — a Dialect-B equivalent of the admin side's
+`ContributorAvatar`, which is hardcoded Tailwind and not reusable here);
+the modal gained a full contributor name list. `projectStatusConfig`
+gained `bg`/`color`/`border` tokens (kept `cls` for the genuinely
+Dialect-A admin consumers — `project-collaboration-card.tsx`,
+`collaborations-stats.tsx`, `project-detail-modal.tsx` — confirmed via
+grep before touching the shared config).
+
+**Fix — My Courses** (`my-courses-view.tsx`, `my-course-detail-modal.tsx`):
+cards now show description and a live average-completion bar pulled
+directly from `courseAnalytics`, matching the exact visual pattern
+`course-analytics-card.tsx` already established on the admin
+`/dashboard/e-learning/progress` page. The modal gained the same
+completion bar plus a top-performers list and a real
+"View full enrollment roster" link to `/dashboard/e-learning/progress`
+— reusing the existing admin page rather than building a new
+contributor-facing roster view, consistent with this module's
+established pattern of deep-linking into real admin forms/pages
+(Submit Paper → `/dashboard/research/submit`, Add Course →
+`/dashboard/e-learning/add`). `courseStatusConfig` was fully converted
+to CSS-var tokens (not just supplemented) since all 3 of its consumers
+are contributor-only, confirmed via grep.
+
+No new data model fields were invented for either page — every added
+number/name/link (`description`, `startDate`, `contributors`,
+`courseAnalytics`) already existed in the app; the fix was making the
+cards and modals actually surface what was already there, per the
+task's explicit instruction to reuse existing components/patterns
+rather than invent new ones. A course thumbnail/cover-image field does
+not exist anywhere on `CourseCatalogEntry` — adding one would have been
+inventing new data, so it was intentionally left out rather than
+fabricated.
+
+All files stayed under the 200-line cap (`my-courses-view.tsx` 118,
+`my-course-detail-modal.tsx` 103, `my-research-view.tsx` 104,
+`my-research-detail-modal.tsx` 70, `contributor-initials.tsx` 33).
+Verified live via `npm run dev` + `curl`: both pages return 200 with no
+error markers (loading skeleton renders as expected — both pages are
+client-rendered behind a simulated delay, same as every other view in
+this app). Build + `tsc --noEmit` clean.
+
+---
+
+# Gaps & Modals Audit Fixes
+
+Same branch (`auto-wip`). A read-only audit
+(`.claude/skills/kls-page-builder/references/gaps-and-modals-audit.md`)
+found 3 independent issues across the app; this pass fixed all 5 items
+from its Prioritized Findings list, in severity order. The 4 modal-vs-
+page conversions and the hub-page-standardization item were explicitly
+left out of scope per instruction — those are architectural decisions
+(new routes, navigation patterns) deserving their own scoped discussion,
+not correctness fixes.
+
+## 1. Blocking — requestSession() authorization gap, fixed
+
+`requestSession()` (`app/lecturer/_shared/use-session-requests.ts`) was
+a bare append with zero validation — the enrollment/completion gate the
+lecturer UI's own copy promised ("requests from learners who complete
+your courses") existed only as an accidental property of the single
+current caller pre-filtering to completed courses, not as an enforced
+precondition of the function itself. Added a non-hook
+`getEnrollmentsSnapshotForStore()` accessor to `use-enrollments.ts`
+(mirroring `getLessonsSnapshot()`'s established cross-store-read
+pattern); `requestSession()` now throws unless the learner has a
+COMPLETED enrollment for the course and unless the named lecturer
+actually teaches it — matching `rejectSession()`'s existing defense-in-
+depth pattern in the same file. Traced the one real caller end-to-end
+and confirmed the happy path is unaffected (it already derives
+`lecturerName` the identical way). Build + `tsc --noEmit` clean;
+`/member/courses` verified live.
+
+## 2. Blocking — BorrowReserveConfirmModal was contentless, fixed
+
+The modal was exactly what the audit named: a repeated question and one
+button, no due date, availability, or terms. Pre-commit, it now shows a
+real due-date line (Borrow) computed from
+`defaultSystemSettings.defaultBorrowPeriodDays` (a real value this app
+already defines, not fabricated) and a real copies-available line where
+the caller has `availableQty` in scope (`library-browser.tsx`,
+`publication-detail-view.tsx` — both already had a real `Resource`/
+`quantity` on hand; left optional for the other 2 callers rather than
+forcing a larger local-state refactor). Post-commit, Reserve now shows
+the real queue result from `addReservation()`'s actual return value
+instead of generic copy. Build + `tsc --noEmit` clean; `/library` and
+`/library/1` verified live.
+
+## 3. Rough — /member/leaderboard fabricated data, closed out
+
+This gap had been flagged open across two prior audit passes without
+being fixed. Investigated the actual data-model constraint before
+building anything: `useCertificates()` is the only store in this app
+with genuine multi-member data (3 real distinct names in its seed
+rows); `Borrowing` carries no member field at all, so "books read"
+cannot be honestly shown for anyone but the single live "John Doe"
+persona. Rather than fabricating a multi-member borrowing history or
+inventing a composite "points" score (which the old page did with an
+unexplained formula), the page now ranks every real name from
+`useCertificates()` by real completed-course count, includes the
+current member even at 0 completions, and shows "Books Read" only on
+the current member's own row with an explicit footer note about the
+data-model limitation — following `DashboardStats.tsx`'s own precedent
+for handling an unbacked stat honestly (its "Payments" stat). Verified
+live: the 3 real certificate names render, "John Doe" appears, none of
+the old fabricated names remain. Build + `tsc --noEmit` clean.
+
+## 4. Rough — CLAUDE.md's Coming Soon list, fixed
+
+Discovered CLAUDE.md never actually named any Coming Soon module before
+this fix — the list only existed in the page-builder skill file, which
+itself already included Donations and News (the audit's "undocumented"
+finding was about CLAUDE.md specifically, not the skill). Added a
+bullet to CLAUDE.md's "Known inconsistencies" naming all 6 real Coming
+Soon modules (confirmed via grep for the exact placeholder banner text
+across `app/dashboard/*`), pointing to the skill's §6 for the pattern.
+Also corrected the skill's own list, which included "Download Center" —
+confirmed via direct read that it's no longer a pure placeholder (shows
+a real certificates list; only one export action is disclaimed) —
+removed it with an explanatory note. Both `CLAUDE.md` and the skill
+file are gitignored in this repo, so this fix has no git diff; confirmed
+both edits are present on disk by reading them back.
+
+## 5. Polish — dead phase-placeholder.tsx, removed
+
+Re-confirmed zero call sites via grep before deleting (per the standing
+instruction to investigate before removing anything), then removed
+`app/lecturer/_components/phase-placeholder.tsx` — a Phase-1 scaffold
+superseded once the lecturer portal's real pages were built. Build +
+`tsc --noEmit` clean.
+
+## Summary
+
+All 5 items from the audit's Prioritized Findings resolved, each in its
+own commit, each verified with a real build + typecheck pass and (where
+the change was runtime-visible) a live `npm run dev` + `curl` check —
+not just a build-passing assumption. Both Blocking items were genuine
+correctness/trust issues (an unenforced authorization precondition, a
+decision made with zero visible information) and are now fixed at the
+root rather than papered over. The Rough leaderboard fix required
+determining a real data-model constraint (no per-member borrowing data
+exists) before deciding the honest scope of what could be shown, rather
+than fabricating comparison data to make the page look more complete
+than the underlying stores support.
+
+**Still explicitly out of scope, by instruction, not oversight:** the 4
+modal-vs-page conversions (research project, admin course, research
+paper, library resource detail — each recommended to become a real page
+instead of a modal) and the 3-hub-page Coming-Soon-tag standardization
+(e-learning/research/publishing). Both are real, larger design decisions
+affecting navigation/URL structure across multiple modules and deserve
+a scoped discussion before an autonomous build, not a bundled fix.
+
+# Modal Stacking, Session Seeding, File Upload, KCS Map Consolidation
+
+Four independent fixes, each its own commit, each verified with a real
+build + `tsc --noEmit` pass and a live `npm run dev` + `curl` check.
+
+## 1. Modal z-index/stacking bug (root cause + fix)
+
+**Root cause:** `components/ui/modal.tsx`'s overlay rendered inline (no
+portal) at Tailwind `z-50`, while `app/dashboard/_components/topbar.tsx`'s
+sticky header set `zIndex: 100` inline. 50 < 100, so the topbar (and
+anything inside it, e.g. the language-switcher dropdown) painted above
+any open modal wherever the two overlapped — visible on Add Resource, KCS
+Map dropdowns, and Coming Soon pages, since the topbar is mounted on every
+`/dashboard/*` route. No transform/opacity/isolation trapped the modal in
+a sub-context — this was a plain numeric ordering mistake with no shared
+z-index scale anywhere in `globals.css` to prevent it.
+
+**Fix:** `Modal` now renders via `createPortal(..., document.body)`,
+removing it from the dashboard's internal DOM/stacking hierarchy
+entirely, and its overlay z-index was bumped to `z-100`. `DashboardTopbar`
+was lowered to `zIndex: 40` so there's a real, intentional ordering rather
+than ad-hoc numeric luck. Commit `d834e67`.
+
+## 2. Seeded session requests
+
+`app/lecturer/_shared/session-requests-data.ts`'s `mockSessionRequests`
+was `[]`, so Live Sessions (admin), Session Requests (lecturer), and My
+Sessions (member) were all empty on first load. Seeded 3 requests mixing
+PENDING/APPROVED/COMPLETED — one references John Doe + course '4' ("The
+Art of Worship"), the only course actually `COMPLETED` in the seed
+enrollment data (relevant since `requestSession()`'s enforcement, added in
+the prior audit-fix batch, checks real enrollment completion). The other
+two are other learners' historical requests, giving the lecturer queue a
+genuine PENDING row and the admin-wide Live Sessions view more than one
+lecturer's activity. Commit `e5c2a20`.
+
+## 3. Real file upload for Resource Add/Edit form
+
+Confirmed via full-codebase search: no functional file-upload pattern
+existed anywhere (three `<input type="file">` elsewhere in the app are
+inert placeholders with no `onChange`/`FileReader`/blob wiring). Since
+this is a fully mocked prototype with no real backend (no Cloudinary/API
+upload), built `components/ui/file-picker-field.tsx` — a client-side
+picker that reads a local file via `URL.createObjectURL` and hands the
+blob: URL back to the caller. This is the only artifact a real-backend-
+free prototype can produce; the blob URL previews/opens for the current
+browser session and doesn't persist across a reload, same lifetime as
+every other in-memory mock-store value in this app.
+
+Wired into the Add/Edit Resource form: cover image now supports upload
+alongside the existing URL field (`resource-form-details.tsx`), plus new
+optional `documentUrl`/`audioUrl`/`videoUrl` fields added to the `Resource`
+type and a new `resource-form-media-files.tsx` component (split out to
+keep `resource-form-details.tsx` under the 200-line cap). `library-view.tsx`'s
+`handleSave` passes all three through on create/edit. `resource-detail-modal.tsx`
+was also given a small "Document/Audio/Video" link row so the newly
+captured data isn't invisible after saving — same "don't build a form field
+with nowhere to display it" discipline as the earlier canonical-shape work.
+Commit `a52fa85`.
+
+## 4. KCS Map: 8 pillar routes consolidated into 1
+
+`app/dashboard/kcs/{foundation,history,wisdom,prophetic,gospel,acts,
+epistles,revelation}/page.tsx` were byte-for-byte identical 10-line files,
+each rendering the same `KcsPillarView` with only the `pillarKey` string
+literal differing — all 8 pillars' data already lived in one
+`kcs-pillars-data.ts` record. Replaced with a single
+`app/dashboard/kcs/page.tsx`, a new `KcsPillarTabs` tab bar, and a
+`KcsMapView` client wrapper that resolves the active pillar from a
+`?pillar=` search param (kept as real URL state, not just component
+state, so it's shareable/back-button-able). Sidebar's 8-link "KCS Map"
+dropdown collapsed to one direct link (`/dashboard/kcs`). The existing
+`[pillar]/[scrollId]` scroll-detail dynamic route was left as-is; only its
+"Back to {pillar}" link was updated to `/dashboard/kcs?pillar={pillarKey}`.
+
+**Scope note:** only the admin KCS Map route tree existed as 8 separate
+routes. The member side (`/member/library`) already consolidates all 8
+pillars into one page via its own tab/filter UI and separate data file
+(`library-data.tsx`) — confirmed via research this is a pre-existing,
+independent implementation with some data drift from the admin's
+`kcs-pillars-data.ts` (slightly different per-pillar book lists, a 2- vs
+3-state status enum). Not touched in this pass — reconciling the two data
+sources is a separate, larger decision, not a routing fix. Commit `07c8c4c`.
+
+## Summary
+
+All 4 items fixed, committed, and pushed to `auto-wip`. The z-index bug
+was root-caused (no portal + an accidental numeric tie/near-tie with the
+topbar) rather than patched with a single arbitrary bigger number. The
+file-upload approach is confirmed client-side-only (`URL.createObjectURL`
+blob URLs) since no real backend exists in this prototype — this was
+raised explicitly rather than assumed, per the task's own instruction to
+confirm the constraint before designing around it.
+
+# Session Requests: Reverted Enrollment/Completion Enforcement
+
+Explicit product decision, reversing `354306a` ("fix(sessions): enforce
+enrollment/completion inside requestSession()"): session requests now
+work like a "Slack huddle" — any authenticated member can request a live
+session with any lecturer, for any course, at any time, no precondition.
+
+- `requestSession()` (`app/lecturer/_shared/use-session-requests.ts`)
+  dropped the enrollment/completion/lecturer-match checks entirely —
+  back to a plain append + `emitChange()`.
+- "Request Session" is no longer gated to completed courses. Extracted a
+  new `in-progress-courses-section.tsx` (mirroring the existing
+  `completed-courses-section.tsx`) so the action reaches any enrolled
+  course, in progress or completed. Chose "any enrolled course, any
+  status" over "any course at all, not even enrolled" — the latter would
+  need a net-new course picker with no existing precedent in this app,
+  so it was ruled out as the more ambiguous, bigger-scope option.
+- Updated lecturer- and learner-facing copy that claimed a completion
+  gate ("learners who complete your courses", "Complete a course, then
+  use Request Session...") across `session-requests-view.tsx`,
+  `session-requests/page.tsx`, and `my-sessions-view.tsx` — same
+  copy-vs-code mismatch class the earlier audit flagged as Blocking, now
+  addressed proactively rather than left behind after the policy changed.
+
+Commit `60d9741`.
+
+# Health System Module (first of 6 "Coming Soon" replacements)
+
+Replaced the placeholder at `app/dashboard/health/page.tsx` (previously
+promising Book a Checkup / Health Records / Immunization Tracker / Clinic
+Directory, all `status: 'coming'`) with a real module. Commit `3bd8a7b`.
+
+## Coming Soon module template (reuse for Beauty, Counseling, Rehab, Donations, News)
+
+**Route shape:** one hub `page.tsx` linking to N sub-routes, each with its
+own `page.tsx` + local `_components/`. This matches the existing
+library/e-learning convention (hub page listing cards → dedicated
+sub-route per feature) rather than an in-page-tabs single page — checked
+both precedents before choosing; hub-plus-sub-routes is what every other
+multi-feature dashboard module in this app already does.
+
+```
+app/dashboard/<module>/
+  page.tsx                    hub — cards linking to each sub-route
+  _shared/
+    <module>-data.ts           types + seed data, CURRENT_MEMBER_NAME const
+    use-<module>.ts            useSyncExternalStore store(s)
+  <feature-a>/
+    page.tsx
+    _components/<feature-a>-view.tsx (+ split-out sub-components as needed)
+  <feature-b>/
+    page.tsx
+    _components/<feature-b>-view.tsx
+  ...
+```
+
+**Store pattern:** exactly the `use-enrollments.ts`/`use-session-requests.ts`
+shape — module-level mutable array, `Set` of listeners, `emitChange()`,
+`subscribe()`, a snapshot getter, and a `useSyncExternalStore` hook. Only
+give a real mutation function to the sub-feature that's genuinely a
+member-initiated write (e.g. booking an appointment); sub-features that
+would in reality be written by staff/a portal that doesn't exist yet
+(health records, immunizations) get a plain read-only hook over the seed
+array instead of a fake write path — don't invent a write flow that has
+no real actor behind it yet.
+
+**Seeding approach:** 3-4 "directory" entries (clinics/practitioners/
+whatever the module's static catalog is) across visibly different
+categories, 2-3 records for the one mock member persona
+(`CURRENT_MEMBER_NAME`) spanning different statuses (so status badges/
+filters have something real to show), same precedent as
+`session-requests-data.ts` and `enrollment-data.ts`'s seed rows. Never
+seed more than one persona's data unless the module already has
+multi-persona data elsewhere to draw from (Health System's `Appointment`/
+`HealthRecordEntry`/`ImmunizationEntry` are all scoped to
+`CURRENT_MEMBER_NAME` for this reason).
+
+**CRUD scope:** build only the write flows that have a real actor in this
+mock's single-persona, no-backend world. Booking a checkup is real
+(member → store). Health records/immunizations are read-only (no clinic
+staff portal exists to write them) — don't fabricate a form that writes
+data no real UI would produce yet.
+
+**Admin oversight — decide, don't default to building it.** Checked
+whether `/dashboard/health` needs an all-appointments oversight view
+(parallel to `/dashboard/e-learning/sessions`'s read-only DataTable across
+every lecturer). Skipped it here: this mock has exactly one live member
+persona, so an "all appointments" view would show the identical rows as
+"My Appointments" today — zero distinguishing value until multi-member
+data exists. Re-evaluate per-module: if a future module's seed data
+already has multiple distinct actors (like session requests do, with 3
+named learners), building the oversight view is worth it immediately;
+if not, flag it as future work instead of building a duplicate view.
+
+**Known nav gap, not fixed here (matches an existing documented
+inconsistency):** `/dashboard/health` is only linked from
+`adminMainNav` in `app/dashboard/_components/sidebar.tsx` — `memberNav`
+(the same file) and the real member navigation (`member-sidebar.tsx`)
+have no Health System link at all, even though the module's actual
+content (book a checkup, view my records) is member-facing. This is the
+same class of gap CLAUDE.md already documents for `memberNav` pointing at
+the wrong routes generally — not introduced by this change, just newly
+visible because Health System is now a real destination instead of a
+placeholder. Flagging rather than silently fixing, since deciding where
+Health System belongs in navigation is a product/IA call, not a
+mechanical fix.

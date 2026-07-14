@@ -21,14 +21,19 @@ export interface ContributorRevenueRow extends RevenueRow {
 
 function buildRevenueColumns(onView: (r: ContributorRevenueRow) => void): Column<ContributorRevenueRow>[] {
   return [
-    { key: 'publication', label: 'Publication', sortable: true, render: (r) => <span className="font-semibold text-w-950 max-w-55 truncate block">{r.publication}</span> },
-    { key: 'contributorShare', label: 'Your Share', sortable: true, render: (r) => <span className="text-w-700">{r.contributorShare}%</span> },
-    { key: 'totalRevenue', label: 'Total Revenue (RWF)', sortable: true, render: (r) => <span className="text-w-700">{r.totalRevenue.toLocaleString()}</span> },
-    { key: 'contributorEarnings', label: 'Your Earnings (RWF)', sortable: true, render: (r) => <span className="font-semibold text-w-950">{r.contributorEarnings.toLocaleString()}</span> },
+    { key: 'publication', label: 'Publication', sortable: true, render: (r) => <span className="max-w-55 truncate block" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.publication}</span> },
+    { key: 'contributorShare', label: 'Your Share', sortable: true, render: (r) => <span style={{ color: 'var(--text-secondary)' }}>{r.contributorShare}%</span> },
+    { key: 'totalRevenue', label: 'Total Revenue (RWF)', sortable: true, render: (r) => <span style={{ color: 'var(--text-secondary)' }}>{r.totalRevenue.toLocaleString()}</span> },
+    { key: 'contributorEarnings', label: 'Your Earnings (RWF)', sortable: true, render: (r) => <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.contributorEarnings.toLocaleString()}</span> },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (r) => (
-        <button onClick={() => onView(r)} aria-label={`View revenue details for ${r.publication}`} className="flex items-center gap-1 ml-auto px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+        <button
+          onClick={() => onView(r)}
+          aria-label={`View revenue details for ${r.publication}`}
+          className="flex items-center gap-1 ml-auto transition-colors"
+          style={{ padding: '4px 10px', background: 'var(--bg-section)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11 }}
+        >
           <Eye size={12} /> View
         </button>
       ),
@@ -37,13 +42,18 @@ function buildRevenueColumns(onView: (r: ContributorRevenueRow) => void): Column
 }
 
 const payoutColumns: Column<PayoutRow>[] = [
-  { key: 'date', label: 'Date', sortable: true, render: (p) => <span className="text-w-700">{p.date}</span> },
-  { key: 'amount', label: 'Amount (RWF)', sortable: true, render: (p) => <span className="font-semibold text-w-950">{p.amount.toLocaleString()}</span> },
-  { key: 'method', label: 'Method', sortable: true, render: (p) => <span className="text-w-700">{p.method}</span> },
+  { key: 'date', label: 'Date', sortable: true, render: (p) => <span style={{ color: 'var(--text-secondary)' }}>{p.date}</span> },
+  { key: 'amount', label: 'Amount (RWF)', sortable: true, render: (p) => <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.amount.toLocaleString()}</span> },
+  { key: 'method', label: 'Method', sortable: true, render: (p) => <span style={{ color: 'var(--text-secondary)' }}>{p.method}</span> },
   {
     key: 'status', label: 'Status', sortable: true,
     render: (p) => (
-      <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${payoutStatusConfig[p.status].cls}`}>
+      <span
+        style={{
+          padding: '2px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+          border: `1px solid ${payoutStatusConfig[p.status].border}`, background: payoutStatusConfig[p.status].bg, color: payoutStatusConfig[p.status].color,
+        }}
+      >
         {payoutStatusConfig[p.status].label}
       </span>
     ),

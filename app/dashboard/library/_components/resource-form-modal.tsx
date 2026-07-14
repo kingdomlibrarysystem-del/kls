@@ -53,6 +53,12 @@ export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFo
             mediaType: editing.mediaType,
             tags: editing.tags,
             coverImage: editing.coverImages[0] ?? '',
+            documentUrl: editing.documentUrl ?? '',
+            documentName: '',
+            audioUrl: editing.audioUrl ?? '',
+            audioName: '',
+            videoUrl: editing.videoUrl ?? '',
+            videoName: '',
           }
         : { ...defaultResourceFormValues, category: categoryOptions[0] })
       setSubmitError('')

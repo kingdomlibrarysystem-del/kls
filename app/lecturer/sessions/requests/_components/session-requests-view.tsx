@@ -124,7 +124,7 @@ export function SessionRequestsView() {
       )}
 
       {pending.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="No pending requests" description="Session requests from learners who complete your courses will appear here." />
+        <EmptyState icon={ClipboardList} title="No pending requests" description="Session requests from your learners will appear here." />
       ) : (
         <DataTable<SessionRequest>
           data={pending}

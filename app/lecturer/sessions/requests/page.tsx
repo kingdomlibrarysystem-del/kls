@@ -9,7 +9,7 @@ export default function SessionRequestsPage() {
           Session Requests
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-          Approve or reject live-session requests from learners who completed your courses
+          Approve or reject live-session requests from your learners
         </div>
       </div>
       <SessionRequestsView />
