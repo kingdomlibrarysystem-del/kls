@@ -110,6 +110,7 @@ export function LibraryBrowser() {
         action={pending?.action ?? null}
         bookTitle={pending?.book.title ?? ''}
         bookAuthor={pending?.book.author ?? ''}
+        availableQty={pending?.book.availableQty}
         onClose={() => setPending(null)}
       />
     </>

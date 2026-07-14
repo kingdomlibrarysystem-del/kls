@@ -162,7 +162,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} onClose={() => setAction(null)} />
+      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
     </div>
   )
 }
