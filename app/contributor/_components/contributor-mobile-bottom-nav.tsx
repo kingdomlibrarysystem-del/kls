@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, Upload, BookCopy, DollarSign, GraduationCap } from "lucide-react";
 
@@ -25,11 +25,7 @@ const items: BottomNavItem[] = [
  * sidebar behavior is untouched.
  */
 export default function ContributorMobileBottomNav() {
-  const [currentRoute, setCurrentRoute] = useState("");
-
-  useEffect(() => {
-    setCurrentRoute(window.location.pathname);
-  }, []);
+  const currentRoute = usePathname();
 
   const isActive = (href: string) =>
     href === "/contributor" ? currentRoute === "/contributor" : currentRoute.startsWith(href);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
@@ -74,7 +75,7 @@ export default function MemberSidebar() {
     "E-Learning": false,
   });
   const { user, switchRole } = useAuth();
-  const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
+  const currentRoute = usePathname();
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) => ({ ...prev, [title]: !prev[title] }));

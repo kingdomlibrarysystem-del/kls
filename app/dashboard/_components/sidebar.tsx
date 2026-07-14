@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
@@ -166,7 +167,7 @@ export default function Sidebar() {
   const isMember = user?.role === "member";
   const mainNav = isMember ? memberNav : adminMainNav;
   const mgmtNav = isMember ? [] : adminMgmtNav;
-  const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
+  const currentRoute = usePathname();
 
   const toggleSection = (label: string) => {
     setExpandedSections((prev) => ({ ...prev, [label]: !prev[label] }));
