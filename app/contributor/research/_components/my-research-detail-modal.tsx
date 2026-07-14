@@ -1,6 +1,7 @@
-import { Calendar, FileText } from 'lucide-react'
+import { Calendar, FileText, Users } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { projectStatusConfig, type ResearchProjectSummary } from '@/app/dashboard/research/collaborations/_components/collaborations-data'
+import { ContributorInitials } from './contributor-initials'
 
 interface MyResearchDetailModalProps {
   project: ResearchProjectSummary | null
@@ -17,7 +18,13 @@ export function MyResearchDetailModal({ project, myPapers, onClose }: MyResearch
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="cinzel" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{project.title}</h3>
-            <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold shrink-0 ${projectStatusConfig[project.status].cls}`}>
+            <span
+              className="shrink-0"
+              style={{
+                padding: '2px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                border: `1px solid ${projectStatusConfig[project.status].border}`, background: projectStatusConfig[project.status].bg, color: projectStatusConfig[project.status].color,
+              }}
+            >
               {projectStatusConfig[project.status].label}
             </span>
           </div>
@@ -27,6 +34,20 @@ export function MyResearchDetailModal({ project, myPapers, onClose }: MyResearch
           <p className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             <Calendar size={12} /> Started {project.startDate}
           </p>
+
+          <div>
+            <p className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+              <Users size={12} /> Contributors ({project.contributors.length})
+            </p>
+            <div className="flex flex-col gap-2">
+              {project.contributors.map((c) => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <ContributorInitials contributor={c} />
+                  <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{c.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div>
             <p className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>

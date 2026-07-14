@@ -369,3 +369,111 @@ commits (`ce75b2f`..HEAD on `auto-wip`, following the prior 18-phase
 audit-remediation run), test the actual selection/highlight/note flow
 in a real browser, then decide whether to merge into `feat/ui-setup` or
 `main`.
+
+---
+
+# Contributor Workspace Richness Pass + Hydration Fix
+
+Same branch (`auto-wip`), triggered by user-reported screenshots showing
+`/contributor/research` and `/contributor/courses` reading noticeably
+thinner than sibling modules (KCS Map, e-learning, reporting), plus a
+persistent "1 Issue" dev-tooling badge visible across many screenshots
+that had never been investigated.
+
+## 1. "1 Issue" indicator — root cause found and fixed
+
+The badge was Next.js's dev-mode error overlay, and it was flagging a
+real, reproducible hydration mismatch, not a false positive. Root cause:
+all 4 sidebars (`app/lecturer/_components/lecturer-sidebar.tsx`,
+`app/contributor/_components/contributor-sidebar.tsx`,
+`app/member/_components/member-sidebar.tsx`,
+`app/dashboard/_components/sidebar.tsx`) computed their "which nav item
+is active" state with:
+
+```js
+const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
+```
+
+On the server, `window` is undefined, so `currentRoute` is always `""`
+and no nav item is ever marked active in the server-rendered HTML. On
+the client's first paint (before React hydrates), `window.location.pathname`
+is already the real route, so React computes a different active item
+with different background/color/border-left styling — a genuine
+server/client attribute mismatch, exactly the class of bug the console
+error described (`components/session-room/control-bar.tsx`'s sibling
+issue, but here in every sidebar). `app/contributor/_components/contributor-mobile-bottom-nav.tsx`
+had the same underlying anti-pattern in a `useState`+`useEffect` form
+that avoided a hard mismatch (server always renders `""`) but still
+caused a one-frame flash of incorrect active state on every load.
+
+**Fix:** replaced `window.location.pathname` with Next.js's built-in
+`usePathname()` hook in all 5 files — it resolves correctly and
+identically on both server and client with no window check needed, so
+there's no mismatch and no flash. Verified by comparing server-rendered
+HTML before/after: `/lecturer/messages` (the exact route the reported
+error came from) now renders `rgba(212,168,67,0.12)` (the active-state
+background) around the Messages link in the raw HTML, meaning the
+server and client will agree from the very first paint. Cross-checked
+`/contributor/research` (1 active match), `/member` (1 active match),
+and `/member/library` (3 matches once the nested sub-item's distinct
+`0.08`-opacity active style — a real, intentional visual difference
+from top-level items, not a bug — was accounted for). Build + `tsc --noEmit`
+clean.
+
+## 2/3. Contributor Workspace richness audit + fix
+
+Confirmed the report's read: `/contributor/research` cards showed only
+title/status/paper-count/View-Details despite `ResearchProjectSummary`
+already carrying `description`, `startDate`, and `contributors` —
+unused fields, not missing data. `/contributor/courses` cards were the
+same shape gap (`CourseCatalogEntry.description` unused on the card).
+The `Course Details` modal was a bare key-value list with no enrollment
+trend or roster link, despite a real, matching analytics dataset
+(`courseAnalytics` in `app/dashboard/e-learning/progress/_components/progress-data.ts`,
+keyed by the exact same course IDs — `crs-001` etc. — as `CourseCatalogEntry`)
+sitting completely unconsumed by the contributor side. Both status
+configs (`projectStatusConfig`, `courseStatusConfig`) also had the same
+Tailwind-in-Dialect-B bug fixed elsewhere in this run.
+
+**Fix — My Research** (`my-research-view.tsx`, `my-research-detail-modal.tsx`):
+cards now show description, start date, and contributor initials (new
+`contributor-initials.tsx` — a Dialect-B equivalent of the admin side's
+`ContributorAvatar`, which is hardcoded Tailwind and not reusable here);
+the modal gained a full contributor name list. `projectStatusConfig`
+gained `bg`/`color`/`border` tokens (kept `cls` for the genuinely
+Dialect-A admin consumers — `project-collaboration-card.tsx`,
+`collaborations-stats.tsx`, `project-detail-modal.tsx` — confirmed via
+grep before touching the shared config).
+
+**Fix — My Courses** (`my-courses-view.tsx`, `my-course-detail-modal.tsx`):
+cards now show description and a live average-completion bar pulled
+directly from `courseAnalytics`, matching the exact visual pattern
+`course-analytics-card.tsx` already established on the admin
+`/dashboard/e-learning/progress` page. The modal gained the same
+completion bar plus a top-performers list and a real
+"View full enrollment roster" link to `/dashboard/e-learning/progress`
+— reusing the existing admin page rather than building a new
+contributor-facing roster view, consistent with this module's
+established pattern of deep-linking into real admin forms/pages
+(Submit Paper → `/dashboard/research/submit`, Add Course →
+`/dashboard/e-learning/add`). `courseStatusConfig` was fully converted
+to CSS-var tokens (not just supplemented) since all 3 of its consumers
+are contributor-only, confirmed via grep.
+
+No new data model fields were invented for either page — every added
+number/name/link (`description`, `startDate`, `contributors`,
+`courseAnalytics`) already existed in the app; the fix was making the
+cards and modals actually surface what was already there, per the
+task's explicit instruction to reuse existing components/patterns
+rather than invent new ones. A course thumbnail/cover-image field does
+not exist anywhere on `CourseCatalogEntry` — adding one would have been
+inventing new data, so it was intentionally left out rather than
+fabricated.
+
+All files stayed under the 200-line cap (`my-courses-view.tsx` 118,
+`my-course-detail-modal.tsx` 103, `my-research-view.tsx` 104,
+`my-research-detail-modal.tsx` 70, `contributor-initials.tsx` 33).
+Verified live via `npm run dev` + `curl`: both pages return 200 with no
+error markers (loading skeleton renders as expected — both pages are
+client-rendered behind a simulated delay, same as every other view in
+this app). Build + `tsc --noEmit` clean.
