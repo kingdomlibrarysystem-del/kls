@@ -221,3 +221,29 @@ other seed `description` in this app is real prose, not filler text.
    (progress is in-memory only, same as every other store in this app,
    so a fresh `curl` process can't observe persistence within one dev
    session — this is expected, not a gap). Build + `tsc --noEmit` clean.
+3. **Multi-view integration shipped** — reading progress now surfaces
+   on the existing card/list views the audit cataloged, plus a new
+   "Continue Reading" section, matching `/member/courses`'s existing
+   "Continue Learning" pattern exactly (real per-item progress bar +
+   Resume link, not decorative).
+   - `scroll-card.tsx` — both `ScrollCard` (grid) and `ScrollListItem`
+     (list) now show a live progress bar / percentage chip via a new
+     `useReadingPercent()` helper, and the "Read Online" label switches to
+     `Continue Reading (N%)` once reading has started.
+   - New `continue-reading-section.tsx`, wired into
+     `/member/library/page.tsx` — lists every `READING`-status resource
+     with a per-item progress bar and a "Resume" link straight into the
+     reader at `lastChapterId`; scoped to in-progress only, mirroring how
+     `completed-courses-section.tsx` is kept separate from the courses
+     page's own "Continue Learning" card. Renders nothing (not an empty
+     state) when no resource is in progress, same as the courses page's
+     own `inProgress.length > 0` gate.
+   - `scroll-detail-view.tsx`'s Related Resources cards were left as-is
+     for this phase — the phase spec named `ScrollCard` and a
+     library-level "Continue Reading" affordance specifically, and that
+     file is already close to the 200-line cap; not adding scope beyond
+     what was asked.
+   Verified live via `npm run dev` + `curl`: `/member/library` renders
+   the literal string "Continue Reading" in its server-rendered HTML
+   (this page has no client-side loading skeleton gating it, unlike the
+   reader). Build + `tsc --noEmit` clean.

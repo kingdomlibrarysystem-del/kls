@@ -4,6 +4,7 @@ import { Search, Grid3X3, List, Feather, Info } from "lucide-react";
 import { kcsSections, allBooks } from "./_components/library-data";
 import { ScrollCard, ScrollListItem } from "./_components/scroll-card";
 import { WriteScrollModal } from "./_components/write-scroll-modal";
+import { ContinueReadingSection } from "./_components/continue-reading-section";
 
 export default function MemberLibraryPage() {
   const [search, setSearch] = useState("");
@@ -117,6 +118,8 @@ export default function MemberLibraryPage() {
           </button>
         ))}
       </div>
+
+      <ContinueReadingSection />
 
       {noResults && (
         <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 11 }}>
