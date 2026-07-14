@@ -61,7 +61,7 @@ export default function DashboardTopbar() {
         borderBottom: "1px solid var(--border)",
         position: "sticky",
         top: 0,
-        zIndex: 100,
+        zIndex: 40,
       }}
     >
       {/* Top bar */}
