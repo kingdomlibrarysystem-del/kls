@@ -29,6 +29,7 @@ interface ScrollDetailViewProps {
 export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
+  const [actionTarget, setActionTarget] = useState<{ title: string; author: string } | null>(null)
   const { isAuthenticated } = useAuth()
   const resources = useResources()
   const favorites = useFavorites()
@@ -56,7 +57,11 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
   }
 
   const matches = findResourcesForScroll(scroll.title, resources)
-  const borrowable = matches.find((r) => r.availableQty > 0)
+
+  const startAction = (verb: BorrowReserveAction, resource: { title: string; author: string }) => {
+    setAction(verb)
+    setActionTarget(resource)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -102,14 +107,25 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
               resource={resource}
               style={{}}
               action={
-                resource.availableQty > 0 && isAuthenticated ? (
-                  <button
-                    onClick={() => setAction('borrow')}
-                    aria-label={`Borrow ${resource.title}`}
-                    style={{ padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Borrow this resource
-                  </button>
+                isAuthenticated ? (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {resource.availableQty > 0 && (
+                      <button
+                        onClick={() => startAction('borrow', resource)}
+                        aria-label={`Borrow ${resource.title}`}
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Borrow
+                      </button>
+                    )}
+                    <button
+                      onClick={() => startAction('reserve', resource)}
+                      aria-label={`Reserve ${resource.title}`}
+                      style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Reserve
+                    </button>
+                  </div>
                 ) : undefined
               }
             />
@@ -117,8 +133,8 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
         </div>
       )}
 
-      {borrowable && (
-        <BorrowReserveConfirmModal action={action} bookTitle={borrowable.title} bookAuthor={borrowable.author} onClose={() => setAction(null)} />
+      {actionTarget && (
+        <BorrowReserveConfirmModal action={action} bookTitle={actionTarget.title} bookAuthor={actionTarget.author} onClose={() => { setAction(null); setActionTarget(null) }} />
       )}
     </div>
   )
