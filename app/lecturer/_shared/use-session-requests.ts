@@ -2,6 +2,9 @@
 
 import { useSyncExternalStore } from 'react'
 import { mockSessionRequests, type SessionRequest, type SessionStatus } from './session-requests-data'
+import { getEnrollmentsSnapshotForStore } from '@/app/member/_shared/use-enrollments'
+import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
 
 /**
  * Module-level mutable store for live-session booking requests —
@@ -45,8 +48,27 @@ export interface RequestSessionInput {
   notes?: string
 }
 
-/** Creates a new PENDING session request. */
+/**
+ * Creates a new PENDING session request. Enforces the precondition the
+ * lecturer-facing copy already promises ("session requests from learners
+ * who complete your courses") as a real guard inside the function itself,
+ * matching rejectSession()'s defense-in-depth pattern below — rather than
+ * relying on the one current UI caller (completed-courses-section.tsx)
+ * having already filtered to completed courses. Throws if the learner
+ * hasn't completed courseId, or if lecturerName doesn't actually teach it.
+ */
 export function requestSession(input: RequestSessionInput): SessionRequest {
+  const enrollment = getEnrollmentsSnapshotForStore().find((e) => e.courseId === input.courseId)
+  if (!enrollment || enrollment.status !== 'COMPLETED') {
+    throw new Error('You can only request a session for a course you have completed.')
+  }
+
+  const course = courseCatalog.find((c) => c.id === input.courseId)
+  const lecturer = course ? lecturerRoster.find((l) => l.id === course.lecturerId) : undefined
+  if (!lecturer || lecturer.name !== input.lecturerName) {
+    throw new Error('This lecturer does not teach the requested course.')
+  }
+
   const created: SessionRequest = {
     id: nextId(),
     requestedAt: new Date().toISOString().slice(0, 10),
