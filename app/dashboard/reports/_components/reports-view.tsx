@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, BookOpen, GraduationCap, FileText, FlaskConical } from 'lucide-react'
+import { Users as UsersIcon, BookOpen, GraduationCap, FileText, FlaskConical } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { mockEnrollments } from '@/app/dashboard/e-learning/enrollments/_components/enrollments-data'
 import { useEnrollments } from '@/app/member/_shared/use-enrollments'
 import { useReviewQueue } from '@/app/dashboard/publishing/review/_components/use-review-queue'
 import { mockProjects } from '@/app/dashboard/research/collaborations/_components/collaborations-data'
-import { TOTAL_MEMBERS, ACTIVE_LOANS, buildModuleTrends } from './cross-module-data'
+import { useUsers } from '@/app/dashboard/users/_components/use-users'
+import { ACTIVE_LOANS, buildModuleTrends } from './cross-module-data'
 
 /** Simulated network delay before mock stats become visible. */
 const LOAD_DELAY_MS = 400
@@ -22,6 +23,7 @@ export function ReportsView() {
   const [loading, setLoading] = useState(true)
   const liveEnrollments = useEnrollments()
   const reviewQueue = useReviewQueue()
+  const users = useUsers()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -38,7 +40,7 @@ export function ReportsView() {
   const activeResearchProjects = mockProjects.filter((p) => p.status === 'ACTIVE').length
 
   const stats = [
-    { icon: Users, label: 'Total Members', value: TOTAL_MEMBERS, color: 'text-w-950' },
+    { icon: UsersIcon, label: 'Total Members', value: users.length, color: 'text-w-950' },
     { icon: BookOpen, label: 'Active Loans', value: ACTIVE_LOANS, color: 'text-teal-700' },
     { icon: GraduationCap, label: 'Active Enrollments', value: activeEnrollments, color: 'text-purple-700' },
     { icon: FileText, label: 'Publications Pending Review', value: pendingPublications, color: 'text-yellow-700' },
@@ -46,7 +48,7 @@ export function ReportsView() {
   ]
 
   const trends = buildModuleTrends({
-    totalMembers: TOTAL_MEMBERS,
+    totalMembers: users.length,
     activeLoans: ACTIVE_LOANS,
     activeEnrollments,
     pendingPublications,

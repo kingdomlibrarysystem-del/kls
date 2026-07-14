@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -29,9 +30,9 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-w-950/50"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-w-950/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className={`bg-white rounded-lg border border-w-300 w-full ${sizeMap[size]} shadow-xl flex flex-col max-h-[90vh]`}>
@@ -51,6 +52,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

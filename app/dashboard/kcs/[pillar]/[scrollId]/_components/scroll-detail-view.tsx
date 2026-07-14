@@ -68,7 +68,7 @@ export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProp
 
   return (
     <div>
-      <Link href={`/dashboard/kcs/${pillarKey}`} className="flex items-center gap-1 mb-4" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+      <Link href={`/dashboard/kcs?pillar=${pillarKey}`} className="flex items-center gap-1 mb-4" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
         <ChevronLeft size={14} /> Back to {pillar.name}
       </Link>
 

@@ -40,7 +40,13 @@ export function RevenueDetailModal({ row, matchingPayout, onClose }: RevenueDeta
             </p>
             {matchingPayout ? (
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${payoutStatusConfig[matchingPayout.status].cls}`}>
+                <span
+                  style={{
+                    padding: '2px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                    border: `1px solid ${payoutStatusConfig[matchingPayout.status].border}`,
+                    background: payoutStatusConfig[matchingPayout.status].bg, color: payoutStatusConfig[matchingPayout.status].color,
+                  }}
+                >
                   {payoutStatusConfig[matchingPayout.status].label}
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{matchingPayout.date} via {matchingPayout.method}</span>

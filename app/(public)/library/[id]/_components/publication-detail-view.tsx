@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 import { mockCatalog, languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
+import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 
 /** Simulated network delay before the mock publication becomes visible. */
@@ -32,9 +33,11 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const { isAuthenticated } = useAuth()
   const resources = useResources()
+  const readableContent = useReadableContent()
 
   const resource = resources.find((r) => r.id === id)
   const catalogBook = mockCatalog.find((b) => b.id === id)
+  const isReadable = !!readableContent[id]
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -111,10 +114,18 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             <p className="font-lato text-sm text-w-700 leading-relaxed mb-6">{description}</p>
           )}
 
+          {isReadable && (
+            <Link href={isAuthenticated ? `/member/library/read/${id}` : `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${id}`)}`} className="block mb-3">
+              <ElegantButton variant="primary" className="w-full flex items-center justify-center gap-2">
+                <BookOpenCheck size={15} /> {isAuthenticated ? 'Read Online' : 'Sign In to Read'}
+              </ElegantButton>
+            </Link>
+          )}
+
           {isAuthenticated ? (
             <div className="flex flex-col sm:flex-row gap-3">
               <ElegantButton
-                variant="primary"
+                variant={isReadable ? 'outline' : 'primary'}
                 disabled={!available}
                 onClick={() => setAction('borrow')}
                 className="flex-1 sm:flex-none"
@@ -133,7 +144,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
-                  <ElegantButton variant="primary" className="w-full flex items-center justify-center gap-2">
+                  <ElegantButton variant={isReadable ? 'outline' : 'primary'} className="w-full flex items-center justify-center gap-2">
                     <LogIn size={15} /> Sign In to Borrow
                   </ElegantButton>
                 </Link>
@@ -151,7 +162,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} onClose={() => setAction(null)} />
+      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
     </div>
   )
 }

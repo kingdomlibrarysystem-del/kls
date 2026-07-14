@@ -1,19 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CalendarDays, BookOpen, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { Reservation } from './reservations-data'
 import { useReservations, fulfillReservation } from '../../_shared/use-reservations'
 import { addBorrowing } from '../../_shared/use-borrowings'
 import { ReservationDetailModal } from './reservation-detail-modal'
 
+/** Simulated network delay before mock reservations become visible. */
+const LOAD_DELAY_MS = 400
+
 /** This member's reservations: active/waiting list plus fulfilled history, each row opening a details modal. */
 export function ReservationsView() {
+  const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState<Reservation | null>(null)
   const [borrowError, setBorrowError] = useState('')
   const mockReservations = useReservations()
   const active = mockReservations.filter((r) => r.status !== 'Fulfilled')
   const fulfilled = mockReservations.filter((r) => r.status === 'Fulfilled')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading reservations">
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} style={{ height: 64, borderRadius: 8 }} />)}
+        </div>
+        <Skeleton style={{ height: 160, borderRadius: 8 }} />
+      </div>
+    )
+  }
 
   const handleBorrow = (r: Reservation) => {
     setBorrowError('')
@@ -55,7 +77,7 @@ export function ReservationsView() {
           <CalendarDays size={14} color="var(--gold)" /> Active Reservations
         </div>
         {active.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 11 }}>No active reservations.</div>
+          <EmptyState icon={CalendarDays} title="No active reservations" description="Books you reserve will appear here while you wait for a copy." style={{ color: 'var(--text-secondary)' }} />
         ) : (
           active.map((r) => (
             <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)' }}>

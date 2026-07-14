@@ -55,8 +55,19 @@ export const initialEnrollments: CourseEnrollment[] = [
   { courseId: '4', status: 'COMPLETED', enrolledAt: '2026-05-20', completedLessonIds: ['l-1', 'l-2', 'l-3', 'l-4'], totalLessons: 4, assessmentPassed: false },
 ]
 
-/** Seed attempt history so Assessments' history section isn't empty on first load. */
+/**
+ * Seed attempt history so Assessments' history section isn't empty on
+ * first load. The assessmentId '2' row also seeds the admin Review Queue
+ * (`/dashboard/e-learning/quizzes/review`) — without it, that queue was
+ * empty by default, since neither of the other two seed rows contains an
+ * OPEN question. Score reflects q1+q2+q3 auto-graded correctly (30/50);
+ * q4 (OPEN, 20 marks) awaits a manager's grade via `gradeOpenAnswers`.
+ */
 export const initialAssessmentAttempts: AssessmentAttempt[] = [
   { assessmentId: '1', status: 'PASSED', reviewStatus: 'AUTO_GRADED', score: 17, totalMarks: 20, takenAt: '2026-06-20' },
   { assessmentId: '3', status: 'PASSED', reviewStatus: 'AUTO_GRADED', score: 14, totalMarks: 20, takenAt: '2026-06-15' },
+  {
+    assessmentId: '2', status: 'FAILED', reviewStatus: 'PENDING_REVIEW', score: 30, totalMarks: 50, takenAt: '2026-06-28',
+    openAnswers: { q4: 'Covenant establishes the relational and legal basis for Kingdom identity, which is why the Kingdom Classification System begins with Genesis — the origin of that covenant — rather than the Gospels, which describe its fulfillment.' },
+  },
 ]

@@ -28,6 +28,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [unmatchedEmail, setUnmatchedEmail] = useState('')
   const { login } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -44,13 +45,18 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true)
     setSubmitError('')
+    setUnmatchedEmail('')
 
     try {
-      await login(data.email, data.password)
+      const { matched } = await login(data.email, data.password)
+      setIsSubmitting(false)
+      if (!matched) {
+        setUnmatchedEmail(data.email)
+        return
+      }
       router.push(redirectTo)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Login failed')
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -61,6 +67,22 @@ export function LoginForm() {
         {submitError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {submitError}
+          </div>
+        )}
+
+        {unmatchedEmail && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded font-lato text-sm space-y-2">
+            <p>
+              We don&apos;t recognize <span className="font-semibold">{unmatchedEmail}</span>. Double-check the address, or
+              continue and you&apos;ll be signed in with a default member account.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push(redirectTo)}
+              className="text-w-950 font-semibold underline hover:text-w-700"
+            >
+              Continue as a member anyway
+            </button>
           </div>
         )}
 

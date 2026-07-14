@@ -1,6 +1,7 @@
 'use client'
 
-import { PlayCircle, FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { PlayCircle, FileText, Download, CheckCircle2, AlertCircle, ClipboardList } from 'lucide-react'
 import type { Lesson } from '../../../../../_shared/lesson-data'
 
 interface LessonContentPaneProps {
@@ -8,10 +9,28 @@ interface LessonContentPaneProps {
   completed: boolean
   markError: string
   onMarkComplete: () => void
+  /** Set once every lesson in the course is complete and a linked assessment exists — nudges the member to take it. */
+  courseCompleteAssessmentTitle?: string
+}
+
+/**
+ * Triggers a real browser download for a FILE-type lesson. There is no
+ * backing file in this mocked prototype (`lesson.content` is only ever a
+ * filename string), so this generates a small text placeholder client-side
+ * rather than leaving the button inert or faking a network fetch.
+ */
+function downloadLessonFile(lessonTitle: string, fileName: string) {
+  const blob = new Blob([`${lessonTitle}\n\nThis is a placeholder for "${fileName}" in the mocked prototype.`], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 /** Renders a lesson's content based on its `contentType` — video placeholder, text, or file download. */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle }: LessonContentPaneProps) {
   return (
     <div className="card">
       <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
@@ -39,7 +58,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-section)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
           <Download size={18} color="var(--gold)" />
           <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{lesson.content}</span>
-          <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} aria-label={`Download ${lesson.content}`}>
+          <button onClick={() => downloadLessonFile(lesson.title, lesson.content)} className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} aria-label={`Download ${lesson.content}`}>
             Download
           </button>
         </div>
@@ -59,6 +78,18 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
       >
         <CheckCircle2 size={13} /> {completed ? 'Completed' : 'Mark Complete'}
       </button>
+
+      {courseCompleteAssessmentTitle && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>
+          <ClipboardList size={16} color="#7a5c00" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: '#3a2e00', flex: 1 }}>
+            You&apos;ve completed all lessons — take <strong>{courseCompleteAssessmentTitle}</strong> to finish the course.
+          </span>
+          <Link href="/member/assessments" className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
+            Take Assessment
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

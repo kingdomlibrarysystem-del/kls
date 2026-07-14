@@ -45,7 +45,13 @@ export interface RequestSessionInput {
   notes?: string
 }
 
-/** Creates a new PENDING session request. */
+/**
+ * Creates a new PENDING session request. Per product decision, session
+ * requests work like a "Slack huddle" — any authenticated member can
+ * request a live session with any lecturer, for any course, at any time,
+ * with no enrollment/completion/lecturer-match precondition. (Reverses
+ * the enforcement added in 354306a.)
+ */
 export function requestSession(input: RequestSessionInput): SessionRequest {
   const created: SessionRequest = {
     id: nextId(),

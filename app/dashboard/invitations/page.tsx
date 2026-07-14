@@ -1,32 +1,27 @@
 'use client'
 
-import { useState } from 'react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
 import { InviteForm } from './_components/invite-form'
 import { InvitationsTable } from './_components/invitations-table'
 import { InvitationsStats } from './_components/invitations-stats'
-import { mockInvitations, type Invitation } from './_components/invitations-data'
+import { useInvitations, addInvitation, updateInvitation, removeInvitation } from './_components/use-invitations'
 
 /**
- * Invitations page. Owns the invitation list so the invite form and the
- * table are no longer disconnected siblings — a new invitation appends
- * here and is immediately visible in the table below.
+ * Invitations page. Reads from the shared invitations store so the invite
+ * form and the table stay in sync with each other and survive a route
+ * remount, instead of resetting to the seed data every time.
  */
 export default function InvitationsPage() {
-  const [invitations, setInvitations] = useState<Invitation[]>(mockInvitations)
+  const invitations = useInvitations()
 
   return (
     <PageTransition>
       <PageHeader title="Invitations" subtitle="Invite new users and track invitation status" />
       <InvitationsStats invitations={invitations} />
-      <InviteForm onInvited={(invitation) => setInvitations((prev) => [invitation, ...prev])} />
+      <InviteForm onInvited={addInvitation} />
       <div className="mt-8">
-        <InvitationsTable invitations={invitations} onUpdateInvitation={(updated) =>
-          setInvitations((prev) => prev.map((inv) => (inv.id === updated.id ? updated : inv)))
-        } onRemoveInvitation={(id) =>
-          setInvitations((prev) => prev.filter((inv) => inv.id !== id))
-        } />
+        <InvitationsTable invitations={invitations} onUpdateInvitation={updateInvitation} onRemoveInvitation={removeInvitation} />
       </div>
     </PageTransition>
   )

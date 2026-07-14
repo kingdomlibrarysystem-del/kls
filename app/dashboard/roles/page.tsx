@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Shield, Plus } from 'lucide-react'
 import { PageTransition } from '@/components/ui/page-transition'
-import { initialRoles, type Role } from './_components/roles-data'
+import { Skeleton } from '@/components/ui/skeleton'
+import type { Role } from './_components/roles-data'
+import { useRoles, addRole, updateRole, removeRole } from './_components/use-roles'
 import { RoleCards } from './_components/role-cards'
 import { RolesStats } from './_components/roles-stats'
 import { RoleDetailModal } from './_components/role-detail-modal'
@@ -12,16 +14,25 @@ import { RoleCreateModal, type NewRoleForm } from './_components/role-create-mod
 
 const EMPTY_NEW_ROLE: NewRoleForm = { name: '', description: '', permissions: [] }
 
-/** Role & Permission Management: full CRUD plus a details view over the mocked role list. */
+/** Simulated network delay before mock roles become visible. */
+const LOAD_DELAY_MS = 400
+
+/** Role & Permission Management: full CRUD plus a details view over the shared role store. */
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[]>(initialRoles)
+  const [loading, setLoading] = useState(true)
+  const roles = useRoles()
   const [viewing, setViewing] = useState<Role | null>(null)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [newRole, setNewRole] = useState<NewRoleForm>(EMPTY_NEW_ROLE)
 
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [])
+
   const handleEdit = (role: Role) => setEditingRole({ ...role })
-  const handleDelete = (id: string) => setRoles((prev) => prev.filter((r) => r.id !== id))
+  const handleDelete = (id: string) => removeRole(id)
 
   const handleTogglePerm = (perm: string) => {
     if (!editingRole) return
@@ -32,14 +43,13 @@ export default function RolesPage() {
   }
 
   const handleSave = (role: Role) => {
-    setRoles((prev) => prev.map((r) => (r.id === role.id ? role : r)))
+    updateRole(role)
     setEditingRole(null)
   }
 
   const handleCreate = () => {
     if (!newRole.name.trim()) return
-    const role: Role = { id: crypto.randomUUID(), name: newRole.name, description: newRole.description, userCount: 0, permissions: newRole.permissions }
-    setRoles((prev) => [...prev, role])
+    addRole({ name: newRole.name, description: newRole.description, permissions: newRole.permissions })
     setShowCreate(false)
     setNewRole(EMPTY_NEW_ROLE)
   }
@@ -61,9 +71,21 @@ export default function RolesPage() {
           </button>
         </div>
 
-        <RolesStats roles={roles} />
-
-        <RoleCards roles={roles} onView={setViewing} onEdit={handleEdit} onDelete={handleDelete} />
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label="Loading roles">
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} style={{ height: 64, borderRadius: 8 }} />)}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ gap: 10 }}>
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} style={{ height: 120, borderRadius: 8 }} />)}
+            </div>
+          </div>
+        ) : (
+          <>
+            <RolesStats roles={roles} />
+            <RoleCards roles={roles} onView={setViewing} onEdit={handleEdit} onDelete={handleDelete} />
+          </>
+        )}
       </div>
 
       <RoleDetailModal role={viewing} onClose={() => setViewing(null)} />

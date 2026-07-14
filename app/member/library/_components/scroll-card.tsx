@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { ScrollText, Heart, ChevronRight } from 'lucide-react'
+import { ScrollText, Heart, ChevronRight, BookOpenCheck } from 'lucide-react'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
+import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
+import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import type { ScrollSummary } from './library-data'
 
 interface ScrollProps {
@@ -14,9 +17,27 @@ function useIsFavorited(id: string) {
   return favorites.some((f) => f.id === id)
 }
 
+/** The one readable-online match for this scroll's title, if any — same title-based relationship findResourcesForScroll already establishes elsewhere. */
+function useReadableResourceId(scrollTitle: string): string | undefined {
+  const resources = useResources()
+  const content = useReadableContent()
+  const match = findResourcesForScroll(scrollTitle, resources).find((r) => !!content[r.id])
+  return match?.id
+}
+
+/** This scroll's reading-progress percent, if the member has started reading it. */
+function useReadingPercent(resourceId: string | undefined): number | undefined {
+  const progress = useReadingProgress()
+  if (!resourceId) return undefined
+  const entry = progress.find((p) => p.resourceId === resourceId)
+  return entry ? getReadingProgressPercent(entry) : undefined
+}
+
 /** Grid-view scroll card: heart toggle wired to the real shared favorites store, "Open Scroll" navigates to a real detail page. */
 export function ScrollCard({ scroll }: ScrollProps) {
   const liked = useIsFavorited(scroll.id)
+  const readableResourceId = useReadableResourceId(scroll.title)
+  const readingPercent = useReadingPercent(readableResourceId)
 
   return (
     <div
@@ -48,6 +69,22 @@ export function ScrollCard({ scroll }: ScrollProps) {
           <span style={{ fontSize: 8, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{scroll.code}</span>
           <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>{scroll.section}</span>
         </div>
+        {readableResourceId && (
+          <>
+            {typeof readingPercent === 'number' && (
+              <div style={{ height: 3, borderRadius: 2, background: 'var(--bg-section)', marginBottom: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${readingPercent}%`, background: 'var(--gold)' }} />
+              </div>
+            )}
+            <Link
+              href={`/member/library/read/${readableResourceId}`}
+              aria-label={readingPercent ? `Continue reading ${scroll.title}` : `Read ${scroll.title} online`}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, width: '100%', padding: '5px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 9, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', marginBottom: 4 }}
+            >
+              <BookOpenCheck size={10} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
+            </Link>
+          </>
+        )}
         <Link
           href={`/member/library/${scroll.code}/${scroll.id}`}
           aria-label={`Open ${scroll.title}`}
@@ -63,6 +100,8 @@ export function ScrollCard({ scroll }: ScrollProps) {
 /** List-view scroll row: same real favorite toggle + real Open Scroll destination as the card variant. */
 export function ScrollListItem({ scroll }: ScrollProps) {
   const liked = useIsFavorited(scroll.id)
+  const readableResourceId = useReadableResourceId(scroll.title)
+  const readingPercent = useReadingPercent(readableResourceId)
 
   return (
     <Link
@@ -80,6 +119,16 @@ export function ScrollListItem({ scroll }: ScrollProps) {
           <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>{scroll.section}</span>
         </div>
       </div>
+      {readableResourceId && (
+        <span
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/member/library/read/${readableResourceId}` }}
+          role="link"
+          aria-label={readingPercent ? `Continue reading ${scroll.title}` : `Read ${scroll.title} online`}
+          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: '#fff', fontSize: 9, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+        >
+          <BookOpenCheck size={10} /> {typeof readingPercent === 'number' ? `${readingPercent}%` : 'Read'}
+        </span>
+      )}
       <span
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(scroll.id, 'RESOURCE', scroll.title, `Scroll · ${scroll.section}`) }}
         role="button"

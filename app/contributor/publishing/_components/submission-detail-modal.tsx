@@ -25,7 +25,13 @@ export function SubmissionDetailModal({ submission, onClose }: SubmissionDetailM
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="cinzel" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{submission.title}</h3>
-            <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold shrink-0 ${publicationStatusConfig[submission.status].cls}`}>
+            <span
+              className="shrink-0"
+              style={{
+                padding: '2px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                border: `1px solid ${publicationStatusConfig[submission.status].border}`, background: publicationStatusConfig[submission.status].bg, color: publicationStatusConfig[submission.status].color,
+              }}
+            >
               {publicationStatusConfig[submission.status].label}
             </span>
           </div>

@@ -39,6 +39,11 @@ function getEnrollmentsSnapshot() {
   return enrollments
 }
 
+/** Non-hook accessor for use outside React components/render (e.g. other store modules, like use-session-requests.ts's enrollment/completion check). */
+export function getEnrollmentsSnapshotForStore() {
+  return enrollments
+}
+
 /** Percentage complete, derived from completedLessonIds — never stored directly. */
 export function getProgressPercent(enrollment: CourseEnrollment): number {
   return enrollment.totalLessons > 0

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
@@ -35,7 +36,7 @@ const navItems: NavItem[] = [
 export default function LecturerSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, switchRole } = useAuth();
-  const currentRoute = typeof window !== "undefined" ? window.location.pathname : "";
+  const currentRoute = usePathname();
 
   const isActive = (href: string) => {
     if (href === "/lecturer") return currentRoute === "/lecturer";
