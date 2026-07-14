@@ -25,7 +25,7 @@ export const payoutHistory: PayoutRow[] = [
   { id: 'pay-003', date: '2026-06-05', amount: 171500, method: 'Mobile Money', status: 'PENDING' },
 ]
 
-export const payoutStatusConfig: Record<PayoutStatus, { label: string; cls: string }> = {
-  PENDING: { label: 'Pending', cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  PAID:    { label: 'Paid',    cls: 'bg-green-50  text-green-800  border-green-200'  },
+export const payoutStatusConfig: Record<PayoutStatus, { label: string; cls: string; bg: string; color: string; border: string }> = {
+  PENDING: { label: 'Pending', cls: 'bg-yellow-50 text-yellow-800 border-yellow-200', bg: 'var(--gold-light)', color: '#7a5c00',     border: 'var(--gold)'  },
+  PAID:    { label: 'Paid',    cls: 'bg-green-50  text-green-800  border-green-200',  bg: 'var(--green-dim)', color: 'var(--green)', border: 'var(--green)' },
 }
