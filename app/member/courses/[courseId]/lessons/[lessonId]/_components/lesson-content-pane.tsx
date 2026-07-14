@@ -13,6 +13,22 @@ interface LessonContentPaneProps {
   courseCompleteAssessmentTitle?: string
 }
 
+/**
+ * Triggers a real browser download for a FILE-type lesson. There is no
+ * backing file in this mocked prototype (`lesson.content` is only ever a
+ * filename string), so this generates a small text placeholder client-side
+ * rather than leaving the button inert or faking a network fetch.
+ */
+function downloadLessonFile(lessonTitle: string, fileName: string) {
+  const blob = new Blob([`${lessonTitle}\n\nThis is a placeholder for "${fileName}" in the mocked prototype.`], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 /** Renders a lesson's content based on its `contentType` — video placeholder, text, or file download. */
 export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle }: LessonContentPaneProps) {
   return (
@@ -42,7 +58,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-section)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
           <Download size={18} color="var(--gold)" />
           <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{lesson.content}</span>
-          <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} aria-label={`Download ${lesson.content}`}>
+          <button onClick={() => downloadLessonFile(lesson.title, lesson.content)} className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} aria-label={`Download ${lesson.content}`}>
             Download
           </button>
         </div>
