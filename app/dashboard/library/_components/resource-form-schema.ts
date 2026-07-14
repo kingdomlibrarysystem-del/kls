@@ -26,8 +26,22 @@ export const resourceSchema = z.object({
   mediaType: z.enum(['VIDEO', 'DOCUMENT', 'TEXT', 'COMBINATION']),
   /** Comma-separated in the UI, parsed to string[] on submit — see tag-input.tsx. */
   tags: z.array(z.string()),
-  /** At least one cover image URL — matches RemoteImage's existing Unsplash-URL convention elsewhere in this app rather than building file upload. */
-  coverImage: z.string().min(1, 'A cover image URL is required'),
+  /**
+   * Cover image — either a real Unsplash/remote URL (typed in) or a local
+   * blob: URL produced by the file picker (see FilePickerField). No real
+   * backend exists in this prototype, so a picked file never leaves the
+   * browser; the blob URL is what previews it for the current session.
+   */
+  coverImage: z.string().min(1, 'A cover image is required'),
+  /** Optional document/PDF file — blob: URL from the file picker, no backend to persist it to. */
+  documentUrl: z.string().optional(),
+  documentName: z.string().optional(),
+  /** Optional audio file — blob: URL from the file picker. */
+  audioUrl: z.string().optional(),
+  audioName: z.string().optional(),
+  /** Optional video file — blob: URL from the file picker. */
+  videoUrl: z.string().optional(),
+  videoName: z.string().optional(),
 })
 
 export type ResourceFormData = z.infer<typeof resourceSchema>
@@ -47,4 +61,10 @@ export const defaultResourceFormValues: ResourceFormData = {
   mediaType: 'TEXT',
   tags: [],
   coverImage: '',
+  documentUrl: '',
+  documentName: '',
+  audioUrl: '',
+  audioName: '',
+  videoUrl: '',
+  videoName: '',
 }

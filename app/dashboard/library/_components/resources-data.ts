@@ -28,6 +28,12 @@ export interface Resource {
   mediaType: MediaType
   description: string
   tags: string[]
+  /** The actual document/PDF file for this resource, when mediaType includes text content. Optional — physical-only scrolls have none. */
+  documentUrl?: string
+  /** The actual audio file for this resource, when mediaType includes an audio component. */
+  audioUrl?: string
+  /** The actual video file for this resource, when mediaType includes a video component. */
+  videoUrl?: string
 }
 
 export const statusConfig: Record<Resource['status'], { label: string; cls: string }> = {

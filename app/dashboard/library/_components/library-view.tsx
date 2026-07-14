@@ -56,9 +56,14 @@ export function LibraryView() {
 
   const handleSave = (formData: ResourceFormData, editingId: string | null) => {
     try {
-      const { coverImage, ...rest } = formData
+      const { coverImage, documentUrl, documentName, audioUrl, audioName, videoUrl, videoName, ...rest } = formData
+      const fileFields = {
+        documentUrl: documentUrl || undefined,
+        audioUrl: audioUrl || undefined,
+        videoUrl: videoUrl || undefined,
+      }
       if (editingId) {
-        updateResource(editingId, { ...rest, coverImages: [coverImage] })
+        updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
         showToast(`Updated "${formData.title}".`)
       } else {
         const newResource: Resource = {
@@ -70,6 +75,7 @@ export function LibraryView() {
           availableQty: formData.totalQty,
           status: 'available',
           coverImages: [coverImage],
+          ...fileFields,
         }
         addResource(newResource)
         showToast(`Added "${formData.title}".`)

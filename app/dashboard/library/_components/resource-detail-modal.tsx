@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film, BookOpenCheck } from 'lucide-react'
+import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film, BookOpenCheck, FileText, Music, Video } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
@@ -77,6 +77,26 @@ export function ResourceDetailModal({ resource, onClose, onEdit, onArchive }: Re
             {resource.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {resource.tags.map((t) => <span key={t} className="px-2 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato">#{t}</span>)}
+              </div>
+            )}
+
+            {(resource.documentUrl || resource.audioUrl || resource.videoUrl) && (
+              <div className="flex flex-wrap gap-2">
+                {resource.documentUrl && (
+                  <a href={resource.documentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-w-100 text-w-700 rounded text-xs font-lato hover:text-w-950">
+                    <FileText size={12} /> Document
+                  </a>
+                )}
+                {resource.audioUrl && (
+                  <a href={resource.audioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-w-100 text-w-700 rounded text-xs font-lato hover:text-w-950">
+                    <Music size={12} /> Audio
+                  </a>
+                )}
+                {resource.videoUrl && (
+                  <a href={resource.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-w-100 text-w-700 rounded text-xs font-lato hover:text-w-950">
+                    <Video size={12} /> Video
+                  </a>
+                )}
               </div>
             )}
 
