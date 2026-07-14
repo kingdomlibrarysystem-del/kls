@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Shield, Plus } from 'lucide-react'
 import { PageTransition } from '@/components/ui/page-transition'
-import { initialRoles, type Role } from './_components/roles-data'
+import type { Role } from './_components/roles-data'
+import { useRoles, addRole, updateRole, removeRole } from './_components/use-roles'
 import { RoleCards } from './_components/role-cards'
 import { RolesStats } from './_components/roles-stats'
 import { RoleDetailModal } from './_components/role-detail-modal'
@@ -12,16 +13,16 @@ import { RoleCreateModal, type NewRoleForm } from './_components/role-create-mod
 
 const EMPTY_NEW_ROLE: NewRoleForm = { name: '', description: '', permissions: [] }
 
-/** Role & Permission Management: full CRUD plus a details view over the mocked role list. */
+/** Role & Permission Management: full CRUD plus a details view over the shared role store. */
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[]>(initialRoles)
+  const roles = useRoles()
   const [viewing, setViewing] = useState<Role | null>(null)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [newRole, setNewRole] = useState<NewRoleForm>(EMPTY_NEW_ROLE)
 
   const handleEdit = (role: Role) => setEditingRole({ ...role })
-  const handleDelete = (id: string) => setRoles((prev) => prev.filter((r) => r.id !== id))
+  const handleDelete = (id: string) => removeRole(id)
 
   const handleTogglePerm = (perm: string) => {
     if (!editingRole) return
@@ -32,14 +33,13 @@ export default function RolesPage() {
   }
 
   const handleSave = (role: Role) => {
-    setRoles((prev) => prev.map((r) => (r.id === role.id ? role : r)))
+    updateRole(role)
     setEditingRole(null)
   }
 
   const handleCreate = () => {
     if (!newRole.name.trim()) return
-    const role: Role = { id: crypto.randomUUID(), name: newRole.name, description: newRole.description, userCount: 0, permissions: newRole.permissions }
-    setRoles((prev) => [...prev, role])
+    addRole({ name: newRole.name, description: newRole.description, permissions: newRole.permissions })
     setShowCreate(false)
     setNewRole(EMPTY_NEW_ROLE)
   }
