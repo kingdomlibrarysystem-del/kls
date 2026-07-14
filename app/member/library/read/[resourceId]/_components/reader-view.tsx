@@ -8,6 +8,11 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, startReading, markChapterRead, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
+import { useHighlights, addHighlight, getChapterHighlights } from '@/app/member/_shared/use-highlights'
+import type { HighlightColor } from '@/app/member/_shared/highlight-data'
+import { HighlightedParagraph } from './highlighted-paragraph'
+import { HighlightPicker } from './highlight-picker'
+import { useChapterSelection } from './use-chapter-selection'
 
 /** Simulated network delay before the mock chapter content becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -42,6 +47,9 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const startIndex = resumeChapterId ? Math.max(0, chapters.findIndex((c) => c.id === resumeChapterId)) : 0
   const [chapterIndex, setChapterIndex] = useState(startIndex)
   const initialized = useRef(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const highlightEntries = useHighlights()
+  const { pending, captureSelection, clearSelection } = useChapterSelection()
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -85,6 +93,26 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const hasPrev = chapterIndex > 0
   const hasNext = chapterIndex < chapters.length - 1
 
+  const paragraphs = chapter.body.split('\n\n')
+  let runningOffset = 0
+  const paragraphsWithOffsets = paragraphs.map((text) => {
+    const paragraphStart = runningOffset
+    runningOffset += text.length + 2 // account for the '\n\n' joiner stripped by split()
+    return { text, paragraphStart }
+  })
+  const chapterHighlights = getChapterHighlights(resourceId, chapter.id)
+
+  const goToChapter = (index: number) => {
+    clearSelection()
+    setChapterIndex(index)
+  }
+
+  const handlePickColor = (color: HighlightColor) => {
+    if (!pending) return
+    addHighlight({ resourceId, chapterId: chapter.id, startOffset: pending.startOffset, endOffset: pending.endOffset, text: pending.text, color })
+    clearSelection()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720, margin: '0 auto' }}>
       <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>
@@ -104,16 +132,20 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
 
       <div className="card" style={{ padding: 24 }}>
         <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', marginBottom: 14 }}>{chapter.title}</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {chapter.body.split('\n\n').map((paragraph, i) => (
-            <p key={i} style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text-primary)' }}>{paragraph}</p>
+        <div
+          ref={bodyRef}
+          onMouseUp={() => captureSelection(bodyRef.current)}
+          style={{ display: 'flex', flexDirection: 'column', gap: 14, userSelect: 'text' }}
+        >
+          {paragraphsWithOffsets.map(({ text, paragraphStart }, i) => (
+            <HighlightedParagraph key={i} text={text} paragraphStart={paragraphStart} highlights={chapterHighlights} />
           ))}
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <button
-          onClick={() => setChapterIndex((i) => Math.max(0, i - 1))}
+          onClick={() => goToChapter(Math.max(0, chapterIndex - 1))}
           disabled={!hasPrev}
           className="btn btn-outline-dim btn-sm"
           style={{ opacity: hasPrev ? 1 : 0.4, cursor: hasPrev ? 'pointer' : 'not-allowed' }}
@@ -122,7 +154,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
         </button>
         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{chapter.title}</span>
         <button
-          onClick={() => setChapterIndex((i) => Math.min(chapters.length - 1, i + 1))}
+          onClick={() => goToChapter(Math.min(chapters.length - 1, chapterIndex + 1))}
           disabled={!hasNext}
           className="btn btn-gold btn-sm"
           style={{ opacity: hasNext ? 1 : 0.4, cursor: hasNext ? 'pointer' : 'not-allowed' }}
@@ -130,6 +162,10 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
           Next <ChevronRight size={13} />
         </button>
       </div>
+
+      {pending && (
+        <HighlightPicker position={pending.position} onPick={handlePickColor} onClose={clearSelection} />
+      )}
     </div>
   )
 }

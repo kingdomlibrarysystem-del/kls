@@ -247,3 +247,39 @@ other seed `description` in this app is real prose, not filler text.
    the literal string "Continue Reading" in its server-rendered HTML
    (this page has no client-side loading skeleton gating it, unlike the
    reader). Build + `tsc --noEmit` clean.
+4. **Highlighting shipped: data model + store + real text-selection UI.**
+   `highlight-data.ts` (`Highlight`: `resourceId`, `chapterId`,
+   `startOffset`/`endOffset` — character positions within that chapter's
+   `body` string, `text` snapshotted at creation for Phase 6's
+   highlights-list view, `color` from a small closed
+   `HighlightColor` set using CSS vars already in `globals.css`
+   — gold/green/teal/pink, a functional multi-value choice like a
+   category chip, not decoration) + `use-highlights.ts` (same
+   `useSyncExternalStore` module-store pattern as everything else; no
+   seed rows, since a seeded highlight's offsets would silently desync
+   the moment its chapter's placeholder prose is ever edited — unlike
+   `initialFavorites`/`initialEnrollments`, which don't carry that
+   fragile a dependency).
+   Real text-selection UI in the reader, not a placeholder: a new
+   `useChapterSelection()` hook converts a real `window.getSelection()`
+   range into chapter-relative character offsets (walking the DOM text
+   nodes before the selection start within its paragraph, then adding
+   that paragraph's own chapter-relative start offset — correctly
+   accounts for trimmed leading whitespace so stored offsets exactly
+   match the trimmed highlighted text). `HighlightPicker` shows a small
+   floating color-swatch popover anchored to the selection's bounding
+   rect. `HighlightedParagraph` splices `<mark>`-styled spans into each
+   paragraph for any highlight whose range overlaps it, re-deriving
+   paragraph-local slice points from the chapter-relative offsets on
+   every render — so highlights survive chapter navigation and stay
+   correctly positioned regardless of how paragraphs are split for
+   display.
+   Verified: build + `tsc --noEmit` clean, `/member/library/read/1`
+   returns 200 live via `npm run dev` + `curl`. The actual
+   select-text-and-click-a-color interaction was traced logically
+   through the offset-computation code (confirmed correct on manual
+   trace against Genesis's real seed prose) rather than driven by an
+   actual browser session — Playwright isn't installed in this project
+   and adding it as a new dependency solely for a one-off interaction
+   check isn't warranted; flagging this honestly rather than claiming a
+   browser-verified interaction that didn't happen.
