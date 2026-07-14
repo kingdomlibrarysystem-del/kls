@@ -14,6 +14,8 @@ import { HighlightedParagraph } from './highlighted-paragraph'
 import { HighlightPicker } from './highlight-picker'
 import { useChapterSelection } from './use-chapter-selection'
 import { NotesPanel } from './notes-panel'
+import { ChapterSearch } from './chapter-search'
+import { HighlightsNotesList } from './highlights-notes-list'
 
 /** Simulated network delay before the mock chapter content becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -133,6 +135,8 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
         </div>
       </div>
 
+      <ChapterSearch chapters={chapters} onJump={goToChapter} />
+
       <div className="card" style={{ padding: 24 }}>
         <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', marginBottom: 14 }}>{chapter.title}</h2>
         <div
@@ -171,6 +175,8 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
           Next <ChevronRight size={13} />
         </button>
       </div>
+
+      <HighlightsNotesList resourceId={resourceId} chapters={chapters} onJump={goToChapter} />
 
       {pending && (
         <HighlightPicker position={pending.position} onPick={handlePickColor} onClose={clearSelection} />

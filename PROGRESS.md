@@ -299,3 +299,73 @@ other seed `description` in this app is real prose, not filler text.
    panel itself isn't visible in the raw HTML response since the reader
    is fully client-rendered behind a loading skeleton, consistent with
    Phase 1/2/4's same verification approach).
+6. **Polish: all 3 named items shipped.**
+   - New `CurrentlyReading.tsx` dashboard widget, wired into
+     `/member/page.tsx`'s existing 3-column widget grid as a 4th item.
+     Deliberately modeled after `ELearningProgress.tsx`'s genuinely
+     live-wired pattern rather than copying `BorrowedBooks.tsx`, which
+     (noted here, not touched — out of scope) is itself still a static
+     `mockBorrows` array despite the real `use-borrowings.ts` store
+     existing; this new widget reads `useReadingProgress()` +
+     `useResources()` directly so it can't drift from what the reader
+     itself shows.
+   - New `chapter-search.tsx` ("search within this book"): a query box
+     that matches chapter title or body text, shows a snippet per match,
+     and jumps the reader to that chapter on click. Scoped to the
+     current book's own (few) chapters — no cross-book search, since
+     that wasn't what "search-within-book" asked for.
+   - New `highlights-notes-list.tsx` ("My Highlights & Notes"): a
+     collapsible panel listing every highlight and note for the whole
+     book (not just the current chapter), each entry jumping back to its
+     chapter on click, with its own delete action. Renders nothing when
+     both are empty, matching the same "don't show an empty affordance"
+     convention `continue-reading-section.tsx` already established in
+     Phase 3.
+   Verified live via `npm run dev` + `curl`: `/member` (dashboard)
+   renders the literal string "Currently Reading" in its server-rendered
+   HTML; `/member/library/read/1` and `/member/library/read/7` (the
+   Psalms `COMPLETED` seed row) both return 200. Build + `tsc --noEmit`
+   clean.
+
+## Reading Feature Arc — final summary
+
+All 6 phases complete, each individually committed, built, type-checked,
+and pushed to `auto-wip`. The arc took the reading-feature-gap-audit's 6
+confirmed-absent areas (reading access, highlighting, reading progress,
+notes, readable body content, and the multi-view infrastructure that
+*did* exist to build on) and closed every one:
+
+- **Readable content**: 4 resources (Genesis, Psalms, Matthew,
+  Revelation) now have real chapter body text, not just metadata.
+- **Reading access**: a real reader at `/member/library/read/[resourceId]`,
+  reachable from all 4 components the audit named (plus an admin
+  preview action), not a decorative or dead button anywhere.
+- **Reading progress**: a full store mirroring the lesson/enrollment
+  precedent, surfaced on cards, a dedicated "Continue Reading" section,
+  and now a dashboard widget too.
+- **Highlighting**: real text-selection → chapter-relative offsets →
+  persisted, colored, positionally-stable marks that survive chapter
+  navigation.
+- **Notes**: free-text, attachable per-chapter or per-highlight.
+- **Polish**: a dashboard summary, in-book search, and a full
+  highlights/notes review list.
+
+**What's intentionally out of scope, not overlooked:**
+- `BorrowedBooks.tsx`'s pre-existing static `mockBorrows` array (noted in
+  Phase 6, not fixed — unrelated to this arc's brief).
+- Cross-book search, and a dedicated top-level "My Highlights" page
+  spanning every book at once — the phase spec's "search-within-book"
+  and "highlights/notes list view" were both scoped to one open book,
+  not the whole library; a library-wide version of either would be a
+  reasonable future phase but wasn't asked for here.
+- Real browser-driven interaction testing (actual mouse-drag text
+  selection, actual color-pick clicks) for Phases 4/5 — Playwright isn't
+  installed in this project; offset/selection logic was verified by
+  manual trace against real seed prose instead, and every route was
+  confirmed live via `npm run dev` + `curl` at every phase.
+
+**Recommended next step for a human reviewer:** review this arc's 7
+commits (`ce75b2f`..HEAD on `auto-wip`, following the prior 18-phase
+audit-remediation run), test the actual selection/highlight/note flow
+in a real browser, then decide whether to merge into `feat/ui-setup` or
+`main`.
