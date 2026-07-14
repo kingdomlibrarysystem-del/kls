@@ -25,5 +25,50 @@ export const sessionStatusConfig: Record<SessionStatus, { label: string; cls: st
   COMPLETED: { label: 'Completed', cls: 'bg-w-100      text-w-800      border-w-300',     bg: 'var(--bg-section)', color: 'var(--text-secondary)', border: 'var(--border)' },
 }
 
-/** No seed requests — this feature is genuinely new; every request in the demo is one a learner actually made in session. */
-export const mockSessionRequests: SessionRequest[] = []
+/**
+ * Seed requests so Live Sessions (admin), Session Requests (lecturer), and My
+ * Sessions (member) aren't empty on first load — same precedent as the
+ * assessment Review Queue's seeded attempt (enrollment-data.ts). Only
+ * course '4' ("The Art of Worship") is actually COMPLETED in the seed
+ * enrollment data, so John Doe's own request references that course/
+ * lecturer pair; the other two rows are other learners' historical
+ * requests (not reachable through requestSession()'s own enforcement,
+ * but plausible prior activity for the lecturer-facing queue to show).
+ */
+export const mockSessionRequests: SessionRequest[] = [
+  {
+    id: 'sr-1',
+    learnerName: 'John Doe',
+    lecturerName: 'Dr. Elias Nkubito',
+    courseId: '4',
+    courseTitle: 'The Art of Worship',
+    requestedAt: '2026-07-02',
+    proposedTime: '2026-07-18T17:00',
+    status: 'APPROVED',
+    scheduledAt: '2026-07-18T17:00',
+    notes: 'Would love to go deeper on corporate worship postures covered in lesson 3.',
+  },
+  {
+    id: 'sr-2',
+    learnerName: 'Amina Uwimana',
+    lecturerName: 'Dr. Elias Nkubito',
+    courseId: '1',
+    courseTitle: 'Kingdom Foundations',
+    requestedAt: '2026-07-08',
+    proposedTime: '2026-07-22T16:30',
+    status: 'PENDING',
+    notes: 'Question about the covenant framework in lesson 2 before I attempt the assessment.',
+  },
+  {
+    id: 'sr-3',
+    learnerName: 'Patrick Iradukunda',
+    lecturerName: 'Prof. Grace Nkomo',
+    courseId: '8',
+    courseTitle: 'The Nature of God',
+    requestedAt: '2026-06-25',
+    proposedTime: '2026-07-05T18:00',
+    status: 'COMPLETED',
+    scheduledAt: '2026-07-05T18:00',
+    notes: 'Session held — discussed the doctrine of divine attributes in more depth.',
+  },
+]
