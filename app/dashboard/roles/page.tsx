@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Shield, Plus } from 'lucide-react'
 import { PageTransition } from '@/components/ui/page-transition'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { Role } from './_components/roles-data'
 import { useRoles, addRole, updateRole, removeRole } from './_components/use-roles'
 import { RoleCards } from './_components/role-cards'
@@ -13,13 +14,22 @@ import { RoleCreateModal, type NewRoleForm } from './_components/role-create-mod
 
 const EMPTY_NEW_ROLE: NewRoleForm = { name: '', description: '', permissions: [] }
 
+/** Simulated network delay before mock roles become visible. */
+const LOAD_DELAY_MS = 400
+
 /** Role & Permission Management: full CRUD plus a details view over the shared role store. */
 export default function RolesPage() {
+  const [loading, setLoading] = useState(true)
   const roles = useRoles()
   const [viewing, setViewing] = useState<Role | null>(null)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [newRole, setNewRole] = useState<NewRoleForm>(EMPTY_NEW_ROLE)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleEdit = (role: Role) => setEditingRole({ ...role })
   const handleDelete = (id: string) => removeRole(id)
@@ -61,9 +71,21 @@ export default function RolesPage() {
           </button>
         </div>
 
-        <RolesStats roles={roles} />
-
-        <RoleCards roles={roles} onView={setViewing} onEdit={handleEdit} onDelete={handleDelete} />
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label="Loading roles">
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} style={{ height: 64, borderRadius: 8 }} />)}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ gap: 10 }}>
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} style={{ height: 120, borderRadius: 8 }} />)}
+            </div>
+          </div>
+        ) : (
+          <>
+            <RolesStats roles={roles} />
+            <RoleCards roles={roles} onView={setViewing} onEdit={handleEdit} onDelete={handleDelete} />
+          </>
+        )}
       </div>
 
       <RoleDetailModal role={viewing} onClose={() => setViewing(null)} />
