@@ -33,7 +33,13 @@ export function SessionCard({ request, viewer }: SessionCardProps) {
           <GraduationCap size={14} color="var(--gold)" />
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{request.courseTitle}</span>
         </div>
-        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${sessionStatusConfig[request.status].cls}`}>
+        <span
+          style={{
+            padding: '2px 10px', borderRadius: 6, border: `1px solid ${sessionStatusConfig[request.status].border}`,
+            background: sessionStatusConfig[request.status].bg, color: sessionStatusConfig[request.status].color,
+            fontSize: 11, fontWeight: 600,
+          }}
+        >
           {sessionStatusConfig[request.status].label}
         </span>
       </div>
