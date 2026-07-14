@@ -682,3 +682,110 @@ file-upload approach is confirmed client-side-only (`URL.createObjectURL`
 blob URLs) since no real backend exists in this prototype — this was
 raised explicitly rather than assumed, per the task's own instruction to
 confirm the constraint before designing around it.
+
+# Session Requests: Reverted Enrollment/Completion Enforcement
+
+Explicit product decision, reversing `354306a` ("fix(sessions): enforce
+enrollment/completion inside requestSession()"): session requests now
+work like a "Slack huddle" — any authenticated member can request a live
+session with any lecturer, for any course, at any time, no precondition.
+
+- `requestSession()` (`app/lecturer/_shared/use-session-requests.ts`)
+  dropped the enrollment/completion/lecturer-match checks entirely —
+  back to a plain append + `emitChange()`.
+- "Request Session" is no longer gated to completed courses. Extracted a
+  new `in-progress-courses-section.tsx` (mirroring the existing
+  `completed-courses-section.tsx`) so the action reaches any enrolled
+  course, in progress or completed. Chose "any enrolled course, any
+  status" over "any course at all, not even enrolled" — the latter would
+  need a net-new course picker with no existing precedent in this app,
+  so it was ruled out as the more ambiguous, bigger-scope option.
+- Updated lecturer- and learner-facing copy that claimed a completion
+  gate ("learners who complete your courses", "Complete a course, then
+  use Request Session...") across `session-requests-view.tsx`,
+  `session-requests/page.tsx`, and `my-sessions-view.tsx` — same
+  copy-vs-code mismatch class the earlier audit flagged as Blocking, now
+  addressed proactively rather than left behind after the policy changed.
+
+Commit `60d9741`.
+
+# Health System Module (first of 6 "Coming Soon" replacements)
+
+Replaced the placeholder at `app/dashboard/health/page.tsx` (previously
+promising Book a Checkup / Health Records / Immunization Tracker / Clinic
+Directory, all `status: 'coming'`) with a real module. Commit `3bd8a7b`.
+
+## Coming Soon module template (reuse for Beauty, Counseling, Rehab, Donations, News)
+
+**Route shape:** one hub `page.tsx` linking to N sub-routes, each with its
+own `page.tsx` + local `_components/`. This matches the existing
+library/e-learning convention (hub page listing cards → dedicated
+sub-route per feature) rather than an in-page-tabs single page — checked
+both precedents before choosing; hub-plus-sub-routes is what every other
+multi-feature dashboard module in this app already does.
+
+```
+app/dashboard/<module>/
+  page.tsx                    hub — cards linking to each sub-route
+  _shared/
+    <module>-data.ts           types + seed data, CURRENT_MEMBER_NAME const
+    use-<module>.ts            useSyncExternalStore store(s)
+  <feature-a>/
+    page.tsx
+    _components/<feature-a>-view.tsx (+ split-out sub-components as needed)
+  <feature-b>/
+    page.tsx
+    _components/<feature-b>-view.tsx
+  ...
+```
+
+**Store pattern:** exactly the `use-enrollments.ts`/`use-session-requests.ts`
+shape — module-level mutable array, `Set` of listeners, `emitChange()`,
+`subscribe()`, a snapshot getter, and a `useSyncExternalStore` hook. Only
+give a real mutation function to the sub-feature that's genuinely a
+member-initiated write (e.g. booking an appointment); sub-features that
+would in reality be written by staff/a portal that doesn't exist yet
+(health records, immunizations) get a plain read-only hook over the seed
+array instead of a fake write path — don't invent a write flow that has
+no real actor behind it yet.
+
+**Seeding approach:** 3-4 "directory" entries (clinics/practitioners/
+whatever the module's static catalog is) across visibly different
+categories, 2-3 records for the one mock member persona
+(`CURRENT_MEMBER_NAME`) spanning different statuses (so status badges/
+filters have something real to show), same precedent as
+`session-requests-data.ts` and `enrollment-data.ts`'s seed rows. Never
+seed more than one persona's data unless the module already has
+multi-persona data elsewhere to draw from (Health System's `Appointment`/
+`HealthRecordEntry`/`ImmunizationEntry` are all scoped to
+`CURRENT_MEMBER_NAME` for this reason).
+
+**CRUD scope:** build only the write flows that have a real actor in this
+mock's single-persona, no-backend world. Booking a checkup is real
+(member → store). Health records/immunizations are read-only (no clinic
+staff portal exists to write them) — don't fabricate a form that writes
+data no real UI would produce yet.
+
+**Admin oversight — decide, don't default to building it.** Checked
+whether `/dashboard/health` needs an all-appointments oversight view
+(parallel to `/dashboard/e-learning/sessions`'s read-only DataTable across
+every lecturer). Skipped it here: this mock has exactly one live member
+persona, so an "all appointments" view would show the identical rows as
+"My Appointments" today — zero distinguishing value until multi-member
+data exists. Re-evaluate per-module: if a future module's seed data
+already has multiple distinct actors (like session requests do, with 3
+named learners), building the oversight view is worth it immediately;
+if not, flag it as future work instead of building a duplicate view.
+
+**Known nav gap, not fixed here (matches an existing documented
+inconsistency):** `/dashboard/health` is only linked from
+`adminMainNav` in `app/dashboard/_components/sidebar.tsx` — `memberNav`
+(the same file) and the real member navigation (`member-sidebar.tsx`)
+have no Health System link at all, even though the module's actual
+content (book a checkup, view my records) is member-facing. This is the
+same class of gap CLAUDE.md already documents for `memberNav` pointing at
+the wrong routes generally — not introduced by this change, just newly
+visible because Health System is now a real destination instead of a
+placeholder. Flagging rather than silently fixing, since deciding where
+Health System belongs in navigation is a product/IA call, not a
+mechanical fix.
