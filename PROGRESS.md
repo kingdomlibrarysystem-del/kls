@@ -477,3 +477,114 @@ Verified live via `npm run dev` + `curl`: both pages return 200 with no
 error markers (loading skeleton renders as expected — both pages are
 client-rendered behind a simulated delay, same as every other view in
 this app). Build + `tsc --noEmit` clean.
+
+---
+
+# Gaps & Modals Audit Fixes
+
+Same branch (`auto-wip`). A read-only audit
+(`.claude/skills/kls-page-builder/references/gaps-and-modals-audit.md`)
+found 3 independent issues across the app; this pass fixed all 5 items
+from its Prioritized Findings list, in severity order. The 4 modal-vs-
+page conversions and the hub-page-standardization item were explicitly
+left out of scope per instruction — those are architectural decisions
+(new routes, navigation patterns) deserving their own scoped discussion,
+not correctness fixes.
+
+## 1. Blocking — requestSession() authorization gap, fixed
+
+`requestSession()` (`app/lecturer/_shared/use-session-requests.ts`) was
+a bare append with zero validation — the enrollment/completion gate the
+lecturer UI's own copy promised ("requests from learners who complete
+your courses") existed only as an accidental property of the single
+current caller pre-filtering to completed courses, not as an enforced
+precondition of the function itself. Added a non-hook
+`getEnrollmentsSnapshotForStore()` accessor to `use-enrollments.ts`
+(mirroring `getLessonsSnapshot()`'s established cross-store-read
+pattern); `requestSession()` now throws unless the learner has a
+COMPLETED enrollment for the course and unless the named lecturer
+actually teaches it — matching `rejectSession()`'s existing defense-in-
+depth pattern in the same file. Traced the one real caller end-to-end
+and confirmed the happy path is unaffected (it already derives
+`lecturerName` the identical way). Build + `tsc --noEmit` clean;
+`/member/courses` verified live.
+
+## 2. Blocking — BorrowReserveConfirmModal was contentless, fixed
+
+The modal was exactly what the audit named: a repeated question and one
+button, no due date, availability, or terms. Pre-commit, it now shows a
+real due-date line (Borrow) computed from
+`defaultSystemSettings.defaultBorrowPeriodDays` (a real value this app
+already defines, not fabricated) and a real copies-available line where
+the caller has `availableQty` in scope (`library-browser.tsx`,
+`publication-detail-view.tsx` — both already had a real `Resource`/
+`quantity` on hand; left optional for the other 2 callers rather than
+forcing a larger local-state refactor). Post-commit, Reserve now shows
+the real queue result from `addReservation()`'s actual return value
+instead of generic copy. Build + `tsc --noEmit` clean; `/library` and
+`/library/1` verified live.
+
+## 3. Rough — /member/leaderboard fabricated data, closed out
+
+This gap had been flagged open across two prior audit passes without
+being fixed. Investigated the actual data-model constraint before
+building anything: `useCertificates()` is the only store in this app
+with genuine multi-member data (3 real distinct names in its seed
+rows); `Borrowing` carries no member field at all, so "books read"
+cannot be honestly shown for anyone but the single live "John Doe"
+persona. Rather than fabricating a multi-member borrowing history or
+inventing a composite "points" score (which the old page did with an
+unexplained formula), the page now ranks every real name from
+`useCertificates()` by real completed-course count, includes the
+current member even at 0 completions, and shows "Books Read" only on
+the current member's own row with an explicit footer note about the
+data-model limitation — following `DashboardStats.tsx`'s own precedent
+for handling an unbacked stat honestly (its "Payments" stat). Verified
+live: the 3 real certificate names render, "John Doe" appears, none of
+the old fabricated names remain. Build + `tsc --noEmit` clean.
+
+## 4. Rough — CLAUDE.md's Coming Soon list, fixed
+
+Discovered CLAUDE.md never actually named any Coming Soon module before
+this fix — the list only existed in the page-builder skill file, which
+itself already included Donations and News (the audit's "undocumented"
+finding was about CLAUDE.md specifically, not the skill). Added a
+bullet to CLAUDE.md's "Known inconsistencies" naming all 6 real Coming
+Soon modules (confirmed via grep for the exact placeholder banner text
+across `app/dashboard/*`), pointing to the skill's §6 for the pattern.
+Also corrected the skill's own list, which included "Download Center" —
+confirmed via direct read that it's no longer a pure placeholder (shows
+a real certificates list; only one export action is disclaimed) —
+removed it with an explanatory note. Both `CLAUDE.md` and the skill
+file are gitignored in this repo, so this fix has no git diff; confirmed
+both edits are present on disk by reading them back.
+
+## 5. Polish — dead phase-placeholder.tsx, removed
+
+Re-confirmed zero call sites via grep before deleting (per the standing
+instruction to investigate before removing anything), then removed
+`app/lecturer/_components/phase-placeholder.tsx` — a Phase-1 scaffold
+superseded once the lecturer portal's real pages were built. Build +
+`tsc --noEmit` clean.
+
+## Summary
+
+All 5 items from the audit's Prioritized Findings resolved, each in its
+own commit, each verified with a real build + typecheck pass and (where
+the change was runtime-visible) a live `npm run dev` + `curl` check —
+not just a build-passing assumption. Both Blocking items were genuine
+correctness/trust issues (an unenforced authorization precondition, a
+decision made with zero visible information) and are now fixed at the
+root rather than papered over. The Rough leaderboard fix required
+determining a real data-model constraint (no per-member borrowing data
+exists) before deciding the honest scope of what could be shown, rather
+than fabricating comparison data to make the page look more complete
+than the underlying stores support.
+
+**Still explicitly out of scope, by instruction, not oversight:** the 4
+modal-vs-page conversions (research project, admin course, research
+paper, library resource detail — each recommended to become a real page
+instead of a modal) and the 3-hub-page Coming-Soon-tag standardization
+(e-learning/research/publishing). Both are real, larger design decisions
+affecting navigation/URL structure across multiple modules and deserve
+a scoped discussion before an autonomous build, not a bundled fix.
