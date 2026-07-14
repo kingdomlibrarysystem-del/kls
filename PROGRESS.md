@@ -588,3 +588,97 @@ instead of a modal) and the 3-hub-page Coming-Soon-tag standardization
 (e-learning/research/publishing). Both are real, larger design decisions
 affecting navigation/URL structure across multiple modules and deserve
 a scoped discussion before an autonomous build, not a bundled fix.
+
+# Modal Stacking, Session Seeding, File Upload, KCS Map Consolidation
+
+Four independent fixes, each its own commit, each verified with a real
+build + `tsc --noEmit` pass and a live `npm run dev` + `curl` check.
+
+## 1. Modal z-index/stacking bug (root cause + fix)
+
+**Root cause:** `components/ui/modal.tsx`'s overlay rendered inline (no
+portal) at Tailwind `z-50`, while `app/dashboard/_components/topbar.tsx`'s
+sticky header set `zIndex: 100` inline. 50 < 100, so the topbar (and
+anything inside it, e.g. the language-switcher dropdown) painted above
+any open modal wherever the two overlapped — visible on Add Resource, KCS
+Map dropdowns, and Coming Soon pages, since the topbar is mounted on every
+`/dashboard/*` route. No transform/opacity/isolation trapped the modal in
+a sub-context — this was a plain numeric ordering mistake with no shared
+z-index scale anywhere in `globals.css` to prevent it.
+
+**Fix:** `Modal` now renders via `createPortal(..., document.body)`,
+removing it from the dashboard's internal DOM/stacking hierarchy
+entirely, and its overlay z-index was bumped to `z-100`. `DashboardTopbar`
+was lowered to `zIndex: 40` so there's a real, intentional ordering rather
+than ad-hoc numeric luck. Commit `d834e67`.
+
+## 2. Seeded session requests
+
+`app/lecturer/_shared/session-requests-data.ts`'s `mockSessionRequests`
+was `[]`, so Live Sessions (admin), Session Requests (lecturer), and My
+Sessions (member) were all empty on first load. Seeded 3 requests mixing
+PENDING/APPROVED/COMPLETED — one references John Doe + course '4' ("The
+Art of Worship"), the only course actually `COMPLETED` in the seed
+enrollment data (relevant since `requestSession()`'s enforcement, added in
+the prior audit-fix batch, checks real enrollment completion). The other
+two are other learners' historical requests, giving the lecturer queue a
+genuine PENDING row and the admin-wide Live Sessions view more than one
+lecturer's activity. Commit `e5c2a20`.
+
+## 3. Real file upload for Resource Add/Edit form
+
+Confirmed via full-codebase search: no functional file-upload pattern
+existed anywhere (three `<input type="file">` elsewhere in the app are
+inert placeholders with no `onChange`/`FileReader`/blob wiring). Since
+this is a fully mocked prototype with no real backend (no Cloudinary/API
+upload), built `components/ui/file-picker-field.tsx` — a client-side
+picker that reads a local file via `URL.createObjectURL` and hands the
+blob: URL back to the caller. This is the only artifact a real-backend-
+free prototype can produce; the blob URL previews/opens for the current
+browser session and doesn't persist across a reload, same lifetime as
+every other in-memory mock-store value in this app.
+
+Wired into the Add/Edit Resource form: cover image now supports upload
+alongside the existing URL field (`resource-form-details.tsx`), plus new
+optional `documentUrl`/`audioUrl`/`videoUrl` fields added to the `Resource`
+type and a new `resource-form-media-files.tsx` component (split out to
+keep `resource-form-details.tsx` under the 200-line cap). `library-view.tsx`'s
+`handleSave` passes all three through on create/edit. `resource-detail-modal.tsx`
+was also given a small "Document/Audio/Video" link row so the newly
+captured data isn't invisible after saving — same "don't build a form field
+with nowhere to display it" discipline as the earlier canonical-shape work.
+Commit `a52fa85`.
+
+## 4. KCS Map: 8 pillar routes consolidated into 1
+
+`app/dashboard/kcs/{foundation,history,wisdom,prophetic,gospel,acts,
+epistles,revelation}/page.tsx` were byte-for-byte identical 10-line files,
+each rendering the same `KcsPillarView` with only the `pillarKey` string
+literal differing — all 8 pillars' data already lived in one
+`kcs-pillars-data.ts` record. Replaced with a single
+`app/dashboard/kcs/page.tsx`, a new `KcsPillarTabs` tab bar, and a
+`KcsMapView` client wrapper that resolves the active pillar from a
+`?pillar=` search param (kept as real URL state, not just component
+state, so it's shareable/back-button-able). Sidebar's 8-link "KCS Map"
+dropdown collapsed to one direct link (`/dashboard/kcs`). The existing
+`[pillar]/[scrollId]` scroll-detail dynamic route was left as-is; only its
+"Back to {pillar}" link was updated to `/dashboard/kcs?pillar={pillarKey}`.
+
+**Scope note:** only the admin KCS Map route tree existed as 8 separate
+routes. The member side (`/member/library`) already consolidates all 8
+pillars into one page via its own tab/filter UI and separate data file
+(`library-data.tsx`) — confirmed via research this is a pre-existing,
+independent implementation with some data drift from the admin's
+`kcs-pillars-data.ts` (slightly different per-pillar book lists, a 2- vs
+3-state status enum). Not touched in this pass — reconciling the two data
+sources is a separate, larger decision, not a routing fix. Commit `07c8c4c`.
+
+## Summary
+
+All 4 items fixed, committed, and pushed to `auto-wip`. The z-index bug
+was root-caused (no portal + an accidental numeric tie/near-tie with the
+topbar) rather than patched with a single arbitrary bigger number. The
+file-upload approach is confirmed client-side-only (`URL.createObjectURL`
+blob URLs) since no real backend exists in this prototype — this was
+raised explicitly rather than assumed, per the task's own instruction to
+confirm the constraint before designing around it.
