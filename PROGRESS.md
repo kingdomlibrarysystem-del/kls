@@ -31,7 +31,7 @@ Branch: `auto-wip` (not `main`). Each phase = one commit, pushed after
 
 ## Log
 
-(Entries added as each phase completes.)
+1. **Decorative gradient avatar fixed** — `components/session-room/participant-tile.tsx:37`. Replaced `linear-gradient(135deg, var(--purple), var(--teal))` with solid `var(--gold)`, matching the page-builder color-discipline rule (no decorative non-status hues). Build + `tsc --noEmit` clean.
 
 ## Needs human input
 
