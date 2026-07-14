@@ -52,4 +52,56 @@ Branch: `auto-wip` (not `main`). Each phase = one commit, pushed after
 
 ## Needs human input
 
-(None yet.)
+None. Every phase was either a self-contained, reversible frontend
+change or (Phase 18, auth-adjacent) a change judged low-risk before
+proceeding rather than skipped or guessed — see that phase's log entry
+for the reasoning. Nothing was deferred to this section.
+
+## Final summary
+
+All 18 phases complete, each individually committed, built
+(`npm run build`), type-checked (`npx tsc --noEmit`), and pushed to
+`auto-wip`. Both source audit documents
+(`.claude/skills/kls-page-builder/references/lecturer-feature-audit.md`
+and `ux-journey-audit.md`) have been updated in place, marking every
+item from this run's scope as resolved with a one-line pointer back to
+the fix.
+
+**What's intentionally still open (by design, not oversight):**
+- `lecturer-feature-audit.md`'s 5 Polish items (admin sidebar `isMember`
+  binary flag, `Video` icon reuse, Tailwind-in-inline-style in
+  `session-card.tsx`, decorative stat-icon colors, decorative button
+  accent) — these were never part of this run's 18-item combined scope;
+  the user's instruction was "2 Rough + [ux-journey-audit's] 8 Rough + 8
+  Polish," not this document's own Polish backlog.
+- `ux-journey-audit.md`'s explicitly-deferred architectural item: no
+  `middleware.ts` exists anywhere in the repo, so every `/dashboard/*`
+  route is reachable by an anonymous visitor with zero auth gate. This
+  was flagged by a prior session as "a substantially larger
+  architectural task... intentionally not attempted," and stayed out of
+  scope for this run for the same reason — it's a real-auth/routing
+  change, not a mocked-frontend fix, and doesn't fit this phase list.
+
+**Notable judgment calls made along the way** (each logged in more
+detail against its own phase above):
+- Phases 4 and 5 (reservation dead-end + queue off-by-one) were fixed
+  together in one commit since they're the same function — logged as
+  two phase entries for traceability against the original 18-item list.
+- Phase 7 turned out to be 3 pages of work, not 4 — Audit-Log was
+  already correctly store-backed from an earlier session.
+- Phase 16 turned out to be 4 genuinely-affected files, not the 5 named
+  in the audit — 2 of the named files (`users-view.tsx`,
+  `invitations-table.tsx`) are genuinely Dialect-A pages where the
+  "violation" wasn't actually one; fixing them would have introduced a
+  real inconsistency rather than removing one.
+- Phase 18 (login validation) touches auth-context, so its risk was
+  explicitly assessed rather than treated as routine — judged low-risk
+  since no real credential check exists to weaken in this mocked
+  prototype, and a hard block was rejected in favor of non-blocking
+  feedback to preserve the prototype's "explore any role" purpose.
+
+**Recommended next step for a human reviewer:** review this branch's 16
+phase commits (`957261d`..`404e188` on `auto-wip`, following the initial
+`f6321ea` setup commit), then decide whether to merge into
+`feat/ui-setup` or `main`. No further autonomous work is planned unless
+a new phase list is provided.
