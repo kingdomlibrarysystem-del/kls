@@ -197,3 +197,27 @@ other seed `description` in this app is real prose, not filler text.
    resource) also returns 200, rendering the "not available to read
    online yet" `EmptyState` rather than crashing. Build + `tsc --noEmit`
    clean.
+2. **Reading progress store shipped**, mirroring `use-enrollments.ts`
+   exactly. `reading-progress-data.ts` (`ReadingProgress` type:
+   `completedChapterIds: string[]` + `totalChapters: number`, percentage
+   always derived via `getReadingProgressPercent()`, never stored — plus
+   `lastChapterId`/`lastReadAt` for resume and Phase 6's "recently read"
+   ordering) + `use-reading-progress.ts` (module-level store,
+   `startReading()`/`markChapterRead()` mutators). Seeded 2 rows (Genesis
+   in-progress, Psalms completed) so Phase 3's "Continue Reading" isn't
+   empty by default — matching `initialEnrollments`' own seeded pattern,
+   corrected from an earlier draft comment that incorrectly claimed
+   enrollments start empty.
+   `reader-view.tsx` now calls `startReading()` once per mount and
+   `markChapterRead()` on every chapter view (viewing a chapter of prose
+   is the natural completion signal, unlike a lesson's separate "Mark
+   Complete" button) — auto-flips to `COMPLETED` once every chapter is
+   viewed, same auto-flip pattern `markLessonComplete` uses. Resumes at
+   `lastChapterId` when no `?chapter=` is explicitly given, so leaving
+   and returning to the reader lands back where the member stopped. A
+   live progress bar (derived percentage) now shows in the reader header.
+   Verified live via `npm run dev` + `curl` for both `?chapter=` present
+   and absent; true cross-navigation resume needs a real browser session
+   (progress is in-memory only, same as every other store in this app,
+   so a fresh `curl` process can't observe persistence within one dev
+   session — this is expected, not a gap). Build + `tsc --noEmit` clean.

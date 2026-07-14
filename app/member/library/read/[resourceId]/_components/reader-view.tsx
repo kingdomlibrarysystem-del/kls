@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { useReadingProgress, startReading, markChapterRead, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 
 /** Simulated network delay before the mock chapter content becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -21,23 +22,44 @@ interface ReaderViewProps {
  * prev/next navigation, resolving content from the shared
  * useReadableContent() store keyed by Resource ID. Not every Resource is
  * readable yet — only the 4 seeded in Phase 0 — so a missing entry is a
- * real, expected empty state, not a bug.
+ * real, expected empty state, not a bug. Reading progress (Phase 2) is
+ * tracked automatically: opening the reader starts/resumes progress, and
+ * every chapter actually viewed is marked read — resuming at the last
+ * chapter read (via `lastChapterId`) unless the URL explicitly names one
+ * (e.g. Phase 3's "Continue Reading" links there directly).
  */
 export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const [loading, setLoading] = useState(true)
   const resources = useResources()
   const content = useReadableContent()
+  const progressEntries = useReadingProgress()
 
   const resource = resources.find((r) => r.id === resourceId)
   const readable = content[resourceId]
   const chapters = readable?.chapters ?? []
-  const startIndex = initialChapterId ? Math.max(0, chapters.findIndex((c) => c.id === initialChapterId)) : 0
+  const existingProgress = progressEntries.find((p) => p.resourceId === resourceId)
+  const resumeChapterId = initialChapterId ?? existingProgress?.lastChapterId
+  const startIndex = resumeChapterId ? Math.max(0, chapters.findIndex((c) => c.id === resumeChapterId)) : 0
   const [chapterIndex, setChapterIndex] = useState(startIndex)
+  const initialized = useRef(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (initialized.current || chapters.length === 0) return
+    initialized.current = true
+    startReading(resourceId)
+  }, [resourceId, chapters.length])
+
+  useEffect(() => {
+    if (chapters.length === 0) return
+    const current = chapters[chapterIndex]
+    if (current) markChapterRead(resourceId, current.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resourceId, chapterIndex, chapters.length])
 
   if (loading) {
     return (
@@ -73,7 +95,11 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
         <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{resource.title}</h1>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
           Chapter {chapterIndex + 1} of {chapters.length}
+          {existingProgress && ` — ${getReadingProgressPercent(existingProgress)}% complete`}
         </p>
+        <div style={{ height: 4, borderRadius: 2, background: 'var(--bg-section)', marginTop: 6, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${existingProgress ? getReadingProgressPercent(existingProgress) : 0}%`, background: 'var(--gold)', transition: 'width 0.2s' }} />
+        </div>
       </div>
 
       <div className="card" style={{ padding: 24 }}>
