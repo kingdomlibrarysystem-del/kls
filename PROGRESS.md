@@ -105,3 +105,49 @@ phase commits (`957261d`..`404e188` on `auto-wip`, following the initial
 `f6321ea` setup commit), then decide whether to merge into
 `feat/ui-setup` or `main`. No further autonomous work is planned unless
 a new phase list is provided.
+
+---
+
+# Reading Feature Arc
+
+New autonomous run, same branch (`auto-wip`), same protocol. Grounded in
+`.claude/skills/kls-page-builder/references/reading-feature-gap-audit.md`,
+which confirmed: real multi-view card/list/table infrastructure exists to
+build on, but reading access, highlighting, reading progress, notes, and
+readable body content are all green-field — nothing partial to build
+from. 6 phases, in order, each committed/built/type-checked/pushed
+individually.
+
+## Phase 0 — Readable content model (design note)
+
+**Content shape decision: chapters, not raw pages.** `Resource.pages` is
+already a physical page *count* used only for display (per the audit) —
+reusing it as a content-array length would conflate two unrelated
+concepts (a printed page count vs. a content unit to track progress
+against). Chapters are the natural atomic unit a Bible-like scroll
+already has (per KCS_LIBRARY.md's own framing), and they map cleanly
+onto the lesson-progress precedent: `completedLessonIds: string[]` +
+`totalLessons: number` becomes `completedChapterIds: string[]` +
+`totalChapters: number` in Phase 2, one-to-one.
+
+**Store shape**: `readable-content-data.ts` (types + seed data) +
+`use-readable-content.ts` (module-level `Record<resourceId, ReadableContent>`
+store), following `use-lessons.ts` exactly — same `structuredClone` seed,
+same `subscribe`/`emitChange`/`getSnapshot` triplet, same non-hook
+`getReadableContentSnapshot()` accessor for other store modules (Phase 2's
+progress store will need this the same way `use-enrollments.ts` reads
+`getLessonsSnapshot()`). Read-only for now — no admin authoring UI exists
+yet for chapter content, so no add/update/remove mutators were added
+speculatively; only what Phase 1 needs.
+
+**Why these 4 resources**: Genesis (id `1`, Foundation), Psalms (id `7`,
+Wisdom), Matthew (id `11`, Gospel), Revelation (id `16`, Revelation) —
+spans 4 of the 8 KCS pillars for real variety, all four are recognizable
+canonical titles already in `initialResources`, and Matthew/Revelation
+are `mediaType: 'COMBINATION'` while Genesis/Psalms are `'TEXT'`/mixed —
+enough spread to exercise the reader without seeding all 16 up front.
+Each resource got 3 chapters of original placeholder prose (not lorem
+ipsum) in the Kingdom Library's established voice — matching how every
+other seed `description` in this app is real prose, not filler text.
+
+## Log
