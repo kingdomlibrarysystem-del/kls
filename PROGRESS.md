@@ -283,3 +283,19 @@ other seed `description` in this app is real prose, not filler text.
    and adding it as a new dependency solely for a one-off interaction
    check isn't warranted; flagging this honestly rather than claiming a
    browser-verified interaction that didn't happen.
+5. **Notes/annotations shipped**, same shape family as highlights but
+   free-text and attachable two ways, per the phase spec: `note-data.ts`
+   (`Note`: `resourceId`/`chapterId` always, optional `highlightId` when
+   the note is on a specific highlighted passage rather than the chapter
+   generally) + `use-notes.ts` (same store pattern, no seed rows for the
+   same reason as highlights — a real note is written about content a
+   member actually read). New `NotesPanel` component serves both modes:
+   rendered inline under the chapter body with no `highlight` prop for
+   general chapter notes, and as a scoped panel titled with the
+   highlighted text when opened by clicking a `<mark>` in the reader
+   (added `onHighlightClick` to `HighlightedParagraph` for this).
+   Verified: build + `tsc --noEmit` clean, `/member/library/read/1`
+   returns 200 with no error markers via `npm run dev` + `curl` (the
+   panel itself isn't visible in the raw HTML response since the reader
+   is fully client-rendered behind a loading skeleton, consistent with
+   Phase 1/2/4's same verification approach).

@@ -9,10 +9,11 @@ import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, startReading, markChapterRead, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { useHighlights, addHighlight, getChapterHighlights } from '@/app/member/_shared/use-highlights'
-import type { HighlightColor } from '@/app/member/_shared/highlight-data'
+import type { Highlight, HighlightColor } from '@/app/member/_shared/highlight-data'
 import { HighlightedParagraph } from './highlighted-paragraph'
 import { HighlightPicker } from './highlight-picker'
 import { useChapterSelection } from './use-chapter-selection'
+import { NotesPanel } from './notes-panel'
 
 /** Simulated network delay before the mock chapter content becomes visible. */
 const LOAD_DELAY_MS = 400
@@ -50,6 +51,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const bodyRef = useRef<HTMLDivElement>(null)
   const highlightEntries = useHighlights()
   const { pending, captureSelection, clearSelection } = useChapterSelection()
+  const [noteHighlight, setNoteHighlight] = useState<Highlight | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -104,6 +106,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
 
   const goToChapter = (index: number) => {
     clearSelection()
+    setNoteHighlight(null)
     setChapterIndex(index)
   }
 
@@ -138,10 +141,16 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
           style={{ display: 'flex', flexDirection: 'column', gap: 14, userSelect: 'text' }}
         >
           {paragraphsWithOffsets.map(({ text, paragraphStart }, i) => (
-            <HighlightedParagraph key={i} text={text} paragraphStart={paragraphStart} highlights={chapterHighlights} />
+            <HighlightedParagraph key={i} text={text} paragraphStart={paragraphStart} highlights={chapterHighlights} onHighlightClick={setNoteHighlight} />
           ))}
         </div>
       </div>
+
+      {noteHighlight ? (
+        <NotesPanel resourceId={resourceId} chapterId={chapter.id} highlight={noteHighlight} onClose={() => setNoteHighlight(null)} />
+      ) : (
+        <NotesPanel resourceId={resourceId} chapterId={chapter.id} />
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <button

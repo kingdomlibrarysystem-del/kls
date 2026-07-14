@@ -7,6 +7,8 @@ interface HighlightedParagraphProps {
   /** This paragraph's starting offset within the full chapter body — highlight offsets are chapter-relative, not paragraph-relative. */
   paragraphStart: number
   highlights: Highlight[]
+  /** Opens that highlight's notes panel — clicking a highlighted passage is the "per-highlight" note attachment entry point. */
+  onHighlightClick?: (highlight: Highlight) => void
 }
 
 /**
@@ -16,7 +18,7 @@ interface HighlightedParagraphProps {
  * body string (see highlight-data.ts), so each paragraph re-derives its
  * own local slice points by subtracting `paragraphStart`.
  */
-export function HighlightedParagraph({ text, paragraphStart, highlights }: HighlightedParagraphProps) {
+export function HighlightedParagraph({ text, paragraphStart, highlights, onHighlightClick }: HighlightedParagraphProps) {
   const paragraphEnd = paragraphStart + text.length
   const overlapping = highlights
     .filter((h) => h.startOffset < paragraphEnd && h.endOffset > paragraphStart)
@@ -39,8 +41,9 @@ export function HighlightedParagraph({ text, paragraphStart, highlights }: Highl
     segments.push(
       <mark
         key={highlight.id}
-        style={{ background: tokens.background, borderBottom: `2px solid ${tokens.border}`, color: 'inherit', borderRadius: 2 }}
-        title={highlightColorTokens[highlight.color].label}
+        onClick={() => onHighlightClick?.(highlight)}
+        style={{ background: tokens.background, borderBottom: `2px solid ${tokens.border}`, color: 'inherit', borderRadius: 2, cursor: onHighlightClick ? 'pointer' : undefined }}
+        title={`${highlightColorTokens[highlight.color].label} highlight — click to add a note`}
       >
         {text.slice(start, end)}
       </mark>
