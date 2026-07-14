@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, AlertCircle, UploadCloud } from 'lucide-react'
@@ -30,9 +31,12 @@ const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
  * member course catalog (`app/member/_shared/course-catalog-data.ts`), which
  * this admin catalog is intentionally not unified with — they represent
  * different lifecycles (authoring/business vs. the taken-course experience
- * lessons/quizzes/progress/certificates are all built against).
+ * lessons/quizzes/progress/certificates are all built against). Briefly
+ * shows a success banner, then navigates to the Course Catalog so the admin
+ * lands where the new course actually is instead of staying on the form.
  */
 export function CourseFormView() {
+  const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -64,7 +68,7 @@ export function CourseFormView() {
       })
       setSubmitSuccess(true)
       reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT' })
-      setTimeout(() => setSubmitSuccess(false), 3500)
+      setTimeout(() => router.push('/dashboard/e-learning/catalog'), 1200)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to save course')
     } finally {
