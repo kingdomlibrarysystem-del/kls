@@ -151,3 +151,49 @@ ipsum) in the Kingdom Library's established voice — matching how every
 other seed `description` in this app is real prose, not filler text.
 
 ## Log
+
+0. **Readable content model + store shipped** — see design note above.
+   `app/member/_shared/readable-content-data.ts` +
+   `use-readable-content.ts`. Build + `tsc --noEmit` clean.
+1. **Reader entry point + basic reader view shipped.** New route
+   `/member/library/read/[resourceId]` (`page.tsx` +
+   `_components/reader-view.tsx`) — chosen as a flat route keyed
+   directly to canonical `Resource.id`, not nested under the KCS
+   `[section]/[scrollId]` path, since the audit confirmed those are a
+   separate synthetic ID space (`KCS-FND-0`, etc.) resolved to a
+   `Resource` only by title match — the reader only ever needs the
+   `Resource.id` `useReadableContent()` is keyed by. `ReaderView` renders
+   one chapter at a time (title + paragraphs split on blank lines) with
+   Previous/Next buttons and a "Chapter X of Y" indicator; shows the
+   existing `EmptyState` pattern for a resource with no seeded chapters
+   yet (expected for 12 of 16 resources — not a bug).
+   "Read Online" was added to all 4 components the audit named, reusing
+   each one's existing card/detail shell rather than inventing a new
+   entry-point pattern:
+   - `scroll-card.tsx` (member `ScrollCard`/`ScrollListItem`) — resolves
+     the readable resource via a new `useReadableResourceId()` helper
+     that mirrors `findResourcesForScroll`'s existing title-match
+     relationship, filtered to resources with seeded chapters.
+   - `scroll-detail-view.tsx` (member scroll detail) — added a
+     gold "Read Online" link above Borrow/Reserve inside the existing
+     `RelatedResourceCard` action slot per matched resource; Borrow's
+     styling was demoted to a neutral background so Read Online reads as
+     the primary action when both are present.
+   - `library-browser.tsx`'s `BookCard` (public) — extracted `BookCard`
+     into its own file (`book-card.tsx`) as part of this change, since
+     adding the new action pushed the original file over the 200-line
+     cap; "Read Online" (authenticated) / "Sign In to Read" (signed out,
+     preserving `?redirect=` back to the reader) shown above Borrow/Reserve.
+   - `publication-detail-view.tsx` (public detail page) — same
+     Read Online / Sign In to Read treatment above Borrow/Reserve.
+   - `resource-detail-modal.tsx` (admin inventory) — added a
+     "Preview Reader" button (opens in a new tab) alongside Edit/Archive;
+     this is genuinely a preview affordance for an admin, not the
+     member-facing "Read Online" label, since admins manage inventory
+     rather than read for themselves.
+   Verified live via `npm run dev` + `curl`, not just a build-passing
+   assumption: `/member/library/read/1` (Genesis, has content) returns
+   200 with no error markers; `/member/library/read/99` (no matching
+   resource) also returns 200, rendering the "not available to read
+   online yet" `EmptyState` rather than crashing. Build + `tsc --noEmit`
+   clean.

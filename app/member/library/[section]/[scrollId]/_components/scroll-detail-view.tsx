@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
+import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { allBooks, kcsSections } from '../../../_components/library-data'
 
 /** Simulated network delay before the mock scroll + related resources become visible. */
@@ -33,6 +34,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
   const { isAuthenticated } = useAuth()
   const resources = useResources()
   const favorites = useFavorites()
+  const readableContent = useReadableContent()
 
   const scroll = allBooks.find((b) => b.id === scrollId)
   const section = scroll ? kcsSections.find((s) => s.label === scroll.section) : undefined
@@ -108,23 +110,34 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
               style={{}}
               action={
                 isAuthenticated ? (
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {resource.availableQty > 0 && (
-                      <button
-                        onClick={() => startAction('borrow', resource)}
-                        aria-label={`Borrow ${resource.title}`}
-                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {!!readableContent[resource.id] && (
+                      <Link
+                        href={`/member/library/read/${resource.id}`}
+                        aria-label={`Read ${resource.title} online`}
+                        style={{ display: 'block', textAlign: 'center', padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, textDecoration: 'none' }}
                       >
-                        Borrow
-                      </button>
+                        Read Online
+                      </Link>
                     )}
-                    <button
-                      onClick={() => startAction('reserve', resource)}
-                      aria-label={`Reserve ${resource.title}`}
-                      style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Reserve
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {resource.availableQty > 0 && (
+                        <button
+                          onClick={() => startAction('borrow', resource)}
+                          aria-label={`Borrow ${resource.title}`}
+                          style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Borrow
+                        </button>
+                      )}
+                      <button
+                        onClick={() => startAction('reserve', resource)}
+                        aria-label={`Reserve ${resource.title}`}
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Reserve
+                      </button>
+                    </div>
                   </div>
                 ) : undefined
               }

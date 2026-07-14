@@ -1,7 +1,9 @@
+import Link from 'next/link'
 import Image from 'next/image'
-import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film } from 'lucide-react'
+import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film, BookOpenCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from './resources-data'
 
 interface ResourceDetailModalProps {
@@ -23,6 +25,9 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 
 /** Read-only details view for a single library resource, extracted verbatim from the original page.tsx. */
 export function ResourceDetailModal({ resource, onClose, onEdit, onArchive }: ResourceDetailModalProps) {
+  const readableContent = useReadableContent()
+  const isReadable = !!resource && !!readableContent[resource.id]
+
   return (
     <Modal open={!!resource} onClose={onClose} title="Resource Details" size="xl">
       {resource && (
@@ -83,6 +88,13 @@ export function ResourceDetailModal({ resource, onClose, onEdit, onArchive }: Re
                 <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2" onClick={() => onArchive(resource)}>
                   <Archive size={13} /> Archive
                 </ElegantButton>
+              )}
+              {isReadable && (
+                <Link href={`/member/library/read/${resource.id}`} target="_blank">
+                  <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
+                    <BookOpenCheck size={13} /> Preview Reader
+                  </ElegantButton>
+                </Link>
               )}
             </div>
           </div>
