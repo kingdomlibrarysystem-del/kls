@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, ChevronLeft, CalendarClock } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, CalendarClock, AlertCircle } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useSessionRequests, completeSession } from '@/app/lecturer/_shared/use-session-requests'
 import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
@@ -13,6 +13,7 @@ import { ParticipantListPanel } from './participant-list-panel'
 import { AddParticipantModal } from './add-participant-modal'
 import { ReactionBar } from './reaction-bar'
 import { ReactionBurst } from './reaction-burst'
+import { useMediaStream, type MediaPermissionError } from './use-media-stream'
 import type { ParticipantDeviceState } from './participant-tile'
 
 interface SessionRoomViewProps {
@@ -21,27 +22,34 @@ interface SessionRoomViewProps {
   viewer: 'learner' | 'lecturer'
 }
 
-const INITIAL_STATE: ParticipantDeviceState = { cameraOn: true, micOn: true, handRaised: false }
 const OTHER_PARTY_STATE: ParticipantDeviceState = { cameraOn: true, micOn: true, handRaised: false }
 const ADDED_PARTICIPANT_STATE: ParticipantDeviceState = { cameraOn: true, micOn: true, handRaised: false }
+
+const PERMISSION_ERROR_COPY: Record<NonNullable<MediaPermissionError>, string> = {
+  camera: 'Camera access was blocked or denied — check your browser\'s site permissions and try again.',
+  mic: 'Microphone access was blocked or denied — check your browser\'s site permissions and try again.',
+  'screen-share': 'Screen share couldn\'t start — check your browser\'s permissions and try again.',
+}
 
 /**
  * The Mock Session Room — one shared component reachable from both
  * /member/sessions/[id]/room and /lecturer/sessions/[id]/room, per the
- * confirmed Phase 3 design. Every control here is genuinely interactive:
- * camera/mic/raise-hand/presenting toggle real local state reflected in
- * the video tile and participant list; chat and quick reactions are
- * backed by real per-session stores; added participants genuinely appear
- * as new tiles/list rows; ending the session (lecturer only) genuinely
- * writes COMPLETED back into the shared session-requests store, not just
- * a navigation.
+ * confirmed Phase 3 design. Camera, mic, and screen-share are REAL
+ * browser media (getUserMedia/getDisplayMedia via use-media-stream.ts) —
+ * only for the local user's own tile; raise-hand stays plain local
+ * state. Chat and quick reactions are backed by real per-session stores;
+ * added participants genuinely appear as new tiles/list rows (still
+ * avatar placeholders — see participant-tile.tsx for why no other
+ * participant can ever show real video here). Ending the session
+ * (lecturer only) genuinely writes COMPLETED back into the shared
+ * session-requests store, not just a navigation.
  */
 export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const router = useRouter()
   const requests = useSessionRequests()
   const request = requests.find((r) => r.id === sessionId)
-  const [you, setYou] = useState<ParticipantDeviceState>(INITIAL_STATE)
-  const [presenting, setPresenting] = useState(false)
+  const media = useMediaStream()
+  const [handRaised, setHandRaised] = useState(false)
   const [addedNames, setAddedNames] = useState<string[]>([])
   const [addOpen, setAddOpen] = useState(false)
 
@@ -61,8 +69,10 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const youName = viewer === 'learner' ? request.learnerName : request.lecturerName
   const otherName = viewer === 'learner' ? request.lecturerName : request.learnerName
   const isLecturerName = (name: string) => lecturerRoster.some((l) => l.name === name)
+  const you: ParticipantDeviceState = { cameraOn: media.cameraOn, micOn: media.micOn, handRaised }
 
   const handleLeave = () => {
+    media.cleanup()
     if (viewer === 'lecturer') completeSession(sessionId)
     router.push(backHref)
   }
@@ -80,9 +90,16 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-section)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
         <AlertTriangle size={14} color="var(--gold)" style={{ flexShrink: 0 }} />
         <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-          Mock Session Room — no real audio/video. Camera, mic, and chat below are fully interactive, but no live media stream exists.
+          Mock Session Room — your own camera, mic, and screen share are real browser media. Other participants are
+          placeholders only: this mock has no signaling backend to carry a real peer's video here.
         </p>
       </div>
+
+      {media.error && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 8, padding: '8px 12px', fontSize: 11 }}>
+          <AlertCircle size={14} style={{ flexShrink: 0 }} /> {PERMISSION_ERROR_COPY[media.error]}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-3">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -90,7 +107,8 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             <VideoTileGrid
               youName={youName}
               youState={you}
-              youPresenting={presenting}
+              youPresenting={media.presenting}
+              youVideoStream={media.presenting ? media.screenStream : media.stream}
               otherName={otherName}
               otherState={OTHER_PARTY_STATE}
               extraParticipants={addedNames.map((name) => ({ name, state: ADDED_PARTICIPANT_STATE }))}
@@ -99,14 +117,14 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
           </div>
           <ReactionBar sessionId={sessionId} senderName={youName} />
           <ControlBar
-            cameraOn={you.cameraOn}
-            micOn={you.micOn}
-            handRaised={you.handRaised}
-            presenting={presenting}
-            onToggleCamera={() => setYou((s) => ({ ...s, cameraOn: !s.cameraOn }))}
-            onToggleMic={() => setYou((s) => ({ ...s, micOn: !s.micOn }))}
-            onToggleHand={() => setYou((s) => ({ ...s, handRaised: !s.handRaised }))}
-            onTogglePresenting={() => setPresenting((p) => !p)}
+            cameraOn={media.cameraOn}
+            micOn={media.micOn}
+            handRaised={handRaised}
+            presenting={media.presenting}
+            onToggleCamera={media.toggleCamera}
+            onToggleMic={media.toggleMic}
+            onToggleHand={() => setHandRaised((h) => !h)}
+            onTogglePresenting={media.togglePresenting}
             onAddParticipant={() => setAddOpen(true)}
             onLeave={handleLeave}
             leaveLabel={viewer === 'lecturer' ? 'End Session' : 'Leave'}
