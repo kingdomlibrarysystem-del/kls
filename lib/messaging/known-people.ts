@@ -1,4 +1,3 @@
-import type { UserRole } from '@/contexts/auth-context'
 import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import { CONTRIBUTOR_NAME } from '@/lib/identity/contributor-identity'
 
@@ -7,7 +6,15 @@ const CURRENT_MEMBER_NAME = 'John Doe'
 
 export interface KnownPerson {
   name: string
-  role: UserRole
+  /**
+   * Display-only label shown next to the name in the "start a new DM"
+   * picker — deliberately NOT UserRole. A member can still start a DM
+   * with a named lecturer/contributor persona (real, working chat), even
+   * though neither has a signed-in UserRole seat after portal
+   * consolidation — see roleForName()'s docstring for the same
+   * distinction on the notification-routing side.
+   */
+  role: 'member' | 'lecturer' | 'contributor'
 }
 
 /**
