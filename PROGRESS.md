@@ -1585,3 +1585,92 @@ harness config, not app code, but pointed at a now-deleted directory.
 
 `npx tsc --noEmit` clean. `npm run build` clean — 72 routes, unchanged
 from Phase 4 (this phase only touched data/logic, not routes).
+
+# Full Portal Consolidation — Phase 6 (retire the UserRole values)
+
+Commit `e6f815e`.
+
+`contexts/auth-context.tsx`'s `UserRole` type narrowed to `"admin" |
+"manager" | "staff" | "member"` — `"contributor"` and `"lecturer"`
+removed. `mockUsers` dropped both entries (`contributor@kingdom.edu`,
+`lecturer@kingdom.edu`). Admin and Member are now the only two real
+personas/portals anywhere in the system.
+
+## Real blast radius, fixed properly
+
+This was flagged in advance as the one step with genuine
+type-checking blast radius, and it delivered exactly that: 4 compile
+errors, all in the messaging layer, all fixed by tracing the actual
+logic rather than loosening a type:
+
+- **`lib/messaging/identity.ts`'s `roleForName()`** used to return
+  `'lecturer'`/`'contributor'` for those names. Now returns `undefined`
+  for them, same as any unrecognized name — correct, not a shortcut,
+  because a course's lecturer can still be a named chat participant or
+  message sender (that's just a display name, still real functionality)
+  even though the name no longer maps to a *signed-in* `UserRole` seat.
+- **`lib/messaging/known-people.ts`'s `KnownPerson.role`** was typed as
+  `UserRole` but grepped and confirmed to be used only as a display
+  label in the "start a new DM" picker (`{p.role}` rendered as text,
+  never checked for permissions or routing). Widened to its own
+  `'member' | 'lecturer' | 'contributor'` label type instead of
+  deleting lecturer/contributor from the picker — preserves real,
+  working DM-with-your-instructor capability rather than silently
+  losing it to a type constraint.
+- **`lib/messaging/use-messages.ts`'s `sendMessage()`** had a
+  `senderRole === 'lecturer'` branch. Grepped every caller: only
+  `message-thread-panel.tsx` calls `sendMessage`, which only ever
+  receives `personRole` from `MessagesView`, which has exactly one real
+  caller (`app/member/messages/page.tsx`) that always passes `'member'`.
+  So this branch was already unreachable before this phase — simplified
+  to reflect that a course channel's notification path never had a real
+  non-member sender to begin with.
+
+## Verification
+
+`npx tsc --noEmit` and `npm run build` both clean, 72 routes unchanged.
+Confirmed `isMember`-style branches (`app/dashboard/_components/
+sidebar.tsx`'s nav-switching logic) and the RBAC pages (`/dashboard/roles`,
+`/dashboard/invitations`, already narrowed to 4 roles in Phase 5) all
+still resolve correctly with the smaller `UserRole`.
+
+Live-verified via `npm run dev` + `curl`:
+- 200: `/dashboard`, `/member`, `/dashboard/e-learning/sessions`,
+  `/member/sessions`, `/dashboard/roles`, `/dashboard/invitations`,
+  `/member/messages`, `/dashboard/e-learning/sessions/sr-1/room`,
+  `/member/sessions/sr-1/room`, `/dashboard/publishing/revenue`,
+  `/dashboard/research/collaborations`, `/auth/login`.
+- 404 (clean, not an error page): `/lecturer`, `/contributor`,
+  `/lecturer/sessions`, `/contributor/courses`.
+
+## Final summary
+
+All 6 phases of the portal consolidation are complete. Admin
+(`/dashboard`) and Member (`/member`) are the only two portals/personas
+in the system:
+
+- Phase 2 (Wave 2): admin got real contributor/author filters on 4
+  pages; investigated and resolved the course-catalog data-drift
+  question (kept datasets separate, added a shared `lecturerId` link);
+  explicitly declined to build admin messaging or a redundant dashboard
+  rollup, with reasoning recorded.
+- Phase 3: relocated shared session/identity infrastructure
+  (`lib/sessions/**`, `lib/identity/**`) out of `app/lecturer/**` before
+  deletion, including one gap (`session-decision-modal.tsx`) the
+  original audit missed; stripped the role switcher.
+- Phase 4: deleted `app/lecturer/**` (16 files) and `app/contributor/**`
+  (29 files) entirely.
+- Phase 5: swept every remaining reference repo-wide; removed
+  Contributor/Lecturer as RBAC roles (asked the user first — real
+  ambiguity); fixed two notification dead-ends; found and fixed a real
+  capability gap (`completeSession()` had become unreachable — asked
+  the user, moved end-session authority to admin).
+- Phase 6: retired the `UserRole` values themselves, fixing the
+  resulting compile errors on their merits rather than loosening types.
+
+Two genuine ambiguities were escalated to the user rather than decided
+unilaterally, per the task's explicit standing instruction on real
+capability loss with no admin equivalent — both are documented in their
+respective phase sections above. No item was silently dropped or
+guessed through.
+
