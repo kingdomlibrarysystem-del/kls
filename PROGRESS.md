@@ -864,3 +864,118 @@ Turbopack worker process was hit mid-verification and resolved by
 clearing `.next` and restarting — not a code issue, included here so a
 future reader doesn't mistake dev-server flakiness for a real bug if it
 recurs.)
+
+# Instant-Session Bug Report + Mock Session Room Enrichment
+
+## Part A: bug investigation and fixes
+
+**Bug 1 — reported "John Doeright now" concatenation in the instant-session
+modal.** Full trace: read `start-instant-session-button.tsx` (lecturer
+side) and hex-dumped the exact source line (`xxd`) — confirmed a real
+`0x20` space byte between `{CURRENT_MEMBER_NAME}` and `right` in the
+committed source, and confirmed via `git log -p --follow` that this line
+has only ever existed once, in commit `6d3944e`, already with the space
+present. Checked for any string-concatenation path that could produce
+"Doe" + "right" with no separator (grepped for `CURRENT_MEMBER_NAME +`
+and similar patterns app-wide) — none found. **Conclusion: no
+concatenation bug exists in the committed source.** The most plausible
+explanation for what was seen live is a stale Fast Refresh / HMR module
+state (this app's session-request store is a module-level mutable array,
+and the `SessionRequest` shape changed — added `mode` — earlier in this
+same dev session; a stale in-memory module instance surviving a hot
+reload across that shape change is a known category of dev-only
+artifact, not a logic bug). Rather than leave it unaddressed on "probably
+fine," restructured the whole sentence into one template literal
+(`` {`Starts a live session with ${CURRENT_MEMBER_NAME} right now — ...`} ``)
+so there is no longer any JSX text/expression adjacency near the name at
+all — this removes the entire class of risk regardless of which
+explanation was correct. Commit `93b9954`.
+
+**Bug 2 — audit "Instant" badge across all statuses.** Read
+`session-card.tsx`'s render tree in full: the "Instant" chip (lines
+41-45) is gated only on `isInstant` (derived from `request.mode`), and
+sits in the card's top header row as a sibling to the status badge — not
+nested inside any of the `status === '...'`-gated blocks below it. Same
+check on the admin `sessions-view.tsx`'s new Mode column: gated only on
+`r.mode`, independent of `r.status`. **Conclusion: no bug — the badge
+already renders unconditionally across PENDING/APPROVED/REJECTED/COMPLETED
+for both list views.** No fix was needed or made; documented here as a
+clean audit result rather than silently closing the item.
+
+## Part B: Mock Session Room enrichment
+
+Read all 6 room files in full before changing anything, per instruction.
+Confirmed the lecturer-feature-audit's claim: mic/camera/raise-hand/
+end-session are already real local-state toggles reflected in
+`ParticipantTile`/`ParticipantListPanel`, and chat is a real per-session
+store (`use-session-chat.ts`) — but that store has **no per-message
+reaction mechanism**, confirmed by reading it in full and grepping the
+whole app for "reaction" (zero matches anywhere before this change).
+
+**Added, all real interactive state:**
+
+1. **Add Participant** (`add-participant-modal.tsx`) — lists other known
+   personas already established elsewhere in this app (the 3-person
+   `lecturerRoster` + named learners reused across
+   `session-requests-data.ts`/`audit-log-data.ts`/`certificates-data.ts`/
+   etc.) who aren't already in the room. Picking one calls `onAdd`, which
+   `SessionRoomView` uses to push a name into local `addedNames` state —
+   genuinely adding a tile to `VideoTileGrid` (now takes
+   `extraParticipants: ExtraParticipant[]` instead of a fixed 2-tile
+   layout) and a row to `ParticipantListPanel`, with role (Lecturer/
+   Learner) derived from real roster membership, not guessed.
+2. **Screen-share toggle** — `ControlBar` gained a `presenting`
+   button wired to real local `useState` in `SessionRoomView`.
+   `ParticipantTile` shows a teal border + "Presenting" badge on the
+   user's own tile when active. Deliberately does **not** call
+   `getDisplayMedia` or attempt real capture — there's no peer/backend
+   for a captured stream to go to in this mock, so faking real capture
+   would be exactly the "looks real but isn't" gap this project has
+   spent multiple phases removing. This is an honest visual-state toggle,
+   framed the same way the room's own "Mock Session Room" banner already
+   discloses for camera/mic.
+3. **Quick reactions** — new `use-session-reactions.ts`, the same
+   `useSyncExternalStore` module-level-store pattern as every other store
+   in this app (not a new state-management approach). `ReactionBar`
+   renders 6 emoji buttons; `ReactionBurst` is an absolutely-positioned
+   overlay on the video grid that shows the active reaction and
+   self-clears the store after 2 seconds via a `useEffect` timer — real,
+   transient shared state, not a decorative animation with nothing behind
+   it. No new CSS keyframe was added (the project's animation rule caps
+   this app to its two existing entrance animations); the burst appears/
+   disappears via conditional render only.
+
+**Deliberately NOT built, and why:**
+
+- **Real screen sharing** — needs a real `getDisplayMedia()` call and an
+  actual peer connection to stream to; this mock has neither, and a fake
+  "shared screen" tile with no real captured content would mislead more
+  than it demonstrates.
+- **Live streaming** — needs real broadcast infrastructure (RTMP/HLS or
+  similar) and a viewer-side player; nothing in this mock's stack
+  approximates that honestly.
+- **Breakout rooms** — needs real multi-room routing and participant
+  reassignment logic across more than 2-3 mock personas; with this app's
+  single learner + 3-lecturer roster, a "breakout" would just be
+  re-shuffling the same 2-4 tiles into fake sub-rooms with no one
+  actually in them — cosmetic, not real.
+- **Polls/Q&A** — technically buildable as a small `useSyncExternalStore`
+  store (same pattern as reactions), so this is the one candidate that
+  could be built honestly with existing patterns if wanted in a future
+  pass — flagging it here rather than building it silently, since it
+  wasn't asked for and would expand this task's scope.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` clean for both parts. Live-verified via
+`npm run dev` + `curl`: `/lecturer/sessions/sr-1/room` and
+`/member/sessions/sr-1/room` both 200, no `__next_error__`/"Application
+error" markers, and the server-rendered HTML contains the new controls'
+`aria-label` text ("Add a participant", "Start presenting") plus all 6
+reaction buttons ("React with 👍" through "React with 🙌"). What curl
+can't confirm and would need a real browser check: the actual visual
+result of toggling presenting (teal border + badge appearing on the
+user's own tile), a reaction burst actually appearing centered over the
+video grid and disappearing after ~2 seconds, and a newly added
+participant's tile appearing in the grid alongside the existing two
+without breaking the grid layout at 3+ tiles.
