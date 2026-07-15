@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Search, Check } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { EmptyState } from '@/components/ui/empty-state'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 
 /**
  * Other named personas already established elsewhere in this app (seeded

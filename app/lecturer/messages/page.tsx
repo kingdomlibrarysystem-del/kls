@@ -1,6 +1,6 @@
 import { PageTransition } from '@/components/ui/page-transition'
 import { MessagesView } from '@/lib/messaging/messages-view'
-import { LECTURER_NAME } from '../_components/lecturer-identity'
+import { LECTURER_NAME } from '@/lib/identity/lecturer-identity'
 
 export default function LecturerMessagesPage() {
   return (

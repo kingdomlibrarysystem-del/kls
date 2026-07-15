@@ -1,7 +1,7 @@
 import { Tag, Globe, Users, CalendarDays, FileText, PenLine, GraduationCap } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { languageLabels } from '../../add/_components/course-form-schema'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import { statusConfig, type CourseCatalogEntry } from './catalog-config'
 
 interface CourseDetailModalProps {

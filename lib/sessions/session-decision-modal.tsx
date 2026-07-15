@@ -5,7 +5,7 @@ import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import type { SessionRequest } from '@/app/lecturer/_shared/session-requests-data'
+import type { SessionRequest } from './session-requests-data'
 
 type ModalAction = 'approve' | 'reject'
 
@@ -22,7 +22,11 @@ interface SessionDecisionModalProps {
  * review-modal.tsx's shape exactly (notes textarea, required on reject,
  * Tab-trapped while open). Approve additionally requires a scheduled
  * date/time per the confirmed design, defaulting to the learner's
- * proposed time so the common case is a single click.
+ * proposed time so the common case is a single click. Relocated here
+ * (from app/lecturer/sessions/requests/_components/) during portal
+ * consolidation Phase 3 — admin's own session oversight page imports
+ * this exact component directly rather than duplicating it, so it must
+ * live outside the lecturer portal folder before that folder is deleted.
  */
 export function SessionDecisionModal({ request, action, onClose, onApprove, onReject }: SessionDecisionModalProps) {
   const [scheduledAt, setScheduledAt] = useState('')

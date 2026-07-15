@@ -6,7 +6,7 @@ import { useMySubmissions } from '@/app/contributor/publishing/_components/use-m
 import { useCourseCatalog } from '@/app/dashboard/e-learning/_shared/use-course-catalog'
 import { useRevenue } from '@/app/dashboard/publishing/revenue/_components/use-revenue'
 import { mockProjects } from '@/app/dashboard/research/collaborations/_components/collaborations-data'
-import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
+import { CONTRIBUTOR_NAME } from '@/lib/identity/contributor-identity'
 import { contributorStatConfig } from './dashboard-data'
 
 /** Simulated network delay before mock stats become visible. */

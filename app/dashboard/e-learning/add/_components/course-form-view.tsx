@@ -10,7 +10,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { addCourseToCatalog } from '../../_shared/use-course-catalog'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import {
   courseSchema,
   courseCategories,

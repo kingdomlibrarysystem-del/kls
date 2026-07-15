@@ -1,11 +1,17 @@
 /**
  * The signed-in lecturer this mocked portal represents — same pattern as
- * CONTRIBUTOR_NAME (app/contributor/_components/contributor-identity.ts):
- * used to filter shared stores (course catalog, session requests, messages)
- * down to "this lecturer's own" records, since there's no real auth/session
+ * CONTRIBUTOR_NAME (lib/identity/contributor-identity.ts): used to filter
+ * shared stores (course catalog, session requests, messages) down to
+ * "this lecturer's own" records, since there's no real auth/session
  * concept wired up yet. Reuses "Dr. Elias Nkubito", already the instructor
  * name shown on every course card before this feature existed, for
- * continuity rather than introducing an unrelated new name.
+ * continuity rather than introducing an unrelated new name. Relocated
+ * here (from app/lecturer/_components/) during portal consolidation
+ * Phase 3 — this file is genuinely shared cross-portal infrastructure
+ * (imported by admin's course catalog, member's session/messaging flows,
+ * and lib/messaging/**) that happened to live inside the lecturer portal
+ * folder; the LECTURER_NAME/lecturerRoster DATA CONCEPTS survive the
+ * portal's removal (see portal-consolidation-audit.md §4).
  */
 export const LECTURER_NAME = 'Dr. Elias Nkubito'
 

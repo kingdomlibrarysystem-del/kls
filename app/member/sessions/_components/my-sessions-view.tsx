@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { CalendarClock } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useSessionRequests } from '@/app/lecturer/_shared/use-session-requests'
-import { SessionCard } from '@/app/lecturer/_shared/session-card'
+import { useSessionRequests } from '@/lib/sessions/use-session-requests'
+import { SessionCard } from '@/lib/sessions/session-card'
 
 /** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
 const CURRENT_MEMBER_NAME = 'John Doe'

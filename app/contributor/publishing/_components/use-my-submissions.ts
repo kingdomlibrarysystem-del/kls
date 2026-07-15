@@ -2,7 +2,7 @@
 
 import { useReviewQueue, addSubmission, removeSubmission } from '@/app/dashboard/publishing/review/_components/use-review-queue'
 import type { PublicationSubmission } from '@/app/dashboard/publishing/review/_components/review-data'
-import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
+import { CONTRIBUTOR_NAME } from '@/lib/identity/contributor-identity'
 
 /**
  * Thin wrapper over the shared submissions store (see

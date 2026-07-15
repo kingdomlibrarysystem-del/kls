@@ -9,7 +9,7 @@ import { useCourseCatalog } from '@/app/dashboard/e-learning/_shared/use-course-
 import { EditCourseModal } from '@/app/dashboard/e-learning/catalog/_components/edit-course-modal'
 import { courseAnalytics } from '@/app/dashboard/e-learning/progress/_components/progress-data'
 import { courseStatusConfig, type CourseCatalogEntry } from './my-courses-data'
-import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
+import { CONTRIBUTOR_NAME } from '@/lib/identity/contributor-identity'
 import { MyCourseDetailModal } from './my-course-detail-modal'
 
 /** Simulated network delay before mock courses become visible. */

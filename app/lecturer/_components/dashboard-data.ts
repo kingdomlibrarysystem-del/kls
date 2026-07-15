@@ -1,8 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
 import { GraduationCap, ClipboardList, CalendarClock, Users } from 'lucide-react'
 import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
-import { useSessionRequests } from '@/app/lecturer/_shared/use-session-requests'
-import { LECTURER_NAME, lecturerRoster } from './lecturer-identity'
+import { useSessionRequests } from '@/lib/sessions/use-session-requests'
+import { LECTURER_NAME, lecturerRoster } from '@/lib/identity/lecturer-identity'
 
 export interface LecturerStat {
   icon: LucideIcon

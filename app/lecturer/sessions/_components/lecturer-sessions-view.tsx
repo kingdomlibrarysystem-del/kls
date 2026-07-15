@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { CalendarClock } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { LECTURER_NAME } from '@/app/lecturer/_components/lecturer-identity'
-import { useSessionRequests } from '@/app/lecturer/_shared/use-session-requests'
-import { SessionCard } from '@/app/lecturer/_shared/session-card'
+import { LECTURER_NAME } from '@/lib/identity/lecturer-identity'
+import { useSessionRequests } from '@/lib/sessions/use-session-requests'
+import { SessionCard } from '@/lib/sessions/session-card'
 
 /** Simulated network delay before mock session requests become visible. */
 const LOAD_DELAY_MS = 300

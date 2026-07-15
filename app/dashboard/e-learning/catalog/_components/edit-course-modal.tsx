@@ -16,7 +16,7 @@ import {
   type CourseFormData,
 } from '../../add/_components/course-form-schema'
 import { updateCourseInCatalog } from '../../_shared/use-course-catalog'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { CourseCatalogEntry } from './catalog-config'
 
 interface EditCourseModalProps {

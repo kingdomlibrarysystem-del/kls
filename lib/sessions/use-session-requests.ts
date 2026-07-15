@@ -4,13 +4,17 @@ import { useSyncExternalStore } from 'react'
 import { mockSessionRequests, type SessionRequest, type SessionStatus } from './session-requests-data'
 
 /**
- * Module-level mutable store for live-session booking requests —
- * mirrors the exact pattern used by use-review-queue.ts/use-audit-log.ts.
- * Read by three roles: the learner (My Sessions), the lecturer (Session
- * Requests queue + My Sessions), and the admin (read-only oversight at
- * /dashboard/e-learning/sessions) — living under app/lecturer/_shared
- * follows the same precedent as use-enrollments.ts (owned by one role's
- * folder, imported freely across roles that need to read it).
+ * Module-level mutable store for live-session booking requests — mirrors
+ * the exact pattern used by use-review-queue.ts/use-audit-log.ts. Read by
+ * three surfaces: the learner (My Sessions), the lecturer role (Session
+ * Requests queue + My Sessions — now surfaced entirely from admin, per
+ * the portal consolidation), and admin's own read/write oversight at
+ * /dashboard/e-learning/sessions. Relocated here (from
+ * app/lecturer/_shared/) during portal consolidation Phase 3 — this was
+ * genuinely shared cross-portal infrastructure that happened to live
+ * inside the lecturer portal folder; it now lives in a neutral location
+ * so removing that portal doesn't strand admin's and member's own
+ * imports of it.
  */
 let requests: SessionRequest[] = [...mockSessionRequests]
 const listeners = new Set<() => void>()

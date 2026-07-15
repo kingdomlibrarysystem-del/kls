@@ -21,10 +21,7 @@ interface SessionCardProps {
  * request, PENDING/APPROVED/REJECTED/COMPLETED, gets a real link into
  * its room. `scheduledAt` (when present) is shown purely as information
  * about when the session was proposed/held, not a precondition for
- * entry — this closes the last two gates left over from the earlier
- * "no enrollment/completion gate" decision (354306a / the instant-
- * session pass), which had only removed the requestSession() precondition,
- * not the countdown or the COMPLETED-session block that lived here.
+ * entry.
  */
 export function SessionCard({ request, viewer }: SessionCardProps) {
   const otherPartyLabel = viewer === 'learner' ? request.lecturerName : request.learnerName

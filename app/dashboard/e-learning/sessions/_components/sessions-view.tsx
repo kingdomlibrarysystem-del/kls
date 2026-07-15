@@ -6,9 +6,9 @@ import { CalendarClock, Zap, CheckCircle, XCircle, Video } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useSessionRequests, approveSession, rejectSession } from '@/app/lecturer/_shared/use-session-requests'
-import { sessionStatusConfig, type SessionRequest, type SessionStatus } from '@/app/lecturer/_shared/session-requests-data'
-import { SessionDecisionModal } from '@/app/lecturer/sessions/requests/_components/session-decision-modal'
+import { useSessionRequests, approveSession, rejectSession } from '@/lib/sessions/use-session-requests'
+import { sessionStatusConfig, type SessionRequest, type SessionStatus } from '@/lib/sessions/session-requests-data'
+import { SessionDecisionModal } from '@/lib/sessions/session-decision-modal'
 import { SessionsStats } from './sessions-stats'
 
 /** Simulated network delay before mock session requests become visible. */

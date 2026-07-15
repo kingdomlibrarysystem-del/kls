@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
-import { LECTURER_NAME, lecturerRoster } from '../../_components/lecturer-identity'
+import { LECTURER_NAME, lecturerRoster } from '@/lib/identity/lecturer-identity'
 
 /** Simulated network delay before mock courses become visible. */
 const LOAD_DELAY_MS = 400

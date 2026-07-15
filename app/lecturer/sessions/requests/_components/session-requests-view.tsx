@@ -6,14 +6,14 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { addNotification } from '@/app/dashboard/notifications/_components/use-notifications'
-import { LECTURER_NAME } from '@/app/lecturer/_components/lecturer-identity'
+import { LECTURER_NAME } from '@/lib/identity/lecturer-identity'
 import {
   useSessionRequests,
   approveSession,
   rejectSession,
-} from '@/app/lecturer/_shared/use-session-requests'
-import type { SessionRequest } from '@/app/lecturer/_shared/session-requests-data'
-import { SessionDecisionModal } from './session-decision-modal'
+} from '@/lib/sessions/use-session-requests'
+import type { SessionRequest } from '@/lib/sessions/session-requests-data'
+import { SessionDecisionModal } from '@/lib/sessions/session-decision-modal'
 
 /** Simulated network delay before mock session requests become visible. */
 const LOAD_DELAY_MS = 400

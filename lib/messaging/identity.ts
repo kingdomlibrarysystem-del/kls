@@ -1,6 +1,6 @@
 import type { UserRole } from '@/contexts/auth-context'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
-import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
+import { CONTRIBUTOR_NAME } from '@/lib/identity/contributor-identity'
 
 /**
  * This mock has a single live member persona — see use-enrollments.ts's
