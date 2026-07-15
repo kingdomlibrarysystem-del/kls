@@ -15,96 +15,83 @@ interface ControlBarProps {
   leaveLabel: string
 }
 
-function ControlButton({
-  active, onClick, activeIcon, inactiveIcon, label,
-}: {
-  active: boolean
+interface CircleButtonProps {
+  /** True = the device/feature is on (mic unmuted, camera on) and gets the neutral background; false = off/muted and gets the red "needs attention" background — same meaning as the original inline buttons this replaces. */
+  on: boolean
   onClick: () => void
-  activeIcon: React.ReactNode
-  inactiveIcon: React.ReactNode
+  icon: React.ReactNode
   label: string
-}) {
+  /** Third visual state (raise-hand gold, presenting teal) that overrides the on/off red-vs-neutral coloring entirely. */
+  highlightColor?: string
+  highlighted?: boolean
+}
+
+/** One round control button — on/off/highlighted coloring plus a real hover state, shared by mic/camera/hand/presenting/add-participant. */
+function CircleButton({ on, onClick, icon, label, highlightColor, highlighted }: CircleButtonProps) {
+  const background = highlighted ? highlightColor : on ? 'var(--bg-section)' : 'var(--red-dim)'
+  const color = highlighted ? '#fff' : on ? 'var(--text-primary)' : 'var(--red-light)'
   return (
     <button
       onClick={onClick}
-      aria-pressed={active}
+      aria-pressed={highlighted ?? !on}
       aria-label={label}
+      className="hover:brightness-95 active:scale-95"
       style={{
         width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: active ? 'var(--bg-section)' : 'var(--red-dim)',
-        color: active ? 'var(--text-primary)' : 'var(--red-light)',
-        transition: 'background 0.15s, color 0.15s',
+        background, color, transition: 'background 0.15s, color 0.15s, transform 0.1s',
       }}
     >
-      {active ? activeIcon : inactiveIcon}
+      {icon}
     </button>
   )
 }
 
-/** Real, stateful controls — every button here reflects and mutates genuine room state, nothing decorative. */
+/** Real, stateful controls — every button here reflects and mutates genuine room state, nothing decorative. Wraps onto a second row on narrow viewports rather than overflowing. */
 export function ControlBar({ cameraOn, micOn, handRaised, presenting, onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onAddParticipant, onLeave, leaveLabel }: ControlBarProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0', flexWrap: 'wrap' }}>
-      <ControlButton
-        active={micOn}
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3" style={{ padding: '12px 0' }}>
+      <CircleButton
+        on={micOn}
         onClick={onToggleMic}
-        activeIcon={<Mic size={18} />}
-        inactiveIcon={<MicOff size={18} />}
+        icon={micOn ? <Mic size={18} /> : <MicOff size={18} />}
         label={micOn ? 'Mute microphone' : 'Unmute microphone'}
       />
-      <ControlButton
-        active={cameraOn}
+      <CircleButton
+        on={cameraOn}
         onClick={onToggleCamera}
-        activeIcon={<Video size={18} />}
-        inactiveIcon={<VideoOff size={18} />}
+        icon={cameraOn ? <Video size={18} /> : <VideoOff size={18} />}
         label={cameraOn ? 'Turn off camera' : 'Turn on camera'}
       />
-      <button
+      <CircleButton
+        on
+        highlighted={handRaised}
+        highlightColor="var(--gold)"
         onClick={onToggleHand}
-        aria-pressed={handRaised}
-        aria-label={handRaised ? 'Lower hand' : 'Raise hand'}
-        style={{
-          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: handRaised ? 'var(--gold)' : 'var(--bg-section)',
-          color: handRaised ? '#fff' : 'var(--text-primary)',
-          transition: 'background 0.15s, color 0.15s',
-        }}
-      >
-        <Hand size={18} />
-      </button>
-      <button
+        icon={<Hand size={18} />}
+        label={handRaised ? 'Lower hand' : 'Raise hand'}
+      />
+      <CircleButton
+        on
+        highlighted={presenting}
+        highlightColor="var(--teal-light)"
         onClick={onTogglePresenting}
-        aria-pressed={presenting}
-        aria-label={presenting ? 'Stop presenting' : 'Start presenting (mock — no real screen capture)'}
-        style={{
-          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: presenting ? 'var(--teal-light)' : 'var(--bg-section)',
-          color: presenting ? '#fff' : 'var(--text-primary)',
-          transition: 'background 0.15s, color 0.15s',
-        }}
-      >
-        {presenting ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
-      </button>
-      <button
+        icon={presenting ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
+        label={presenting ? 'Stop presenting' : 'Start presenting — shares your real screen'}
+      />
+      <CircleButton
+        on
         onClick={onAddParticipant}
-        aria-label="Add a participant"
-        style={{
-          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'var(--bg-section)', color: 'var(--text-primary)',
-        }}
-      >
-        <UserPlus size={18} />
-      </button>
+        icon={<UserPlus size={18} />}
+        label="Add a participant"
+      />
       <button
         onClick={onLeave}
         aria-label={leaveLabel}
+        className="hover:brightness-90 active:scale-95"
         style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 22, border: 'none',
-          background: 'var(--red)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          background: 'var(--red)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'transform 0.1s',
         }}
       >
         <PhoneOff size={16} /> {leaveLabel}
