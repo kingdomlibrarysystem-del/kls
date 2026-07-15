@@ -56,8 +56,7 @@ export function StartInstantSessionButton() {
       <Modal open={open} onClose={() => setOpen(false)} title="Start an Instant Session" size="sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-            Starts a live session with {CURRENT_MEMBER_NAME} right now — no scheduling or approval step, same as Meet&apos;s
-            &ldquo;Start an instant meeting.&rdquo;
+            {`Starts a live session with ${CURRENT_MEMBER_NAME} right now — no scheduling or approval step, same as Meet's "Start an instant meeting."`}
           </p>
 
           <div>
