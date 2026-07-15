@@ -1412,3 +1412,66 @@ reach:
 error markers; confirmed "Filter by contributor"/"Filter by author"
 aria-labels present in each file's source, and the new "Instructor"
 field present in both the Add Course and Edit Course forms.
+
+# Full Portal Consolidation — Phase 3 (shared-infra relocation + role list)
+
+Commit `fd729c5`.
+
+## 1. Relocated cross-portal shared infrastructure out of `app/lecturer/**`/`app/contributor/**`
+
+Moved before deletion (Phase 4), so any missed import surfaces as an
+immediate compile error rather than a silent dead route:
+
+- `session-requests-data.ts`, `use-session-requests.ts`, `session-card.tsx`
+  → `lib/sessions/`
+- `lecturer-identity.ts` → `lib/identity/lecturer-identity.ts`
+- `contributor-identity.ts` → `lib/identity/contributor-identity.ts`
+
+**Found and fixed one gap the original 5-file list missed**:
+`app/dashboard/e-learning/sessions/_components/sessions-view.tsx` (admin's
+session-oversight page, built in Phase 1 Wave 1) imports
+`SessionDecisionModal` directly from
+`app/lecturer/sessions/requests/_components/session-decision-modal.tsx` —
+a file that was never flagged for relocation because Wave 1 was told to
+reuse the component via direct cross-folder import rather than duplicate
+it. Read the file in full, confirmed it has no other portal-internal
+dependency (only shared `components/ui/*` primitives, lucide icons, and
+the already-relocated `SessionRequest` type), and moved it to
+`lib/sessions/session-decision-modal.tsx` alongside its siblings. Updated
+`sessions-view.tsx`'s import accordingly.
+
+A repo-wide `sed` sweep updated every `@/app/lecturer/...`/
+`@/app/contributor/...` import of these files to their new `@/lib/...`
+paths (24 files). A first `tsc --noEmit` pass after the sweep still
+failed on 4 files that used **relative** imports (`./lecturer-identity`,
+`../../_components/lecturer-identity`, `./session-decision-modal`)
+instead of the `@/app/...` alias the sweep targeted — fixed those by
+hand: `app/lecturer/messages/page.tsx`, `app/lecturer/_components/
+dashboard-data.ts`, `app/lecturer/courses/_components/my-courses-view.tsx`,
+`app/lecturer/sessions/requests/_components/session-requests-view.tsx`.
+
+## 2. Stripped `'lecturer'`/`'contributor'` from the role switcher
+
+`lib/role-switcher.ts`'s `SWITCHABLE_ROLES` is now `["admin", "member"]`
+only (was `["admin", "member", "contributor", "lecturer"]`);
+`roleViewLabel`/`roleViewRoute` shrunk to match. Both
+`app/dashboard/_components/sidebar.tsx`'s "ROLE SIMULATION" block and
+`app/member/_components/member-sidebar.tsx`'s "SWITCH VIEW" block render
+this list generically via `SWITCHABLE_ROLES.map()` — no hardcoded
+lecturer/contributor JSX existed in either file, so no separate UI
+removal was needed beyond shrinking the source array.
+
+Grepped both sidebar files directly for `/lecturer`/`/contributor` —
+zero hardcoded route references in either. The only genuinely stale
+in-app link found was `app/member/courses/_components/
+request-session-modal.tsx`'s `addNotification({ href:
+'/lecturer/sessions/requests', recipientRole: 'lecturer' })` — not a
+sidebar link, and `recipientRole`/notification-routing cleanup is
+explicitly Phase 5 scope per the task's own instructions, so left
+as-is for now rather than fixed ad hoc mid-Phase-3.
+
+## Verification
+
+`npx tsc --noEmit` clean. `npm run build` clean — all 83 routes compiled,
+including the still-present `/lecturer/**`/`/contributor/**` routes
+(deleted next in Phase 4).
