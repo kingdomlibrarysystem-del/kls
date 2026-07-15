@@ -1066,3 +1066,74 @@ were verified by careful code reading (correct API calls, correct event
 handling, correct cleanup) rather than by seeing them render — this is
 stated explicitly rather than implying a curl-based check could confirm
 browser-native permission UI or actual media rendering.
+
+# Recording, Live Captions, Presenter Layout, Add-Participant Polish
+
+Two commits: `8c39599` (recording + live captions), `7d5a112`
+(presenter-large layout + Add Participant modal polish).
+
+## Recording (MediaRecorder) — real, local-only
+
+`use-session-recording.ts` wraps `MediaRecorder` over whichever stream is
+currently active (camera, or the screen-share stream while presenting).
+Stopping produces a real `.webm` file via the same Blob → object URL →
+`<a download>` pattern `lib/utils.ts`'s `exportToCsv` already uses — not
+a new download mechanism. A real "REC 00:00" indicator (red dot + live
+timer, ticking via `setInterval`) shows while active.
+
+**Explicit limitation, same class as camera/screen-share:** a recording
+can only ever capture the LOCAL user's own stream. There is no real peer
+connection carrying another participant's audio/video into this
+browser, so nothing recorded ever contains anyone else — stated in the
+commit message and worth restating here since it's the same underlying
+constraint as the earlier media work, just surfacing again for a new
+feature.
+
+## Live captions (Web Speech API) — real, local-only, browser-gated
+
+`use-live-transcript.ts` wraps `SpeechRecognition` (ambient-typed locally
+since it's not in TypeScript's default DOM lib — still non-standard/
+vendor-prefixed) over the local mic. Interim results render as a
+Meet-style caption bar overlaid on the video grid; final results append
+to a copyable transcript log.
+
+**Two things surfaced explicitly, not silently:**
+- **Browser support** — Chrome/Edge only. `unsupported` is a real state
+  checked before starting, shown as an inline message both on the
+  caption overlay and in the transcript panel, not a silent failure or
+  swallowed exception.
+- **Local-only capture** — same reasoning as recording: no real peer
+  audio stream exists to feed into `SpeechRecognition` either, so only
+  the local user's own speech is ever transcribed. The transcript panel
+  header literally says "(you only)" and its footer restates why.
+
+## Presenter-large layout
+
+`video-tile-grid.tsx` restructures while `presenting` is true: the
+presented content becomes one large primary tile, every other tile
+(other participant, any added participants) collapses into a small side
+strip — matching Meet's real behavior. Reverts to the existing equal
+grid the moment presenting stops. Pure CSS/flex, no new dependency.
+
+## Add Participant modal polish
+
+Added a real search/filter input (same Dialect B search-input pattern as
+`kcs-pillar-view.tsx`), initials-avatar circles matching the room's
+existing tile/list styling, and a visually grayed-out/disabled row for
+anyone already in the room instead of silently omitting them — clearer
+feedback than a row that just doesn't appear.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` both clean. Live-verified via
+`npm run dev` + `curl`: `/lecturer/sessions`, `/member/sessions`,
+`/lecturer/sessions/sr-1/room`, `/member/sessions/sr-1/room` all 200, no
+`__next_error__`/"Application error" markers; confirmed "Add a
+participant", "Start recording", and "Turn on captions" `aria-label`
+text present in the server-rendered HTML. As with the prior media pass,
+actual recording playback, live caption accuracy, and the real
+mic-permission-driven transcription flow all require a real Chrome
+browser to confirm — not claimed as visually verified here, only
+verified by code reading (correct API usage, correct cleanup, correct
+browser-support gating).
+browser-native permission UI or actual media rendering.
