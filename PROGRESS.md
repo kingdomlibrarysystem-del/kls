@@ -1506,3 +1506,82 @@ code — regenerates correctly on next build). After that, `npx tsc
 exactly the 11 `/lecturer/*` + `/contributor/*` routes removed, no
 other route lost). Neither `/lecturer` nor `/contributor` appear
 anywhere in the build's route table.
+
+# Full Portal Consolidation — Phase 5 (cross-reference cleanup)
+
+Commit `38ededb`.
+
+Repo-wide case-insensitive grep for "lecturer"/"contributor" across
+`.ts`/`.tsx` (excluding `node_modules`/`.next`/`.git`) found ~77 files
+still matching. Classified every one per the audit's own test: does the
+underlying DATA CONCEPT (course instructor, publication author/
+contributor) still get used by a surviving admin/member surface? If
+yes, kept as-is (~65 files — course `lecturerId`/`instructor` fields,
+publication/research `contributor` fields, `lib/messaging/**`'s
+role-resolution helpers, `lib/sessions/**`'s `lecturerName` field,
+`lib/identity/**` — all still genuinely read and displayed by admin or
+member pages). `contexts/auth-context.tsx`'s `UserRole`/`mockUsers`
+deliberately left untouched, since retiring those is Phase 6, not this
+phase.
+
+## Genuine dead references found and fixed
+
+**RBAC roles no longer offer Contributor/Lecturer.** `roles-data.ts`'s
+`initialRoles` and `invitation-schema.ts`'s `invitableRoles` still
+listed "Contributor" and "Lecturer" as admin-manageable roles with real
+permission sets — a genuine ambiguity, since RBAC roles are a
+permissions concept distinct from the portal/`UserRole` cleanup already
+done, and removing them risked deleting a real admin capability with no
+stated replacement. **Stopped and asked the user rather than guessing**
+(per the task's own standing instruction on this exact class of risk) —
+decided to remove both roles now, since there is no portal left for
+either persona to exercise those permissions. Seeded invitation rows and
+the mock `/api/users` route's `role: 'contributor'` entry were
+reassigned to `'Staff'` rather than deleted outright, preserving seed
+data richness instead of just shrinking arrays.
+
+**Notification dead-ends.** Two places created a notification addressed
+to `recipientRole: 'lecturer'`/`'contributor'` with an `href` into the
+now-deleted portal — permanently unreachable, since no login flow can
+ever put someone in that role's seat anymore:
+- `request-session-modal.tsx`'s session-request notification now goes to
+  `recipientRole: 'admin'` with `href: '/dashboard/e-learning/sessions'`
+  — admin's real session-oversight page (built Phase 1), not a dead end.
+- `use-messages.ts`'s new-message notification now only fires for
+  `recipientRole === 'member'`; a message to a lecturer/contributor
+  recipient is skipped entirely rather than generated with a dead href.
+
+**A real capability gap, not just a dead link.** `SessionRoomView`'s
+`viewer === 'lecturer'` branch was unreachable (grepped every caller —
+none ever pass it), and its `backHref` fallback pointed at the deleted
+`/lecturer/sessions` route. But that same dead branch was also the
+*only* code path that called `completeSession()` — meaning nobody could
+mark a session `COMPLETED` through the room UI anymore; the learner's
+Leave never did it, and admin's Leave intentionally never did either
+(observing a session ≠ ending it). This is exactly the "real capability
+loss with no admin equivalent" the audit flagged as a stop-and-report
+case. **Asked the user rather than deciding unilaterally**; chosen fix:
+admin's Leave button is now the one that ends a session (admin already
+holds real authority over sessions via `SessionDecisionModal`'s
+approve/reject). `viewer` narrowed from `'learner' | 'lecturer' |
+'admin'` to `'learner' | 'admin'` in `session-room-view.tsx`,
+`build-room-participants.ts`, and `session-card.tsx` (which had the same
+dead `'lecturer'` arm and a dead `/lecturer/sessions/{id}/room` href,
+even though its only real caller already passed `viewer="learner"`
+exclusively).
+
+**Stale documentation** (comments only, no logic): `app-topbar.tsx`'s
+doc comments describing a three-portal badge scenario, `messages-view.tsx`'s
+"reachable from /lecturer/messages" claim, `invite-link-modal.tsx`'s
+dead-route example comment, `control-bar.tsx`'s lecturer-specific label
+comment — all rewritten to describe the current two-portal reality
+rather than left to mislead a future reader.
+
+Also pruned two stale `app/lecturer/sessions/[id]` entries from the
+(gitignored, local-only) `.claude/settings.json` permission allowlist —
+harness config, not app code, but pointed at a now-deleted directory.
+
+## Verification
+
+`npx tsc --noEmit` clean. `npm run build` clean — 72 routes, unchanged
+from Phase 4 (this phase only touched data/logic, not routes).
