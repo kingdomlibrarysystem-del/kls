@@ -1212,3 +1212,110 @@ flagged as its own multi-phase project (build missing admin equivalents
 → strip role-switcher/sidebar entries → delete portal directories →
 clean up cross-references → optionally retire the `UserRole` values as a
 separate, human-approved step), not a single autonomous pass.
+
+# Phase 1, Wave 1: Prerequisite Admin Equivalents
+
+Per the audit's own sequencing, split into two waves: Wave 1 (this pass)
+fixes the real bug the audit surfaced plus the two capabilities that
+block everything else in Phase 1 from being buildable; Wave 2 (a
+follow-up) covers the remaining "mine"-filtered views and the admin
+messaging decision. Nothing under `app/lecturer/**` was touched;
+`app/contributor/publishing/**` was touched only for item 1, as the
+correctness fix genuinely required both sides of the store to change —
+confirmed with the user before proceeding, given the task's own
+instruction to avoid portal folders this phase. Three commits:
+`f9670ed` (store merge), `9964771` (admin approve/reject), `5c0bd9d`
+(admin room entry point).
+
+## Item 1 — merged the disconnected review-queue / my-submissions stores
+
+Confirmed the audit's finding by direct code read: `use-review-queue.ts`
+(admin) and `use-my-submissions.ts` (contributor) were two independent
+module-level arrays sharing only coincidentally-matching seed IDs
+(`pub-001`, `pub-004`). An admin approval called
+`removeSubmissionFromQueue()`, which never touched the contributor's own
+array — their My Submissions list would show a title stuck at SUBMITTED
+forever even after it was genuinely decided elsewhere. This was treated
+as its own correctness bug, independent of whether portal consolidation
+ever happens, per the task's framing.
+
+Fixed by making `review-data.ts`/`use-review-queue.ts` (admin-owned, the
+side staying long-term) the single source of truth: adopted the
+contributor's richer 6-state `PublicationStatus`
+(DRAFT/SUBMITTED/UNDER_REVIEW/APPROVED/REJECTED/PUBLISHED) in place of
+admin's narrower 2-state `ReviewStatus`, carrying every field either side
+needs (contributor, language, coverImage, description). New
+`setSubmissionStatus()` replaces `removeSubmissionFromQueue()` — approve/
+reject now transitions status in place instead of deleting the row, so
+the contributor still sees it (as APPROVED/REJECTED), rather than having
+it silently vanish. `app/contributor/publishing/_components/use-my-submissions.ts`
+is now a thin wrapper filtering the shared store to `CONTRIBUTOR_NAME`;
+`my-submissions-data.ts` re-exports the shared types instead of defining
+its own.
+
+**Traced precisely, not assumed:** both files import the exact same
+module (`@/app/dashboard/publishing/review/_components/use-review-queue`
+vs. `./use-review-queue` from within the same folder resolve to one file
+on disk), so there's exactly one module-level array and one `listeners`
+Set. An admin's `setSubmissionStatus()` call triggers `emitChange()`,
+which reaches every subscriber — contributor-side included — via the
+same `useSyncExternalStore` mechanism, with no separate sync step.
+Live-verified via `curl` that both `/dashboard/publishing/review` and
+`/contributor/publishing` return 200 with no error markers post-merge.
+
+## Item 2 — real Approve/Reject on admin's session oversight
+
+`sessions-view.tsx` (`/dashboard/e-learning/sessions`) was read-only by
+its own prior docstring — confirmed as the single biggest functional gap
+the audit found. Now reuses the exact same `approveSession()`/
+`rejectSession()` store functions and `SessionDecisionModal` component
+the lecturer's own Session Requests queue already calls — no second
+parallel action path, per the task's explicit instruction. This is a
+genuine superset of the lecturer view: an admin can act on any PENDING
+request platform-wide, not just ones for courses one specific lecturer
+teaches. Non-PENDING rows get a real "Room" link instead (wired to
+item 3's new route).
+
+## Item 3 — admin entry point into the real session room
+
+Previously the only two callers of `SessionRoomView` were the lecturer
+and member room pages — zero admin entry point existed into the most
+technically complex piece of either portal (real getUserMedia/
+getDisplayMedia/MediaRecorder/SpeechRecognition). Added
+`/dashboard/e-learning/sessions/[id]/room`, reusing `SessionRoomView`
+exactly — no new room implementation, per the task's instruction.
+
+**Viewer-role decision:** added a genuine third `viewer: 'admin'` mode
+rather than reusing `'lecturer'`. Reusing lecturer would have mislabeled
+the admin as "you" in place of the real instructor and let an observing
+admin's Leave action silently call `completeSession()` on someone else's
+session — neither is correct for a third-party observer. With `'admin'`:
+both real participants (learner and lecturer) render as genuinely named
+tiles instead of one being relabeled "you" (the lecturer's name flows
+through a new `adminExtraParticipant` slot, reusing the existing
+`extraParticipants` mechanism rather than inventing a new one), and Leave
+never marks the session COMPLETED. `ParticipantListPanel`/
+`SessionSidePanel`'s role union gained `'Admin'` alongside the existing
+`'Lecturer' | 'Learner'`. Extracted `build-room-participants.ts` and
+moved permission-error copy/timer formatting into `room-error-banner.tsx`
+to keep `session-room-view.tsx` under the 200-line cap with the added
+viewer complexity.
+
+**Verification:** `tsc --noEmit` and `npm run build` both clean
+(confirmed the new route compiled: `dashboard/e-learning/sessions/[id]/room`
+appears in the build's route list). Live-verified via `npm run dev` +
+`curl`: `/dashboard/publishing/review`, `/contributor/publishing`,
+`/dashboard/e-learning/sessions`, and `/dashboard/e-learning/sessions/sr-1/room`
+all return 200 with no `__next_error__`/"Application error" markers; the
+admin room route's server HTML contains "Back to Session Oversight" (the
+admin-specific back-link label) and "Mock Session Room", confirming
+`viewer="admin"` is genuinely active, not silently falling back to
+another mode.
+
+**Branch note:** mid-session, the working tree's checked-out branch
+had switched to `feat/ui-improved` (one commit ahead of `auto-wip`, no
+divergent history) between an earlier session and this one. Verified via
+`git merge-base --is-ancestor` that `auto-wip` was a clean ancestor
+before fast-forwarding `auto-wip` to include the new work — no
+force-push, no history rewrite, no lost commits — then switched back to
+`auto-wip` for all 3 commits above.
