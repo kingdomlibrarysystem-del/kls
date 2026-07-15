@@ -1319,3 +1319,96 @@ divergent history) between an earlier session and this one. Verified via
 before fast-forwarding `auto-wip` to include the new work — no
 force-push, no history rewrite, no lost commits — then switched back to
 `auto-wip` for all 3 commits above.
+
+# Full Portal Consolidation — Phase 2 (Wave 2)
+
+Executing the audit's full consolidation plan phase by phase, per the
+task's own numbering (task Phase 2 = audit's Phase 1 Wave 2). Commit
+`d321f6f`.
+
+## 1. Real filtered admin views (contributor/author)
+
+Added a real dropdown filter — not just relying on the existing free-text
+search — to the 4 admin pages that already read the shared stores
+`/contributor/{courses,earnings,research}` used to filter client-side:
+
+- `revenue-table.tsx` — "Contributor" filter (reproduces
+  `/contributor/earnings`'s framing over the same live `useRevenue()` store).
+- `repository-view.tsx` — "Author" filter (reproduces
+  `/contributor/research`'s framing over the same live `useRepository()` store).
+- `collaborations-view.tsx` — "Contributor" filter over `mockProjects`
+  (same data `/contributor/research` read for its project list).
+- `catalog-view.tsx` — "Author" filter + a new Author column (reproduces
+  `/contributor/courses`'s framing over the same live `useCourseCatalog()` store).
+
+All four are genuine dropdowns populated from the real distinct values in
+the data (`Array.from(new Set(...))`), not hardcoded option lists —
+so a new contributor/author appearing in the data is automatically
+filterable with no extra wiring.
+
+## 2. Lecturer's course-catalog data link
+
+Investigated before touching anything: admin's `CourseCatalogEntry`
+(`/dashboard/e-learning/_shared/course-catalog-data.ts`) and the
+member-facing `CatalogCourse`
+(`/member/_shared/course-catalog-data.ts`) are genuinely two separate
+datasets (different id schemes — `crs-001` vs `'1'` — zero overlapping
+ids, different fields). Grepped every real consumer of `lecturerId`
+(session booking's `request-session-modal.tsx`, course chat's
+`derive-channels.ts`/`message-thread-panel.tsx`, the lecturer/member
+session-start menus) and confirmed all of them read the **member**
+catalog, never admin's — so merging the two full catalogs would be a
+much larger rewrite of the taken-course experience (lessons/ratings/
+enrollment) for no real benefit, not what "resolve the data drift" asked
+for.
+
+Instead, added a real `lecturerId?: string` field directly to admin's
+`CourseCatalogEntry`, resolving through the same `lecturerRoster` the
+member catalog already points at — this is a real, editable instructor
+assignment (Add Course + Edit Course both gained an "Instructor" select;
+Course Detail shows the assigned name or "None assigned"), not a
+decorative label. The two catalogs remain intentionally separate
+(different lifecycles), but both now resolve "who teaches this" through
+one shared roster rather than admin having no concept of it at all.
+Seeded `lecturerId` on 2 of the 6 admin catalog rows where a real
+instructor-of-record made sense (`crs-001` → `lec-1`, `crs-002` →
+`lec-2`); left the platform-authored rows without one rather than
+fabricating an instructor no data implied.
+
+## 3. Messaging and dashboard-rollup: decided NOT to build
+
+Per the task's own instruction not to build something nobody would
+reach:
+
+- **Admin messaging** — checked `deriveCourseChannels()`
+  (`lib/messaging/derive-channels.ts`) precisely: it resolves a person's
+  course channels by matching their name against `lecturerRoster`. An
+  "admin" identity has no roster entry, so an admin's own `MessagesView`
+  would always show zero course channels — a permanently empty inbox,
+  not a real oversight surface. **Decision: no admin messaging route
+  built.** Member↔lecturer course chat is completely unaffected — it
+  keeps working via the shared `lib/messaging/**` infrastructure exactly
+  as today; only the lecturer's own portal page to view their inbox goes
+  away with no replacement. This is a real, intentional feature loss
+  (a lecturer persona could see their own DMs/course channels; post-
+  consolidation, nobody can, since there's no lecturer login anymore
+  either) — flagged explicitly rather than silently dropped.
+- **Per-instructor dashboard rollup** — the lecturer dashboard's 4 stat
+  numbers (course count, enrolled students, session requests, upcoming
+  sessions) were confirmed, by reading
+  `app/lecturer/_components/dashboard-data.ts` directly, to derive from
+  stores that already survive (member catalog,
+  session-requests store) — all 4 numbers are now independently
+  reachable via the newly-filtered `/dashboard/e-learning/catalog` and
+  the existing `/dashboard/e-learning/sessions` oversight page.
+  **Decision: no dedicated rollup page built** — it would be a redundant
+  summary card over data already visible one click away, not new
+  capability.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` both clean. Live-verified via
+`npm run dev` + `curl`: all 4 filtered admin routes return 200 with no
+error markers; confirmed "Filter by contributor"/"Filter by author"
+aria-labels present in each file's source, and the new "Instructor"
+field present in both the Add Course and Edit Course forms.
