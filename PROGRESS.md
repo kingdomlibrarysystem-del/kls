@@ -789,3 +789,888 @@ visible because Health System is now a real destination instead of a
 placeholder. Flagging rather than silently fixing, since deciding where
 Health System belongs in navigation is a product/IA call, not a
 mechanical fix.
+
+# Instant Sessions (Meet-style "start now"), Additive to Scheduled Requests
+
+Added a second way to start a live session — instant, no scheduling or
+approval step — alongside the existing propose-a-future-time flow, which
+is fully unchanged. Commit `6d3944e`.
+
+## Design: `mode` field, not a 5th status
+
+`SessionRequest` gained `mode: 'SCHEDULED' | 'INSTANT'`
+(`app/lecturer/_shared/session-requests-data.ts`) rather than a new
+`SessionStatus` value. Reasoning: an instant session still goes through
+the same real `APPROVED → COMPLETED` lifecycle as a scheduled one —
+ending the mock room still calls `completeSession()` regardless of mode.
+The difference is entirely about *how* a request arrived at `APPROVED`
+(skipped PENDING/approval vs. went through it), not a different terminal
+state, so bolting a 5th status value on would have conflated two
+orthogonal concerns (status = where in the approve/reject lifecycle;
+mode = which flow created it).
+
+## What changed
+
+- **`use-session-requests.ts`**: new `startInstantSession(input)` creates
+  a `SessionRequest` directly as `status: 'APPROVED'`, `mode: 'INSTANT'`,
+  with `scheduledAt` stamped to the moment of creation — no PENDING
+  stage, nothing for either party to approve, mirroring Meet's "Start an
+  instant meeting" having no separate approval step. The existing
+  `requestSession()` (scheduled flow) is untouched apart from stamping
+  `mode: 'SCHEDULED'` on its output; all 3 seed rows in
+  `session-requests-data.ts` got the same `mode: 'SCHEDULED'` tag.
+- **`session-card.tsx`**: `canJoin` is now `status === 'APPROVED' &&
+  (mode === 'INSTANT' || secondsRemaining <= 0)` — instant sessions never
+  wait on `useCountdownToTime`, since there's nothing to count down to.
+  This is a real gating change, not cosmetic: previously *any* APPROVED
+  session with no future `scheduledAt` would already read as joinable by
+  the old gate, but instant sessions now skip the countdown hook
+  invocation's meaningful branch entirely rather than coincidentally
+  passing it. Visually, instant rows get a real "⚡ Instant" chip next to
+  the status badge and a "Live now" label in place of the
+  scheduled-time-plus-countdown row.
+- **`StartInstantSessionButton`** (new, one per portal —
+  `app/lecturer/sessions/_components/` and
+  `app/member/sessions/_components/`): both wired into their portal's
+  `/sessions` page header. Both this mock's one lecturer persona (teaches
+  4 courses) and its one member persona (4 enrollments across 3
+  lecturers) have genuine course/lecturer ambiguity, so both sides show a
+  small course-picker modal before starting — resolved the same way
+  `RequestSessionModal` already resolves "which lecturer" for the
+  scheduled flow (via `courseCatalog.lecturerId`), rather than inventing
+  a separate mechanism. No multi-user/learner picker was built on top of
+  that, since there's no second real learner or lecturer persona in this
+  mock to pick from — would have been a picker with no real data behind
+  it. Both buttons `router.push()` straight into the existing
+  `SessionRoomView` via the real room routes; no new room UI.
+- **Admin oversight** (`/dashboard/e-learning/sessions`'s `SessionsView`)
+  gained a `Mode` column so the instant/scheduled distinction is visible
+  there too, not just on the two portal-side list views — this list view
+  reads the same shared store, so leaving it blind to the new field would
+  have been an inconsistent gap the moment it shipped.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` both clean. Live-verified via
+`npm run dev` + `curl`: `/lecturer/sessions`, `/member/sessions`,
+`/lecturer/sessions/requests` all 200 with the "Start Instant Session"
+button text present in the server-rendered HTML; `/lecturer/sessions/sr-1/room`
+and `/member/sessions/sr-1/room` both 200 and render the real "Mock
+Session Room" UI (not the "Session not found" EmptyState), confirming the
+room route + `SessionRoomView` correctly resolve a request from the
+shared store — the same lookup path a freshly created instant session's
+id goes through via `router.push()`. (One transient `500` from a stale
+Turbopack worker process was hit mid-verification and resolved by
+clearing `.next` and restarting — not a code issue, included here so a
+future reader doesn't mistake dev-server flakiness for a real bug if it
+recurs.)
+
+# Instant-Session Bug Report + Mock Session Room Enrichment
+
+## Part A: bug investigation and fixes
+
+**Bug 1 — reported "John Doeright now" concatenation in the instant-session
+modal.** Full trace: read `start-instant-session-button.tsx` (lecturer
+side) and hex-dumped the exact source line (`xxd`) — confirmed a real
+`0x20` space byte between `{CURRENT_MEMBER_NAME}` and `right` in the
+committed source, and confirmed via `git log -p --follow` that this line
+has only ever existed once, in commit `6d3944e`, already with the space
+present. Checked for any string-concatenation path that could produce
+"Doe" + "right" with no separator (grepped for `CURRENT_MEMBER_NAME +`
+and similar patterns app-wide) — none found. **Conclusion: no
+concatenation bug exists in the committed source.** The most plausible
+explanation for what was seen live is a stale Fast Refresh / HMR module
+state (this app's session-request store is a module-level mutable array,
+and the `SessionRequest` shape changed — added `mode` — earlier in this
+same dev session; a stale in-memory module instance surviving a hot
+reload across that shape change is a known category of dev-only
+artifact, not a logic bug). Rather than leave it unaddressed on "probably
+fine," restructured the whole sentence into one template literal
+(`` {`Starts a live session with ${CURRENT_MEMBER_NAME} right now — ...`} ``)
+so there is no longer any JSX text/expression adjacency near the name at
+all — this removes the entire class of risk regardless of which
+explanation was correct. Commit `93b9954`.
+
+**Bug 2 — audit "Instant" badge across all statuses.** Read
+`session-card.tsx`'s render tree in full: the "Instant" chip (lines
+41-45) is gated only on `isInstant` (derived from `request.mode`), and
+sits in the card's top header row as a sibling to the status badge — not
+nested inside any of the `status === '...'`-gated blocks below it. Same
+check on the admin `sessions-view.tsx`'s new Mode column: gated only on
+`r.mode`, independent of `r.status`. **Conclusion: no bug — the badge
+already renders unconditionally across PENDING/APPROVED/REJECTED/COMPLETED
+for both list views.** No fix was needed or made; documented here as a
+clean audit result rather than silently closing the item.
+
+## Part B: Mock Session Room enrichment
+
+Read all 6 room files in full before changing anything, per instruction.
+Confirmed the lecturer-feature-audit's claim: mic/camera/raise-hand/
+end-session are already real local-state toggles reflected in
+`ParticipantTile`/`ParticipantListPanel`, and chat is a real per-session
+store (`use-session-chat.ts`) — but that store has **no per-message
+reaction mechanism**, confirmed by reading it in full and grepping the
+whole app for "reaction" (zero matches anywhere before this change).
+
+**Added, all real interactive state:**
+
+1. **Add Participant** (`add-participant-modal.tsx`) — lists other known
+   personas already established elsewhere in this app (the 3-person
+   `lecturerRoster` + named learners reused across
+   `session-requests-data.ts`/`audit-log-data.ts`/`certificates-data.ts`/
+   etc.) who aren't already in the room. Picking one calls `onAdd`, which
+   `SessionRoomView` uses to push a name into local `addedNames` state —
+   genuinely adding a tile to `VideoTileGrid` (now takes
+   `extraParticipants: ExtraParticipant[]` instead of a fixed 2-tile
+   layout) and a row to `ParticipantListPanel`, with role (Lecturer/
+   Learner) derived from real roster membership, not guessed.
+2. **Screen-share toggle** — `ControlBar` gained a `presenting`
+   button wired to real local `useState` in `SessionRoomView`.
+   `ParticipantTile` shows a teal border + "Presenting" badge on the
+   user's own tile when active. Deliberately does **not** call
+   `getDisplayMedia` or attempt real capture — there's no peer/backend
+   for a captured stream to go to in this mock, so faking real capture
+   would be exactly the "looks real but isn't" gap this project has
+   spent multiple phases removing. This is an honest visual-state toggle,
+   framed the same way the room's own "Mock Session Room" banner already
+   discloses for camera/mic.
+3. **Quick reactions** — new `use-session-reactions.ts`, the same
+   `useSyncExternalStore` module-level-store pattern as every other store
+   in this app (not a new state-management approach). `ReactionBar`
+   renders 6 emoji buttons; `ReactionBurst` is an absolutely-positioned
+   overlay on the video grid that shows the active reaction and
+   self-clears the store after 2 seconds via a `useEffect` timer — real,
+   transient shared state, not a decorative animation with nothing behind
+   it. No new CSS keyframe was added (the project's animation rule caps
+   this app to its two existing entrance animations); the burst appears/
+   disappears via conditional render only.
+
+**Deliberately NOT built, and why:**
+
+- **Real screen sharing** — needs a real `getDisplayMedia()` call and an
+  actual peer connection to stream to; this mock has neither, and a fake
+  "shared screen" tile with no real captured content would mislead more
+  than it demonstrates.
+- **Live streaming** — needs real broadcast infrastructure (RTMP/HLS or
+  similar) and a viewer-side player; nothing in this mock's stack
+  approximates that honestly.
+- **Breakout rooms** — needs real multi-room routing and participant
+  reassignment logic across more than 2-3 mock personas; with this app's
+  single learner + 3-lecturer roster, a "breakout" would just be
+  re-shuffling the same 2-4 tiles into fake sub-rooms with no one
+  actually in them — cosmetic, not real.
+- **Polls/Q&A** — technically buildable as a small `useSyncExternalStore`
+  store (same pattern as reactions), so this is the one candidate that
+  could be built honestly with existing patterns if wanted in a future
+  pass — flagging it here rather than building it silently, since it
+  wasn't asked for and would expand this task's scope.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` clean for both parts. Live-verified via
+`npm run dev` + `curl`: `/lecturer/sessions/sr-1/room` and
+`/member/sessions/sr-1/room` both 200, no `__next_error__`/"Application
+error" markers, and the server-rendered HTML contains the new controls'
+`aria-label` text ("Add a participant", "Start presenting") plus all 6
+reaction buttons ("React with 👍" through "React with 🙌"). What curl
+can't confirm and would need a real browser check: the actual visual
+result of toggling presenting (teal border + badge appearing on the
+user's own tile), a reaction burst actually appearing centered over the
+video grid and disappearing after ~2 seconds, and a newly added
+participant's tile appearing in the grid alongside the existing two
+without breaking the grid layout at 3+ tiles.
+
+# Real Browser Media, Room Polish, and 3-Way Start Flow
+
+Upgraded the Mock Session Room's camera/mic/screen-share from visual-only
+local state to genuine browser media, added a visual polish pass, and
+gave both portals Meet's own 3-way start choice. Three commits:
+`499ddcd` (media), `f4ce886` (polish), `5644f74` (start flow).
+
+## What's now genuinely real
+
+- **Camera** — `navigator.mediaDevices.getUserMedia({ video: true })` on
+  toggle-on; the resulting `MediaStreamTrack` renders in the local
+  user's own tile via a real `<video>` element (`srcObject`), not an
+  avatar. Toggle-off calls `track.stop()`, genuinely releasing the
+  camera (confirmed by the browser's own camera-indicator light turning
+  off — see the one honest verification gap below).
+- **Mic** — its own independent `getUserMedia({ audio: true })` track,
+  so muting/unmuting the mic never disturbs the camera track (and vice
+  versa) — mute sets `track.enabled = false` on the real track rather
+  than stopping it, matching how mute genuinely works in real
+  conferencing apps (unmuting doesn't need a fresh permission prompt).
+- **Screen share** — `getDisplayMedia({ video: true })`, triggering the
+  real OS/browser share picker. Cancelling the picker
+  (`AbortError`/`NotAllowedError`) silently reverts the toggle — not a
+  real error. The browser's own "Stop sharing" bar ending the capture is
+  caught via the video track's `ended` event, syncing our state back to
+  off. The captured stream renders in the same `<video>` tile with the
+  existing "Presenting" badge.
+- **Permission-denied errors** — camera/mic/screen-share each surface a
+  real inline banner (this app's existing `var(--red-dim)`/
+  `var(--red-light)` Dialect B error convention, same as
+  `request-session-modal.tsx`'s error banner) rather than a raw
+  `alert()`.
+- **Cleanup** — all camera/mic/screen tracks are stopped both on
+  Leave/End Session (explicit call in `handleLeave` before navigating
+  away) and on component unmount (`use-media-stream.ts`'s own effect) —
+  this was flagged as a real resource-leak risk if skipped, since a
+  stopped component reference without `track.stop()` leaves the
+  browser's camera light on indefinitely.
+- **3-way start choice** — "New Session" on both `/lecturer/sessions`
+  and `/member/sessions` now opens a menu with Start now / Schedule for
+  later / Get invite link, matching Meet's own "New meeting" choice
+  (Create a meeting for later / Start an instant meeting / Schedule).
+  Schedule reuses the pre-existing `requestSession()` flow — confirmed
+  still fully intact — via the member's existing `RequestSessionModal`
+  and a new, symmetric `ScheduleSessionModal` for the lecturer side
+  (lecturers previously had no way to propose a session themselves, only
+  approve/reject one). Invite creates the same INSTANT session as Start
+  Now but shows the real room route as a copyable link first
+  (`InviteLinkModal`) instead of navigating straight in — honestly
+  buildable because it's the real URL to the real `[id]/room` route,
+  unlike a genuine multi-tenant invite/token system this mock has no
+  backend for.
+
+## The one explicit, honest limitation
+
+**No other participant ever receives real video.** John Doe's tile, and
+any tile added via `AddParticipantModal`, always stay the initials-avatar
+placeholder — documented inline in `participant-tile.tsx`'s `videoStream`
+prop docstring. This mock has no signaling/TURN backend, so there is no
+real peer connection to carry another person's camera into this browser;
+faking it with a stock photo/video loop would misrepresent a fake feed as
+real, which is exactly the dishonest-gap pattern this project has spent
+many phases removing elsewhere. Only the local "you" tile can ever show
+real video, for either camera or screen-share.
+
+## Verification — what curl/build confirm vs. what needs a real browser
+
+`tsc --noEmit` and `npm run build` clean. Live-verified via `npm run dev`
++ `curl`: `/lecturer/sessions`, `/member/sessions`,
+`/lecturer/sessions/sr-1/room`, `/member/sessions/sr-1/room` all 200, no
+`__next_error__`/"Application error" markers; confirmed the "New
+Session" trigger button and the room's "Add a participant" control are
+present in the server-rendered HTML.
+
+**Honestly out of reach for curl, and NOT claimed as visually
+confirmed:** the actual camera permission prompt appearing, a real video
+feed rendering in the tile after granting it, the browser's real
+screen/window/tab picker opening on the screen-share button, the
+captured screen actually appearing in the tile, the permission-denied
+banner appearing when access is blocked, and the browser's camera/mic
+indicator light turning off after Leave/unmount. All of these require a
+real browser with real camera/screen-share hardware or permissions and
+were verified by careful code reading (correct API calls, correct event
+handling, correct cleanup) rather than by seeing them render — this is
+stated explicitly rather than implying a curl-based check could confirm
+browser-native permission UI or actual media rendering.
+
+# Recording, Live Captions, Presenter Layout, Add-Participant Polish
+
+Two commits: `8c39599` (recording + live captions), `7d5a112`
+(presenter-large layout + Add Participant modal polish).
+
+## Recording (MediaRecorder) — real, local-only
+
+`use-session-recording.ts` wraps `MediaRecorder` over whichever stream is
+currently active (camera, or the screen-share stream while presenting).
+Stopping produces a real `.webm` file via the same Blob → object URL →
+`<a download>` pattern `lib/utils.ts`'s `exportToCsv` already uses — not
+a new download mechanism. A real "REC 00:00" indicator (red dot + live
+timer, ticking via `setInterval`) shows while active.
+
+**Explicit limitation, same class as camera/screen-share:** a recording
+can only ever capture the LOCAL user's own stream. There is no real peer
+connection carrying another participant's audio/video into this
+browser, so nothing recorded ever contains anyone else — stated in the
+commit message and worth restating here since it's the same underlying
+constraint as the earlier media work, just surfacing again for a new
+feature.
+
+## Live captions (Web Speech API) — real, local-only, browser-gated
+
+`use-live-transcript.ts` wraps `SpeechRecognition` (ambient-typed locally
+since it's not in TypeScript's default DOM lib — still non-standard/
+vendor-prefixed) over the local mic. Interim results render as a
+Meet-style caption bar overlaid on the video grid; final results append
+to a copyable transcript log.
+
+**Two things surfaced explicitly, not silently:**
+- **Browser support** — Chrome/Edge only. `unsupported` is a real state
+  checked before starting, shown as an inline message both on the
+  caption overlay and in the transcript panel, not a silent failure or
+  swallowed exception.
+- **Local-only capture** — same reasoning as recording: no real peer
+  audio stream exists to feed into `SpeechRecognition` either, so only
+  the local user's own speech is ever transcribed. The transcript panel
+  header literally says "(you only)" and its footer restates why.
+
+## Presenter-large layout
+
+`video-tile-grid.tsx` restructures while `presenting` is true: the
+presented content becomes one large primary tile, every other tile
+(other participant, any added participants) collapses into a small side
+strip — matching Meet's real behavior. Reverts to the existing equal
+grid the moment presenting stops. Pure CSS/flex, no new dependency.
+
+## Add Participant modal polish
+
+Added a real search/filter input (same Dialect B search-input pattern as
+`kcs-pillar-view.tsx`), initials-avatar circles matching the room's
+existing tile/list styling, and a visually grayed-out/disabled row for
+anyone already in the room instead of silently omitting them — clearer
+feedback than a row that just doesn't appear.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` both clean. Live-verified via
+`npm run dev` + `curl`: `/lecturer/sessions`, `/member/sessions`,
+`/lecturer/sessions/sr-1/room`, `/member/sessions/sr-1/room` all 200, no
+`__next_error__`/"Application error" markers; confirmed "Add a
+participant", "Start recording", and "Turn on captions" `aria-label`
+text present in the server-rendered HTML. As with the prior media pass,
+actual recording playback, live caption accuracy, and the real
+mic-permission-driven transcription flow all require a real Chrome
+browser to confirm — not claimed as visually verified here, only
+verified by code reading (correct API usage, correct cleanup, correct
+browser-support gating).
+
+# Two Session-Room Bug Fixes: Hide Side Panel, Countdown/COMPLETED Gates
+
+Commits `c9b7382` (hide side panel) and `0ef8007` (countdown/COMPLETED
+gate removal).
+
+## Bug 1: hide side panel (distinct from self-view)
+
+The existing self-view toggle (hides only the local user's own tile from
+their own screen) was mistaken for a panel-hide feature — a genuinely
+separate, previously-unbuilt control. Added `sidePanelHidden` local
+state to `session-room-view.tsx` with its own `ControlBar` button. The
+room's outer grid drops its `lg:grid-cols-[1fr_260px]` split and falls
+back to a single full-width column while hidden, so the video grid
+genuinely re-flows into the freed width rather than leaving blank space.
+
+## Bug 2: couldn't rejoin ended sessions / countdown blocked entry
+
+Traced to two gates left over from the earlier open-access ("Slack
+huddle") decision, which had only removed `requestSession()`'s
+enrollment/completion precondition — not these two:
+
+- `session-card.tsx`'s `canJoin` no longer depends on a live countdown
+  to `scheduledAt` (`useCountdownToTime` is now unused anywhere in the
+  repo — confirmed via grep, deleted along with its only caller).
+- The actual "hard block" turned out to live in `session-card.tsx`, not
+  `session-room-view.tsx`: the Join/Start link was previously rendered
+  only inside `{status === 'APPROVED' && scheduledAt && (...)}`, so
+  PENDING/REJECTED/COMPLETED sessions never got a room link at all. The
+  room component itself never gated on status — only on the request
+  existing — so navigating directly to a COMPLETED session's room URL
+  already worked before this fix; the card just never offered that link.
+  Every status now gets a real link into its room; COMPLETED shows
+  "Rejoin Session" instead of "Join/Start Session" for clarity.
+- No status-transition change was needed for clean re-entry:
+  `completeSession()` only runs from `handleLeave()` on the lecturer's
+  own Leave/End Session action, never on room entry — so reopening an
+  already-COMPLETED session has no entry side effect, and leaving it
+  again just re-sets status to COMPLETED (idempotent).
+
+**Verification:** `tsc --noEmit` and `npm run build` both clean.
+Live-verified via `npm run dev` + `curl`: `/lecturer/sessions/sr-3/room`
+(the seeded COMPLETED session) now returns 200 with the real "Mock
+Session Room" UI instead of being blocked; confirmed "Hide participants
+and chat panel" appears in the server-rendered HTML alongside the
+existing controls.
+
+# Portal Consolidation Audit (read-only, no deletions made)
+
+Per an explicit request to map the blast radius of removing the
+Lecturer and Contributor portals and folding them into Admin BEFORE any
+deletion happens, a read-only audit was run and written to
+`.claude/skills/kls-page-builder/references/portal-consolidation-audit.md`
+(gitignored, like other skill-reference docs — see the earlier note on
+`.gitignore` lines 18-19 — so it exists on disk but produces no git diff).
+
+**Headline findings:** 52 files total across both portals (22 lecturer,
+30 contributor) — plus two shared trees NOT part of the deletable
+footprint since `/member/*` also depends on them: `components/session-room/**`
+(19 files) and `lib/messaging/**` (10 files). Some contributor features
+(My Courses, My Research, most of Earnings) already have a ready
+admin-side data path needing only a filtered view. Others need real
+work: admin's session oversight is read-only by design (no approve/
+reject UI), and admin's publishing review reads a completely different,
+disconnected store from the contributor's own submissions list. Some
+features (the real-media session room, admin messaging) have **no**
+admin entry point at all today — new work, not a deletion. Course
+instructor / publication author / research contributor all need to
+survive as data-model fields regardless of portal removal.
+
+No files were deleted or edited during this audit beyond the one new
+markdown doc — confirmed via `git status` before and after. This is
+flagged as its own multi-phase project (build missing admin equivalents
+→ strip role-switcher/sidebar entries → delete portal directories →
+clean up cross-references → optionally retire the `UserRole` values as a
+separate, human-approved step), not a single autonomous pass.
+
+# Phase 1, Wave 1: Prerequisite Admin Equivalents
+
+Per the audit's own sequencing, split into two waves: Wave 1 (this pass)
+fixes the real bug the audit surfaced plus the two capabilities that
+block everything else in Phase 1 from being buildable; Wave 2 (a
+follow-up) covers the remaining "mine"-filtered views and the admin
+messaging decision. Nothing under `app/lecturer/**` was touched;
+`app/contributor/publishing/**` was touched only for item 1, as the
+correctness fix genuinely required both sides of the store to change —
+confirmed with the user before proceeding, given the task's own
+instruction to avoid portal folders this phase. Three commits:
+`f9670ed` (store merge), `9964771` (admin approve/reject), `5c0bd9d`
+(admin room entry point).
+
+## Item 1 — merged the disconnected review-queue / my-submissions stores
+
+Confirmed the audit's finding by direct code read: `use-review-queue.ts`
+(admin) and `use-my-submissions.ts` (contributor) were two independent
+module-level arrays sharing only coincidentally-matching seed IDs
+(`pub-001`, `pub-004`). An admin approval called
+`removeSubmissionFromQueue()`, which never touched the contributor's own
+array — their My Submissions list would show a title stuck at SUBMITTED
+forever even after it was genuinely decided elsewhere. This was treated
+as its own correctness bug, independent of whether portal consolidation
+ever happens, per the task's framing.
+
+Fixed by making `review-data.ts`/`use-review-queue.ts` (admin-owned, the
+side staying long-term) the single source of truth: adopted the
+contributor's richer 6-state `PublicationStatus`
+(DRAFT/SUBMITTED/UNDER_REVIEW/APPROVED/REJECTED/PUBLISHED) in place of
+admin's narrower 2-state `ReviewStatus`, carrying every field either side
+needs (contributor, language, coverImage, description). New
+`setSubmissionStatus()` replaces `removeSubmissionFromQueue()` — approve/
+reject now transitions status in place instead of deleting the row, so
+the contributor still sees it (as APPROVED/REJECTED), rather than having
+it silently vanish. `app/contributor/publishing/_components/use-my-submissions.ts`
+is now a thin wrapper filtering the shared store to `CONTRIBUTOR_NAME`;
+`my-submissions-data.ts` re-exports the shared types instead of defining
+its own.
+
+**Traced precisely, not assumed:** both files import the exact same
+module (`@/app/dashboard/publishing/review/_components/use-review-queue`
+vs. `./use-review-queue` from within the same folder resolve to one file
+on disk), so there's exactly one module-level array and one `listeners`
+Set. An admin's `setSubmissionStatus()` call triggers `emitChange()`,
+which reaches every subscriber — contributor-side included — via the
+same `useSyncExternalStore` mechanism, with no separate sync step.
+Live-verified via `curl` that both `/dashboard/publishing/review` and
+`/contributor/publishing` return 200 with no error markers post-merge.
+
+## Item 2 — real Approve/Reject on admin's session oversight
+
+`sessions-view.tsx` (`/dashboard/e-learning/sessions`) was read-only by
+its own prior docstring — confirmed as the single biggest functional gap
+the audit found. Now reuses the exact same `approveSession()`/
+`rejectSession()` store functions and `SessionDecisionModal` component
+the lecturer's own Session Requests queue already calls — no second
+parallel action path, per the task's explicit instruction. This is a
+genuine superset of the lecturer view: an admin can act on any PENDING
+request platform-wide, not just ones for courses one specific lecturer
+teaches. Non-PENDING rows get a real "Room" link instead (wired to
+item 3's new route).
+
+## Item 3 — admin entry point into the real session room
+
+Previously the only two callers of `SessionRoomView` were the lecturer
+and member room pages — zero admin entry point existed into the most
+technically complex piece of either portal (real getUserMedia/
+getDisplayMedia/MediaRecorder/SpeechRecognition). Added
+`/dashboard/e-learning/sessions/[id]/room`, reusing `SessionRoomView`
+exactly — no new room implementation, per the task's instruction.
+
+**Viewer-role decision:** added a genuine third `viewer: 'admin'` mode
+rather than reusing `'lecturer'`. Reusing lecturer would have mislabeled
+the admin as "you" in place of the real instructor and let an observing
+admin's Leave action silently call `completeSession()` on someone else's
+session — neither is correct for a third-party observer. With `'admin'`:
+both real participants (learner and lecturer) render as genuinely named
+tiles instead of one being relabeled "you" (the lecturer's name flows
+through a new `adminExtraParticipant` slot, reusing the existing
+`extraParticipants` mechanism rather than inventing a new one), and Leave
+never marks the session COMPLETED. `ParticipantListPanel`/
+`SessionSidePanel`'s role union gained `'Admin'` alongside the existing
+`'Lecturer' | 'Learner'`. Extracted `build-room-participants.ts` and
+moved permission-error copy/timer formatting into `room-error-banner.tsx`
+to keep `session-room-view.tsx` under the 200-line cap with the added
+viewer complexity.
+
+**Verification:** `tsc --noEmit` and `npm run build` both clean
+(confirmed the new route compiled: `dashboard/e-learning/sessions/[id]/room`
+appears in the build's route list). Live-verified via `npm run dev` +
+`curl`: `/dashboard/publishing/review`, `/contributor/publishing`,
+`/dashboard/e-learning/sessions`, and `/dashboard/e-learning/sessions/sr-1/room`
+all return 200 with no `__next_error__`/"Application error" markers; the
+admin room route's server HTML contains "Back to Session Oversight" (the
+admin-specific back-link label) and "Mock Session Room", confirming
+`viewer="admin"` is genuinely active, not silently falling back to
+another mode.
+
+**Branch note:** mid-session, the working tree's checked-out branch
+had switched to `feat/ui-improved` (one commit ahead of `auto-wip`, no
+divergent history) between an earlier session and this one. Verified via
+`git merge-base --is-ancestor` that `auto-wip` was a clean ancestor
+before fast-forwarding `auto-wip` to include the new work — no
+force-push, no history rewrite, no lost commits — then switched back to
+`auto-wip` for all 3 commits above.
+
+# Full Portal Consolidation — Phase 2 (Wave 2)
+
+Executing the audit's full consolidation plan phase by phase, per the
+task's own numbering (task Phase 2 = audit's Phase 1 Wave 2). Commit
+`d321f6f`.
+
+## 1. Real filtered admin views (contributor/author)
+
+Added a real dropdown filter — not just relying on the existing free-text
+search — to the 4 admin pages that already read the shared stores
+`/contributor/{courses,earnings,research}` used to filter client-side:
+
+- `revenue-table.tsx` — "Contributor" filter (reproduces
+  `/contributor/earnings`'s framing over the same live `useRevenue()` store).
+- `repository-view.tsx` — "Author" filter (reproduces
+  `/contributor/research`'s framing over the same live `useRepository()` store).
+- `collaborations-view.tsx` — "Contributor" filter over `mockProjects`
+  (same data `/contributor/research` read for its project list).
+- `catalog-view.tsx` — "Author" filter + a new Author column (reproduces
+  `/contributor/courses`'s framing over the same live `useCourseCatalog()` store).
+
+All four are genuine dropdowns populated from the real distinct values in
+the data (`Array.from(new Set(...))`), not hardcoded option lists —
+so a new contributor/author appearing in the data is automatically
+filterable with no extra wiring.
+
+## 2. Lecturer's course-catalog data link
+
+Investigated before touching anything: admin's `CourseCatalogEntry`
+(`/dashboard/e-learning/_shared/course-catalog-data.ts`) and the
+member-facing `CatalogCourse`
+(`/member/_shared/course-catalog-data.ts`) are genuinely two separate
+datasets (different id schemes — `crs-001` vs `'1'` — zero overlapping
+ids, different fields). Grepped every real consumer of `lecturerId`
+(session booking's `request-session-modal.tsx`, course chat's
+`derive-channels.ts`/`message-thread-panel.tsx`, the lecturer/member
+session-start menus) and confirmed all of them read the **member**
+catalog, never admin's — so merging the two full catalogs would be a
+much larger rewrite of the taken-course experience (lessons/ratings/
+enrollment) for no real benefit, not what "resolve the data drift" asked
+for.
+
+Instead, added a real `lecturerId?: string` field directly to admin's
+`CourseCatalogEntry`, resolving through the same `lecturerRoster` the
+member catalog already points at — this is a real, editable instructor
+assignment (Add Course + Edit Course both gained an "Instructor" select;
+Course Detail shows the assigned name or "None assigned"), not a
+decorative label. The two catalogs remain intentionally separate
+(different lifecycles), but both now resolve "who teaches this" through
+one shared roster rather than admin having no concept of it at all.
+Seeded `lecturerId` on 2 of the 6 admin catalog rows where a real
+instructor-of-record made sense (`crs-001` → `lec-1`, `crs-002` →
+`lec-2`); left the platform-authored rows without one rather than
+fabricating an instructor no data implied.
+
+## 3. Messaging and dashboard-rollup: decided NOT to build
+
+Per the task's own instruction not to build something nobody would
+reach:
+
+- **Admin messaging** — checked `deriveCourseChannels()`
+  (`lib/messaging/derive-channels.ts`) precisely: it resolves a person's
+  course channels by matching their name against `lecturerRoster`. An
+  "admin" identity has no roster entry, so an admin's own `MessagesView`
+  would always show zero course channels — a permanently empty inbox,
+  not a real oversight surface. **Decision: no admin messaging route
+  built.** Member↔lecturer course chat is completely unaffected — it
+  keeps working via the shared `lib/messaging/**` infrastructure exactly
+  as today; only the lecturer's own portal page to view their inbox goes
+  away with no replacement. This is a real, intentional feature loss
+  (a lecturer persona could see their own DMs/course channels; post-
+  consolidation, nobody can, since there's no lecturer login anymore
+  either) — flagged explicitly rather than silently dropped.
+- **Per-instructor dashboard rollup** — the lecturer dashboard's 4 stat
+  numbers (course count, enrolled students, session requests, upcoming
+  sessions) were confirmed, by reading
+  `app/lecturer/_components/dashboard-data.ts` directly, to derive from
+  stores that already survive (member catalog,
+  session-requests store) — all 4 numbers are now independently
+  reachable via the newly-filtered `/dashboard/e-learning/catalog` and
+  the existing `/dashboard/e-learning/sessions` oversight page.
+  **Decision: no dedicated rollup page built** — it would be a redundant
+  summary card over data already visible one click away, not new
+  capability.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` both clean. Live-verified via
+`npm run dev` + `curl`: all 4 filtered admin routes return 200 with no
+error markers; confirmed "Filter by contributor"/"Filter by author"
+aria-labels present in each file's source, and the new "Instructor"
+field present in both the Add Course and Edit Course forms.
+
+# Full Portal Consolidation — Phase 3 (shared-infra relocation + role list)
+
+Commit `fd729c5`.
+
+## 1. Relocated cross-portal shared infrastructure out of `app/lecturer/**`/`app/contributor/**`
+
+Moved before deletion (Phase 4), so any missed import surfaces as an
+immediate compile error rather than a silent dead route:
+
+- `session-requests-data.ts`, `use-session-requests.ts`, `session-card.tsx`
+  → `lib/sessions/`
+- `lecturer-identity.ts` → `lib/identity/lecturer-identity.ts`
+- `contributor-identity.ts` → `lib/identity/contributor-identity.ts`
+
+**Found and fixed one gap the original 5-file list missed**:
+`app/dashboard/e-learning/sessions/_components/sessions-view.tsx` (admin's
+session-oversight page, built in Phase 1 Wave 1) imports
+`SessionDecisionModal` directly from
+`app/lecturer/sessions/requests/_components/session-decision-modal.tsx` —
+a file that was never flagged for relocation because Wave 1 was told to
+reuse the component via direct cross-folder import rather than duplicate
+it. Read the file in full, confirmed it has no other portal-internal
+dependency (only shared `components/ui/*` primitives, lucide icons, and
+the already-relocated `SessionRequest` type), and moved it to
+`lib/sessions/session-decision-modal.tsx` alongside its siblings. Updated
+`sessions-view.tsx`'s import accordingly.
+
+A repo-wide `sed` sweep updated every `@/app/lecturer/...`/
+`@/app/contributor/...` import of these files to their new `@/lib/...`
+paths (24 files). A first `tsc --noEmit` pass after the sweep still
+failed on 4 files that used **relative** imports (`./lecturer-identity`,
+`../../_components/lecturer-identity`, `./session-decision-modal`)
+instead of the `@/app/...` alias the sweep targeted — fixed those by
+hand: `app/lecturer/messages/page.tsx`, `app/lecturer/_components/
+dashboard-data.ts`, `app/lecturer/courses/_components/my-courses-view.tsx`,
+`app/lecturer/sessions/requests/_components/session-requests-view.tsx`.
+
+## 2. Stripped `'lecturer'`/`'contributor'` from the role switcher
+
+`lib/role-switcher.ts`'s `SWITCHABLE_ROLES` is now `["admin", "member"]`
+only (was `["admin", "member", "contributor", "lecturer"]`);
+`roleViewLabel`/`roleViewRoute` shrunk to match. Both
+`app/dashboard/_components/sidebar.tsx`'s "ROLE SIMULATION" block and
+`app/member/_components/member-sidebar.tsx`'s "SWITCH VIEW" block render
+this list generically via `SWITCHABLE_ROLES.map()` — no hardcoded
+lecturer/contributor JSX existed in either file, so no separate UI
+removal was needed beyond shrinking the source array.
+
+Grepped both sidebar files directly for `/lecturer`/`/contributor` —
+zero hardcoded route references in either. The only genuinely stale
+in-app link found was `app/member/courses/_components/
+request-session-modal.tsx`'s `addNotification({ href:
+'/lecturer/sessions/requests', recipientRole: 'lecturer' })` — not a
+sidebar link, and `recipientRole`/notification-routing cleanup is
+explicitly Phase 5 scope per the task's own instructions, so left
+as-is for now rather than fixed ad hoc mid-Phase-3.
+
+## Verification
+
+`npx tsc --noEmit` clean. `npm run build` clean — all 83 routes compiled,
+including the still-present `/lecturer/**`/`/contributor/**` routes
+(deleted next in Phase 4).
+
+# Full Portal Consolidation — Phase 4 (delete the portal directories)
+
+Commit `68a7821`.
+
+Deleted `app/lecturer/**` (16 files) and `app/contributor/**` (29
+files) entirely — 45 files, 2634 lines. Admin and Member are now the
+only two portals. Did **not** touch `components/session-room/**` or
+`lib/messaging/**`, per the task's explicit instruction — both are
+shared infrastructure member routes still depend on.
+
+This was safe by construction, not just by luck: Phase 3 had already
+relocated every file outside these two folders that any other route
+depended on (`lib/sessions/**`, `lib/identity/**`), so by the time of
+this deletion the only remaining references into `app/lecturer/**`/
+`app/contributor/**` were internal (the folder's own files importing
+each other) — confirmed via `grep -r "@/app/lecturer\|@/app/contributor"`
+before deleting, which found exactly 2 hits, both inside
+`app/contributor/_components/` referencing sibling files in the same
+directory being deleted.
+
+## Verification
+
+Cleared the stale `.next/` cache first (its auto-generated route-type
+validator still referenced the just-deleted pages and produced 28
+false-positive `tsc` errors that had nothing to do with real source
+code — regenerates correctly on next build). After that, `npx tsc
+--noEmit` clean. `npm run build` clean: **72 routes** (down from 83 —
+exactly the 11 `/lecturer/*` + `/contributor/*` routes removed, no
+other route lost). Neither `/lecturer` nor `/contributor` appear
+anywhere in the build's route table.
+
+# Full Portal Consolidation — Phase 5 (cross-reference cleanup)
+
+Commit `38ededb`.
+
+Repo-wide case-insensitive grep for "lecturer"/"contributor" across
+`.ts`/`.tsx` (excluding `node_modules`/`.next`/`.git`) found ~77 files
+still matching. Classified every one per the audit's own test: does the
+underlying DATA CONCEPT (course instructor, publication author/
+contributor) still get used by a surviving admin/member surface? If
+yes, kept as-is (~65 files — course `lecturerId`/`instructor` fields,
+publication/research `contributor` fields, `lib/messaging/**`'s
+role-resolution helpers, `lib/sessions/**`'s `lecturerName` field,
+`lib/identity/**` — all still genuinely read and displayed by admin or
+member pages). `contexts/auth-context.tsx`'s `UserRole`/`mockUsers`
+deliberately left untouched, since retiring those is Phase 6, not this
+phase.
+
+## Genuine dead references found and fixed
+
+**RBAC roles no longer offer Contributor/Lecturer.** `roles-data.ts`'s
+`initialRoles` and `invitation-schema.ts`'s `invitableRoles` still
+listed "Contributor" and "Lecturer" as admin-manageable roles with real
+permission sets — a genuine ambiguity, since RBAC roles are a
+permissions concept distinct from the portal/`UserRole` cleanup already
+done, and removing them risked deleting a real admin capability with no
+stated replacement. **Stopped and asked the user rather than guessing**
+(per the task's own standing instruction on this exact class of risk) —
+decided to remove both roles now, since there is no portal left for
+either persona to exercise those permissions. Seeded invitation rows and
+the mock `/api/users` route's `role: 'contributor'` entry were
+reassigned to `'Staff'` rather than deleted outright, preserving seed
+data richness instead of just shrinking arrays.
+
+**Notification dead-ends.** Two places created a notification addressed
+to `recipientRole: 'lecturer'`/`'contributor'` with an `href` into the
+now-deleted portal — permanently unreachable, since no login flow can
+ever put someone in that role's seat anymore:
+- `request-session-modal.tsx`'s session-request notification now goes to
+  `recipientRole: 'admin'` with `href: '/dashboard/e-learning/sessions'`
+  — admin's real session-oversight page (built Phase 1), not a dead end.
+- `use-messages.ts`'s new-message notification now only fires for
+  `recipientRole === 'member'`; a message to a lecturer/contributor
+  recipient is skipped entirely rather than generated with a dead href.
+
+**A real capability gap, not just a dead link.** `SessionRoomView`'s
+`viewer === 'lecturer'` branch was unreachable (grepped every caller —
+none ever pass it), and its `backHref` fallback pointed at the deleted
+`/lecturer/sessions` route. But that same dead branch was also the
+*only* code path that called `completeSession()` — meaning nobody could
+mark a session `COMPLETED` through the room UI anymore; the learner's
+Leave never did it, and admin's Leave intentionally never did either
+(observing a session ≠ ending it). This is exactly the "real capability
+loss with no admin equivalent" the audit flagged as a stop-and-report
+case. **Asked the user rather than deciding unilaterally**; chosen fix:
+admin's Leave button is now the one that ends a session (admin already
+holds real authority over sessions via `SessionDecisionModal`'s
+approve/reject). `viewer` narrowed from `'learner' | 'lecturer' |
+'admin'` to `'learner' | 'admin'` in `session-room-view.tsx`,
+`build-room-participants.ts`, and `session-card.tsx` (which had the same
+dead `'lecturer'` arm and a dead `/lecturer/sessions/{id}/room` href,
+even though its only real caller already passed `viewer="learner"`
+exclusively).
+
+**Stale documentation** (comments only, no logic): `app-topbar.tsx`'s
+doc comments describing a three-portal badge scenario, `messages-view.tsx`'s
+"reachable from /lecturer/messages" claim, `invite-link-modal.tsx`'s
+dead-route example comment, `control-bar.tsx`'s lecturer-specific label
+comment — all rewritten to describe the current two-portal reality
+rather than left to mislead a future reader.
+
+Also pruned two stale `app/lecturer/sessions/[id]` entries from the
+(gitignored, local-only) `.claude/settings.json` permission allowlist —
+harness config, not app code, but pointed at a now-deleted directory.
+
+## Verification
+
+`npx tsc --noEmit` clean. `npm run build` clean — 72 routes, unchanged
+from Phase 4 (this phase only touched data/logic, not routes).
+
+# Full Portal Consolidation — Phase 6 (retire the UserRole values)
+
+Commit `e6f815e`.
+
+`contexts/auth-context.tsx`'s `UserRole` type narrowed to `"admin" |
+"manager" | "staff" | "member"` — `"contributor"` and `"lecturer"`
+removed. `mockUsers` dropped both entries (`contributor@kingdom.edu`,
+`lecturer@kingdom.edu`). Admin and Member are now the only two real
+personas/portals anywhere in the system.
+
+## Real blast radius, fixed properly
+
+This was flagged in advance as the one step with genuine
+type-checking blast radius, and it delivered exactly that: 4 compile
+errors, all in the messaging layer, all fixed by tracing the actual
+logic rather than loosening a type:
+
+- **`lib/messaging/identity.ts`'s `roleForName()`** used to return
+  `'lecturer'`/`'contributor'` for those names. Now returns `undefined`
+  for them, same as any unrecognized name — correct, not a shortcut,
+  because a course's lecturer can still be a named chat participant or
+  message sender (that's just a display name, still real functionality)
+  even though the name no longer maps to a *signed-in* `UserRole` seat.
+- **`lib/messaging/known-people.ts`'s `KnownPerson.role`** was typed as
+  `UserRole` but grepped and confirmed to be used only as a display
+  label in the "start a new DM" picker (`{p.role}` rendered as text,
+  never checked for permissions or routing). Widened to its own
+  `'member' | 'lecturer' | 'contributor'` label type instead of
+  deleting lecturer/contributor from the picker — preserves real,
+  working DM-with-your-instructor capability rather than silently
+  losing it to a type constraint.
+- **`lib/messaging/use-messages.ts`'s `sendMessage()`** had a
+  `senderRole === 'lecturer'` branch. Grepped every caller: only
+  `message-thread-panel.tsx` calls `sendMessage`, which only ever
+  receives `personRole` from `MessagesView`, which has exactly one real
+  caller (`app/member/messages/page.tsx`) that always passes `'member'`.
+  So this branch was already unreachable before this phase — simplified
+  to reflect that a course channel's notification path never had a real
+  non-member sender to begin with.
+
+## Verification
+
+`npx tsc --noEmit` and `npm run build` both clean, 72 routes unchanged.
+Confirmed `isMember`-style branches (`app/dashboard/_components/
+sidebar.tsx`'s nav-switching logic) and the RBAC pages (`/dashboard/roles`,
+`/dashboard/invitations`, already narrowed to 4 roles in Phase 5) all
+still resolve correctly with the smaller `UserRole`.
+
+Live-verified via `npm run dev` + `curl`:
+- 200: `/dashboard`, `/member`, `/dashboard/e-learning/sessions`,
+  `/member/sessions`, `/dashboard/roles`, `/dashboard/invitations`,
+  `/member/messages`, `/dashboard/e-learning/sessions/sr-1/room`,
+  `/member/sessions/sr-1/room`, `/dashboard/publishing/revenue`,
+  `/dashboard/research/collaborations`, `/auth/login`.
+- 404 (clean, not an error page): `/lecturer`, `/contributor`,
+  `/lecturer/sessions`, `/contributor/courses`.
+
+## Final summary
+
+All 6 phases of the portal consolidation are complete. Admin
+(`/dashboard`) and Member (`/member`) are the only two portals/personas
+in the system:
+
+- Phase 2 (Wave 2): admin got real contributor/author filters on 4
+  pages; investigated and resolved the course-catalog data-drift
+  question (kept datasets separate, added a shared `lecturerId` link);
+  explicitly declined to build admin messaging or a redundant dashboard
+  rollup, with reasoning recorded.
+- Phase 3: relocated shared session/identity infrastructure
+  (`lib/sessions/**`, `lib/identity/**`) out of `app/lecturer/**` before
+  deletion, including one gap (`session-decision-modal.tsx`) the
+  original audit missed; stripped the role switcher.
+- Phase 4: deleted `app/lecturer/**` (16 files) and `app/contributor/**`
+  (29 files) entirely.
+- Phase 5: swept every remaining reference repo-wide; removed
+  Contributor/Lecturer as RBAC roles (asked the user first — real
+  ambiguity); fixed two notification dead-ends; found and fixed a real
+  capability gap (`completeSession()` had become unreachable — asked
+  the user, moved end-session authority to admin).
+- Phase 6: retired the `UserRole` values themselves, fixing the
+  resulting compile errors on their merits rather than loosening types.
+
+Two genuine ambiguities were escalated to the user rather than decided
+unilaterally, per the task's explicit standing instruction on real
+capability loss with no admin equivalent — both are documented in their
+respective phase sections above. No item was silently dropped or
+guessed through.
+

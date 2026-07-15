@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { requestSession } from '@/app/lecturer/_shared/use-session-requests'
+import { requestSession } from '@/lib/sessions/use-session-requests'
 import { addNotification } from '@/app/dashboard/notifications/_components/use-notifications'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { CatalogCourse } from '@/app/member/_shared/course-catalog-data'
 
 /** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
@@ -53,9 +53,9 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
       addNotification({
         type: 'course',
         title: 'Session Requested',
-        message: `${CURRENT_MEMBER_NAME} requested a live session for "${course.title}".`,
-        href: '/lecturer/sessions/requests',
-        recipientRole: 'lecturer',
+        message: `${CURRENT_MEMBER_NAME} requested a live session for "${course.title}" with ${lecturer.name}.`,
+        href: '/dashboard/e-learning/sessions',
+        recipientRole: 'admin',
       })
 
       setProposedTime('')

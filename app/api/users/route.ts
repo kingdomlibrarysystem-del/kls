@@ -5,7 +5,7 @@ const mockUsers = [
   { id: '2', firstName: 'Admin', lastName: 'User', email: 'admin@kingdom.com', role: 'admin', status: 'active', emailVerified: true, createdAt: '2024-01-05' },
   { id: '3', firstName: 'Library', lastName: 'Manager', email: 'manager@kingdom.com', role: 'manager', status: 'active', emailVerified: true, createdAt: '2024-01-10' },
   { id: '4', firstName: 'Library', lastName: 'Staff', email: 'staff@kingdom.com', role: 'staff', status: 'active', emailVerified: true, createdAt: '2024-01-15' },
-  { id: '5', firstName: 'Author', lastName: 'Contributor', email: 'contributor@kingdom.com', role: 'contributor', status: 'active', emailVerified: true, createdAt: '2024-01-20' },
+  { id: '5', firstName: 'Library', lastName: 'Staff Two', email: 'staff2@kingdom.com', role: 'staff', status: 'active', emailVerified: true, createdAt: '2024-01-20' },
   { id: '6', firstName: 'Student', lastName: 'Member', email: 'member@kingdom.com', role: 'member', status: 'active', emailVerified: true, createdAt: '2024-01-25' },
 ]
 

@@ -39,11 +39,14 @@ export const permissionLabels: Record<string, string> = {
   'sessions:approve': 'Approve Session Requests',
 }
 
+/**
+ * 'Contributor' and 'Lecturer' were removed during portal consolidation
+ * — Admin and Member are the only two portals now, and there is no
+ * remaining UI for either persona to exercise the permissions below.
+ */
 export const initialRoles: Role[] = [
   { id: '1', name: 'Admin', description: 'Full platform control', userCount: 2, permissions: defaultPermissions },
   { id: '2', name: 'Manager', description: 'Library, publishing, research, e-learning operations', userCount: 5, permissions: defaultPermissions.filter((p) => !p.includes('roles:manage') && !p.includes('users:delete')) },
   { id: '3', name: 'Staff', description: 'Day-to-day operations: borrow/return, content moderation', userCount: 8, permissions: ['library:view', 'library:create', 'library:edit', 'borrow:approve', 'borrow:return', 'users:view'] },
-  { id: '4', name: 'Contributor', description: 'Authors and researchers', userCount: 12, permissions: ['library:view', 'borrow:request', 'courses:view', 'courses:enroll', 'publications:submit'] },
   { id: '5', name: 'Member', description: 'Students and readers', userCount: 1240, permissions: ['library:view', 'borrow:request', 'courses:view', 'courses:enroll'] },
-  { id: '6', name: 'Lecturer', description: 'Teaches courses, hosts live sessions, messages learners', userCount: 1, permissions: ['library:view', 'courses:view', 'courses:create', 'sessions:approve'] },
 ]

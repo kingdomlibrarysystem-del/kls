@@ -14,11 +14,11 @@ interface MessagesViewProps {
 }
 
 /**
- * Shared two-pane chat UI — one component reachable from both
- * /member/messages and /lecturer/messages (the same "one shared
- * component, parameterized by role" pattern Phase 3's SessionCard/
- * SessionRoomView already established), since the real content is
- * identical modulo which persona is "you."
+ * Shared two-pane chat UI, reachable from /member/messages — parameterized
+ * by role rather than hardcoded to one persona, the same pattern
+ * SessionCard/SessionRoomView already established (previously also
+ * reachable from /lecturer/messages before that portal was deleted during
+ * portal consolidation).
  */
 export function MessagesView({ personName, personRole }: MessagesViewProps) {
   const channels = useChannelsFor(personName)
