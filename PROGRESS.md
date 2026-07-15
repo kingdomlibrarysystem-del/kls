@@ -1475,3 +1475,34 @@ as-is for now rather than fixed ad hoc mid-Phase-3.
 `npx tsc --noEmit` clean. `npm run build` clean — all 83 routes compiled,
 including the still-present `/lecturer/**`/`/contributor/**` routes
 (deleted next in Phase 4).
+
+# Full Portal Consolidation — Phase 4 (delete the portal directories)
+
+Commit `68a7821`.
+
+Deleted `app/lecturer/**` (16 files) and `app/contributor/**` (29
+files) entirely — 45 files, 2634 lines. Admin and Member are now the
+only two portals. Did **not** touch `components/session-room/**` or
+`lib/messaging/**`, per the task's explicit instruction — both are
+shared infrastructure member routes still depend on.
+
+This was safe by construction, not just by luck: Phase 3 had already
+relocated every file outside these two folders that any other route
+depended on (`lib/sessions/**`, `lib/identity/**`), so by the time of
+this deletion the only remaining references into `app/lecturer/**`/
+`app/contributor/**` were internal (the folder's own files importing
+each other) — confirmed via `grep -r "@/app/lecturer\|@/app/contributor"`
+before deleting, which found exactly 2 hits, both inside
+`app/contributor/_components/` referencing sibling files in the same
+directory being deleted.
+
+## Verification
+
+Cleared the stale `.next/` cache first (its auto-generated route-type
+validator still referenced the just-deleted pages and produced 28
+false-positive `tsc` errors that had nothing to do with real source
+code — regenerates correctly on next build). After that, `npx tsc
+--noEmit` clean. `npm run build` clean: **72 routes** (down from 83 —
+exactly the 11 `/lecturer/*` + `/contributor/*` routes removed, no
+other route lost). Neither `/lecturer` nor `/contributor` appear
+anywhere in the build's route table.
