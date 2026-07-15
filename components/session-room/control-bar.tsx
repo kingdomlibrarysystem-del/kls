@@ -1,4 +1,4 @@
-import { Video, VideoOff, Mic, MicOff, Hand, PhoneOff, ScreenShare, ScreenShareOff, UserPlus, Circle, Square, Captions, EyeOff, Eye } from 'lucide-react'
+import { Video, VideoOff, Mic, MicOff, Hand, PhoneOff, ScreenShare, ScreenShareOff, UserPlus, Circle, Square, Captions, EyeOff, Eye, PanelRightClose, PanelRightOpen } from 'lucide-react'
 
 interface ControlBarProps {
   cameraOn: boolean
@@ -8,6 +8,8 @@ interface ControlBarProps {
   recording: boolean
   captionsOn: boolean
   hideSelf: boolean
+  /** Distinct from hideSelf: collapses the Participants + Chat side panel entirely to give the video grid more room, rather than hiding the local user's own tile. */
+  sidePanelHidden: boolean
   onToggleCamera: () => void
   onToggleMic: () => void
   onToggleHand: () => void
@@ -15,6 +17,7 @@ interface ControlBarProps {
   onToggleRecording: () => void
   onToggleCaptions: () => void
   onToggleHideSelf: () => void
+  onToggleSidePanel: () => void
   onAddParticipant: () => void
   onLeave: () => void
   /** "End Session" for the lecturer (also marks the request COMPLETED), "Leave" for the learner. */
@@ -55,8 +58,8 @@ function CircleButton({ on, onClick, icon, label, highlightColor, highlighted }:
 
 /** Real, stateful controls — every button here reflects and mutates genuine room state, nothing decorative. Wraps onto further rows on narrow viewports rather than overflowing. */
 export function ControlBar({
-  cameraOn, micOn, handRaised, presenting, recording, captionsOn, hideSelf,
-  onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording, onToggleCaptions, onToggleHideSelf, onAddParticipant, onLeave, leaveLabel,
+  cameraOn, micOn, handRaised, presenting, recording, captionsOn, hideSelf, sidePanelHidden,
+  onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording, onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel,
 }: ControlBarProps) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3" style={{ padding: '12px 0' }}>
@@ -82,6 +85,11 @@ export function ControlBar({
         on highlighted={hideSelf} highlightColor="var(--text-muted)" onClick={onToggleHideSelf}
         icon={hideSelf ? <EyeOff size={18} /> : <Eye size={18} />}
         label={hideSelf ? 'Show self view' : 'Hide self view'}
+      />
+      <CircleButton
+        on highlighted={sidePanelHidden} highlightColor="var(--text-muted)" onClick={onToggleSidePanel}
+        icon={sidePanelHidden ? <PanelRightOpen size={18} /> : <PanelRightClose size={18} />}
+        label={sidePanelHidden ? 'Show participants and chat panel' : 'Hide participants and chat panel'}
       />
       <CircleButton on onClick={onAddParticipant} icon={<UserPlus size={18} />} label="Add a participant" />
       <button

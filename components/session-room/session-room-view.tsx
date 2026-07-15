@@ -62,6 +62,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const recording = useSessionRecording()
   const [handRaised, setHandRaised] = useState(false)
   const [hideSelf, setHideSelf] = useState(false)
+  const [sidePanelHidden, setSidePanelHidden] = useState(false)
   const [addedNames, setAddedNames] = useState<string[]>([])
   const [addOpen, setAddOpen] = useState(false)
 
@@ -120,7 +121,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
         <RoomErrorBanner message={recording.error === 'unsupported' ? 'Recording isn\'t supported in this browser.' : 'Couldn\'t start recording — turn on your camera or start presenting first.'} />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-3">
+      <div className={`grid grid-cols-1 gap-3 ${sidePanelHidden ? '' : 'lg:grid-cols-[1fr_260px]'}`}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ position: 'relative' }}>
             <VideoTileGrid
@@ -150,6 +151,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             recording={recording.recording}
             captionsOn={transcript.active}
             hideSelf={hideSelf}
+            sidePanelHidden={sidePanelHidden}
             onToggleCamera={media.toggleCamera}
             onToggleMic={media.toggleMic}
             onToggleHand={() => setHandRaised((h) => !h)}
@@ -157,26 +159,29 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             onToggleRecording={toggleRecording}
             onToggleCaptions={toggleCaptions}
             onToggleHideSelf={() => setHideSelf((h) => !h)}
+            onToggleSidePanel={() => setSidePanelHidden((h) => !h)}
             onAddParticipant={() => setAddOpen(true)}
             onLeave={handleLeave}
             leaveLabel={viewer === 'lecturer' ? 'End Session' : 'Leave'}
           />
         </div>
 
-        <SessionSidePanel
-          participants={[
-            { name: youName, role: viewer === 'learner' ? 'Learner' : 'Lecturer', state: you },
-            { name: otherName, role: viewer === 'learner' ? 'Lecturer' : 'Learner', state: OTHER_PARTY_STATE },
-            ...addedNames.map((name) => ({
-              name, role: (isLecturerName(name) ? 'Lecturer' : 'Learner') as 'Lecturer' | 'Learner', state: ADDED_PARTICIPANT_STATE,
-            })),
-          ]}
-          sessionId={sessionId}
-          senderName={youName}
-          captionsOn={transcript.active || transcript.entries.length > 0}
-          transcriptEntries={transcript.entries}
-          transcriptUnsupported={transcript.unsupported}
-        />
+        {!sidePanelHidden && (
+          <SessionSidePanel
+            participants={[
+              { name: youName, role: viewer === 'learner' ? 'Learner' : 'Lecturer', state: you },
+              { name: otherName, role: viewer === 'learner' ? 'Lecturer' : 'Learner', state: OTHER_PARTY_STATE },
+              ...addedNames.map((name) => ({
+                name, role: (isLecturerName(name) ? 'Lecturer' : 'Learner') as 'Lecturer' | 'Learner', state: ADDED_PARTICIPANT_STATE,
+              })),
+            ]}
+            sessionId={sessionId}
+            senderName={youName}
+            captionsOn={transcript.active || transcript.entries.length > 0}
+            transcriptEntries={transcript.entries}
+            transcriptUnsupported={transcript.unsupported}
+          />
+        )}
       </div>
 
       <AddParticipantModal
