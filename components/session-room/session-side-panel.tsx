@@ -8,7 +8,7 @@ import type { TranscriptEntry } from './use-live-transcript'
 
 interface RoomParticipant {
   name: string
-  role: 'Lecturer' | 'Learner'
+  role: 'Lecturer' | 'Learner' | 'Admin'
   state: ParticipantDeviceState
 }
 

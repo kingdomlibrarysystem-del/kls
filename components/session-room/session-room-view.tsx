@@ -13,46 +13,47 @@ import { ReactionBar } from './reaction-bar'
 import { ReactionBurst } from './reaction-burst'
 import { LiveCaptionOverlay } from './live-caption-overlay'
 import { SessionSidePanel } from './session-side-panel'
-import { RoomErrorBanner } from './room-error-banner'
-import { useMediaStream, type MediaPermissionError } from './use-media-stream'
+import { RoomErrorBanner, PERMISSION_ERROR_COPY, formatTimer } from './room-error-banner'
+import { useMediaStream } from './use-media-stream'
 import { useSessionRecording } from './use-session-recording'
 import { useLiveTranscript } from './use-live-transcript'
+import { buildRoomParticipants } from './build-room-participants'
 import type { ParticipantDeviceState } from './participant-tile'
 
 interface SessionRoomViewProps {
   sessionId: string
-  /** Which portal is rendering this room — determines "you"/"other party" labels, back-link target, and the Leave-vs-End-Session action. */
-  viewer: 'learner' | 'lecturer'
+  /**
+   * Which portal is rendering this room — determines "you"/"other party"
+   * labels, back-link target, and the Leave-vs-End-Session action.
+   * 'admin' is a genuine third mode, not a reuse of 'lecturer': an admin
+   * observing a session is neither the learner nor the lecturer of
+   * record, so both real participants appear as named tiles rather than
+   * one of them being relabeled "you", and Leave never calls
+   * completeSession() — an observing admin closing their own view isn't
+   * the same action as the lecturer actually ending the session.
+   */
+  viewer: 'learner' | 'lecturer' | 'admin'
 }
 
 const OTHER_PARTY_STATE: ParticipantDeviceState = { cameraOn: true, micOn: true, handRaised: false }
 const ADDED_PARTICIPANT_STATE: ParticipantDeviceState = { cameraOn: true, micOn: true, handRaised: false }
 
-const PERMISSION_ERROR_COPY: Record<NonNullable<MediaPermissionError>, string> = {
-  camera: 'Camera access was blocked or denied — check your browser\'s site permissions and try again.',
-  mic: 'Microphone access was blocked or denied — check your browser\'s site permissions and try again.',
-  'screen-share': 'Screen share couldn\'t start — check your browser\'s permissions and try again.',
-}
-
-function formatTimer(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0')
-  const s = (totalSeconds % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
-
 /**
- * The Mock Session Room — one shared component reachable from both
- * /member/sessions/[id]/room and /lecturer/sessions/[id]/room, per the
- * confirmed Phase 3 design. Camera, mic, screen-share, recording, and
- * live captions are all REAL browser APIs (getUserMedia/getDisplayMedia/
- * MediaRecorder/SpeechRecognition) — but only ever for the local user's
- * own stream/speech; raise-hand and hide-self-view stay plain local
- * state. Chat and quick reactions are backed by real per-session stores;
- * added participants genuinely appear as new tiles/list rows (still
- * avatar placeholders — see participant-tile.tsx for why no other
- * participant can ever show real video, audio, or transcript here).
- * Ending the session (lecturer only) genuinely writes COMPLETED back
- * into the shared session-requests store, not just a navigation.
+ * The Mock Session Room — one shared component reachable from
+ * /member/sessions/[id]/room, /lecturer/sessions/[id]/room, and
+ * /dashboard/e-learning/sessions/[id]/room (admin oversight entry point),
+ * per the confirmed Phase 3 design plus the Phase 1 admin-equivalent
+ * build-out. Camera, mic, screen-share, recording, and live captions are
+ * all REAL browser APIs (getUserMedia/getDisplayMedia/MediaRecorder/
+ * SpeechRecognition) — but only ever for the local user's own stream/
+ * speech; raise-hand and hide-self-view stay plain local state. Chat and
+ * quick reactions are backed by real per-session stores; added
+ * participants genuinely appear as new tiles/list rows (still avatar
+ * placeholders — see participant-tile.tsx for why no other participant
+ * can ever show real video, audio, or transcript here). Ending the
+ * session (lecturer only) genuinely writes COMPLETED back into the
+ * shared session-requests store, not just a navigation — an admin
+ * observer's Leave never does this (see the `viewer` prop's docstring).
  */
 export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const router = useRouter()
@@ -66,9 +67,10 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const [addedNames, setAddedNames] = useState<string[]>([])
   const [addOpen, setAddOpen] = useState(false)
 
-  const backHref = viewer === 'learner' ? '/member/sessions' : '/lecturer/sessions'
+  const backHref = viewer === 'learner' ? '/member/sessions' : viewer === 'lecturer' ? '/lecturer/sessions' : '/dashboard/e-learning/sessions'
   const activeStream = media.presenting ? media.screenStream : media.stream
-  const transcript = useLiveTranscript(viewer === 'learner' ? request?.learnerName ?? 'You' : request?.lecturerName ?? 'You')
+  const youNameForTranscript = viewer === 'learner' ? request?.learnerName : viewer === 'lecturer' ? request?.lecturerName : 'Admin (Observer)'
+  const transcript = useLiveTranscript(youNameForTranscript ?? 'You')
 
   if (!request) {
     return (
@@ -81,8 +83,9 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     )
   }
 
-  const youName = viewer === 'learner' ? request.learnerName : request.lecturerName
-  const otherName = viewer === 'learner' ? request.lecturerName : request.learnerName
+  const youName = viewer === 'learner' ? request.learnerName : viewer === 'lecturer' ? request.lecturerName : 'Admin (Observer)'
+  const otherName = viewer === 'admin' ? request.learnerName : viewer === 'learner' ? request.lecturerName : request.learnerName
+  const adminExtraParticipant = viewer === 'admin' ? { name: request.lecturerName, state: OTHER_PARTY_STATE } : null
   const isLecturerName = (name: string) => lecturerRoster.some((l) => l.name === name)
   const you: ParticipantDeviceState = { cameraOn: media.cameraOn, micOn: media.micOn, handRaised }
 
@@ -101,10 +104,10 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <button
         onClick={() => router.push(backHref)}
-        aria-label="Back to my sessions"
+        aria-label={viewer === 'admin' ? 'Back to session oversight' : 'Back to my sessions'}
         style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', width: 'fit-content' }}
       >
-        <ChevronLeft size={14} /> Back to My Sessions
+        <ChevronLeft size={14} /> {viewer === 'admin' ? 'Back to Session Oversight' : 'Back to My Sessions'}
       </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-section)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
@@ -132,7 +135,10 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
               hideSelf={hideSelf}
               otherName={otherName}
               otherState={OTHER_PARTY_STATE}
-              extraParticipants={addedNames.map((name) => ({ name, state: ADDED_PARTICIPANT_STATE }))}
+              extraParticipants={[
+                ...(adminExtraParticipant ? [adminExtraParticipant] : []),
+                ...addedNames.map((name) => ({ name, state: ADDED_PARTICIPANT_STATE })),
+              ]}
             />
             <ReactionBurst />
             <LiveCaptionOverlay active={transcript.active} caption={transcript.interimCaption} unsupported={transcript.unsupported} />
@@ -162,19 +168,16 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             onToggleSidePanel={() => setSidePanelHidden((h) => !h)}
             onAddParticipant={() => setAddOpen(true)}
             onLeave={handleLeave}
-            leaveLabel={viewer === 'lecturer' ? 'End Session' : 'Leave'}
+            leaveLabel={viewer === 'lecturer' ? 'End Session' : viewer === 'admin' ? 'Close' : 'Leave'}
           />
         </div>
 
         {!sidePanelHidden && (
           <SessionSidePanel
-            participants={[
-              { name: youName, role: viewer === 'learner' ? 'Learner' : 'Lecturer', state: you },
-              { name: otherName, role: viewer === 'learner' ? 'Lecturer' : 'Learner', state: OTHER_PARTY_STATE },
-              ...addedNames.map((name) => ({
-                name, role: (isLecturerName(name) ? 'Lecturer' : 'Learner') as 'Lecturer' | 'Learner', state: ADDED_PARTICIPANT_STATE,
-              })),
-            ]}
+            participants={buildRoomParticipants({
+              viewer, youName, you, otherName, otherState: OTHER_PARTY_STATE,
+              adminExtraParticipant, addedNames, addedState: ADDED_PARTICIPANT_STATE, isLecturerName,
+            })}
             sessionId={sessionId}
             senderName={youName}
             captionsOn={transcript.active || transcript.entries.length > 0}

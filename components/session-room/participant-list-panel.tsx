@@ -3,7 +3,7 @@ import type { ParticipantDeviceState } from './participant-tile'
 
 interface RoomParticipant {
   name: string
-  role: 'Lecturer' | 'Learner'
+  role: 'Lecturer' | 'Learner' | 'Admin'
   state: ParticipantDeviceState
 }
 
