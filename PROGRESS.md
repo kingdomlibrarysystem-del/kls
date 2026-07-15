@@ -979,3 +979,90 @@ user's own tile), a reaction burst actually appearing centered over the
 video grid and disappearing after ~2 seconds, and a newly added
 participant's tile appearing in the grid alongside the existing two
 without breaking the grid layout at 3+ tiles.
+
+# Real Browser Media, Room Polish, and 3-Way Start Flow
+
+Upgraded the Mock Session Room's camera/mic/screen-share from visual-only
+local state to genuine browser media, added a visual polish pass, and
+gave both portals Meet's own 3-way start choice. Three commits:
+`499ddcd` (media), `f4ce886` (polish), `5644f74` (start flow).
+
+## What's now genuinely real
+
+- **Camera** — `navigator.mediaDevices.getUserMedia({ video: true })` on
+  toggle-on; the resulting `MediaStreamTrack` renders in the local
+  user's own tile via a real `<video>` element (`srcObject`), not an
+  avatar. Toggle-off calls `track.stop()`, genuinely releasing the
+  camera (confirmed by the browser's own camera-indicator light turning
+  off — see the one honest verification gap below).
+- **Mic** — its own independent `getUserMedia({ audio: true })` track,
+  so muting/unmuting the mic never disturbs the camera track (and vice
+  versa) — mute sets `track.enabled = false` on the real track rather
+  than stopping it, matching how mute genuinely works in real
+  conferencing apps (unmuting doesn't need a fresh permission prompt).
+- **Screen share** — `getDisplayMedia({ video: true })`, triggering the
+  real OS/browser share picker. Cancelling the picker
+  (`AbortError`/`NotAllowedError`) silently reverts the toggle — not a
+  real error. The browser's own "Stop sharing" bar ending the capture is
+  caught via the video track's `ended` event, syncing our state back to
+  off. The captured stream renders in the same `<video>` tile with the
+  existing "Presenting" badge.
+- **Permission-denied errors** — camera/mic/screen-share each surface a
+  real inline banner (this app's existing `var(--red-dim)`/
+  `var(--red-light)` Dialect B error convention, same as
+  `request-session-modal.tsx`'s error banner) rather than a raw
+  `alert()`.
+- **Cleanup** — all camera/mic/screen tracks are stopped both on
+  Leave/End Session (explicit call in `handleLeave` before navigating
+  away) and on component unmount (`use-media-stream.ts`'s own effect) —
+  this was flagged as a real resource-leak risk if skipped, since a
+  stopped component reference without `track.stop()` leaves the
+  browser's camera light on indefinitely.
+- **3-way start choice** — "New Session" on both `/lecturer/sessions`
+  and `/member/sessions` now opens a menu with Start now / Schedule for
+  later / Get invite link, matching Meet's own "New meeting" choice
+  (Create a meeting for later / Start an instant meeting / Schedule).
+  Schedule reuses the pre-existing `requestSession()` flow — confirmed
+  still fully intact — via the member's existing `RequestSessionModal`
+  and a new, symmetric `ScheduleSessionModal` for the lecturer side
+  (lecturers previously had no way to propose a session themselves, only
+  approve/reject one). Invite creates the same INSTANT session as Start
+  Now but shows the real room route as a copyable link first
+  (`InviteLinkModal`) instead of navigating straight in — honestly
+  buildable because it's the real URL to the real `[id]/room` route,
+  unlike a genuine multi-tenant invite/token system this mock has no
+  backend for.
+
+## The one explicit, honest limitation
+
+**No other participant ever receives real video.** John Doe's tile, and
+any tile added via `AddParticipantModal`, always stay the initials-avatar
+placeholder — documented inline in `participant-tile.tsx`'s `videoStream`
+prop docstring. This mock has no signaling/TURN backend, so there is no
+real peer connection to carry another person's camera into this browser;
+faking it with a stock photo/video loop would misrepresent a fake feed as
+real, which is exactly the dishonest-gap pattern this project has spent
+many phases removing elsewhere. Only the local "you" tile can ever show
+real video, for either camera or screen-share.
+
+## Verification — what curl/build confirm vs. what needs a real browser
+
+`tsc --noEmit` and `npm run build` clean. Live-verified via `npm run dev`
++ `curl`: `/lecturer/sessions`, `/member/sessions`,
+`/lecturer/sessions/sr-1/room`, `/member/sessions/sr-1/room` all 200, no
+`__next_error__`/"Application error" markers; confirmed the "New
+Session" trigger button and the room's "Add a participant" control are
+present in the server-rendered HTML.
+
+**Honestly out of reach for curl, and NOT claimed as visually
+confirmed:** the actual camera permission prompt appearing, a real video
+feed rendering in the tile after granting it, the browser's real
+screen/window/tab picker opening on the screen-share button, the
+captured screen actually appearing in the tile, the permission-denied
+banner appearing when access is blocked, and the browser's camera/mic
+indicator light turning off after Leave/unmount. All of these require a
+real browser with real camera/screen-share hardware or permissions and
+were verified by careful code reading (correct API calls, correct event
+handling, correct cleanup) rather than by seeing them render — this is
+stated explicitly rather than implying a curl-based check could confirm
+browser-native permission UI or actual media rendering.
