@@ -2,8 +2,6 @@
 
 import Link from 'next/link'
 import { CalendarClock, User, GraduationCap, Zap } from 'lucide-react'
-import { CountdownTimer } from '@/app/member/assessments/[assessmentId]/take/_components/countdown-timer'
-import { useCountdownToTime } from './use-countdown-to-time'
 import { sessionStatusConfig, type SessionRequest } from './session-requests-data'
 
 interface SessionCardProps {
@@ -17,18 +15,22 @@ interface SessionCardProps {
  * /lecturer/sessions since their real content is identical modulo which
  * party's name is shown and which portal's room route is used — a
  * deliberate shared component rather than two near-duplicate files.
- * For SCHEDULED APPROVED sessions, the Join/Start button's enabled state
- * is genuinely driven by a live countdown to `scheduledAt`, not
- * decorative. INSTANT sessions skip the countdown entirely — they're
- * created already-joinable, so canJoin is true the moment they exist.
+ *
+ * Per the open-access "Slack huddle" policy, entering a session's room
+ * is never gated by status or a countdown to `scheduledAt` — any
+ * request, PENDING/APPROVED/REJECTED/COMPLETED, gets a real link into
+ * its room. `scheduledAt` (when present) is shown purely as information
+ * about when the session was proposed/held, not a precondition for
+ * entry — this closes the last two gates left over from the earlier
+ * "no enrollment/completion gate" decision (354306a / the instant-
+ * session pass), which had only removed the requestSession() precondition,
+ * not the countdown or the COMPLETED-session block that lived here.
  */
 export function SessionCard({ request, viewer }: SessionCardProps) {
   const otherPartyLabel = viewer === 'learner' ? request.lecturerName : request.learnerName
   const roomHref = viewer === 'learner' ? `/member/sessions/${request.id}/room` : `/lecturer/sessions/${request.id}/room`
   const isInstant = request.mode === 'INSTANT'
-  /** INSTANT sessions never wait on a countdown — there's nothing to count down to, they're joinable the moment they exist. */
-  const secondsRemaining = useCountdownToTime(request.status === 'APPROVED' && !isInstant ? request.scheduledAt : undefined)
-  const canJoin = request.status === 'APPROVED' && (isInstant || secondsRemaining <= 0)
+  const enterLabel = request.status === 'COMPLETED' ? 'Rejoin Session' : viewer === 'learner' ? 'Join Session' : 'Start Session'
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -70,41 +72,27 @@ export function SessionCard({ request, viewer }: SessionCardProps) {
       )}
 
       {request.status === 'COMPLETED' && (
-        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>This session has ended.</p>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>This session has ended — you can still reopen the room below.</p>
       )}
 
       {request.status === 'APPROVED' && request.scheduledAt && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CalendarClock size={12} color="var(--text-muted)" />
-            {isInstant ? (
-              <span style={{ fontSize: 11, color: 'var(--green-light)', fontWeight: 600 }}>Live now</span>
-            ) : (
-              <>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(request.scheduledAt).toLocaleString()}</span>
-                {!canJoin && <CountdownTimer secondsRemaining={secondsRemaining} onTick={() => {}} onExpire={() => {}} />}
-              </>
-            )}
-          </div>
-          {canJoin ? (
-            <Link
-              href={roomHref}
-              aria-label={viewer === 'learner' ? 'Join session' : 'Start session'}
-              style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 700, textDecoration: 'none' }}
-            >
-              {viewer === 'learner' ? 'Join Session' : 'Start Session'}
-            </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CalendarClock size={12} color="var(--text-muted)" />
+          {isInstant ? (
+            <span style={{ fontSize: 11, color: 'var(--green-light)', fontWeight: 600 }}>Live now</span>
           ) : (
-            <button
-              disabled
-              aria-label="Session has not started yet"
-              style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, cursor: 'not-allowed' }}
-            >
-              Not Yet Started
-            </button>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(request.scheduledAt).toLocaleString()}</span>
           )}
         </div>
       )}
+
+      <Link
+        href={roomHref}
+        aria-label={enterLabel}
+        style={{ alignSelf: 'flex-start', padding: '6px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 700, textDecoration: 'none' }}
+      >
+        {enterLabel}
+      </Link>
     </div>
   )
 }
