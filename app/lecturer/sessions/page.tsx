@@ -1,6 +1,6 @@
 import { PageTransition } from '@/components/ui/page-transition'
 import { LecturerSessionsView } from './_components/lecturer-sessions-view'
-import { StartInstantSessionButton } from './_components/start-instant-session-button'
+import { StartSessionMenu } from './_components/start-session-menu'
 
 export default function MySessionsPage() {
   return (
@@ -14,7 +14,7 @@ export default function MySessionsPage() {
             Your approved, rejected, and completed live sessions
           </div>
         </div>
-        <StartInstantSessionButton />
+        <StartSessionMenu />
       </div>
       <LecturerSessionsView />
     </PageTransition>
