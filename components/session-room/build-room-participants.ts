@@ -7,7 +7,7 @@ export interface RoomParticipantEntry {
 }
 
 interface BuildRoomParticipantsInput {
-  viewer: 'learner' | 'lecturer' | 'admin'
+  viewer: 'learner' | 'admin'
   youName: string
   you: ParticipantDeviceState
   otherName: string
@@ -22,14 +22,14 @@ interface BuildRoomParticipantsInput {
 /**
  * Builds the participant-list entries for SessionSidePanel — split out of
  * session-room-view.tsx to keep that file under the 200-line cap now that
- * it supports a third `viewer` mode. See session-room-view.tsx's
+ * it supports a second `viewer` mode. See session-room-view.tsx's
  * `viewer` prop docstring for why admin needs different participant
  * shape (both real parties as named tiles, not one relabeled "you").
  */
 export function buildRoomParticipants({ viewer, youName, you, otherName, otherState, adminExtraParticipant, addedNames, addedState, isLecturerName }: BuildRoomParticipantsInput): RoomParticipantEntry[] {
   const youEntry: RoomParticipantEntry = viewer === 'admin'
     ? { name: youName, role: 'Admin', state: you }
-    : { name: youName, role: viewer === 'learner' ? 'Learner' : 'Lecturer', state: you }
+    : { name: youName, role: 'Learner', state: you }
 
   const otherEntry: RoomParticipantEntry = { name: otherName, role: viewer === 'learner' ? 'Lecturer' : 'Learner', state: otherState }
 

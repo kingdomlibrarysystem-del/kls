@@ -24,15 +24,20 @@ interface SessionRoomViewProps {
   sessionId: string
   /**
    * Which portal is rendering this room — determines "you"/"other party"
-   * labels, back-link target, and the Leave-vs-End-Session action.
-   * 'admin' is a genuine third mode, not a reuse of 'lecturer': an admin
-   * observing a session is neither the learner nor the lecturer of
-   * record, so both real participants appear as named tiles rather than
-   * one of them being relabeled "you", and Leave never calls
-   * completeSession() — an observing admin closing their own view isn't
-   * the same action as the lecturer actually ending the session.
+   * labels, back-link target, and the Leave-vs-End-Session action. Admin
+   * is the party with real authority over sessions (approves/rejects
+   * requests via SessionDecisionModal), so admin's Leave is the one that
+   * genuinely calls completeSession() and writes COMPLETED back to the
+   * shared session-requests store — a learner's Leave is just a
+   * navigation. Both real participants (learner + lecturer) appear as
+   * named tiles for the admin viewer rather than one being relabeled
+   * "you", since an observing admin is neither party to the session.
+   *
+   * Previously had a third 'lecturer' mode before the portal
+   * consolidation removed app/lecturer/** entirely — end-session
+   * authority moved to 'admin' rather than being left unreachable.
    */
-  viewer: 'learner' | 'lecturer' | 'admin'
+  viewer: 'learner' | 'admin'
 }
 
 const OTHER_PARTY_STATE: ParticipantDeviceState = { cameraOn: true, micOn: true, handRaised: false }
@@ -40,20 +45,18 @@ const ADDED_PARTICIPANT_STATE: ParticipantDeviceState = { cameraOn: true, micOn:
 
 /**
  * The Mock Session Room — one shared component reachable from
- * /member/sessions/[id]/room, /lecturer/sessions/[id]/room, and
- * /dashboard/e-learning/sessions/[id]/room (admin oversight entry point),
- * per the confirmed Phase 3 design plus the Phase 1 admin-equivalent
- * build-out. Camera, mic, screen-share, recording, and live captions are
- * all REAL browser APIs (getUserMedia/getDisplayMedia/MediaRecorder/
- * SpeechRecognition) — but only ever for the local user's own stream/
- * speech; raise-hand and hide-self-view stay plain local state. Chat and
- * quick reactions are backed by real per-session stores; added
- * participants genuinely appear as new tiles/list rows (still avatar
- * placeholders — see participant-tile.tsx for why no other participant
- * can ever show real video, audio, or transcript here). Ending the
- * session (lecturer only) genuinely writes COMPLETED back into the
- * shared session-requests store, not just a navigation — an admin
- * observer's Leave never does this (see the `viewer` prop's docstring).
+ * /member/sessions/[id]/room and /dashboard/e-learning/sessions/[id]/room
+ * (admin oversight entry point). Camera, mic, screen-share, recording,
+ * and live captions are all REAL browser APIs (getUserMedia/
+ * getDisplayMedia/MediaRecorder/SpeechRecognition) — but only ever for
+ * the local user's own stream/speech; raise-hand and hide-self-view stay
+ * plain local state. Chat and quick reactions are backed by real
+ * per-session stores; added participants genuinely appear as new
+ * tiles/list rows (still avatar placeholders — see participant-tile.tsx
+ * for why no other participant can ever show real video, audio, or
+ * transcript here). Ending the session (admin only) genuinely writes
+ * COMPLETED back into the shared session-requests store, not just a
+ * navigation (see the `viewer` prop's docstring).
  */
 export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const router = useRouter()
@@ -67,9 +70,9 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const [addedNames, setAddedNames] = useState<string[]>([])
   const [addOpen, setAddOpen] = useState(false)
 
-  const backHref = viewer === 'learner' ? '/member/sessions' : viewer === 'lecturer' ? '/lecturer/sessions' : '/dashboard/e-learning/sessions'
+  const backHref = viewer === 'learner' ? '/member/sessions' : '/dashboard/e-learning/sessions'
   const activeStream = media.presenting ? media.screenStream : media.stream
-  const youNameForTranscript = viewer === 'learner' ? request?.learnerName : viewer === 'lecturer' ? request?.lecturerName : 'Admin (Observer)'
+  const youNameForTranscript = viewer === 'learner' ? request?.learnerName : 'Admin (Observer)'
   const transcript = useLiveTranscript(youNameForTranscript ?? 'You')
 
   if (!request) {
@@ -83,8 +86,8 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     )
   }
 
-  const youName = viewer === 'learner' ? request.learnerName : viewer === 'lecturer' ? request.lecturerName : 'Admin (Observer)'
-  const otherName = viewer === 'admin' ? request.learnerName : viewer === 'learner' ? request.lecturerName : request.learnerName
+  const youName = viewer === 'learner' ? request.learnerName : 'Admin (Observer)'
+  const otherName = viewer === 'admin' ? request.learnerName : request.lecturerName
   const adminExtraParticipant = viewer === 'admin' ? { name: request.lecturerName, state: OTHER_PARTY_STATE } : null
   const isLecturerName = (name: string) => lecturerRoster.some((l) => l.name === name)
   const you: ParticipantDeviceState = { cameraOn: media.cameraOn, micOn: media.micOn, handRaised }
@@ -93,7 +96,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     media.cleanup()
     recording.discard()
     transcript.stop()
-    if (viewer === 'lecturer') completeSession(sessionId)
+    if (viewer === 'admin') completeSession(sessionId)
     router.push(backHref)
   }
 
@@ -168,7 +171,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             onToggleSidePanel={() => setSidePanelHidden((h) => !h)}
             onAddParticipant={() => setAddOpen(true)}
             onLeave={handleLeave}
-            leaveLabel={viewer === 'lecturer' ? 'End Session' : viewer === 'admin' ? 'Close' : 'Leave'}
+            leaveLabel={viewer === 'admin' ? 'End Session' : 'Leave'}
           />
         </div>
 

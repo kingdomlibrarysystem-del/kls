@@ -6,26 +6,28 @@ import { sessionStatusConfig, type SessionRequest } from './session-requests-dat
 
 interface SessionCardProps {
   request: SessionRequest
-  /** Which portal this card renders in — determines the room URL and the "other party" label shown. */
-  viewer: 'learner' | 'lecturer'
+  /**
+   * Retained even though 'learner' is the only value passed today — the
+   * lecturer portal this card also used to render in was deleted during
+   * portal consolidation (its own sessions list is gone, not replaced by
+   * this card elsewhere), so the type narrowed from 'learner' | 'lecturer'
+   * to just 'learner'. Kept as a named prop rather than dropped entirely
+   * since admin's session oversight may reuse this card in the future.
+   */
+  viewer: 'learner'
 }
 
 /**
- * One session-request card, shared by both /member/sessions and
- * /lecturer/sessions since their real content is identical modulo which
- * party's name is shown and which portal's room route is used — a
- * deliberate shared component rather than two near-duplicate files.
- *
- * Per the open-access "Slack huddle" policy, entering a session's room
- * is never gated by status or a countdown to `scheduledAt` — any
- * request, PENDING/APPROVED/REJECTED/COMPLETED, gets a real link into
- * its room. `scheduledAt` (when present) is shown purely as information
- * about when the session was proposed/held, not a precondition for
- * entry.
+ * One session-request card, used by /member/sessions. Per the open-access
+ * "Slack huddle" policy, entering a session's room is never gated by
+ * status or a countdown to `scheduledAt` — any request,
+ * PENDING/APPROVED/REJECTED/COMPLETED, gets a real link into its room.
+ * `scheduledAt` (when present) is shown purely as information about when
+ * the session was proposed/held, not a precondition for entry.
  */
 export function SessionCard({ request, viewer }: SessionCardProps) {
   const otherPartyLabel = viewer === 'learner' ? request.lecturerName : request.learnerName
-  const roomHref = viewer === 'learner' ? `/member/sessions/${request.id}/room` : `/lecturer/sessions/${request.id}/room`
+  const roomHref = `/member/sessions/${request.id}/room`
   const isInstant = request.mode === 'INSTANT'
   const enterLabel = request.status === 'COMPLETED' ? 'Rejoin Session' : viewer === 'learner' ? 'Join Session' : 'Start Session'
 

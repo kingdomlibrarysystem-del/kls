@@ -9,7 +9,7 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 interface InviteLinkModalProps {
   open: boolean
   onClose: () => void
-  /** The real, existing room route for this session — e.g. /lecturer/sessions/{id}/room. Copying it is honest because it's the actual route the room lives at, unlike a real multi-tenant invite/token system this mock has no backend for. */
+  /** The real, existing room route for this session — e.g. /member/sessions/{id}/room. Copying it is honest because it's the actual route the room lives at, unlike a real multi-tenant invite/token system this mock has no backend for. */
   roomHref: string
 }
 

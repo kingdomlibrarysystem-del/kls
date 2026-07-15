@@ -53,9 +53,9 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
       addNotification({
         type: 'course',
         title: 'Session Requested',
-        message: `${CURRENT_MEMBER_NAME} requested a live session for "${course.title}".`,
-        href: '/lecturer/sessions/requests',
-        recipientRole: 'lecturer',
+        message: `${CURRENT_MEMBER_NAME} requested a live session for "${course.title}" with ${lecturer.name}.`,
+        href: '/dashboard/e-learning/sessions',
+        recipientRole: 'admin',
       })
 
       setProposedTime('')

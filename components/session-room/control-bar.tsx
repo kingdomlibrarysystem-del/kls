@@ -20,7 +20,7 @@ interface ControlBarProps {
   onToggleSidePanel: () => void
   onAddParticipant: () => void
   onLeave: () => void
-  /** "End Session" for the lecturer (also marks the request COMPLETED), "Leave" for the learner. */
+  /** "End Session" for admin (also marks the request COMPLETED), "Leave" for the learner. */
   leaveLabel: string
 }
 

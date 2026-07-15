@@ -95,12 +95,16 @@ export function sendMessage(channelId: string, senderName: string, senderRole: U
     const recipientRole = channelId.startsWith('course-')
       ? (senderRole === 'lecturer' ? 'member' : 'lecturer')
       : roleForName(otherParty)
-    if (recipientRole) {
+    // 'lecturer'/'contributor' have no surviving inbox route since the
+    // portal consolidation (no admin messaging was built — see Phase 2's
+    // PROGRESS.md entry) — a notification addressed to either would be
+    // permanently unreachable, so skip it rather than point at a dead href.
+    if (recipientRole === 'member') {
       addNotification({
         type: 'course',
         title: 'New Message',
         message: `${senderName}: ${body.length > 60 ? `${body.slice(0, 60)}…` : body}`,
-        href: recipientRole === 'lecturer' ? '/lecturer/messages' : '/member/messages',
+        href: '/member/messages',
         recipientRole,
       })
     }
