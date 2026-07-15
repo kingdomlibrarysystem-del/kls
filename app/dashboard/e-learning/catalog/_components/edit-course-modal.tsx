@@ -16,6 +16,7 @@ import {
   type CourseFormData,
 } from '../../add/_components/course-form-schema'
 import { updateCourseInCatalog } from '../../_shared/use-course-catalog'
+import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
 import type { CourseCatalogEntry } from './catalog-config'
 
 interface EditCourseModalProps {
@@ -40,6 +41,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
         category: course.category,
         language: course.language,
         status: course.status,
+        lecturerId: course.lecturerId ?? '',
       })
     }
   }, [course, reset])
@@ -47,7 +49,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
   const onSubmit = (data: CourseFormData) => {
     if (!course) return
     try {
-      updateCourseInCatalog(course.id, data)
+      updateCourseInCatalog(course.id, { ...data, lecturerId: data.lecturerId || undefined })
       onClose()
     } catch {
       // Update is a synchronous in-memory write; failures aren't expected here.
@@ -107,6 +109,18 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
             {...register('status')}
           >
             {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <FieldLabel htmlFor="edit-lecturerId">Instructor</FieldLabel>
+          <select
+            id="edit-lecturerId"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+            {...register('lecturerId')}
+          >
+            <option value="">No assigned instructor</option>
+            {lecturerRoster.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
         </div>
 

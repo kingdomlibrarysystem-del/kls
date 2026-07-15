@@ -1,6 +1,7 @@
-import { Tag, Globe, Users, CalendarDays, FileText } from 'lucide-react'
+import { Tag, Globe, Users, CalendarDays, FileText, PenLine, GraduationCap } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { languageLabels } from '../../add/_components/course-form-schema'
+import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
 import { statusConfig, type CourseCatalogEntry } from './catalog-config'
 
 interface CourseDetailModalProps {
@@ -36,6 +37,12 @@ export function CourseDetailModal({ course, onClose }: CourseDetailModalProps) {
           <div className="bg-form-highlight border border-w-300 rounded p-3 space-y-2">
             <DetailRow icon={<Tag size={13} />} label="Category" value={course.category} />
             <DetailRow icon={<Globe size={13} />} label="Language" value={languageLabels[course.language]} />
+            <DetailRow icon={<PenLine size={13} />} label="Author" value={course.author} />
+            <DetailRow
+              icon={<GraduationCap size={13} />}
+              label="Instructor"
+              value={course.lecturerId ? (lecturerRoster.find((l) => l.id === course.lecturerId)?.name ?? '—') : 'None assigned'}
+            />
             <DetailRow icon={<Users size={13} />} label="Enrolled" value={String(course.enrolledCount)} />
             <DetailRow icon={<CalendarDays size={13} />} label="Created" value={course.createdAt} />
             <DetailRow icon={<FileText size={13} />} label="ID" value={course.id} />

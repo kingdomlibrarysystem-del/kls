@@ -37,6 +37,7 @@ function LoadingSkeleton() {
 export function CatalogView() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<CourseStatus | 'all'>('all')
+  const [authorFilter, setAuthorFilter] = useState('all')
   const [viewing, setViewing] = useState<CourseCatalogEntry | null>(null)
   const [editing, setEditing] = useState<CourseCatalogEntry | null>(null)
   const [archiving, setArchiving] = useState<CourseCatalogEntry | null>(null)
@@ -60,7 +61,10 @@ export function CatalogView() {
     )
   }
 
-  const tableData = statusFilter === 'all' ? catalog : catalog.filter((c) => c.status === statusFilter)
+  const authors = Array.from(new Set(catalog.map((c) => c.author))).sort()
+  const tableData = catalog
+    .filter((c) => statusFilter === 'all' || c.status === statusFilter)
+    .filter((c) => authorFilter === 'all' || c.author === authorFilter)
 
   const columns: Column<CourseCatalogEntry>[] = [
     {
@@ -72,6 +76,7 @@ export function CatalogView() {
         </div>
       ),
     },
+    { key: 'author', label: 'Author', sortable: true, render: (c) => <span className="text-w-700">{c.author}</span> },
     { key: 'language', label: 'Language', sortable: true, render: (c) => <span className="text-w-700">{languageLabels[c.language]}</span> },
     {
       key: 'status', label: 'Status', sortable: true,
@@ -101,17 +106,28 @@ export function CatalogView() {
     },
   ]
 
-  const statusSelect = (
-    <select
-      value={statusFilter}
-      onChange={(e) => setStatusFilter(e.target.value as CourseStatus | 'all')}
-      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
-    >
-      <option value="all">All Statuses</option>
-      {(Object.keys(statusConfig) as CourseStatus[]).map((s) => (
-        <option key={s} value={s}>{statusConfig[s].label}</option>
-      ))}
-    </select>
+  const filterControls = (
+    <div className="flex gap-2">
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value as CourseStatus | 'all')}
+        className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      >
+        <option value="all">All Statuses</option>
+        {(Object.keys(statusConfig) as CourseStatus[]).map((s) => (
+          <option key={s} value={s}>{statusConfig[s].label}</option>
+        ))}
+      </select>
+      <select
+        value={authorFilter}
+        onChange={(e) => setAuthorFilter(e.target.value)}
+        className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+        aria-label="Filter by author"
+      >
+        <option value="all">All Authors</option>
+        {authors.map((a) => <option key={a} value={a}>{a}</option>)}
+      </select>
+    </div>
   )
 
   return (
@@ -132,7 +148,7 @@ export function CatalogView() {
         rowKey={(c) => c.id}
         searchPlaceholder="Search course or category..."
         searchFilter={(c, q) => c.title.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)}
-        filters={statusSelect}
+        filters={filterControls}
         emptyMessage="No courses match your filters."
       />
 
