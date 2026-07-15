@@ -789,3 +789,78 @@ visible because Health System is now a real destination instead of a
 placeholder. Flagging rather than silently fixing, since deciding where
 Health System belongs in navigation is a product/IA call, not a
 mechanical fix.
+
+# Instant Sessions (Meet-style "start now"), Additive to Scheduled Requests
+
+Added a second way to start a live session — instant, no scheduling or
+approval step — alongside the existing propose-a-future-time flow, which
+is fully unchanged. Commit `6d3944e`.
+
+## Design: `mode` field, not a 5th status
+
+`SessionRequest` gained `mode: 'SCHEDULED' | 'INSTANT'`
+(`app/lecturer/_shared/session-requests-data.ts`) rather than a new
+`SessionStatus` value. Reasoning: an instant session still goes through
+the same real `APPROVED → COMPLETED` lifecycle as a scheduled one —
+ending the mock room still calls `completeSession()` regardless of mode.
+The difference is entirely about *how* a request arrived at `APPROVED`
+(skipped PENDING/approval vs. went through it), not a different terminal
+state, so bolting a 5th status value on would have conflated two
+orthogonal concerns (status = where in the approve/reject lifecycle;
+mode = which flow created it).
+
+## What changed
+
+- **`use-session-requests.ts`**: new `startInstantSession(input)` creates
+  a `SessionRequest` directly as `status: 'APPROVED'`, `mode: 'INSTANT'`,
+  with `scheduledAt` stamped to the moment of creation — no PENDING
+  stage, nothing for either party to approve, mirroring Meet's "Start an
+  instant meeting" having no separate approval step. The existing
+  `requestSession()` (scheduled flow) is untouched apart from stamping
+  `mode: 'SCHEDULED'` on its output; all 3 seed rows in
+  `session-requests-data.ts` got the same `mode: 'SCHEDULED'` tag.
+- **`session-card.tsx`**: `canJoin` is now `status === 'APPROVED' &&
+  (mode === 'INSTANT' || secondsRemaining <= 0)` — instant sessions never
+  wait on `useCountdownToTime`, since there's nothing to count down to.
+  This is a real gating change, not cosmetic: previously *any* APPROVED
+  session with no future `scheduledAt` would already read as joinable by
+  the old gate, but instant sessions now skip the countdown hook
+  invocation's meaningful branch entirely rather than coincidentally
+  passing it. Visually, instant rows get a real "⚡ Instant" chip next to
+  the status badge and a "Live now" label in place of the
+  scheduled-time-plus-countdown row.
+- **`StartInstantSessionButton`** (new, one per portal —
+  `app/lecturer/sessions/_components/` and
+  `app/member/sessions/_components/`): both wired into their portal's
+  `/sessions` page header. Both this mock's one lecturer persona (teaches
+  4 courses) and its one member persona (4 enrollments across 3
+  lecturers) have genuine course/lecturer ambiguity, so both sides show a
+  small course-picker modal before starting — resolved the same way
+  `RequestSessionModal` already resolves "which lecturer" for the
+  scheduled flow (via `courseCatalog.lecturerId`), rather than inventing
+  a separate mechanism. No multi-user/learner picker was built on top of
+  that, since there's no second real learner or lecturer persona in this
+  mock to pick from — would have been a picker with no real data behind
+  it. Both buttons `router.push()` straight into the existing
+  `SessionRoomView` via the real room routes; no new room UI.
+- **Admin oversight** (`/dashboard/e-learning/sessions`'s `SessionsView`)
+  gained a `Mode` column so the instant/scheduled distinction is visible
+  there too, not just on the two portal-side list views — this list view
+  reads the same shared store, so leaving it blind to the new field would
+  have been an inconsistent gap the moment it shipped.
+
+## Verification
+
+`tsc --noEmit` and `npm run build` both clean. Live-verified via
+`npm run dev` + `curl`: `/lecturer/sessions`, `/member/sessions`,
+`/lecturer/sessions/requests` all 200 with the "Start Instant Session"
+button text present in the server-rendered HTML; `/lecturer/sessions/sr-1/room`
+and `/member/sessions/sr-1/room` both 200 and render the real "Mock
+Session Room" UI (not the "Session not found" EmptyState), confirming the
+room route + `SessionRoomView` correctly resolve a request from the
+shared store — the same lookup path a freshly created instant session's
+id goes through via `router.push()`. (One transient `500` from a stale
+Turbopack worker process was hit mid-verification and resolved by
+clearing `.next` and restarting — not a code issue, included here so a
+future reader doesn't mistake dev-server flakiness for a real bug if it
+recurs.)
