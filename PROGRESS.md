@@ -1136,4 +1136,79 @@ mic-permission-driven transcription flow all require a real Chrome
 browser to confirm — not claimed as visually verified here, only
 verified by code reading (correct API usage, correct cleanup, correct
 browser-support gating).
-browser-native permission UI or actual media rendering.
+
+# Two Session-Room Bug Fixes: Hide Side Panel, Countdown/COMPLETED Gates
+
+Commits `c9b7382` (hide side panel) and `0ef8007` (countdown/COMPLETED
+gate removal).
+
+## Bug 1: hide side panel (distinct from self-view)
+
+The existing self-view toggle (hides only the local user's own tile from
+their own screen) was mistaken for a panel-hide feature — a genuinely
+separate, previously-unbuilt control. Added `sidePanelHidden` local
+state to `session-room-view.tsx` with its own `ControlBar` button. The
+room's outer grid drops its `lg:grid-cols-[1fr_260px]` split and falls
+back to a single full-width column while hidden, so the video grid
+genuinely re-flows into the freed width rather than leaving blank space.
+
+## Bug 2: couldn't rejoin ended sessions / countdown blocked entry
+
+Traced to two gates left over from the earlier open-access ("Slack
+huddle") decision, which had only removed `requestSession()`'s
+enrollment/completion precondition — not these two:
+
+- `session-card.tsx`'s `canJoin` no longer depends on a live countdown
+  to `scheduledAt` (`useCountdownToTime` is now unused anywhere in the
+  repo — confirmed via grep, deleted along with its only caller).
+- The actual "hard block" turned out to live in `session-card.tsx`, not
+  `session-room-view.tsx`: the Join/Start link was previously rendered
+  only inside `{status === 'APPROVED' && scheduledAt && (...)}`, so
+  PENDING/REJECTED/COMPLETED sessions never got a room link at all. The
+  room component itself never gated on status — only on the request
+  existing — so navigating directly to a COMPLETED session's room URL
+  already worked before this fix; the card just never offered that link.
+  Every status now gets a real link into its room; COMPLETED shows
+  "Rejoin Session" instead of "Join/Start Session" for clarity.
+- No status-transition change was needed for clean re-entry:
+  `completeSession()` only runs from `handleLeave()` on the lecturer's
+  own Leave/End Session action, never on room entry — so reopening an
+  already-COMPLETED session has no entry side effect, and leaving it
+  again just re-sets status to COMPLETED (idempotent).
+
+**Verification:** `tsc --noEmit` and `npm run build` both clean.
+Live-verified via `npm run dev` + `curl`: `/lecturer/sessions/sr-3/room`
+(the seeded COMPLETED session) now returns 200 with the real "Mock
+Session Room" UI instead of being blocked; confirmed "Hide participants
+and chat panel" appears in the server-rendered HTML alongside the
+existing controls.
+
+# Portal Consolidation Audit (read-only, no deletions made)
+
+Per an explicit request to map the blast radius of removing the
+Lecturer and Contributor portals and folding them into Admin BEFORE any
+deletion happens, a read-only audit was run and written to
+`.claude/skills/kls-page-builder/references/portal-consolidation-audit.md`
+(gitignored, like other skill-reference docs — see the earlier note on
+`.gitignore` lines 18-19 — so it exists on disk but produces no git diff).
+
+**Headline findings:** 52 files total across both portals (22 lecturer,
+30 contributor) — plus two shared trees NOT part of the deletable
+footprint since `/member/*` also depends on them: `components/session-room/**`
+(19 files) and `lib/messaging/**` (10 files). Some contributor features
+(My Courses, My Research, most of Earnings) already have a ready
+admin-side data path needing only a filtered view. Others need real
+work: admin's session oversight is read-only by design (no approve/
+reject UI), and admin's publishing review reads a completely different,
+disconnected store from the contributor's own submissions list. Some
+features (the real-media session room, admin messaging) have **no**
+admin entry point at all today — new work, not a deletion. Course
+instructor / publication author / research contributor all need to
+survive as data-model fields regardless of portal removal.
+
+No files were deleted or edited during this audit beyond the one new
+markdown doc — confirmed via `git status` before and after. This is
+flagged as its own multi-phase project (build missing admin equivalents
+→ strip role-switcher/sidebar entries → delete portal directories →
+clean up cross-references → optionally retire the `UserRole` values as a
+separate, human-approved step), not a single autonomous pass.
