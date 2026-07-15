@@ -92,15 +92,19 @@ export function sendMessage(channelId: string, senderName: string, senderRole: U
 
   const otherParty = participantNames.find((n) => n !== senderName)
   if (otherParty) {
-    const recipientRole = channelId.startsWith('course-')
-      ? (senderRole === 'lecturer' ? 'member' : 'lecturer')
-      : roleForName(otherParty)
-    if (recipientRole) {
+    // A course channel's other party is always the course's lecturer —
+    // no signed-in UserRole seat exists for that persona anymore (portal
+    // consolidation), so there is no surviving inbox route to notify; a
+    // course-channel message never produces a notification. A DM's other
+    // party can still resolve to 'member' via roleForName() (the only
+    // UserRole a DM recipient can be), so that path is unaffected.
+    const recipientRole = channelId.startsWith('course-') ? undefined : roleForName(otherParty)
+    if (recipientRole === 'member') {
       addNotification({
         type: 'course',
         title: 'New Message',
         message: `${senderName}: ${body.length > 60 ? `${body.slice(0, 60)}…` : body}`,
-        href: recipientRole === 'lecturer' ? '/lecturer/messages' : '/member/messages',
+        href: '/member/messages',
         recipientRole,
       })
     }

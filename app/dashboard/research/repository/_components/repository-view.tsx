@@ -51,11 +51,13 @@ function buildColumns(onView: (p: ResearchPaper) => void): Column<ResearchPaper>
 /**
  * Paper Repository: searchable by title or keyword. Shows a brief simulated
  * loading state, then a DataTable, or an EmptyState if a search yields no
- * results.
+ * results. The "Author" filter reproduces the "my research" framing
+ * `/contributor/research` used to provide over this exact store.
  */
 export function RepositoryView() {
   const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState<ResearchPaper | null>(null)
+  const [authorFilter, setAuthorFilter] = useState('all')
   const papers = useRepository()
 
   useEffect(() => {
@@ -77,11 +79,26 @@ export function RepositoryView() {
     return <EmptyState icon={FileText} title="No published papers yet" description="Approved research papers will appear here once submitted and published." />
   }
 
+  const authors = Array.from(new Set(papers.map((p) => p.author))).sort()
+  const tableData = authorFilter === 'all' ? papers : papers.filter((p) => p.author === authorFilter)
+
+  const authorSelect = (
+    <select
+      value={authorFilter}
+      onChange={(e) => setAuthorFilter(e.target.value)}
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      aria-label="Filter by author"
+    >
+      <option value="all">All Authors</option>
+      {authors.map((a) => <option key={a} value={a}>{a}</option>)}
+    </select>
+  )
+
   return (
     <>
       <RepositoryStats />
       <DataTable<ResearchPaper>
-        data={papers}
+        data={tableData}
         columns={buildColumns(setViewing)}
         rowKey={(p) => p.id}
         searchPlaceholder="Search title or keyword..."
@@ -90,6 +107,7 @@ export function RepositoryView() {
           p.author.toLowerCase().includes(q) ||
           p.keywords.some((k) => k.toLowerCase().includes(q))
         }
+        filters={authorSelect}
         emptyMessage="No papers match your search."
       />
       <PaperDetailModal paper={viewing} onClose={() => setViewing(null)} />

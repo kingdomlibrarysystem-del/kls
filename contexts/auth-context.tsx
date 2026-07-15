@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { logAuditEvent } from "@/app/dashboard/audit-log/_components/use-audit-log";
 
-export type UserRole = "admin" | "manager" | "staff" | "contributor" | "member" | "lecturer";
+export type UserRole = "admin" | "manager" | "staff" | "member";
 
 export interface User {
   id: string;
@@ -37,10 +37,7 @@ const mockUsers: Record<UserRole, User> = {
   admin: { id: "1", firstName: "Admin", lastName: "User", email: "admin@kingdom.edu", role: "admin", roleName: "Administrator" },
   manager: { id: "2", firstName: "Manager", lastName: "User", email: "manager@kingdom.edu", role: "manager", roleName: "Manager" },
   staff: { id: "3", firstName: "Staff", lastName: "User", email: "staff@kingdom.edu", role: "staff", roleName: "Staff" },
-  contributor: { id: "4", firstName: "Contributor", lastName: "User", email: "contributor@kingdom.edu", role: "contributor", roleName: "Contributor" },
   member: { id: "5", firstName: "John", lastName: "Doe", email: "john@kingdom.edu", role: "member", roleName: "Kingdom Member" },
-  /** Reuses "Dr. Elias Nkubito" — already the instructor name shown on every course card — for continuity with the identity a member already sees. */
-  lecturer: { id: "6", firstName: "Dr. Elias", lastName: "Nkubito", email: "lecturer@kingdom.edu", role: "lecturer", roleName: "Lecturer" },
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

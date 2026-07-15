@@ -1,4 +1,4 @@
-import { sessionStatusConfig, type SessionRequest, type SessionStatus } from '@/app/lecturer/_shared/session-requests-data'
+import { sessionStatusConfig, type SessionRequest, type SessionStatus } from '@/lib/sessions/session-requests-data'
 
 interface SessionsStatsProps {
   data: SessionRequest[]

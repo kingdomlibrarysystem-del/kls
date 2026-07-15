@@ -1,6 +1,6 @@
 import type { CourseEnrollment } from '@/app/member/_shared/enrollment-data'
 import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
-import { lecturerRoster } from '@/app/lecturer/_components/lecturer-identity'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { Channel, Message } from './types'
 
 /**

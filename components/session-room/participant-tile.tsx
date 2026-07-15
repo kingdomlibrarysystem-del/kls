@@ -1,4 +1,7 @@
-import { VideoOff, Mic, MicOff, Hand } from 'lucide-react'
+'use client'
+
+import { useEffect, useRef } from 'react'
+import { VideoOff, Mic, MicOff, Hand, ScreenShare } from 'lucide-react'
 
 export interface ParticipantDeviceState {
   cameraOn: boolean
@@ -10,35 +13,77 @@ interface ParticipantTileProps {
   name: string
   isYou: boolean
   state: ParticipantDeviceState
+  /**
+   * Real local-state toggle backed by an actual getDisplayMedia capture
+   * (see use-media-stream.ts) — only ever set for the local "you" tile.
+   */
+  presenting?: boolean
+  /**
+   * A REAL local MediaStream (camera or screen-share) to render via
+   * <video>, only ever provided for the local "you" tile — see
+   * use-media-stream.ts. Other participants (John Doe, anyone added via
+   * AddParticipantModal) NEVER receive a real video stream here: this
+   * mock has no signaling/TURN backend, so there is no real peer
+   * connection to carry another person's camera into this browser.
+   * Their tiles intentionally stay the initials-avatar placeholder below
+   * — showing a stock photo/video loop for them would misrepresent a
+   * fake feed as a real one, which is the dishonest gap this project has
+   * been removing elsewhere.
+   */
+  videoStream?: MediaStream | null
 }
 
 /**
- * One video tile: initials avatar (never a real camera feed — this is a
- * mock room), name, and live camera/mic/raise-hand indicators reflecting
- * that participant's actual toggled state. The "you" tile gets a visually
- * distinct gold border so it's obvious which tile is controllable.
+ * One video tile. For the local "you" tile with an active camera or
+ * screen-share, renders a REAL <video> element bound to the actual
+ * MediaStream. Every other tile (including "you" with the camera off)
+ * falls back to the initials-avatar placeholder — this is the mock
+ * room's one honest, explained limitation: no other participant can ever
+ * show real video here (see videoStream's docstring).
  */
-export function ParticipantTile({ name, isYou, state }: ParticipantTileProps) {
+export function ParticipantTile({ name, isYou, state, presenting, videoStream }: ParticipantTileProps) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = videoStream ?? null
+  }, [videoStream])
+
+  const showRealVideo = isYou && !!videoStream
 
   return (
     <div
       style={{
         position: 'relative', aspectRatio: '16/10', borderRadius: 10, overflow: 'hidden',
-        background: 'linear-gradient(135deg, var(--bg-section), var(--bg-card))',
-        border: isYou ? '2px solid var(--gold)' : '1px solid var(--border)',
+        background: presenting ? 'linear-gradient(135deg, var(--gold-dim), var(--bg-card))' : 'linear-gradient(135deg, var(--bg-section), var(--bg-card))',
+        border: presenting ? '2px solid var(--teal-light)' : isYou ? '2px solid var(--gold)' : '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'border-color 0.15s',
       }}
     >
-      {state.cameraOn ? (
+      {presenting && (
         <div
           style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: 'var(--gold)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 700, color: '#fff',
+            position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4,
+            background: 'var(--teal-light)', color: '#fff', fontSize: 10, fontWeight: 700,
+            padding: '3px 8px', borderRadius: 6, zIndex: 1,
           }}
         >
+          <ScreenShare size={11} /> Presenting
+        </div>
+      )}
+
+      {showRealVideo ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={isYou}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: presenting ? 'none' : 'scaleX(-1)' }}
+        />
+      ) : state.cameraOn ? (
+        // isYou + cameraOn with no resolved stream yet means the permission prompt is still pending — hold the avatar rather than a blank frame.
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff' }}>
           {initials}
         </div>
       ) : (

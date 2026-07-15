@@ -1,82 +1,104 @@
-import { Video, VideoOff, Mic, MicOff, Hand, PhoneOff } from 'lucide-react'
+import { Video, VideoOff, Mic, MicOff, Hand, PhoneOff, ScreenShare, ScreenShareOff, UserPlus, Circle, Square, Captions, EyeOff, Eye, PanelRightClose, PanelRightOpen } from 'lucide-react'
 
 interface ControlBarProps {
   cameraOn: boolean
   micOn: boolean
   handRaised: boolean
+  presenting: boolean
+  recording: boolean
+  captionsOn: boolean
+  hideSelf: boolean
+  /** Distinct from hideSelf: collapses the Participants + Chat side panel entirely to give the video grid more room, rather than hiding the local user's own tile. */
+  sidePanelHidden: boolean
   onToggleCamera: () => void
   onToggleMic: () => void
   onToggleHand: () => void
+  onTogglePresenting: () => void
+  onToggleRecording: () => void
+  onToggleCaptions: () => void
+  onToggleHideSelf: () => void
+  onToggleSidePanel: () => void
+  onAddParticipant: () => void
   onLeave: () => void
-  /** "End Session" for the lecturer (also marks the request COMPLETED), "Leave" for the learner. */
+  /** "End Session" for admin (also marks the request COMPLETED), "Leave" for the learner. */
   leaveLabel: string
 }
 
-function ControlButton({
-  active, onClick, activeIcon, inactiveIcon, label,
-}: {
-  active: boolean
+interface CircleButtonProps {
+  /** True = the device/feature is on (mic unmuted, camera on) and gets the neutral background; false = off/muted and gets the red "needs attention" background — same meaning as the original inline buttons this replaces. */
+  on: boolean
   onClick: () => void
-  activeIcon: React.ReactNode
-  inactiveIcon: React.ReactNode
+  icon: React.ReactNode
   label: string
-}) {
+  /** Third visual state (raise-hand gold, presenting teal, recording red) that overrides the on/off red-vs-neutral coloring entirely. */
+  highlightColor?: string
+  highlighted?: boolean
+}
+
+/** One round control button — on/off/highlighted coloring plus a real hover state, shared across all toggle controls in this bar. */
+function CircleButton({ on, onClick, icon, label, highlightColor, highlighted }: CircleButtonProps) {
+  const background = highlighted ? highlightColor : on ? 'var(--bg-section)' : 'var(--red-dim)'
+  const color = highlighted ? '#fff' : on ? 'var(--text-primary)' : 'var(--red-light)'
   return (
     <button
       onClick={onClick}
-      aria-pressed={active}
+      aria-pressed={highlighted ?? !on}
       aria-label={label}
+      className="hover:brightness-95 active:scale-95"
       style={{
         width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: active ? 'var(--bg-section)' : 'var(--red-dim)',
-        color: active ? 'var(--text-primary)' : 'var(--red-light)',
-        transition: 'background 0.15s, color 0.15s',
+        background, color, transition: 'background 0.15s, color 0.15s, transform 0.1s',
       }}
     >
-      {active ? activeIcon : inactiveIcon}
+      {icon}
     </button>
   )
 }
 
-/** Real, stateful controls — every button here reflects and mutates genuine room state, nothing decorative. */
-export function ControlBar({ cameraOn, micOn, handRaised, onToggleCamera, onToggleMic, onToggleHand, onLeave, leaveLabel }: ControlBarProps) {
+/** Real, stateful controls — every button here reflects and mutates genuine room state, nothing decorative. Wraps onto further rows on narrow viewports rather than overflowing. */
+export function ControlBar({
+  cameraOn, micOn, handRaised, presenting, recording, captionsOn, hideSelf, sidePanelHidden,
+  onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording, onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel,
+}: ControlBarProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0' }}>
-      <ControlButton
-        active={micOn}
-        onClick={onToggleMic}
-        activeIcon={<Mic size={18} />}
-        inactiveIcon={<MicOff size={18} />}
-        label={micOn ? 'Mute microphone' : 'Unmute microphone'}
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3" style={{ padding: '12px 0' }}>
+      <CircleButton on={micOn} onClick={onToggleMic} icon={micOn ? <Mic size={18} /> : <MicOff size={18} />} label={micOn ? 'Mute microphone' : 'Unmute microphone'} />
+      <CircleButton on={cameraOn} onClick={onToggleCamera} icon={cameraOn ? <Video size={18} /> : <VideoOff size={18} />} label={cameraOn ? 'Turn off camera' : 'Turn on camera'} />
+      <CircleButton on highlighted={handRaised} highlightColor="var(--gold)" onClick={onToggleHand} icon={<Hand size={18} />} label={handRaised ? 'Lower hand' : 'Raise hand'} />
+      <CircleButton
+        on highlighted={presenting} highlightColor="var(--teal-light)" onClick={onTogglePresenting}
+        icon={presenting ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
+        label={presenting ? 'Stop presenting' : 'Start presenting — shares your real screen'}
       />
-      <ControlButton
-        active={cameraOn}
-        onClick={onToggleCamera}
-        activeIcon={<Video size={18} />}
-        inactiveIcon={<VideoOff size={18} />}
-        label={cameraOn ? 'Turn off camera' : 'Turn on camera'}
+      <CircleButton
+        on highlighted={recording} highlightColor="var(--red)" onClick={onToggleRecording}
+        icon={recording ? <Square size={16} /> : <Circle size={18} />}
+        label={recording ? 'Stop recording and download' : 'Start recording your own camera/screen'}
       />
-      <button
-        onClick={onToggleHand}
-        aria-pressed={handRaised}
-        aria-label={handRaised ? 'Lower hand' : 'Raise hand'}
-        style={{
-          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: handRaised ? 'var(--gold)' : 'var(--bg-section)',
-          color: handRaised ? '#fff' : 'var(--text-primary)',
-          transition: 'background 0.15s, color 0.15s',
-        }}
-      >
-        <Hand size={18} />
-      </button>
+      <CircleButton
+        on highlighted={captionsOn} highlightColor="var(--gold)" onClick={onToggleCaptions}
+        icon={<Captions size={18} />}
+        label={captionsOn ? 'Turn off captions' : 'Turn on captions (your speech only)'}
+      />
+      <CircleButton
+        on highlighted={hideSelf} highlightColor="var(--text-muted)" onClick={onToggleHideSelf}
+        icon={hideSelf ? <EyeOff size={18} /> : <Eye size={18} />}
+        label={hideSelf ? 'Show self view' : 'Hide self view'}
+      />
+      <CircleButton
+        on highlighted={sidePanelHidden} highlightColor="var(--text-muted)" onClick={onToggleSidePanel}
+        icon={sidePanelHidden ? <PanelRightOpen size={18} /> : <PanelRightClose size={18} />}
+        label={sidePanelHidden ? 'Show participants and chat panel' : 'Hide participants and chat panel'}
+      />
+      <CircleButton on onClick={onAddParticipant} icon={<UserPlus size={18} />} label="Add a participant" />
       <button
         onClick={onLeave}
         aria-label={leaveLabel}
+        className="hover:brightness-90 active:scale-95"
         style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 22, border: 'none',
-          background: 'var(--red)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          background: 'var(--red)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'transform 0.1s',
         }}
       >
         <PhoneOff size={16} /> {leaveLabel}

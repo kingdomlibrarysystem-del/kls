@@ -10,6 +10,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { addCourseToCatalog } from '../../_shared/use-course-catalog'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import {
   courseSchema,
   courseCategories,
@@ -65,9 +66,10 @@ export function CourseFormView() {
         language: data.language,
         status: data.status,
         author: SUBMITTING_AUTHOR,
+        lecturerId: data.lecturerId || undefined,
       })
       setSubmitSuccess(true)
-      reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT' })
+      reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT', lecturerId: '' })
       setTimeout(() => router.push('/dashboard/e-learning/catalog'), 1200)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to save course')
@@ -158,6 +160,18 @@ export function CourseFormView() {
                 {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
+          </div>
+
+          <div>
+            <FieldLabel htmlFor="lecturerId">Instructor</FieldLabel>
+            <select
+              id="lecturerId"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              {...register('lecturerId')}
+            >
+              <option value="">No assigned instructor</option>
+              {lecturerRoster.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
           </div>
 
           <ElegantButton type="submit" loading={submitting} variant="primary">

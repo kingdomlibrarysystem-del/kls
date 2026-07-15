@@ -22,9 +22,17 @@ const columns: Column<RevenueRow>[] = [
   },
 ]
 
-/** Table of per-publication revenue splits with a simulated initial load. */
+/**
+ * Table of per-publication revenue splits with a simulated initial load.
+ * The "Contributor" filter reproduces the "my earnings" framing
+ * `/contributor/earnings` used to provide (that page filtered this exact
+ * store to one hardcoded name) — now any contributor's rows can be
+ * isolated from the same admin view, real data, no separate filtered
+ * page needed.
+ */
 export function RevenueTable() {
   const [loading, setLoading] = useState(true)
+  const [contributorFilter, setContributorFilter] = useState('all')
   const revenue = useRevenue()
 
   useEffect(() => {
@@ -46,13 +54,29 @@ export function RevenueTable() {
     return <EmptyState icon={DollarSign} title="No revenue recorded yet" description="Revenue will appear here once publications generate sales." />
   }
 
+  const contributors = Array.from(new Set(revenue.map((r) => r.contributor))).sort()
+  const tableData = contributorFilter === 'all' ? revenue : revenue.filter((r) => r.contributor === contributorFilter)
+
+  const contributorSelect = (
+    <select
+      value={contributorFilter}
+      onChange={(e) => setContributorFilter(e.target.value)}
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      aria-label="Filter by contributor"
+    >
+      <option value="all">All Contributors</option>
+      {contributors.map((c) => <option key={c} value={c}>{c}</option>)}
+    </select>
+  )
+
   return (
     <DataTable<RevenueRow>
-      data={revenue}
+      data={tableData}
       columns={columns}
       rowKey={(r) => r.id}
       searchPlaceholder="Search publication or contributor..."
       searchFilter={(r, q) => r.publication.toLowerCase().includes(q) || r.contributor.toLowerCase().includes(q)}
+      filters={contributorSelect}
       emptyMessage="No revenue rows match your search."
     />
   )

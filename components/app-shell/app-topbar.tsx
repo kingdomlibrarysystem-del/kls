@@ -7,28 +7,27 @@ import { useAuth } from '@/contexts/auth-context'
 import { useNotifications } from '@/app/dashboard/notifications/_components/use-notifications'
 
 interface AppTopbarProps {
-  /** Portal name shown at the left, e.g. "Member Portal" or "Contributor Workspace". */
+  /** Portal name shown at the left, e.g. "Member Portal". */
   portalLabel: string
   /** Where the avatar/identity block links to, e.g. "/member/profile". */
   profileHref: string
 }
 
 /**
- * Shared topbar for authenticated app areas (member, contributor,
- * lecturer) — portal label, language switch, notifications, and user
- * identity. This is intentionally not the public storefront `MainHeader`:
- * no category dropdown, cart, or favorites icons, since those are
- * irrelevant once a user is inside their own portal. Mirrors the content
- * shape of `app/dashboard/_components/topbar.tsx` (Dialect B) without
- * dashboard's admin-only quick-link row.
+ * Shared topbar for authenticated app areas (admin, member) — portal
+ * label, language switch, notifications, and user identity. This is
+ * intentionally not the public storefront `MainHeader`: no category
+ * dropdown, cart, or favorites icons, since those are irrelevant once a
+ * user is inside their own portal. Mirrors the content shape of
+ * `app/dashboard/_components/topbar.tsx` (Dialect B) without dashboard's
+ * admin-only quick-link row.
  *
  * The unread badge reads the real shared `useNotifications()` store,
  * filtered to the signed-in user's own role — instead of a hardcoded prop
- * (previously each layout passed its own fabricated `notificationCount`:
- * member 3, contributor 1, lecturer 0, with no connection to the actual
- * list) and instead of the unscoped global count (which briefly meant one
- * role's notification — e.g. a learner's session request addressed to the
- * lecturer — inflated every other portal's badge too).
+ * (previously each layout passed its own fabricated `notificationCount`
+ * with no connection to the actual list) and instead of the unscoped
+ * global count (which would mean one role's notification inflated every
+ * other portal's badge too).
  */
 export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
   const { user } = useAuth()
