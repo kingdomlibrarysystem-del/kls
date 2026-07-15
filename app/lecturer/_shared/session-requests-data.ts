@@ -1,6 +1,19 @@
 /** Live-session booking request, per the confirmed Phase 3 design doc. */
 export type SessionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED'
 
+/**
+ * SCHEDULED is the original propose-a-future-time flow (PENDING → lecturer
+ * approves → countdown to scheduledAt). INSTANT is the Meet-style "start
+ * now" flow — created directly as APPROVED with scheduledAt set to the
+ * creation time, skipping PENDING/approval entirely since there is no one
+ * to approve a session that's already starting. A `mode` field was chosen
+ * over a 5th SessionStatus value because instant sessions still need a
+ * real status to drive the same APPROVED→COMPLETED lifecycle (ending the
+ * mock room still calls completeSession()) — the distinction is about how
+ * a session got to APPROVED, not a different terminal state.
+ */
+export type SessionMode = 'SCHEDULED' | 'INSTANT'
+
 export interface SessionRequest {
   id: string
   learnerName: string
@@ -12,7 +25,9 @@ export interface SessionRequest {
   /** ISO datetime the learner is requesting. */
   proposedTime: string
   status: SessionStatus
-  /** Set once a lecturer approves — the actual session start time, may differ from proposedTime if negotiated. */
+  /** SCHEDULED (default) or INSTANT — see SessionMode's docstring. */
+  mode: SessionMode
+  /** Set once a lecturer approves — the actual session start time, may differ from proposedTime if negotiated. For INSTANT sessions this is set to the creation time, not negotiated. */
   scheduledAt?: string
   /** Learner's stated reason/topic on request, and/or the lecturer's approve/reject note. */
   notes?: string
@@ -45,6 +60,7 @@ export const mockSessionRequests: SessionRequest[] = [
     requestedAt: '2026-07-02',
     proposedTime: '2026-07-18T17:00',
     status: 'APPROVED',
+    mode: 'SCHEDULED',
     scheduledAt: '2026-07-18T17:00',
     notes: 'Would love to go deeper on corporate worship postures covered in lesson 3.',
   },
@@ -57,6 +73,7 @@ export const mockSessionRequests: SessionRequest[] = [
     requestedAt: '2026-07-08',
     proposedTime: '2026-07-22T16:30',
     status: 'PENDING',
+    mode: 'SCHEDULED',
     notes: 'Question about the covenant framework in lesson 2 before I attempt the assessment.',
   },
   {
@@ -68,6 +85,7 @@ export const mockSessionRequests: SessionRequest[] = [
     requestedAt: '2026-06-25',
     proposedTime: '2026-07-05T18:00',
     status: 'COMPLETED',
+    mode: 'SCHEDULED',
     scheduledAt: '2026-07-05T18:00',
     notes: 'Session held — discussed the doctrine of divine attributes in more depth.',
   },

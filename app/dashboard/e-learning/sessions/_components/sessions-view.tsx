@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, Zap } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -21,6 +21,14 @@ function buildColumns(): Column<SessionRequest>[] {
     {
       key: 'scheduledAt', label: 'Scheduled', sortable: true,
       render: (r) => <span className="text-w-700">{r.scheduledAt ? new Date(r.scheduledAt).toLocaleString() : '—'}</span>,
+    },
+    {
+      key: 'mode', label: 'Mode', sortable: true,
+      render: (r) => r.mode === 'INSTANT' ? (
+        <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded text-xs font-lato font-semibold w-fit">
+          <Zap size={10} /> Instant
+        </span>
+      ) : <span className="text-w-500 text-xs">Scheduled</span>,
     },
     {
       key: 'status', label: 'Status', sortable: true,

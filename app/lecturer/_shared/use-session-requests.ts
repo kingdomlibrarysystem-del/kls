@@ -57,6 +57,38 @@ export function requestSession(input: RequestSessionInput): SessionRequest {
     id: nextId(),
     requestedAt: new Date().toISOString().slice(0, 10),
     status: 'PENDING',
+    mode: 'SCHEDULED',
+    ...input,
+  }
+  requests = [created, ...requests]
+  emitChange()
+  return created
+}
+
+export interface StartInstantSessionInput {
+  learnerName: string
+  lecturerName: string
+  courseId: string
+  courseTitle: string
+}
+
+/**
+ * Starts an INSTANT session — the Meet-style "start now" flow. Created
+ * directly as APPROVED (no PENDING stage, nothing for either party to
+ * approve) with scheduledAt stamped to the moment of creation, so
+ * SessionCard's countdown gate treats it as already startable. Either
+ * party can initiate one; both land in the same real session-room route
+ * requestSession()'s scheduled flow already uses.
+ */
+export function startInstantSession(input: StartInstantSessionInput): SessionRequest {
+  const now = new Date().toISOString()
+  const created: SessionRequest = {
+    id: nextId(),
+    requestedAt: now.slice(0, 10),
+    proposedTime: now,
+    status: 'APPROVED',
+    mode: 'INSTANT',
+    scheduledAt: now,
     ...input,
   }
   requests = [created, ...requests]
