@@ -40,7 +40,14 @@ export function BookFormView() {
       await new Promise((resolve) => setTimeout(resolve, 500))
       if (!data.title.trim()) throw new Error('Title cannot be empty')
       const resultStatus = action === 'draft' ? 'DRAFT' : 'SUBMITTED'
-      addMySubmission({ title: data.title, category: data.category, status: resultStatus })
+      addMySubmission({
+        title: data.title,
+        category: data.category,
+        language: data.language,
+        description: data.description,
+        coverImage: '/images/book-A.jpg',
+        status: resultStatus,
+      })
       setSavedStatus(resultStatus)
       reset({ title: '', description: '', category: '', language: 'en' })
       setTimeout(() => setSavedStatus(null), 4000)

@@ -7,21 +7,25 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
-import { reviewStatusConfig, type PublicationSubmission } from './review-data'
+import { publicationStatusConfig, type PublicationSubmission } from './review-data'
 import { ReviewModal } from './review-modal'
 import { addRevenueRowForApproval } from '../../revenue/_components/use-revenue'
-import { useReviewQueue, removeSubmissionFromQueue } from './use-review-queue'
+import { useReviewQueue, setSubmissionStatus } from './use-review-queue'
 
 /** Simulated network delay before mock submissions become visible. */
 const LOAD_DELAY_MS = 400
+
+/** Statuses actionable from this queue — a submission still awaiting a manager's decision. Everything else (DRAFT/APPROVED/REJECTED/PUBLISHED) has already moved past this stage and lives on in the shared store for the contributor's own My Submissions view, not deleted. */
+const QUEUE_STATUSES: PublicationSubmission['status'][] = ['SUBMITTED', 'UNDER_REVIEW']
 
 type ModalAction = 'approve' | 'reject' | null
 
 /**
  * Review Queue: submissions with SUBMITTED/UNDER_REVIEW status, Approve/Reject
  * buttons that open a confirmation modal. Reads the shared `useReviewQueue()`
- * store so a decision survives a reload, instead of a local `useState` copy
- * that reset the moment the component remounted.
+ * store — the same one the contributor's My Submissions page reads (see
+ * use-review-queue.ts's docstring) — so a decision here is immediately
+ * visible there too, with no separate sync step.
  */
 export function ReviewQueueView() {
   const [loading, setLoading] = useState(true)
@@ -29,7 +33,8 @@ export function ReviewQueueView() {
   const [modalTarget, setModalTarget] = useState<PublicationSubmission | null>(null)
   const [modalAction, setModalAction] = useState<ModalAction>(null)
 
-  const queue = useReviewQueue()
+  const allSubmissions = useReviewQueue()
+  const queue = allSubmissions.filter((s) => QUEUE_STATUSES.includes(s.status))
   const { user: currentUser } = useAuth()
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Manager User'
 
@@ -51,7 +56,7 @@ export function ReviewQueueView() {
     try {
       if (!modalTarget || !modalAction) throw new Error('No submission selected')
       if (modalAction === 'approve') addRevenueRowForApproval(modalTarget.title, modalTarget.contributor)
-      removeSubmissionFromQueue(modalTarget.id)
+      setSubmissionStatus(modalTarget.id, modalAction === 'approve' ? 'APPROVED' : 'REJECTED')
       logAuditEvent({
         actor: actorName,
         action: modalAction === 'approve' ? 'PUBLICATION_APPROVED' : 'PUBLICATION_REJECTED',
@@ -85,8 +90,8 @@ export function ReviewQueueView() {
     {
       key: 'status', label: 'Status', sortable: true,
       render: (s) => (
-        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${reviewStatusConfig[s.status].cls}`}>
-          {reviewStatusConfig[s.status].label}
+        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${publicationStatusConfig[s.status].cls}`}>
+          {publicationStatusConfig[s.status].label}
         </span>
       ),
     },

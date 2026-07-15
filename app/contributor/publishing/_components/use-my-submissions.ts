@@ -1,48 +1,29 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { mySubmissions, type MySubmission, type PublicationStatus } from './my-submissions-data'
+import { useReviewQueue, addSubmission, removeSubmission } from '@/app/dashboard/publishing/review/_components/use-review-queue'
+import type { PublicationSubmission } from '@/app/dashboard/publishing/review/_components/review-data'
+import { CONTRIBUTOR_NAME } from '@/app/contributor/_components/contributor-identity'
 
 /**
- * Module-level mutable store so Submit a Book
- * (`/contributor/publishing/submit`) can append a new submission and My
- * Submissions reflects it immediately, without a backend. Cross-route like
- * the admin stores from Batches 2–4, since submit and list live on
- * different pages here.
+ * Thin wrapper over the shared submissions store (see
+ * app/dashboard/publishing/review/_components/use-review-queue.ts) —
+ * filters to this contributor's own rows. Previously this file owned a
+ * second, disconnected module-level array (`mySubmissions`) that an admin
+ * approval/rejection never touched, so a title could sit at SUBMITTED
+ * here forever even after it was genuinely decided elsewhere. Now both
+ * screens read the exact same store; there is no separate sync step.
  */
-let submissions: MySubmission[] = [...mySubmissions]
-const listeners = new Set<() => void>()
-
-function emitChange() {
-  listeners.forEach((listener) => listener())
+export function useMySubmissions(): PublicationSubmission[] {
+  const all = useReviewQueue()
+  return all.filter((s) => s.contributor === CONTRIBUTOR_NAME)
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+/** Appends a new submission for the signed-in contributor — used by Submit a Book. */
+export function addMySubmission(entry: { title: string; category: string; language: PublicationSubmission['language']; coverImage: string; description: string; status: PublicationSubmission['status'] }) {
+  return addSubmission({ ...entry, contributor: CONTRIBUTOR_NAME })
 }
 
-function getSnapshot() {
-  return submissions
-}
-
-export function addMySubmission(entry: { title: string; category: string; status: PublicationStatus }) {
-  const created: MySubmission = {
-    ...entry,
-    id: `pub-${Date.now()}`,
-    submittedAt: new Date().toISOString().slice(0, 10),
-  }
-  submissions = [created, ...submissions]
-  emitChange()
-  return created
-}
-
+/** Withdraws (removes) a submission — only ever called for this contributor's own DRAFT/SUBMITTED rows. */
 export function removeMySubmission(id: string) {
-  submissions = submissions.filter((s) => s.id !== id)
-  emitChange()
-}
-
-/** Live-subscribes to the shared My Submissions store. */
-export function useMySubmissions() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => mySubmissions)
+  removeSubmission(id)
 }

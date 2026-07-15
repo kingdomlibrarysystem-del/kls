@@ -5,16 +5,13 @@ import { BookCopy, Eye, XCircle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { publicationStatusConfig, type MySubmission } from './my-submissions-data'
+import { publicationStatusConfig, withdrawableStatuses, type MySubmission } from './my-submissions-data'
 import { useMySubmissions, removeMySubmission } from './use-my-submissions'
 import { SubmissionDetailModal } from './submission-detail-modal'
 import { WithdrawSubmissionModal } from './withdraw-submission-modal'
 
 /** Simulated network delay before mock submissions become visible. */
 const LOAD_DELAY_MS = 400
-
-/** Statuses a contributor may still withdraw before a manager has started reviewing. */
-const WITHDRAWABLE_STATUSES: MySubmission['status'][] = ['DRAFT', 'SUBMITTED']
 
 function buildColumns(onView: (s: MySubmission) => void, onWithdraw: (s: MySubmission) => void): Column<MySubmission>[] {
   return [
@@ -41,7 +38,7 @@ function buildColumns(onView: (s: MySubmission) => void, onWithdraw: (s: MySubmi
           <button onClick={() => onView(s)} aria-label={`View ${s.title}`} style={{ padding: 6, borderRadius: 6, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
             <Eye size={14} />
           </button>
-          {WITHDRAWABLE_STATUSES.includes(s.status) && (
+          {withdrawableStatuses.includes(s.status) && (
             <button onClick={() => onWithdraw(s)} aria-label={`Withdraw ${s.title}`} style={{ padding: 6, borderRadius: 6, color: 'var(--red-light)', background: 'none', border: 'none', cursor: 'pointer' }}>
               <XCircle size={14} />
             </button>
