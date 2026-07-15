@@ -1,4 +1,4 @@
-import { VideoOff, Mic, MicOff, Hand } from 'lucide-react'
+import { VideoOff, Mic, MicOff, Hand, ScreenShare } from 'lucide-react'
 
 export interface ParticipantDeviceState {
   cameraOn: boolean
@@ -10,6 +10,13 @@ interface ParticipantTileProps {
   name: string
   isYou: boolean
   state: ParticipantDeviceState
+  /**
+   * Real local-state toggle, not real screen capture — this mock has no
+   * getDisplayMedia call and no corresponding backend to stream to, so
+   * "presenting" only changes this tile's own visual treatment (border +
+   * badge), same honesty as the camera/mic tiles never showing real video.
+   */
+  presenting?: boolean
 }
 
 /**
@@ -18,18 +25,30 @@ interface ParticipantTileProps {
  * that participant's actual toggled state. The "you" tile gets a visually
  * distinct gold border so it's obvious which tile is controllable.
  */
-export function ParticipantTile({ name, isYou, state }: ParticipantTileProps) {
+export function ParticipantTile({ name, isYou, state, presenting }: ParticipantTileProps) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   return (
     <div
       style={{
         position: 'relative', aspectRatio: '16/10', borderRadius: 10, overflow: 'hidden',
-        background: 'linear-gradient(135deg, var(--bg-section), var(--bg-card))',
-        border: isYou ? '2px solid var(--gold)' : '1px solid var(--border)',
+        background: presenting ? 'linear-gradient(135deg, var(--gold-dim), var(--bg-card))' : 'linear-gradient(135deg, var(--bg-section), var(--bg-card))',
+        border: presenting ? '2px solid var(--teal-light)' : isYou ? '2px solid var(--gold)' : '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >
+      {presenting && (
+        <div
+          style={{
+            position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4,
+            background: 'var(--teal-light)', color: '#fff', fontSize: 10, fontWeight: 700,
+            padding: '3px 8px', borderRadius: 6,
+          }}
+        >
+          <ScreenShare size={11} /> Presenting
+        </div>
+      )}
+
       {state.cameraOn ? (
         <div
           style={{

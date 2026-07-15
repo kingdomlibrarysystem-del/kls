@@ -1,12 +1,15 @@
-import { Video, VideoOff, Mic, MicOff, Hand, PhoneOff } from 'lucide-react'
+import { Video, VideoOff, Mic, MicOff, Hand, PhoneOff, ScreenShare, ScreenShareOff, UserPlus } from 'lucide-react'
 
 interface ControlBarProps {
   cameraOn: boolean
   micOn: boolean
   handRaised: boolean
+  presenting: boolean
   onToggleCamera: () => void
   onToggleMic: () => void
   onToggleHand: () => void
+  onTogglePresenting: () => void
+  onAddParticipant: () => void
   onLeave: () => void
   /** "End Session" for the lecturer (also marks the request COMPLETED), "Leave" for the learner. */
   leaveLabel: string
@@ -40,9 +43,9 @@ function ControlButton({
 }
 
 /** Real, stateful controls — every button here reflects and mutates genuine room state, nothing decorative. */
-export function ControlBar({ cameraOn, micOn, handRaised, onToggleCamera, onToggleMic, onToggleHand, onLeave, leaveLabel }: ControlBarProps) {
+export function ControlBar({ cameraOn, micOn, handRaised, presenting, onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onAddParticipant, onLeave, leaveLabel }: ControlBarProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0', flexWrap: 'wrap' }}>
       <ControlButton
         active={micOn}
         onClick={onToggleMic}
@@ -70,6 +73,31 @@ export function ControlBar({ cameraOn, micOn, handRaised, onToggleCamera, onTogg
         }}
       >
         <Hand size={18} />
+      </button>
+      <button
+        onClick={onTogglePresenting}
+        aria-pressed={presenting}
+        aria-label={presenting ? 'Stop presenting' : 'Start presenting (mock — no real screen capture)'}
+        style={{
+          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: presenting ? 'var(--teal-light)' : 'var(--bg-section)',
+          color: presenting ? '#fff' : 'var(--text-primary)',
+          transition: 'background 0.15s, color 0.15s',
+        }}
+      >
+        {presenting ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
+      </button>
+      <button
+        onClick={onAddParticipant}
+        aria-label="Add a participant"
+        style={{
+          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-section)', color: 'var(--text-primary)',
+        }}
+      >
+        <UserPlus size={18} />
       </button>
       <button
         onClick={onLeave}
