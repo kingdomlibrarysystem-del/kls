@@ -56,7 +56,7 @@ export function RevenueConfigForm() {
         Applies to publications approved after saving — existing rows in the table above keep their own share.
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {submitSuccess && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-3 py-2 rounded mb-3 font-lato text-xs">
             <CheckCircle2 size={13} /> Default shares updated for future approvals.

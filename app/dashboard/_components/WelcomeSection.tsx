@@ -5,9 +5,12 @@ const collection = [["Books","65,320"],["Audio","24,350"],["Video","18,450"],["N
 
 export default function WelcomeSection() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 0 }}>
+    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto]">
       {/* Left */}
-      <div style={{ background: "var(--welcome-gradient)", border: "1px solid var(--border)", borderRadius: "8px 0 0 8px", borderRight: "none", padding: "10px 12px", position: "relative", overflow: "hidden", minHeight: 170 }}>
+      <div
+        className="sm:rounded-r-none"
+        style={{ background: "var(--welcome-gradient)", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px 12px", position: "relative", overflow: "hidden", minHeight: 170 }}
+      >
         <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "45%", backgroundImage: "var(--welcome-glow)", pointerEvents: "none" }} />
         <div style={{ fontSize: 9, color: "var(--gold)", letterSpacing: 2, marginBottom: 3, fontWeight: 600 }}>WELCOME TO THE</div>
         <h1 style={{ fontFamily: "'Cinzel','Palatino Linotype',serif", fontSize: 26, fontWeight: 700, lineHeight: 1.1, color: "var(--text-primary)", margin: "0 0 6px" }}>KINGDOM LIBRARY</h1>
@@ -29,7 +32,10 @@ export default function WelcomeSection() {
       </div>
 
       {/* Right – collection */}
-      <div style={{ width: 160, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 8px 8px 0", borderLeft: "none", padding: "10px 12px", textAlign: "center", flexShrink: 0 }}>
+      <div
+        className="w-full sm:w-40 sm:rounded-l-none mt-2 sm:mt-0"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px 12px", textAlign: "center", flexShrink: 0 }}
+      >
         <div style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: 1, marginBottom: 2 }}>TOTAL COLLECTION</div>
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "var(--gold)", lineHeight: 1 }}>125,680+</div>
         <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 8 }}>Items Available</div>

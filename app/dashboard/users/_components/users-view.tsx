@@ -128,7 +128,7 @@ export function UsersView() {
     <div>
       <UsersStats data={users} />
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <p className="font-lato text-xs text-w-600 uppercase tracking-wider font-semibold">{users.length} users total</p>
         <ElegantButton variant="primary" onClick={openCreate} className="flex items-center gap-1.5 text-sm py-2">
           <PlusCircle size={15} /> Add User

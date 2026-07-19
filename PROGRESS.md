@@ -1751,3 +1751,189 @@ both return 200.
 - No i18n, no new chart library, no backend/fetch — stayed within the
   frontend-mock phase constraints throughout.
 
+# Sidebar/Mobile-Nav Responsiveness Fixes
+
+Responded to a user-reported screenshot showing the expanded admin
+sidebar's "KCS Map"/Publishing/Research/Health System items getting cut
+off on a narrow/short viewport with no way to scroll to them. Scoped to
+three parts: the sidebar bug itself, a repo-wide horizontal-scroll audit
+of dashboard pages, and a general spacing/responsiveness pass.
+
+## 1. Sidebar bug — root cause confirmed, not a z-index issue
+
+Confirmed via code read (no z-index conflicts exist between `Sidebar`
+and any sibling — grepped `app/dashboard/_components/` for `zIndex`,
+only `topbar.tsx` sets one, unrelated). The real cause is the classic
+nested-flexbox scrolling trap: `DashboardClientWrapper`'s root is `flex
+h-screen overflow-hidden`; `Sidebar`'s `<aside>` was `display: flex,
+flexDirection: column, height: "100vh", overflow: "hidden"`, and its
+scrollable nav `<div>` was `flex: 1, overflowY: "auto"` **with no
+`minHeight: 0`**. Flex items default to `min-height: auto`, which means
+a flex child refuses to shrink below its content's intrinsic height —
+so once several nav sections are expanded at once (Digital Library +
+KCS Map + Publishing + Research, etc.), the nav div's real content
+height exceeds the aside's box, `min-height: auto` blocks it from
+shrinking, and `overflow-y: auto` never activates. The overflow content
+is silently clipped by the aside's own `overflow: hidden` instead of
+scrolling — exactly the reported symptom.
+
+**Fix** (`app/dashboard/_components/sidebar.tsx`): added `minHeight: 0`
+to the scrollable nav `<div>`, and changed the `<aside>` from a
+hardcoded `height: "100vh"` to `height: "100%"` (it already sits inside
+a `hidden md:block` wrapper that stretches to the full `h-screen` row,
+so `100%` is the correct, non-redundant constraint) plus `maxHeight:
+"100vh"` as a hard ceiling. This is the standard fix for the nested-flex
+overflow trap and required no other layout changes.
+
+While fixing this, split the now-clearly-oversized `sidebar.tsx` (392
+lines, already over the repo's 200-line cap before this task) into:
+`nav-data.tsx` (shared `adminMainNav`/`adminMgmtNav`/`memberNav` data —
+also needed by the new mobile "More" menu below, so extracting it
+serves both call sites instead of duplicating the arrays), `sidebar-nav-
+item.tsx`, and `sidebar-footer.tsx` (language switcher + role
+simulation). `sidebar.tsx` itself is now 165 lines. This also fixed a
+latent bug: the file was missing a `BookCopy` import for its own logo
+icon after a prior edit had trimmed the import list but left the JSX
+usage — caught because `nav-data.tsx` needed its own explicit import
+list and the mismatch became visible.
+
+## 2. Mobile bottom nav — confirmed a genuine reachability gap
+
+`MobileBottomNav` only exposed 5 fixed tabs (Dashboard, Library,
+Members, Roles, Alerts) with no way to reach the other ~20 sidebar
+destinations (KCS Map, AI & Tools, E-Learning, Publishing, Research,
+Health System, Beauty, Counseling, Rehabilitation, Download Center,
+News, Donations, Reports, Invitations, Settings, Audit Log, etc.) — a
+real, confirmed gap, not a false alarm.
+
+**Fix:** added a 6th "More" tab (`MoreHorizontal` icon) that opens a new
+`MobileMoreMenu` (`app/dashboard/_components/mobile-more-menu.tsx`),
+built on the existing dialect-agnostic `Modal` component. It flattens
+`nav-data.tsx`'s full nav tree (including all `subItems`) into a single
+scrollable list grouped into "Main" and "Platform Management" sections,
+role-aware via `useAuth` (admin sees `adminMainNav`/`adminMgmtNav`,
+member sees `memberNav`), and reuses the same data source as the
+desktop sidebar so the two can't drift out of sync. Closes on
+navigation. Left the existing 5 fixed tabs untouched (not in scope to
+redesign per-role bottom-nav priorities).
+
+## 3. Horizontal-scroll audit across `app/dashboard/**`
+
+Dispatched a research pass over all 22 `DataTable`-based pages and 12
+files matched by a grep for `gridTemplateColumns`/fixed-width inline
+styles, to separate genuine dense-table scrolling (acceptable) from
+accidental fixed-width overflow (bugs).
+
+**Category (a) — left as intentional**, all 22 `DataTable` usages
+(`resources-table.tsx`, `reservations-table.tsx`, `borrowings-table.tsx`,
+`categories-table.tsx`, and 18 others). `DataTable` already wraps its
+`<table>` in `overflow-x-auto`; several tables (Resource Inventory,
+Reservations, Borrow & Return, Categories) genuinely have 6–9 columns
+with multi-button action cells that can't reasonably reflow on mobile.
+Rather than touch 22 individual pages, added **one central fix** to
+`components/ui/data-table.tsx`: a scroll-position-aware left/right edge
+fade (`ScrollEdgeFade`, gated by a `ResizeObserver` + `onScroll`
+handler tracking `canScrollLeft`/`canScrollRight`) so the existing
+horizontal scroll now reads as an obvious, intentional affordance
+instead of a silent, unlabeled cutoff — matching how real products
+signpost scrollable tables. Applies automatically to all 22 pages.
+
+**Category (b) — genuine bugs, fixed:**
+- `app/dashboard/page.tsx` — the top-level 3-column shell
+  (`minmax(180px,280px) 1fr minmax(160px,256px)`) had `overflow:
+  "hidden"`, actively *clipping* content on mobile rather than scrolling
+  it. Converted to `grid-cols-1 lg:grid-cols-[minmax(180px,280px)_1fr_
+  minmax(160px,256px)]`, stacking to one column below `lg:`; removed the
+  clip.
+- `app/dashboard/_components/WelcomeSection.tsx` — hero + fixed
+  `width: 160` "Total Collection" column in a `1fr auto` grid, squeezing
+  the hero (26px heading, search bar) on mobile. Now `grid-cols-1
+  sm:grid-cols-[1fr_auto]`, right column `w-full sm:w-40`.
+- `app/dashboard/_components/BorrowReturn.tsx` — a **div-based 5-column
+  "table"** (Item/Type/Borrowed/Due/Status) with zero scroll wrapper at
+  all, the closest thing to a real dense table in the dashboard-home
+  components but with no scroll escape hatch. Wrapped in `overflow-x-
+  auto` with an explicit `minWidth: 420` inner container (same pattern
+  DataTable uses) so it scrolls instead of wrapping into unreadable
+  fragments; its 4 stat cards changed from a fixed `repeat(4,1fr)` to
+  `grid-cols-2 sm:grid-cols-4`.
+- `app/dashboard/_components/MiddleSection.tsx` and `InventoryOverview.tsx`
+  — both had 3–4 equal-width columns forced with no wrap (one including
+  a fixed-size SVG donut chart). Converted to `grid-cols-1 sm:grid-cols-2
+  lg:grid-cols-{3,4}`; dropped the "seamless joined bar" cross-card
+  border/radius stitching (`borderRadius: "8px 0 0 8px"` /
+  `borderRight: "none"` etc.) since that visual only makes sense in a
+  single fixed row — each card now has its own full border/radius at
+  every breakpoint, a minor, deliberate cosmetic trade-off for genuine
+  responsiveness.
+- `app/dashboard/_components/FooterSection.tsx` — outer 2-column grid,
+  a nested fixed `repeat(4,1fr)` feature grid, and a fixed `width: 160`
+  "Daily Inspiration" box, plus `StatsBar`'s 5-item `justify-content:
+  space-around` flex row with no wrap. All converted to responsive
+  Tailwind (`grid-cols-1 lg:grid-cols-2`, nested `grid-cols-2
+  sm:grid-cols-4`, `w-full sm:w-40`, `flex-wrap`).
+- `app/dashboard/roles/page.tsx` — the loading-skeleton stat row used a
+  fixed `repeat(4, 1fr)` while the real content grid right below it was
+  already responsive (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-3`);
+  aligned the skeleton to `grid-cols-2 sm:grid-cols-4` to match.
+
+**Left as-is (lower severity, judged acceptable):** `ConsultationPanel.tsx`,
+`DigitalLibrary.tsx`, `RightPanels.tsx`'s 2–3 column small-tile grids —
+these sit inside cards that, after the `dashboard/page.tsx` fix above,
+now render at full mobile width once stacked (no longer squeezed into a
+narrow sidebar slice), so a 2-column grid of ~160px tiles is normal
+mobile-app density, not cramped. `app/dashboard/library/categories/
+page.tsx`'s `xl:grid-cols-[1fr_340px]` was checked and confirmed already
+correctly gated (single column below `xl:`) — not a bug.
+
+## 4. Spacing/responsiveness pass
+
+Sampled `library-view.tsx`, `users-view.tsx`, `e-learning/page.tsx`,
+`notifications/page.tsx`, `roles/page.tsx`, and the Add-Course form, per
+the existing `sm:`/`md:`/`lg:`/`xl:` breakpoint conventions (no new
+scale introduced). Found and fixed two classes of issue:
+
+- **Header-row wrap:** `library-view.tsx` and `users-view.tsx` both pair
+  a `PageHeader` (or a stats label) with a primary action button in a
+  `flex items-center justify-between` row with no `flex-wrap` — on
+  narrow viewports this squeezes a long title/subtitle against the
+  button instead of stacking them. Added `flex-wrap gap-3` to both; also
+  fixed a double-margin bug in `library-view.tsx` where the wrapper's
+  `mb-6` and `PageHeader`'s own built-in `mb-8` were both applying
+  (passed `className="mb-0"` to `PageHeader` so the wrapper's margin is
+  the single source of spacing).
+- **Missing `<form>` spacing:** grepped every `<form onSubmit=
+  {handleSubmit(onSubmit)}>` in `app/dashboard/**` and found 5 forms
+  missing the `space-y-4` (or `space-y-3` for a denser compact form)
+  className that `FormSection` does NOT provide automatically — 
+  `FormSection` wraps its children in `space-y-4`, but `<form>` is
+  always FormSection's *only* child, so that spacing never had any
+  sibling to apply between; the real field-to-field spacing has to come
+  from the `<form>` element itself. Fixed in `course-form-view.tsx`,
+  `paper-form-view.tsx`, `invite-form.tsx`, `settings-form.tsx`
+  (`space-y-4`) and `revenue-config-form.tsx` (`space-y-3`, matching its
+  existing denser `text-xs`/`p-3` scale) — without this, every field in
+  these 5 forms rendered with zero gap between it and the next.
+
+## Verification
+
+`npx tsc --noEmit` clean. `npm run build`: "Compiled successfully",
+"Finished TypeScript", all 72 routes generated, unchanged route count
+(no routes added/removed this phase). `npm run lint` still reports its
+existing pre-existing errors/warnings (unescaped entities in copy,
+`setState`-in-effect patterns, an impure `Date.now()` call, an `offset`
+reassignment in the donut chart) — all outside the lines this phase
+touched, confirmed unrelated to this work (this phase only added
+className/style props and one `minHeight`/`height` change, none of
+which are anywhere near the flagged lines).
+
+Files changed this phase: `app/dashboard/_components/sidebar.tsx`
+(rewritten, 392→165 lines), `nav-data.tsx` (new), `sidebar-nav-
+item.tsx` (new), `sidebar-footer.tsx` (new), `mobile-bottom-nav.tsx`,
+`mobile-more-menu.tsx` (new), `components/ui/data-table.tsx`,
+`app/dashboard/page.tsx`, `WelcomeSection.tsx`, `MiddleSection.tsx`,
+`InventoryOverview.tsx`, `BorrowReturn.tsx`, `FooterSection.tsx`,
+`roles/page.tsx`, `library-view.tsx`, `users-view.tsx`,
+`course-form-view.tsx`, `paper-form-view.tsx`, `invite-form.tsx`,
+`settings-form.tsx`, `revenue-config-form.tsx`.
+
