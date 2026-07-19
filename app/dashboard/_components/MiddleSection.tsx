@@ -45,15 +45,15 @@ const recent = [
 ];
 
 const card = (extra?: React.CSSProperties): React.CSSProperties => ({
-  background: "var(--bg-card)", border: "1px solid var(--border)", padding: "10px 12px", ...extra,
+  background: "var(--bg-card)", border: "1px solid var(--border)", padding: "10px 12px", borderRadius: 8, ...extra,
 });
 
 export default function MiddleSection() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 0 }}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-0">
 
       {/* Sales */}
-      <div style={card({ borderRadius: "8px 0 0 8px", borderRight: "none" })}>
+      <div style={card()}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <ShoppingCart size={14} /> Sales &amp; Store
         </div>
@@ -71,7 +71,7 @@ export default function MiddleSection() {
       </div>
 
       {/* Popular */}
-      <div style={card({ borderRadius: 0, borderRight: "none", borderLeft: "none" })}>
+      <div style={card()}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <Star size={14} /> Popular Resources
         </div>
@@ -89,7 +89,7 @@ export default function MiddleSection() {
       </div>
 
       {/* Recently Added */}
-      <div style={card({ borderRadius: 0, borderRight: "none", borderLeft: "none" })}>
+      <div style={card()}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <Plus size={14} /> Recently Added
         </div>
@@ -103,7 +103,7 @@ export default function MiddleSection() {
       </div>
 
       {/* News */}
-      <div style={card({ borderRadius: "0 8px 8px 0", borderLeft: "none" })}>
+      <div style={card()}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <Newspaper size={14} /> News &amp; Newspapers
         </div>

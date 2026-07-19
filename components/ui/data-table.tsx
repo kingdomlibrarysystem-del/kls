@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, Download } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -87,6 +87,21 @@ function PaginationBar({
   )
 }
 
+/** Right/left edge fade shown over a horizontally-scrollable table, so overflow reads as an intentional affordance rather than a silent, unlabeled cutoff. */
+function ScrollEdgeFade({ side }: { side: 'left' | 'right' }) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute top-0 bottom-0 w-8 z-10 ${side === 'left' ? 'left-0' : 'right-0'}`}
+      style={{
+        background: side === 'left'
+          ? 'linear-gradient(to right, rgba(0,0,0,0.06), transparent)'
+          : 'linear-gradient(to left, rgba(0,0,0,0.06), transparent)',
+      }}
+    />
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function DataTable<T>({
@@ -107,6 +122,17 @@ export function DataTable<T>({
   const [sortDir,  setSortDir]  = useState<SortDir>('asc')
   const [page,     setPage]     = useState(1)
   const [pageSize, setPageSize] = useState(defaultPageSize)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrollState, setScrollState] = useState({ canScrollLeft: false, canScrollRight: false })
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    setScrollState({
+      canScrollLeft: el.scrollLeft > 0,
+      canScrollRight: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+    })
+  }, [])
 
   const handleSort = useCallback((key: string) => {
     setSortKey((prev) => {
@@ -138,6 +164,21 @@ export function DataTable<T>({
   const paged      = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const goPage = (n: number) => setPage(Math.min(Math.max(1, n), totalPages))
+
+  // Recompute scroll-fade affordance whenever the visible rows or viewport size change.
+  useEffect(() => {
+    updateScrollState()
+    const el = scrollRef.current
+    if (!el) return
+    const onResize = () => updateScrollState()
+    window.addEventListener('resize', onResize)
+    const observer = new ResizeObserver(onResize)
+    observer.observe(el)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      observer.disconnect()
+    }
+  }, [paged, updateScrollState])
 
   return (
     <div>
@@ -188,8 +229,10 @@ export function DataTable<T>({
       </p>
 
       {/* Table */}
-      <div className="bg-white dark:bg-white/5 border border-w-300 dark:border-white/10 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="relative bg-white dark:bg-white/5 border border-w-300 dark:border-white/10 rounded-lg overflow-hidden">
+        {scrollState.canScrollLeft && <ScrollEdgeFade side="left" />}
+        {scrollState.canScrollRight && <ScrollEdgeFade side="right" />}
+        <div ref={scrollRef} onScroll={updateScrollState} className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-form-section dark:bg-white/10 border-b border-w-300 dark:border-white/10">
               <tr>

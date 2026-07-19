@@ -58,7 +58,7 @@ export function InviteForm({ onInvited }: InviteFormProps) {
 
   return (
     <FormSection title="Invite a New User">
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {sentTo && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
             <CheckCircle2 size={15} /> Invitation sent to {sentTo}.

@@ -62,7 +62,7 @@ export function PaperFormView() {
   return (
     <div className="max-w-2xl">
       <FormSection title="Paper Details">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {submittedKeywords && (
             <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
               <CheckCircle2 size={15} className="mt-0.5 shrink-0" />

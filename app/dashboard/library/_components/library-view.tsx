@@ -100,8 +100,8 @@ export function LibraryView() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
-        <PageHeader title="Book Inventory" subtitle="Kingdom Classification System — manage scrolls across all 8 KCS sections" />
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <PageHeader className="mb-0" title="Book Inventory" subtitle="Kingdom Classification System — manage scrolls across all 8 KCS sections" />
         <ElegantButton variant="primary" onClick={openCreate} className="flex items-center gap-1.5 shrink-0">
           <PlusCircle size={15} /> Add Resource
         </ElegantButton>

@@ -73,7 +73,7 @@ export default function RolesPage() {
 
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label="Loading roles">
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 10 }}>
               {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} style={{ height: 64, borderRadius: 8 }} />)}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ gap: 10 }}>

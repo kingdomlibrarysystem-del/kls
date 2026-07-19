@@ -38,9 +38,9 @@ const recentlyAdded = [
 
 export default function InventoryOverview() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-0">
       {/* Donut */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px 0 0 8px", borderRight: "none", padding: "10px 12px" }}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <Package size={14} /> Inventory Overview
         </div>
@@ -67,11 +67,11 @@ export default function InventoryOverview() {
       </div>
 
       {/* Quick Actions */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 0, borderRight: "none", borderLeft: "none", padding: "10px 12px" }}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <Plus size={14} /> Quick Actions
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        <div className="grid grid-cols-2 gap-1.5">
           {quickActions.map((a) => {
             const content = (
               <>
@@ -97,7 +97,7 @@ export default function InventoryOverview() {
       </div>
 
       {/* Recently Added */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 8px 8px 0", borderLeft: "none", padding: "10px 12px" }}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
           <Plus size={14} /> Recently Added
         </div>

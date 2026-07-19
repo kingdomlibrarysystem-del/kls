@@ -41,7 +41,7 @@ export default function BorrowReturn() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 8 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 6, marginBottom: 8 }}>
         {stats.map((s) => (
           <div key={s.label} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px 4px", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 2 }}>{s.icon}</div>
@@ -61,18 +61,22 @@ export default function BorrowReturn() {
 
       {/* Table */}
       <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, marginBottom: 5, letterSpacing: 0.5 }}>RECENT BORROWED ITEMS</div>
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: "3px 6px", color: "var(--text-muted)", fontWeight: 600, fontSize: 9, paddingBottom: 4, borderBottom: "1px solid var(--border)", marginBottom: 3 }}>
-        <span>Item</span><span>Type</span><span>Borrowed On</span><span>Due Date</span><span>Status</span>
-      </div>
-      {loans.map((l, i) => (
-        <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: "3px 6px", alignItems: "center", padding: "3px 0", borderBottom: "1px solid var(--border-light)", color: "var(--text-secondary)", fontSize: 10 }}>
-          <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{l.item}</span>
-          <span>{l.type}</span>
-          <span>{l.borrowed}</span>
-          <span>{l.due}</span>
-          <span style={{ color: statusColor[l.status], fontWeight: 600 }}>{l.status}</span>
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: 420 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: "3px 6px", color: "var(--text-muted)", fontWeight: 600, fontSize: 9, paddingBottom: 4, borderBottom: "1px solid var(--border)", marginBottom: 3 }}>
+            <span>Item</span><span>Type</span><span>Borrowed On</span><span>Due Date</span><span>Status</span>
+          </div>
+          {loans.map((l, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: "3px 6px", alignItems: "center", padding: "3px 0", borderBottom: "1px solid var(--border-light)", color: "var(--text-secondary)", fontSize: 10 }}>
+              <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{l.item}</span>
+              <span>{l.type}</span>
+              <span>{l.borrowed}</span>
+              <span>{l.due}</span>
+              <span style={{ color: statusColor[l.status], fontWeight: 600 }}>{l.status}</span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
       <div style={{ marginTop: 8 }}>
         <Link href="/dashboard/library/borrowings" className="btn btn-outline-dim btn-sm">View All Loans →</Link>
       </div>
