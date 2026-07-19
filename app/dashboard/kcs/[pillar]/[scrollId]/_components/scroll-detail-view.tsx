@@ -10,6 +10,10 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 import { kcsPillars, type ScrollStatus } from '../../../_components/kcs-pillars-data'
+import { KcsViewToggle, type KcsContentView } from '../../../_components/kcs-view-toggle'
+import { ScrollResourcesTable } from './scroll-resources-table'
+import { ScrollResourcesList } from './scroll-resources-list'
+import { ScrollAnalytics } from './scroll-analytics'
 
 /** Simulated network delay before the mock scroll + related resources become visible. */
 const LOAD_DELAY_MS = 400
@@ -39,6 +43,8 @@ interface ScrollDetailViewProps {
 export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
+  const [view, setView] = useState<KcsContentView>('cards')
+  const [showAnalytics, setShowAnalytics] = useState(false)
   const { isAuthenticated } = useAuth()
   const resources = useResources()
 
@@ -85,7 +91,18 @@ export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProp
         </span>
       </div>
 
-      <h2 className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Related Resources</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h2 className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Related Resources</h2>
+        {matches.length > 0 && (
+          <KcsViewToggle
+            view={view}
+            onViewChange={setView}
+            showAnalytics={showAnalytics}
+            onToggleAnalytics={() => setShowAnalytics((v) => !v)}
+            label="related resources"
+          />
+        )}
+      </div>
 
       {matches.length === 0 ? (
         <EmptyState
@@ -95,26 +112,36 @@ export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProp
           style={{ color: 'var(--text-secondary)' }}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {matches.map((resource) => (
-            <RelatedResourceCard
-              key={resource.id}
-              resource={resource}
-              style={{}}
-              action={
-                resource.availableQty > 0 && isAuthenticated ? (
-                  <button
-                    onClick={() => setAction('borrow')}
-                    aria-label={`Borrow ${resource.title}`}
-                    style={{ padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Borrow this resource
-                  </button>
-                ) : undefined
-              }
-            />
-          ))}
-        </div>
+        <>
+          {showAnalytics && <ScrollAnalytics resources={matches} />}
+
+          {view === 'table' ? (
+            <ScrollResourcesTable resources={matches} />
+          ) : view === 'list' ? (
+            <ScrollResourcesList resources={matches} />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {matches.map((resource) => (
+                <RelatedResourceCard
+                  key={resource.id}
+                  resource={resource}
+                  style={{}}
+                  action={
+                    resource.availableQty > 0 && isAuthenticated ? (
+                      <button
+                        onClick={() => setAction('borrow')}
+                        aria-label={`Borrow ${resource.title}`}
+                        style={{ padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Borrow this resource
+                      </button>
+                    ) : undefined
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {borrowable && (
