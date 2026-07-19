@@ -1937,3 +1937,152 @@ item.tsx` (new), `sidebar-footer.tsx` (new), `mobile-bottom-nav.tsx`,
 `course-form-view.tsx`, `paper-form-view.tsx`, `invite-form.tsx`,
 `settings-form.tsx`, `revenue-config-form.tsx`.
 
+# KCS Taxonomy Consolidation (Category / KcsPillar / library-data merge)
+
+Scoped, real data-model refactor: retired 3 independently hand-duplicated
+copies of the "8 KCS pillars + ~78 Bible-book sub-categories" taxonomy
+(admin Categories CRUD, KCS Map, member library) into one canonical shared
+module, and migrated `Resource.category` (free-text string) to a real
+`Resource.categoryId` FK against it.
+
+## New canonical module — `lib/kcs-taxonomy/`
+
+- `types.ts` — `Category` (single flat shape for both root pillars and
+  leaf scrolls), `CategoryStatus`, `CategoryFormState`.
+- `roots-data.ts` — the 8 root pillars, rich content fields (`code`,
+  `subtitle`, `range`, `theme`, `description`, `detail`, `heroImage`)
+  sourced verbatim from the old `kcs-pillars-data.ts` (itself sourced
+  verbatim from `KCS_LIBRARY.md`), multilingual `name.fr`/`name.rw` and
+  `slug` from the old `categories-data.ts`.
+- `scrolls-data.ts` — the 75 child scrolls (78 minus 3 dropped dead
+  placeholders), same sourcing split, `status` ported from the old
+  `Scroll.status` where a matching title existed, `'AVAILABLE'` default
+  otherwise.
+- `taxonomy-helpers.ts` — merges roots+scrolls into one `categories[]`
+  array plus `getCategoryById`, `getRootCategories`, `getChildCategories`,
+  `resourceCountFor` (computed, recursive for roots), `getCategoryName`,
+  `getParentName`.
+- `use-categories.ts` — `useSyncExternalStore` live store (Create/Edit/
+  Delete), mirroring the existing `use-roles.ts`/`use-resources.ts` pattern.
+- `slug.ts` — `toSlug()`, ported verbatim.
+- `index.ts` — barrel export.
+
+**ID scheme**: every category's `id` is its own `slug` (e.g. `"kcs-fnd"`,
+`"genesis"`). Verified all 83 slugs (8 roots + 75 scrolls) are unique
+before adopting this — simpler and more self-documenting than a
+`root-N`/`sub-N` counter, and just as stable. `Resource.categoryId` now
+points directly at these slugs (e.g. the Genesis resource has
+`categoryId: 'genesis'`).
+
+**Naming-drift resolution**: kept `kcs-pillars-data.ts`'s theological
+naming (`"Gospels"` not `"Gospel"`, `"Esther (with additions)"` not bare
+`"Esther"`) since that file's own docstring documents it as sourced
+verbatim from `KCS_LIBRARY.md` — the more authoritative and more precise
+source. `categories-data.ts` contributed the admin-CRUD shape
+(multilingual names, slugs) on top. Confirmed by diffing all 3 sources
+that `library-data.tsx` added nothing unique once folded in — it was a
+strict subset of the other two, so it was deleted rather than merged.
+
+**Dropped**: `your-scroll-acts`, `your-scroll-epi`, `your-scroll-rev` — 3
+inert placeholder rows from `categories-data.ts`, confirmed to have zero
+other references anywhere in the repo and no corresponding entry in
+`kcsPillars[...].scrolls`.
+
+**`resourceCountFor` is recursive for roots**: a root's count includes
+resources filed directly under it plus every child's resources (in
+practice every resource is filed at leaf/scroll level, so a root's count
+is effectively "sum of its children"). Documented inline in
+`taxonomy-helpers.ts`. `categories-stats.tsx`'s average-per-category stat
+sums only leaf categories to avoid double-counting a root's recursive
+total on top of its own children.
+
+## Resource.category → Resource.categoryId
+
+`app/dashboard/library/_components/resources-data.ts`: field renamed,
+all 16 seed rows mapped to their real child-category id (e.g. the
+`'Genesis'` resource → `categoryId: 'genesis'`), `categoryOptions` tuple
+deleted (replaced by real lookups against `lib/kcs-taxonomy`).
+
+`use-resources.ts`'s `findResourcesForScroll` — previously matched by
+`resource.title === scrollTitle` (a fragile string hack); now filters
+`resource.categoryId === categoryId`, a real FK match. All real call
+sites updated: `kcs/[pillar]/[scrollId]/scroll-detail-view.tsx`,
+`kcs-pillar-analytics.tsx` (rebased onto the "KCS Map — View-Mode
+Switcher & Pillar Analytics" phase above — this phase's initial commit
+predated that phase reaching `auto-wip`, so a rebase was required;
+`kcs-pillar-view.tsx`, `kcs-pillar-analytics.tsx`, `kcs-scrolls-table.tsx`,
+`kcs-scrolls-list.tsx`, and `scroll-detail-view.tsx` were all re-resolved
+against that phase's richer Cards/Table/List/Analytics structure rather
+than reverting it), `member/library/_components/scroll-card.tsx`,
+`member/library/[section]/[scrollId]/scroll-detail-view.tsx`.
+`scroll-analytics.tsx`/`scroll-resources-table.tsx`/`scroll-resources-list.tsx`
+needed no change — they only ever receive already-matched `Resource[]` as
+a prop, with no scroll/category field of their own.
+
+## Files created
+
+- `lib/kcs-taxonomy/{types,roots-data,scrolls-data,taxonomy-helpers,use-categories,slug,index}.ts`
+- `app/member/library/_components/section-icons.tsx` (presentational
+  icon-per-pillar map — the one bit of `library-data.tsx` that's a UI
+  concern, not a data-model concern, so it doesn't belong on `Category`)
+
+## Files deleted
+
+- `app/dashboard/library/categories/_components/categories-data.ts`
+- `app/dashboard/kcs/_components/kcs-pillars-data.ts`
+- `app/member/library/_components/library-data.tsx`
+
+## Files modified
+
+- `app/dashboard/library/_components/resources-data.ts`,
+  `use-resources.ts`, `resource-form-schema.ts`, `resource-form-modal.tsx`,
+  `resource-detail-modal.tsx`, `resources-table.tsx`
+- `app/dashboard/library/categories/page.tsx`,
+  `_components/{categories-table,category-detail-modal,delete-category-modal,categories-stats,category-form-panel}.tsx`
+- `app/dashboard/kcs/_components/{kcs-map-view,kcs-pillar-tabs,kcs-pillar-view,kcs-pillar-analytics,kcs-scrolls-table,kcs-scrolls-list}.tsx`,
+  `[pillar]/[scrollId]/{page,_components/scroll-detail-view}.tsx`
+- `app/member/library/page.tsx`,
+  `_components/scroll-card.tsx`,
+  `[section]/[scrollId]/_components/scroll-detail-view.tsx`
+- `app/(public)/library/_components/{library-browser,book-card}.tsx`
+
+## Admin Categories CRUD — upgraded to live store
+
+Previously held categories in page-local `useState` seeded from a static
+import (no persistence across a route remount). Upgraded to the
+`use-categories.ts` `useSyncExternalStore` store, matching every other
+admin CRUD module in this codebase (`use-roles.ts`, `use-users.ts`,
+`use-resources.ts`, etc.) — chosen because the same page was already
+being touched for the `categoryId` migration, and leaving it as the one
+remaining non-persistent CRUD page would have been inconsistent with
+the rest of the app. The "delete blocked while resources reference it"
+guard now checks the live-computed `resourceCountFor()` instead of the
+old hardcoded field.
+
+## Route param scheme
+
+KCS Map pillar route stayed a slug-based param
+(`/dashboard/kcs/{pillarSlug}/{scrollSlug}`, e.g.
+`/dashboard/kcs/kcs-fnd/genesis`) — `Category.slug` already exists and is
+stable, so no separate `key` field was reinvented.
+
+## Verification
+
+`npx tsc --noEmit` clean (zero errors). `npm run build` clean — "Running
+TypeScript ... Finished TypeScript" confirmed, all 72 routes compiled,
+including every touched route. Live-verified via `npm run dev` + `curl`:
+200 on `/dashboard/library/categories`, `/dashboard/kcs`,
+`/dashboard/kcs/kcs-fnd/genesis`, `/dashboard/library`, `/member/library`,
+`/library`. Confirmed via raw HTML inspection of
+`/dashboard/library/categories` that real taxonomy data (ids like
+`kcs-fnd`/`genesis`, names including the resolved `"Gospels"` naming
+decision) renders server-side with no `"undefined"` leaking into content.
+
+## Needs human input
+
+None. The two "diffing all 3 sources first" and "recursive vs.
+leaf-only resourceCount" judgment calls were the two points flagged as
+genuinely ambiguous in the task brief — both resolved with reasoning
+documented inline in `taxonomy-helpers.ts`/`categories-stats.tsx` and
+above, not deferred.
+

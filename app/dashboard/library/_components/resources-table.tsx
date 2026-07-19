@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { Eye, Pencil, Archive } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { getCategoryById } from '@/lib/kcs-taxonomy'
 import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from './resources-data'
 
 interface ResourcesTableProps {
@@ -40,14 +41,14 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
       ),
     },
     {
-      key: 'category', label: 'KCS Section', sortable: true,
+      key: 'categoryId', label: 'KCS Section', sortable: true,
       render: (r) => {
-        const codeMatch = r.category.match(/\(([^)]+)\)/)
-        const kcsCode = codeMatch ? codeMatch[1] : ''
+        const category = getCategoryById(r.categoryId)
+        const rootCode = category ? getCategoryById(category.parentId ?? '')?.code : undefined
         return (
           <div>
-            <p>{r.category.replace(/\s*\([^)]+\)/, '')}</p>
-            {kcsCode && <span className="inline-block px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-mono font-semibold mt-0.5">{kcsCode}</span>}
+            <p>{category?.name.en ?? 'Uncategorized'}</p>
+            {rootCode && <span className="inline-block px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-mono font-semibold mt-0.5">{rootCode}</span>}
           </div>
         )
       },
@@ -102,7 +103,7 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
       columns={columns}
       rowKey={(r) => r.id}
       searchPlaceholder="Search title, author, ISBN..."
-      searchFilter={(r, q) => r.title.toLowerCase().includes(q) || r.author.toLowerCase().includes(q) || r.isbn.includes(q) || r.category.toLowerCase().includes(q)}
+      searchFilter={(r, q) => r.title.toLowerCase().includes(q) || r.author.toLowerCase().includes(q) || r.isbn.includes(q) || (getCategoryById(r.categoryId)?.name.en.toLowerCase().includes(q) ?? false)}
       filters={
         <>
           <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value as Resource['status'] | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none">

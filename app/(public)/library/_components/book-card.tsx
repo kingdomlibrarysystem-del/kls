@@ -8,6 +8,7 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { bindingTypeLabels, mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { getCategoryName } from '@/lib/kcs-taxonomy'
 
 /**
  * The identity portion (cover, title, price, badges) is wrapped in a real
@@ -43,7 +44,7 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
         </Link>
         <p className="font-cinzel text-base font-bold text-w-600">{book.price.toLocaleString('en-RW')} RWF</p>
         <div className="flex flex-wrap gap-1.5">
-          <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{book.category}</span>
+          <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{getCategoryName(book.categoryId)}</span>
           <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
           <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><Film size={10} /> {mediaTypeLabels[book.mediaType]}</span>
         </div>

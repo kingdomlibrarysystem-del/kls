@@ -1,24 +1,24 @@
 'use client'
 
-import { kcsPillars } from './kcs-pillars-data'
+import { getRootCategories } from '@/lib/kcs-taxonomy'
 
 interface KcsPillarTabsProps {
-  activeKey: string
-  onChange: (pillarKey: string) => void
+  activeSlug: string
+  onChange: (pillarSlug: string) => void
 }
 
 /** Tab bar switching between the 8 KCS pillars on the single consolidated /dashboard/kcs page. */
-export function KcsPillarTabs({ activeKey, onChange }: KcsPillarTabsProps) {
+export function KcsPillarTabs({ activeSlug, onChange }: KcsPillarTabsProps) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-4" role="tablist" aria-label="KCS pillars">
-      {Object.values(kcsPillars).map((pillar) => {
-        const active = pillar.key === activeKey
+      {getRootCategories().map((pillar) => {
+        const active = pillar.slug === activeSlug
         return (
           <button
-            key={pillar.key}
+            key={pillar.slug}
             role="tab"
             aria-selected={active}
-            onClick={() => onChange(pillar.key)}
+            onClick={() => onChange(pillar.slug)}
             style={{
               fontSize: 11,
               fontWeight: 700,

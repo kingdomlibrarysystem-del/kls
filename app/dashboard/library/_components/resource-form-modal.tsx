@@ -8,9 +8,18 @@ import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { categoryOptions, type Resource } from './resources-data'
+import { categories as taxonomyCategories, getRootCategories } from '@/lib/kcs-taxonomy'
+import { type Resource } from './resources-data'
 import { resourceSchema, defaultResourceFormValues, type ResourceFormData } from './resource-form-schema'
 import { ResourceFormDetails } from './resource-form-details'
+
+/**
+ * Leaf/scroll-level categories only, grouped under their root pillar label
+ * — a real cataloguer classifies a specific book (e.g. "Genesis"), not a
+ * whole pillar, so the picker offers scrolls, not the 8 roots.
+ */
+const leafCategories = taxonomyCategories.filter((c) => c.parentId !== null)
+const rootCategories = getRootCategories()
 
 interface ResourceFormModalProps {
   open: boolean
@@ -41,7 +50,7 @@ export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFo
         ? {
             title: editing.title,
             author: editing.author,
-            category: editing.category,
+            categoryId: editing.categoryId,
             isbn: editing.isbn,
             totalQty: editing.totalQty,
             description: editing.description,
@@ -60,7 +69,7 @@ export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFo
             videoUrl: editing.videoUrl ?? '',
             videoName: '',
           }
-        : { ...defaultResourceFormValues, category: categoryOptions[0] })
+        : { ...defaultResourceFormValues, categoryId: leafCategories[0]?.id ?? '' })
       setSubmitError('')
     }
   }, [open, editing, reset])
@@ -94,9 +103,15 @@ export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFo
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <FieldLabel htmlFor="category" required>KCS Section</FieldLabel>
-            <select id="category" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('category')}>
-              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            <FieldLabel htmlFor="categoryId" required>KCS Scroll</FieldLabel>
+            <select id="categoryId" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('categoryId')}>
+              {rootCategories.map((root) => (
+                <optgroup key={root.id} label={`${root.name.en} (${root.code})`}>
+                  {leafCategories.filter((c) => c.parentId === root.id).map((c) => (
+                    <option key={c.id} value={c.id}>{c.name.en}</option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
           <div>
