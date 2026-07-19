@@ -9,7 +9,7 @@ import { RelatedResourceCard } from '@/components/ui/related-resource-card'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
-import { kcsPillars, type ScrollStatus } from '../../../_components/kcs-pillars-data'
+import { getCategoryById, getChildCategories, type CategoryStatus } from '@/lib/kcs-taxonomy'
 import { KcsViewToggle, type KcsContentView } from '../../../_components/kcs-view-toggle'
 import { ScrollResourcesTable } from './scroll-resources-table'
 import { ScrollResourcesList } from './scroll-resources-list'
@@ -18,29 +18,33 @@ import { ScrollAnalytics } from './scroll-analytics'
 /** Simulated network delay before the mock scroll + related resources become visible. */
 const LOAD_DELAY_MS = 400
 
-const statusConfig: Record<ScrollStatus, { label: string; color: string; bg: string }> = {
+const statusConfig: Record<CategoryStatus, { label: string; color: string; bg: string }> = {
   AVAILABLE: { label: 'Available', color: 'var(--green-light)', bg: 'var(--green-dim)' },
   ARCHIVED: { label: 'Archived', color: 'var(--text-muted)', bg: 'var(--bg-section)' },
   OUT_OF_STOCK: { label: 'Out of Stock', color: 'var(--red-light)', bg: 'var(--red-dim)' },
 }
 
 interface ScrollDetailViewProps {
-  pillarKey: string
-  scrollCode: string
+  pillarSlug: string
+  scrollSlug: string
 }
 
 /**
  * Real click-through detail page for a single KCS scroll — identity
  * (title/code/section/status, unchanged from the card) plus a genuine
  * Related Resources section sourced from the canonical Resource store by
- * title match, with a real Borrow action when a matching resource has
- * stock. A scroll with no matching resource (archived/apocryphal titles
- * not in the canonical store) correctly shows EmptyState rather than
- * fabricated content — the underlying scroll model still has no
- * content/body field, so this page adds a real relationship, not reader
- * content that doesn't exist.
+ * a real `categoryId` FK match, with a real Borrow action when a matching
+ * resource has stock. A scroll with no matching resource (archived/
+ * apocryphal titles with no catalog entry) correctly shows EmptyState
+ * rather than fabricated content — the underlying scroll model still has
+ * no content/body field, so this page adds a real relationship, not
+ * reader content that doesn't exist.
+ *
+ * Previously matched resources by title string against the scroll's title
+ * (a fragile hack); now filters `Resource.categoryId` directly against the
+ * scroll's own stable id.
  */
-export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProps) {
+export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const [view, setView] = useState<KcsContentView>('cards')
@@ -48,8 +52,8 @@ export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProp
   const { isAuthenticated } = useAuth()
   const resources = useResources()
 
-  const pillar = kcsPillars[pillarKey]
-  const scroll = pillar?.scrolls.find((s) => s.code === scrollCode)
+  const pillar = getCategoryById(pillarSlug)
+  const scroll = pillar ? getChildCategories(pillar.id).find((s) => s.slug === scrollSlug) : undefined
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -69,13 +73,14 @@ export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProp
     return <EmptyState icon={BookX} title="Scroll not found" description="This scroll doesn't exist in the KCS Map." />
   }
 
-  const matches = findResourcesForScroll(scroll.title, resources)
+  const matches = findResourcesForScroll(scroll.id, resources)
   const borrowable = matches.find((r) => r.availableQty > 0)
+  const status = scroll.status ?? 'AVAILABLE'
 
   return (
     <div>
-      <Link href={`/dashboard/kcs?pillar=${pillarKey}`} className="flex items-center gap-1 mb-4" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-        <ChevronLeft size={14} /> Back to {pillar.name}
+      <Link href={`/dashboard/kcs?pillar=${pillarSlug}`} className="flex items-center gap-1 mb-4" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+        <ChevronLeft size={14} /> Back to {pillar.name.en}
       </Link>
 
       <div className="card mb-4" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -83,11 +88,11 @@ export function ScrollDetailView({ pillarKey, scrollCode }: ScrollDetailViewProp
           <ScrollText size={22} color="#fff" />
         </div>
         <div>
-          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)', lineHeight: 1.2 }}>{scroll.title}</h1>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.code} · {pillar.name} ({pillar.code})</p>
+          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)', lineHeight: 1.2 }}>{scroll.name.en}</h1>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.slug} · {pillar.name.en} ({pillar.code})</p>
         </div>
-        <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, color: statusConfig[scroll.status].color, background: statusConfig[scroll.status].bg, borderRadius: 4, padding: '3px 8px' }}>
-          {statusConfig[scroll.status].label}
+        <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, color: statusConfig[status].color, background: statusConfig[status].bg, borderRadius: 4, padding: '3px 8px' }}>
+          {statusConfig[status].label}
         </span>
       </div>
 

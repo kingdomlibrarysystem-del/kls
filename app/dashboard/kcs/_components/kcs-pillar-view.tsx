@@ -6,7 +6,7 @@ import { BookCopy, Search, ScrollText } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { kcsPillars, type ScrollStatus } from './kcs-pillars-data'
+import { getCategoryById, getChildCategories, type CategoryStatus } from '@/lib/kcs-taxonomy'
 import { KcsPillarTabs } from './kcs-pillar-tabs'
 import { KcsViewToggle, type KcsContentView } from './kcs-view-toggle'
 import { KcsScrollsTable } from './kcs-scrolls-table'
@@ -16,17 +16,17 @@ import { KcsPillarAnalytics } from './kcs-pillar-analytics'
 /** Simulated network delay before mock scrolls become visible. */
 const LOAD_DELAY_MS = 400
 
-const statusConfig: Record<ScrollStatus, { label: string; color: string; bg: string }> = {
+const statusConfig: Record<CategoryStatus, { label: string; color: string; bg: string }> = {
   AVAILABLE:    { label: 'Available',    color: 'var(--green-light)', bg: 'var(--green-dim)' },
   ARCHIVED:     { label: 'Archived',     color: 'var(--text-muted)',  bg: 'var(--bg-section)' },
   OUT_OF_STOCK: { label: 'Out of Stock', color: 'var(--red-light)',   bg: 'var(--red-dim)'    },
 }
 
 interface KcsPillarViewProps {
-  /** Key into `kcsPillars`, e.g. "foundation". */
-  pillarKey: string
+  /** Slug of the active root category, e.g. "kcs-fnd". */
+  pillarSlug: string
   /** Called when the reader picks a different pillar from the tab bar. */
-  onPillarChange: (pillarKey: string) => void
+  onPillarChange: (pillarSlug: string) => void
 }
 
 /**
@@ -36,8 +36,9 @@ interface KcsPillarViewProps {
  * pillar's scrolls. Shows a brief simulated loading state, then the grid,
  * or an EmptyState if a search yields no results.
  */
-export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps) {
-  const pillar = kcsPillars[pillarKey]
+export function KcsPillarView({ pillarSlug, onPillarChange }: KcsPillarViewProps) {
+  const pillar = getCategoryById(pillarSlug)
+  const scrolls = pillar ? getChildCategories(pillar.id) : []
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [view, setView] = useState<KcsContentView>('cards')
@@ -47,22 +48,22 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
     setLoading(true)
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [pillarKey])
+  }, [pillarSlug])
 
   if (!pillar) return null
 
-  const filtered = pillar.scrolls.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase()))
+  const filtered = scrolls.filter((s) => s.name.en.toLowerCase().includes(search.toLowerCase()) || s.slug.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div>
-      <KcsPillarTabs activeKey={pillarKey} onChange={onPillarChange} />
+      <KcsPillarTabs activeSlug={pillarSlug} onChange={onPillarChange} />
 
       {/* Header */}
       <div className="card mb-4" style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden', padding: 0 }}>
         <div style={{ position: 'relative', height: 120, background: 'linear-gradient(135deg, var(--gold-dim), var(--gold))' }}>
           <RemoteImage
-            src={pillar.heroImage}
-            alt={`${pillar.name} pillar header`}
+            src={pillar.heroImage ?? ''}
+            alt={`${pillar.name.en} pillar header`}
             fill
             sizes="(max-width: 768px) 100vw, 800px"
             style={{ objectFit: 'cover' }}
@@ -74,7 +75,7 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
               <BookCopy size={18} color="#fff" />
             </div>
             <div>
-              <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{pillar.name}</h1>
+              <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{pillar.name.en}</h1>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>{pillar.code} · {pillar.subtitle}</p>
             </div>
           </div>
@@ -96,7 +97,7 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
             placeholder="Search scrolls..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label={`Search scrolls in ${pillar.name}`}
+            aria-label={`Search scrolls in ${pillar.name.en}`}
             style={{
               width: '100%', paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
               fontSize: 12, borderRadius: 6, border: '1px solid var(--border)',
@@ -113,11 +114,11 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
         />
       </div>
 
-      {showAnalytics && !loading && <KcsPillarAnalytics pillar={pillar} />}
+      {showAnalytics && !loading && <KcsPillarAnalytics pillar={pillar} scrolls={scrolls} />}
 
       {/* Scrolls content */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" aria-label={`Loading ${pillar.name} scrolls`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" aria-label={`Loading ${pillar.name.en} scrolls`}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} style={{ height: 72, borderRadius: 8 }} />
           ))}
@@ -125,26 +126,26 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
       ) : filtered.length === 0 ? (
         <EmptyState icon={ScrollText} title="No scrolls found" description="Try a different search term." style={{ color: 'var(--text-secondary)' }} />
       ) : view === 'table' ? (
-        <KcsScrollsTable scrolls={filtered} pillarKey={pillarKey} pillarName={pillar.name} />
+        <KcsScrollsTable scrolls={filtered} pillarSlug={pillarSlug} pillarName={pillar.name.en} />
       ) : view === 'list' ? (
-        <KcsScrollsList scrolls={filtered} pillarKey={pillarKey} />
+        <KcsScrollsList scrolls={filtered} pillarSlug={pillarSlug} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((scroll) => (
             <Link
-              key={scroll.code}
-              href={`/dashboard/kcs/${pillarKey}/${encodeURIComponent(scroll.code)}`}
-              aria-label={`View details for ${scroll.title}`}
+              key={scroll.id}
+              href={`/dashboard/kcs/${pillarSlug}/${encodeURIComponent(scroll.slug)}`}
+              aria-label={`View details for ${scroll.name.en}`}
               className="card card-hover"
               style={{ display: 'flex', flexDirection: 'column', gap: 6, textDecoration: 'none' }}
             >
               <div className="flex items-center justify-between">
-                <span className="stat-chip">{scroll.code}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, color: statusConfig[scroll.status].color, background: statusConfig[scroll.status].bg, borderRadius: 4, padding: '1px 6px' }}>
-                  {statusConfig[scroll.status].label}
+                <span className="stat-chip">{scroll.slug}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: statusConfig[scroll.status ?? 'AVAILABLE'].color, background: statusConfig[scroll.status ?? 'AVAILABLE'].bg, borderRadius: 4, padding: '1px 6px' }}>
+                  {statusConfig[scroll.status ?? 'AVAILABLE'].label}
                 </span>
               </div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{scroll.title}</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{scroll.name.en}</p>
             </Link>
           ))}
         </div>

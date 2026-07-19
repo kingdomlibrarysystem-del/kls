@@ -4,18 +4,30 @@ import { useState } from 'react'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
-import { EMPTY_FORM, mockCategories, toSlug, type Category, type FormState } from './_components/categories-data'
+import { EMPTY_CATEGORY_FORM, toSlug, resourceCountFor, type Category, type CategoryFormState } from '@/lib/kcs-taxonomy'
+import { useCategories, addCategory, updateCategory, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
+import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { CategoryFormPanel } from './_components/category-form-panel'
 import { CategoriesTable } from './_components/categories-table'
 import { CategoryDetailModal } from './_components/category-detail-modal'
 import { DeleteCategoryModal } from './_components/delete-category-modal'
 import { CategoriesStats } from './_components/categories-stats'
 
-/** KCS Categories: full CRUD plus a details view over the mocked category taxonomy. */
+/**
+ * KCS Categories: full CRUD plus a details view over the canonical KCS
+ * taxonomy (`lib/kcs-taxonomy`). Reads/writes through the shared
+ * `use-categories` store (mirroring `use-roles.ts`/`use-resources.ts`) so
+ * Create/Edit/Delete persist across a route remount in this session,
+ * instead of resetting to the seed array — this page previously held
+ * categories in local `useState` with no persistence. `resourceCount` is
+ * now computed live from the real `Resource[]` store rather than a
+ * hardcoded field.
+ */
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories)
-  const [form, setForm] = useState<FormState>(EMPTY_FORM)
-  const [errors, setErrors] = useState<Partial<FormState>>({})
+  const categories = useCategories()
+  const resources = useResources()
+  const [form, setForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
+  const [errors, setErrors] = useState<Partial<CategoryFormState>>({})
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [editTarget, setEditTarget] = useState<Category | null>(null)
@@ -33,7 +45,7 @@ export default function CategoriesPage() {
   }
 
   const validate = (): boolean => {
-    const e: Partial<FormState> = {}
+    const e: Partial<CategoryFormState> = {}
     if (!form.nameEn.trim()) e.nameEn = 'English name is required'
     if (!form.slug.trim()) e.slug = 'Slug is required'
     const slugExists = categories.some((c) => c.slug === form.slug && c.id !== editTarget?.id)
@@ -50,27 +62,25 @@ export default function CategoriesPage() {
     setTimeout(() => {
       try {
         if (editTarget) {
-          setCategories((prev) => prev.map((c) =>
-            c.id === editTarget.id
-              ? { ...c, slug: form.slug, name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw }, parentId: form.parentId || null, parentName: categories.find((x) => x.id === form.parentId)?.name.en ?? null }
-              : c
-          ))
+          updateCategory(editTarget.id, {
+            slug: form.slug,
+            name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
+            parentId: form.parentId || null,
+          })
           showToast(`Category "${form.nameEn}" updated.`)
           setEditTarget(null)
         } else {
           const newCat: Category = {
-            id: crypto.randomUUID(),
+            id: form.slug || crypto.randomUUID(),
             slug: form.slug,
             name: { en: form.nameEn, fr: form.nameFr || form.nameEn, rw: form.nameRw || form.nameEn },
             parentId: form.parentId || null,
-            parentName: categories.find((c) => c.id === form.parentId)?.name.en ?? null,
-            resourceCount: 0,
             createdAt: new Date().toISOString().split('T')[0],
           }
-          setCategories((prev) => [newCat, ...prev])
+          addCategory(newCat)
           showToast(`Category "${form.nameEn}" created.`)
         }
-        setForm(EMPTY_FORM)
+        setForm(EMPTY_CATEGORY_FORM)
       } catch {
         showToast('Could not save this category — please try again.', 'error')
       } finally {
@@ -87,18 +97,19 @@ export default function CategoriesPage() {
 
   const handleCancelEdit = () => {
     setEditTarget(null)
-    setForm(EMPTY_FORM)
+    setForm(EMPTY_CATEGORY_FORM)
     setErrors({})
   }
 
   const handleDelete = () => {
     if (!deleteTarget) return
-    if (deleteTarget.resourceCount > 0) {
-      showToast(`Cannot delete — ${deleteTarget.resourceCount} resource(s) still assigned.`, 'error')
+    const count = resourceCountFor(deleteTarget.id, resources)
+    if (count > 0) {
+      showToast(`Cannot delete — ${count} resource(s) still assigned.`, 'error')
       setDeleteTarget(null)
       return
     }
-    setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id))
+    removeCategory(deleteTarget.id)
     showToast(`Category "${deleteTarget.name.en}" deleted.`)
     setDeleteTarget(null)
   }
@@ -120,14 +131,14 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <CategoriesStats categories={categories} />
+      <CategoriesStats categories={categories} resources={resources} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="font-lato text-xs text-w-600 dark:text-white/50 uppercase tracking-wider font-semibold">{categories.length} categories total</p>
           </div>
-          <CategoriesTable categories={categories} onView={setViewTarget} onEdit={handleEdit} onDelete={setDeleteTarget} />
+          <CategoriesTable categories={categories} resources={resources} onView={setViewTarget} onEdit={handleEdit} onDelete={setDeleteTarget} />
         </div>
 
         <CategoryFormPanel
@@ -143,8 +154,8 @@ export default function CategoriesPage() {
         />
       </div>
 
-      <CategoryDetailModal category={viewTarget} onClose={() => setViewTarget(null)} />
-      <DeleteCategoryModal category={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
+      <CategoryDetailModal category={viewTarget} resources={resources} onClose={() => setViewTarget(null)} />
+      <DeleteCategoryModal category={deleteTarget} resourceCount={deleteTarget ? resourceCountFor(deleteTarget.id, resources) : 0} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
     </PageTransition>
   )
 }

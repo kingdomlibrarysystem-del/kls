@@ -3,10 +3,12 @@
 import { ScrollText, CheckCircle2, Archive, PackageX, BookCopy } from 'lucide-react'
 import { CategoryBarChart } from '@/components/ui/category-bar-chart'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
-import type { KcsPillar } from './kcs-pillars-data'
+import type { Category } from '@/lib/kcs-taxonomy'
 
 interface KcsPillarAnalyticsProps {
-  pillar: KcsPillar
+  pillar: Category
+  /** This pillar's child scroll categories — passed in rather than looked up again since the caller already has them. */
+  scrolls: Category[]
 }
 
 interface StatDef {
@@ -22,27 +24,27 @@ interface StatDef {
  * status (available/archived/out-of-stock, computed from the pillar's own
  * scroll list — no fabricated numbers) as stat cards, plus total borrowable
  * copies sourced from the canonical Resource store via the same
- * `findResourcesForScroll` title-match relationship the scroll-detail page
+ * `findResourcesForScroll` `categoryId` FK relationship the scroll-detail page
  * already uses for Related Resources. A `CategoryBarChart` (existing
  * recharts precedent, see `components/ui/category-bar-chart.tsx`) shows the
  * status breakdown visually. Toggleable independently of the Cards/Table/List
  * content view via `KcsViewToggle`'s separate Analytics button, so it can be
  * shown alongside any of the three.
  */
-export function KcsPillarAnalytics({ pillar }: KcsPillarAnalyticsProps) {
+export function KcsPillarAnalytics({ pillar, scrolls }: KcsPillarAnalyticsProps) {
   const resources = useResources()
 
-  const available = pillar.scrolls.filter((s) => s.status === 'AVAILABLE').length
-  const archived = pillar.scrolls.filter((s) => s.status === 'ARCHIVED').length
-  const outOfStock = pillar.scrolls.filter((s) => s.status === 'OUT_OF_STOCK').length
+  const available = scrolls.filter((s) => (s.status ?? 'AVAILABLE') === 'AVAILABLE').length
+  const archived = scrolls.filter((s) => s.status === 'ARCHIVED').length
+  const outOfStock = scrolls.filter((s) => s.status === 'OUT_OF_STOCK').length
 
-  const borrowableCopies = pillar.scrolls.reduce((sum, scroll) => {
-    const matches = findResourcesForScroll(scroll.title, resources)
+  const borrowableCopies = scrolls.reduce((sum, scroll) => {
+    const matches = findResourcesForScroll(scroll.id, resources)
     return sum + matches.reduce((s, r) => s + r.availableQty, 0)
   }, 0)
 
   const stats: StatDef[] = [
-    { label: 'Total Scrolls', value: pillar.scrolls.length, icon: ScrollText, color: 'var(--gold)', bg: 'var(--bg-section)' },
+    { label: 'Total Scrolls', value: scrolls.length, icon: ScrollText, color: 'var(--gold)', bg: 'var(--bg-section)' },
     { label: 'Available', value: available, icon: CheckCircle2, color: 'var(--green-light)', bg: 'var(--green-dim)' },
     { label: 'Archived', value: archived, icon: Archive, color: 'var(--text-muted)', bg: 'var(--bg-section)' },
     { label: 'Out of Stock', value: outOfStock, icon: PackageX, color: 'var(--red-light)', bg: 'var(--red-dim)' },
@@ -56,9 +58,9 @@ export function KcsPillarAnalytics({ pillar }: KcsPillarAnalyticsProps) {
   ]
 
   return (
-    <div className="card mb-4" aria-label={`Analytics for ${pillar.name}`}>
+    <div className="card mb-4" aria-label={`Analytics for ${pillar.name.en}`}>
       <h2 className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>
-        {pillar.name} Analytics
+        {pillar.name.en} Analytics
       </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
@@ -75,7 +77,7 @@ export function KcsPillarAnalytics({ pillar }: KcsPillarAnalyticsProps) {
         ))}
       </div>
 
-      <CategoryBarChart data={chartData} height={180} ariaLabel={`Scroll status breakdown for ${pillar.name}`} />
+      <CategoryBarChart data={chartData} height={180} ariaLabel={`Scroll status breakdown for ${pillar.name.en}`} />
     </div>
   )
 }

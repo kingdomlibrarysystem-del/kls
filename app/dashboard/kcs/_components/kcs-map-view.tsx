@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { kcsPillars } from './kcs-pillars-data'
+import { getRootCategories, getCategoryById } from '@/lib/kcs-taxonomy'
 import { KcsPillarView } from './kcs-pillar-view'
 
-const DEFAULT_PILLAR = 'foundation'
+const DEFAULT_PILLAR_SLUG = getRootCategories()[0].slug
 
 /**
  * Client wrapper resolving the active pillar from the `?pillar=` search
@@ -14,17 +14,23 @@ const DEFAULT_PILLAR = 'foundation'
  * target a specific tab) — replaces the previous 8 separate route files
  * (foundation/page.tsx, history/page.tsx, etc.), all of which rendered the
  * exact same KcsPillarView with only the pillarKey literal differing.
+ *
+ * The pillar is identified by its `slug` (e.g. "kcs-fnd") — the canonical
+ * `Category.slug` already exists and is stable, so it's reused as the route
+ * param instead of inventing a separate `key` field.
  */
 export function KcsMapView() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const paramPillar = searchParams.get('pillar')
-  const [pillarKey, setPillarKey] = useState(paramPillar && kcsPillars[paramPillar] ? paramPillar : DEFAULT_PILLAR)
+  const [pillarSlug, setPillarSlug] = useState(
+    paramPillar && getCategoryById(paramPillar) ? paramPillar : DEFAULT_PILLAR_SLUG
+  )
 
   const handlePillarChange = (next: string) => {
-    setPillarKey(next)
+    setPillarSlug(next)
     router.replace(`/dashboard/kcs?pillar=${next}`, { scroll: false })
   }
 
-  return <KcsPillarView pillarKey={pillarKey} onPillarChange={handlePillarChange} />
+  return <KcsPillarView pillarSlug={pillarSlug} onPillarChange={handlePillarChange} />
 }

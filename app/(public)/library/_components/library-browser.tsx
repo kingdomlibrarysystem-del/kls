@@ -6,6 +6,7 @@ import { Search, BookOpen, X } from 'lucide-react'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { getCategoryById } from '@/lib/kcs-taxonomy'
 import { BorrowReserveConfirmModal } from './borrow-reserve-confirm-modal'
 import { BookCard } from './book-card'
 
@@ -27,14 +28,16 @@ export function LibraryBrowser() {
   const [showFilters, setShowFilters] = useState(!!initialQuery)
   const [pending, setPending] = useState<{ book: Resource; action: 'borrow' | 'reserve' } | null>(null)
 
-  const categories = ['All', ...Array.from(new Set(books.map((b) => b.category)))]
+  // Real category display names resolved from the canonical taxonomy, not a raw free-text field.
+  const categories = ['All', ...Array.from(new Set(books.map((b) => getCategoryById(b.categoryId)?.name.en).filter((n): n is string => !!n)))]
 
   const filtered = books.filter((b) => {
     const q = search.toLowerCase()
+    const categoryName = getCategoryById(b.categoryId)?.name.en
     return (
       b.status !== 'archived' &&
       (b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)) &&
-      (category === 'All' || b.category === category) &&
+      (category === 'All' || categoryName === category) &&
       (format === 'All' || mediaTypeLabels[b.mediaType] === format)
     )
   })

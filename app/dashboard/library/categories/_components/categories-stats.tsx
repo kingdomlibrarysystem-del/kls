@@ -1,13 +1,16 @@
-import type { Category } from './categories-data'
+import { resourceCountFor, type Category } from '@/lib/kcs-taxonomy'
+import type { Resource } from '@/app/dashboard/library/_components/resources-data'
 
 interface CategoriesStatsProps {
   categories: Category[]
+  resources: Resource[]
 }
 
-/** Total categories / root sections / avg resources-per-category stat cards, derived from the same list state the table below renders. */
-export function CategoriesStats({ categories }: CategoriesStatsProps) {
+/** Total categories / root sections / avg resources-per-category stat cards, derived from the same list state the table below renders. Resource counts are computed live, not stored. */
+export function CategoriesStats({ categories, resources }: CategoriesStatsProps) {
   const rootSections = categories.filter((c) => !c.parentId).length
-  const totalResources = categories.reduce((sum, c) => sum + c.resourceCount, 0)
+  // Sum only leaf categories' own counts to avoid double-counting a root's recursive total on top of its children.
+  const totalResources = categories.filter((c) => c.parentId !== null).reduce((sum, c) => sum + resourceCountFor(c.id, resources), 0)
   const avgResources = categories.length > 0 ? Math.round((totalResources / categories.length) * 10) / 10 : 0
 
   const stats = [

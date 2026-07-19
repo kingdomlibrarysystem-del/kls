@@ -1,10 +1,13 @@
 "use client";
 import { useState } from "react";
 import { Search, Grid3X3, List, Feather, Info } from "lucide-react";
-import { kcsSections, allBooks } from "./_components/library-data";
+import { getRootCategories, getChildCategories } from "@/lib/kcs-taxonomy";
+import { sectionIcons } from "./_components/section-icons";
 import { ScrollCard, ScrollListItem } from "./_components/scroll-card";
 import { WriteScrollModal } from "./_components/write-scroll-modal";
 import { ContinueReadingSection } from "./_components/continue-reading-section";
+
+const rootSections = getRootCategories();
 
 export default function MemberLibraryPage() {
   const [search, setSearch] = useState("");
@@ -14,15 +17,15 @@ export default function MemberLibraryPage() {
   const [writeOpen, setWriteOpen] = useState(false);
   const [toast, setToast] = useState("");
 
-  const sections = activeSection === "All" ? kcsSections : kcsSections.filter((s) => s.label === activeSection);
+  const sections = activeSection === "All" ? rootSections : rootSections.filter((s) => s.name.en === activeSection);
 
   const filteredSections = sections.map((section) => ({
     ...section,
-    scrolls: allBooks.filter((b) => b.section === section.label && b.title.toLowerCase().includes(search.toLowerCase())),
+    scrolls: getChildCategories(section.id).filter((b) => b.name.en.toLowerCase().includes(search.toLowerCase())),
   })).filter((s) => s.scrolls.length > 0);
 
   const noResults = search.trim().length > 0 && filteredSections.length === 0;
-  const totalBooks = allBooks.length;
+  const totalBooks = rootSections.reduce((sum, s) => sum + getChildCategories(s.id).length, 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -32,7 +35,7 @@ export default function MemberLibraryPage() {
             Kingdom Library
           </div>
           <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, maxWidth: 400, lineHeight: 1.5 }}>
-            The Bible is not one book — it is a library. {totalBooks} scrolls organized across {kcsSections.length} sections under the Kingdom Classification System (KCS).
+            The Bible is not one book — it is a library. {totalBooks} scrolls organized across {rootSections.length} sections under the Kingdom Classification System (KCS).
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -66,7 +69,7 @@ export default function MemberLibraryPage() {
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "12px 14px" }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 6, fontFamily: "'Cinzel',serif" }}>Kingdom Classification System (KCS)</div>
           <div style={{ fontSize: 10, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 6 }}>
-            The KCS organizes Scripture according to divine pattern: <strong>Foundation → History → Wisdom → Prophetic → Gospel → Acts → Epistles → Revelation</strong>. This system ensures truth is not just known, but applied for transformation.
+            The KCS organizes Scripture according to divine pattern: <strong>Foundation → History → Wisdom → Prophetic → Gospels → Acts → Epistles → Revelation</strong>. This system ensures truth is not just known, but applied for transformation.
           </div>
           <div style={{ fontSize: 10, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             <strong>Navigation replaces memorization.</strong> You don&apos;t need to memorize every verse — learn how to visit the right scrolls at the right time. Each section has a specific purpose, and every citizen can contribute their own Acts, Epistles, and Revelations.
@@ -101,19 +104,19 @@ export default function MemberLibraryPage() {
         >
           All Sections
         </button>
-        {kcsSections.map((s) => (
+        {rootSections.map((s) => (
           <button
-            key={s.code}
-            onClick={() => setActiveSection(s.label)}
+            key={s.id}
+            onClick={() => setActiveSection(s.name.en)}
             style={{
               display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6,
               border: "1px solid var(--border)", cursor: "pointer", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
-              background: activeSection === s.label ? "var(--gold)" : "transparent",
-              color: activeSection === s.label ? "#fff" : "var(--text-secondary)",
+              background: activeSection === s.name.en ? "var(--gold)" : "transparent",
+              color: activeSection === s.name.en ? "#fff" : "var(--text-secondary)",
               transition: "all 0.15s",
             }}
           >
-            <span style={{ display: "flex" }}>{s.icon}</span>
+            <span style={{ display: "flex" }}>{sectionIcons[s.id]}</span>
             <span>{s.code}</span>
           </button>
         ))}
@@ -128,19 +131,19 @@ export default function MemberLibraryPage() {
       )}
 
       {filteredSections.map((section) => (
-        <div key={section.code} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+        <div key={section.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
           <div style={{
             padding: "10px 14px", borderBottom: "1px solid var(--border)",
             display: "flex", alignItems: "center", gap: 8,
             background: "linear-gradient(90deg, rgba(212,168,67,0.05), transparent)",
           }}>
-            <span style={{ display: "flex", color: "var(--gold)" }}>{section.icon}</span>
+            <span style={{ display: "flex", color: "var(--gold)" }}>{sectionIcons[section.id]}</span>
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                {section.label}
+                {section.name.en}
                 <span style={{ fontSize: 9, color: "var(--gold)", fontWeight: 600, fontFamily: "monospace" }}>{section.code}</span>
               </div>
-              <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{section.desc}</div>
+              <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{section.description}</div>
             </div>
             <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
           </div>

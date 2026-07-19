@@ -1,16 +1,16 @@
 import { FolderOpen } from "lucide-react";
 import { ElegantButton } from "@/components/ui/elegant-button";
 import { FieldLabel, inputCls } from "./field-label";
-import { toSlug, type Category, type FormState } from "./categories-data";
+import { toSlug, type Category, type CategoryFormState } from "@/lib/kcs-taxonomy";
 
 interface CategoryFormPanelProps {
-  form: FormState;
-  errors: Partial<FormState>;
+  form: CategoryFormState;
+  errors: Partial<CategoryFormState>;
   submitting: boolean;
   editTarget: Category | null;
   parentOptions: Category[];
   onNameEnChange: (value: string) => void;
-  onFieldChange: (patch: Partial<FormState>) => void;
+  onFieldChange: (patch: Partial<CategoryFormState>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancelEdit: () => void;
 }
