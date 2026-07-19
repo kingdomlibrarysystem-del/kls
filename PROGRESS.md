@@ -1674,3 +1674,80 @@ capability loss with no admin equivalent — both are documented in their
 respective phase sections above. No item was silently dropped or
 guessed through.
 
+# KCS Map — View-Mode Switcher & Pillar Analytics
+
+Read `app/dashboard/kcs/_components/kcs-pillar-view.tsx`,
+`kcs-map-view.tsx`, `kcs-pillar-tabs.tsx`, and the scroll-detail page
+in full before starting, per the task's instructions.
+
+## What was built
+
+**Shared view-mode toggle** — `app/dashboard/kcs/_components/kcs-view-toggle.tsx`
+(new). Cards/Table/List are mutually exclusive content views (`KcsContentView`
+union); Analytics is a separate, independent boolean toggle rendered in the
+same control group but not part of the union — a reader can have Cards +
+Analytics, Table + Analytics, List alone, or Analytics alone. Matches the
+exact grid/list toggle pattern already used in `app/member/library/page.tsx`
+(gold-tinted `rgba(212,168,67,0.15)` active background, `lucide-react`
+`Grid3X3`/`List`-equivalent icons — here `LayoutGrid`/`Table`/`List` — plus
+`aria-pressed`), extended with a `BarChart3` Analytics button and a vertical
+divider.
+
+**Table view** — `kcs-scrolls-table.tsx` and (scroll-detail)
+`scroll-resources-table.tsx` both wrap the existing shared `DataTable`
+component (`components/ui/data-table.tsx`) rather than building a new table;
+only `columns`/`rowKey`/`searchFilter` are supplied per module, reusing
+DataTable's built-in search/sort/pagination.
+
+**List view** — `kcs-scrolls-list.tsx` and `scroll-resources-list.tsx`:
+compact bordered rows (one per scroll/resource), same click-through
+destinations and status/price/availability data as the Cards view, just
+denser.
+
+**Pillar-level analytics** — `kcs-pillar-analytics.tsx`. Real derived stats,
+no fabricated numbers: total scroll count and the Available/Archived/
+Out-of-Stock breakdown computed directly from `pillar.scrolls`, plus a
+"Borrowable Copies" stat computed by re-using the existing
+`findResourcesForScroll` title-match relationship (the same one the
+scroll-detail page already uses for Related Resources) against the live
+`useResources()` store — genuinely derived from the canonical Resource
+data, not invented. A `CategoryBarChart` (existing recharts precedent,
+confirmed via `components/ui/category-bar-chart.tsx` and its consumer
+`app/dashboard/e-learning/progress/_components/progress-view.tsx`, which
+established the exact `.card` + inline-style-header + chart Dialect B
+pattern reused here) renders the status breakdown. No borrow/reservation
+mock data (`borrowings-data.ts`) could be honestly linked per-pillar — its
+mock resource titles don't correspond to scroll titles — so that activity
+was deliberately left out rather than fabricated; only the
+Resource-store-derived "Borrowable Copies" figure is real.
+
+**Scroll-detail analytics** — `scroll-analytics.tsx`: Total/Available copies
+and total catalog value (RWF) across the scroll's matched Related Resources,
+plus a per-resource available-copies `CategoryBarChart`. Only rendered when
+`matches.length > 0`.
+
+**Wiring**: `kcs-pillar-view.tsx` (133→154 lines) and `scroll-detail-view.tsx`
+(125→152 lines) both gained `view`/`showAnalytics` local `useState` — no new
+store, matching the task's explicit "local UI state" instruction — and now
+branch their content section on `view` while rendering the analytics block
+conditionally above it. Both files stayed under the repo's 200-line hard cap
+by delegating to the new `_components/` files rather than inlining.
+
+## Verification
+
+`npx tsc --noEmit` clean. `npm run build` clean — 72 routes, unchanged count
+(no new routes added, only new `_components/` files). Live-verified via
+`npm run dev` + `curl`: `/dashboard/kcs` and `/dashboard/kcs/foundation/Gen`
+both return 200.
+
+## Design notes / things not done
+
+- Cards+Table+List were kept strictly mutually exclusive (same underlying
+  rows, three renderings of the same list) since showing more than one at
+  once would just duplicate content; Analytics was kept independently
+  toggleable per the task's explicit instruction, since it's a genuinely
+  different kind of content (aggregate stats) that makes sense alongside
+  any of the three, not a fourth alternative rendering of the row list.
+- No i18n, no new chart library, no backend/fetch — stayed within the
+  frontend-mock phase constraints throughout.
+

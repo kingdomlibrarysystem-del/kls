@@ -8,6 +8,10 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { kcsPillars, type ScrollStatus } from './kcs-pillars-data'
 import { KcsPillarTabs } from './kcs-pillar-tabs'
+import { KcsViewToggle, type KcsContentView } from './kcs-view-toggle'
+import { KcsScrollsTable } from './kcs-scrolls-table'
+import { KcsScrollsList } from './kcs-scrolls-list'
+import { KcsPillarAnalytics } from './kcs-pillar-analytics'
 
 /** Simulated network delay before mock scrolls become visible. */
 const LOAD_DELAY_MS = 400
@@ -36,6 +40,8 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
   const pillar = kcsPillars[pillarKey]
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [view, setView] = useState<KcsContentView>('cards')
+  const [showAnalytics, setShowAnalytics] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -81,24 +87,35 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
         <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, padding: '0 14px 14px' }}>{pillar.detail}</p>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-4 max-w-sm">
-        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-        <input
-          type="text"
-          placeholder="Search scrolls..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          aria-label={`Search scrolls in ${pillar.name}`}
-          style={{
-            width: '100%', paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
-            fontSize: 12, borderRadius: 6, border: '1px solid var(--border)',
-            background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none',
-          }}
+      {/* Search + view toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="relative max-w-sm flex-1" style={{ minWidth: 200 }}>
+          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            placeholder="Search scrolls..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label={`Search scrolls in ${pillar.name}`}
+            style={{
+              width: '100%', paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
+              fontSize: 12, borderRadius: 6, border: '1px solid var(--border)',
+              background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none',
+            }}
+          />
+        </div>
+        <KcsViewToggle
+          view={view}
+          onViewChange={setView}
+          showAnalytics={showAnalytics}
+          onToggleAnalytics={() => setShowAnalytics((v) => !v)}
+          label="scrolls"
         />
       </div>
 
-      {/* Scrolls grid */}
+      {showAnalytics && !loading && <KcsPillarAnalytics pillar={pillar} />}
+
+      {/* Scrolls content */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" aria-label={`Loading ${pillar.name} scrolls`}>
           {Array.from({ length: 4 }).map((_, i) => (
@@ -107,6 +124,10 @@ export function KcsPillarView({ pillarKey, onPillarChange }: KcsPillarViewProps)
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={ScrollText} title="No scrolls found" description="Try a different search term." style={{ color: 'var(--text-secondary)' }} />
+      ) : view === 'table' ? (
+        <KcsScrollsTable scrolls={filtered} pillarKey={pillarKey} pillarName={pillar.name} />
+      ) : view === 'list' ? (
+        <KcsScrollsList scrolls={filtered} pillarKey={pillarKey} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((scroll) => (
