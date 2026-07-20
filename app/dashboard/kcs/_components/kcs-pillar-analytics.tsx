@@ -1,7 +1,7 @@
 'use client'
 
 import { ScrollText, CheckCircle2, Archive, PackageX, BookCopy } from 'lucide-react'
-import { CategoryBarChart } from '@/components/ui/category-bar-chart'
+import { StatusDonutChart } from '@/components/ui/status-donut-chart'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import type { Category } from '@/lib/kcs-taxonomy'
 
@@ -25,9 +25,9 @@ interface StatDef {
  * scroll list — no fabricated numbers) as stat cards, plus total borrowable
  * copies sourced from the canonical Resource store via the same
  * `findResourcesForScroll` `categoryId` FK relationship the scroll-detail page
- * already uses for Related Resources. A `CategoryBarChart` (existing
- * recharts precedent, see `components/ui/category-bar-chart.tsx`) shows the
- * status breakdown visually. Toggleable independently of the Cards/Table/List
+ * already uses for Related Resources. A `StatusDonutChart` (part-of-whole
+ * shape fits a 3-way status split better than a bar chart) shows the status
+ * breakdown visually. Toggleable independently of the Cards/Table/List
  * content view via `KcsViewToggle`'s separate Analytics button, so it can be
  * shown alongside any of the three.
  */
@@ -52,9 +52,9 @@ export function KcsPillarAnalytics({ pillar, scrolls }: KcsPillarAnalyticsProps)
   ]
 
   const chartData = [
-    { name: 'Available', value: available },
-    { name: 'Archived', value: archived },
-    { name: 'Out of Stock', value: outOfStock },
+    { name: 'Available', value: available, color: 'var(--green-light)' },
+    { name: 'Archived', value: archived, color: 'var(--text-muted)' },
+    { name: 'Out of Stock', value: outOfStock, color: 'var(--red-light)' },
   ]
 
   return (
@@ -77,7 +77,7 @@ export function KcsPillarAnalytics({ pillar, scrolls }: KcsPillarAnalyticsProps)
         ))}
       </div>
 
-      <CategoryBarChart data={chartData} height={180} ariaLabel={`Scroll status breakdown for ${pillar.name.en}`} />
+      <StatusDonutChart data={chartData} height={180} ariaLabel={`Scroll status share for ${pillar.name.en}`} />
     </div>
   )
 }
