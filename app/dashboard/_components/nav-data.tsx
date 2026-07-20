@@ -58,7 +58,6 @@ export const adminMainNav: NavItem[] = [
     icon: <BookOpen size={14} />, label: "Digital Library",
     subItems: [
       { icon: <BookCopy size={12} />,   label: "Book Inventory",     href: "/dashboard/library" },
-      { icon: <FolderOpen size={12} />, label: "Categories",         href: "/dashboard/library/categories" },
       { icon: <RotateCcw size={12} />,  label: "Borrow & Return",    href: "/dashboard/library/borrowings" },
       { icon: <Bookmark size={12} />,   label: "Reservations",       href: "/dashboard/reservations" },
       { icon: <ShoppingCart size={12} />, label: "Sales & Rentals",  href: "/dashboard/library/sales" },

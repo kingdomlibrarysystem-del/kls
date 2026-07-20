@@ -5,13 +5,12 @@ import { categories as initialCategories } from './taxonomy-helpers'
 import type { Category } from './types'
 
 /**
- * Module-level mutable store so the admin Categories CRUD
- * (`/dashboard/library/categories`) survives a route remount instead of
- * resetting to the seed array every time — mirrors the `use-roles.ts` /
- * `use-resources.ts` pattern already established in this codebase. The
- * previous version of this page held categories in local `useState`
- * seeded from a static import, which is upgraded here to match every
- * other admin CRUD module.
+ * Module-level mutable store so the admin Categories CRUD (now the "Manage
+ * Categories" section on `/dashboard/kcs`, previously a standalone
+ * `/dashboard/library/categories` page before that page was absorbed into
+ * KCS Map) survives a route remount instead of resetting to the seed array
+ * every time — mirrors the `use-roles.ts` / `use-resources.ts` pattern
+ * already established in this codebase.
  */
 let categories: Category[] = [...initialCategories]
 const listeners = new Set<() => void>()
