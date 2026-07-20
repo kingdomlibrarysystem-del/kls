@@ -1,29 +1,35 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
-import { PageTransition } from '@/components/ui/page-transition'
+import { Settings2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { EMPTY_CATEGORY_FORM, toSlug, resourceCountFor, type Category, type CategoryFormState } from '@/lib/kcs-taxonomy'
 import { useCategories, addCategory, updateCategory, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { CategoryFormPanel } from './_components/category-form-panel'
-import { CategoriesTable } from './_components/categories-table'
-import { CategoryDetailModal } from './_components/category-detail-modal'
-import { DeleteCategoryModal } from './_components/delete-category-modal'
-import { CategoriesStats } from './_components/categories-stats'
+import { CategoryFormPanel } from './manage-categories/category-form-panel'
+import { CategoriesTable } from './manage-categories/categories-table'
+import { CategoryDetailModal } from './manage-categories/category-detail-modal'
+import { DeleteCategoryModal } from './manage-categories/delete-category-modal'
+import { CategoriesStats } from './manage-categories/categories-stats'
 
 /**
- * KCS Categories: full CRUD plus a details view over the canonical KCS
- * taxonomy (`lib/kcs-taxonomy`). Reads/writes through the shared
- * `use-categories` store (mirroring `use-roles.ts`/`use-resources.ts`) so
- * Create/Edit/Delete persist across a route remount in this session,
- * instead of resetting to the seed array — this page previously held
- * categories in local `useState` with no persistence. `resourceCount` is
- * now computed live from the real `Resource[]` store rather than a
- * hardcoded field.
+ * Full Categories CRUD (create/edit/delete a KCS category, live resource-
+ * count-gated delete guard), absorbed into the KCS Map page as its own
+ * distinct section below the browse/analytics UI — replaces the former
+ * standalone `/dashboard/library/categories` admin page, which is deleted
+ * once this section covers everything it did.
+ *
+ * All CRUD logic and every sub-component (`CategoryFormPanel`,
+ * `CategoriesTable`, `CategoryDetailModal`, `DeleteCategoryModal`,
+ * `CategoriesStats`) are reused verbatim from that former page rather than
+ * rewritten — they're dialect-agnostic Tailwind primitives already treated
+ * as safe to use inside a Dialect-B page elsewhere in this app (same
+ * precedent as `FormInput`/`Modal`/`DataTable`), so no restyling was needed
+ * to drop them into this otherwise CSS-variable-inline-style page. The
+ * section itself gets a `card`-style Dialect-B wrapper + heading so it
+ * reads as a clearly separate management area, not a continuation of the
+ * browsing UI above it.
  */
-export default function CategoriesPage() {
+export function ManageCategoriesSection() {
   const categories = useCategories()
   const resources = useResources()
   const [form, setForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
@@ -117,8 +123,14 @@ export default function CategoriesPage() {
   const parentOptions = categories.filter((c) => !c.parentId && c.id !== editTarget?.id)
 
   return (
-    <PageTransition>
-      <PageHeader title="KCS Categories" subtitle="Kingdom Classification System — 8 root sections with their scrolls as sub-categories" />
+    <div className="card" style={{ marginTop: 24 }}>
+      <div className="flex items-center gap-2 mb-1">
+        <Settings2 size={16} color="var(--gold)" />
+        <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Manage Categories</h2>
+      </div>
+      <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}>
+        Create, edit, or delete KCS categories — the same 8 root pillars and their scrolls shown above.
+      </p>
 
       {toast && (
         <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded font-lato text-sm border ${
@@ -156,6 +168,6 @@ export default function CategoriesPage() {
 
       <CategoryDetailModal category={viewTarget} resources={resources} onClose={() => setViewTarget(null)} />
       <DeleteCategoryModal category={deleteTarget} resourceCount={deleteTarget ? resourceCountFor(deleteTarget.id, resources) : 0} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
-    </PageTransition>
+    </div>
   )
 }
