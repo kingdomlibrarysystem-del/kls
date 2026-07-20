@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ScrollText, Package, BookX } from 'lucide-react'
+import { ChevronLeft, ScrollText, Package, BookX, GraduationCap } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RelatedResourceCard } from '@/components/ui/related-resource-card'
@@ -43,12 +43,19 @@ interface ScrollDetailViewProps {
  * Previously matched resources by title string against the scroll's title
  * (a fragile hack); now filters `Resource.categoryId` directly against the
  * scroll's own stable id.
+ *
+ * Related Courses is intentionally an honest "not yet linked" EmptyState,
+ * not a fabricated list: `CourseCatalogEntry.category` (course-form-schema.ts)
+ * is a free-text field with values like "Theology"/"Discipleship" — checked
+ * and confirmed to have zero structural link (no categoryId, no slug match)
+ * to this KCS taxonomy. Faking a course list against an unrelated field
+ * would be worse than admitting the relationship doesn't exist yet.
  */
 export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
-  const [view, setView] = useState<KcsContentView>('cards')
-  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [view, setView] = useState<KcsContentView>('table')
+  const [showAnalytics, setShowAnalytics] = useState(true)
   const { isAuthenticated } = useAuth()
   const resources = useResources()
 
@@ -148,6 +155,16 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
           )}
         </>
       )}
+
+      <div style={{ marginTop: 20 }}>
+        <h2 className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>Related Courses</h2>
+        <EmptyState
+          icon={GraduationCap}
+          title="Not yet linked"
+          description="Courses in the E-Learning catalog aren't linked to a KCS category yet — a course's own category field (e.g. Theology, Discipleship) is a separate concept from this taxonomy. This section will show real linked courses once that relationship exists."
+          style={{ color: 'var(--text-secondary)' }}
+        />
+      </div>
 
       {borrowable && (
         <BorrowReserveConfirmModal action={action} bookTitle={borrowable.title} bookAuthor={borrowable.author} onClose={() => setAction(null)} />
