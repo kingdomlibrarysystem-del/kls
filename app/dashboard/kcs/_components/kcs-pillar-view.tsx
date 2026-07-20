@@ -41,8 +41,8 @@ export function KcsPillarView({ pillarSlug, onPillarChange }: KcsPillarViewProps
   const scrolls = pillar ? getChildCategories(pillar.id) : []
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [view, setView] = useState<KcsContentView>('cards')
-  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [view, setView] = useState<KcsContentView>('table')
+  const [showAnalytics, setShowAnalytics] = useState(true)
 
   useEffect(() => {
     setLoading(true)
