@@ -2086,3 +2086,109 @@ genuinely ambiguous in the task brief — both resolved with reasoning
 documented inline in `taxonomy-helpers.ts`/`categories-stats.tsx` and
 above, not deferred.
 
+# KCS Map: Merge Categories CRUD, Default View, Richer Analytics, Honest Course Link
+
+4 commits: `e53860f`, `5d1e80b`, `29eacfa`, `1792efe`.
+
+## 0. Investigated first: Course ↔ Category link
+
+Read `course-catalog-data.ts`/`course-form-schema.ts` before building
+anything that assumed a link existed. Confirmed: **no real, structural
+link exists.** `CourseCatalogEntry.category: CourseCategory | string`
+holds values like `'Theology'`, `'Discipleship'`, `'Family & Marriage'`
+— completely unrelated to KCS pillar/scroll names (`'Foundation'`,
+`'Genesis'`), no `categoryId`, no slug match, nothing type-safe.
+
+Decision: **don't fabricate a course list.** The scroll detail page now
+shows a real "Related Courses" section with an honest "Not yet linked"
+`EmptyState`, explaining the actual reason (courses use a separate
+category concept) rather than silently omitting the section or faking
+rows against the unrelated field. Real Related Resources (already a
+genuine `categoryId` FK match from the prior taxonomy merge) is
+unaffected.
+
+## 1. Categories CRUD merged into KCS Map (commit `e53860f`)
+
+Absorbed the standalone `/dashboard/library/categories` admin page into
+`/dashboard/kcs` as a "Manage Categories" section rendered below the
+existing pillar/scroll browsing UI — a real section a user scrolls to,
+not a hidden tab. Every CRUD sub-component (`CategoriesTable`,
+`CategoryDetailModal`, `CategoryFormPanel`, `DeleteCategoryModal`,
+`CategoriesStats`, `FieldLabel`) moved to
+`app/dashboard/kcs/_components/manage-categories/` and reused verbatim
+— none of the working CRUD logic (validation, the live
+`resourceCountFor`-gated delete guard, the `use-categories.ts` store)
+was rewritten, since it was already correct. These are the same
+dialect-agnostic Tailwind primitives already treated as safe inside a
+Dialect-B page elsewhere in this app (`FormInput`/`Modal`/`DataTable`
+precedent), so no restyling was needed to drop verbatim-Dialect-A CRUD
+into KCS Map's Dialect-B page — `ManageCategoriesSection` itself just
+wraps them in a `card`-style Dialect-B heading/section boundary.
+
+Deleted `app/dashboard/library/categories/` entirely once confirmed
+empty. Removed the "Categories" sidebar link from `nav-data.tsx`.
+Grepped the whole repo afterward — zero remaining `href`/link into the
+old route; every remaining text match was historical documentation.
+
+## 2. Default view changed to Table + Analytics (commit `5d1e80b`)
+
+`KcsPillarView` and `ScrollDetailView` both defaulted to
+`view: 'cards'`, `showAnalytics: false`. Changed to `view: 'table'`,
+`showAnalytics: true` on both. `KcsViewToggle` still lets a reader
+switch to Cards/List at any time — this only changes what's shown on
+first load, not what's reachable.
+
+## 3. Richer, differentiated analytics (commit `29eacfa`)
+
+New `KcsTaxonomyAnalytics` (whole-taxonomy, renders once above the
+pillar tabs — distinct from the existing per-pillar
+`KcsPillarAnalytics`) plus a new `StatusDonutChart` reusable primitive
+(part-of-whole shape, wraps recharts `PieChart`, same color discipline
+and `ResponsiveContainer` pattern as `CategoryBarChart`/
+`RankingBarChart` — no new charting library):
+
+- Bar chart comparing real resource count across all 8 pillars.
+- Donut chart for the taxonomy-wide Available/Archived/Out-of-Stock
+  share — also swapped into `KcsPillarAnalytics` in place of its
+  previous bar chart, since a 3-way status split fits a donut better.
+- "Top Pillars by Resource Count" ranking (reuses `RankingBarChart`).
+
+**Checked before building, omitted rather than fabricated:**
+- No borrow/reservation-activity metric — `Borrowing.resourceTitle`
+  (`borrowings-data.ts`) is free text with no `categoryId`; wiring it
+  in would mean reintroducing the exact fragile title-match hack the
+  last taxonomy merge eliminated everywhere else.
+- No revenue/earnings metric — `RevenueRow` (`revenue-data.ts`) keys on
+  publication+contributor, no `categoryId` either.
+- No time-series/trend chart — every root category's `createdAt` is an
+  identical seed-time constant, and `Resource` has no per-item
+  `createdAt` at all. There is no real date variance to plot.
+
+## 4. Honest Related Courses section (commit `1792efe`)
+
+Covered in §0 above — bundled into this commit since both land in
+`scroll-detail-view.tsx` (also carries that page's matching
+default-view change from §2, split into its own commit where the
+change lived in an otherwise-untouched file).
+
+## Verification
+
+`npx tsc --noEmit` clean after every commit (one real recharts typing
+error caught and fixed in `StatusDonutChart`'s `Tooltip` formatter —
+coerced `value`/`name` explicitly rather than loosening the type).
+`npm run build` clean: 71 routes (down from 72, exactly the removed
+`/dashboard/library/categories` route). Live-verified via `npm run dev`
++ `curl`: `/dashboard/library/categories` now 404s cleanly;
+`/dashboard/kcs` and the scroll-detail route both 200; grepped the
+server-rendered HTML directly (both pages render their top-level
+sections outside any loading gate) and confirmed "KCS Map Analytics,"
+"Manage Categories," "Resources per Pillar," "Top Pillars," and real
+pillar names ("Foundation," "History," "Wisdom") all present, with zero
+"NaN" anywhere in the output.
+
+## Needs human input
+
+None. Section 0's investigation resolved the one real ambiguity in the
+task brief (whether to fabricate or omit courses) with a documented
+decision, not a guess.
+
