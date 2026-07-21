@@ -2192,3 +2192,152 @@ None. Section 0's investigation resolved the one real ambiguity in the
 task brief (whether to fabricate or omit courses) with a documented
 decision, not a guess.
 
+# Real Backend Migration — Phase 0 + Phase 1 (Roles, Invitations, Audit Log)
+
+2 commits: `886e2f8` (Phase 0), `a0badeb` (Phase 1).
+
+A planning doc (`.claude/skills/kls-page-builder/references/
+prisma-migration-plan.md`, gitignored/local-only) was read first and
+used to scope this work, but its findings were independently
+re-verified against the real current files rather than trusted as-is
+— this caught a real discrepancy (see Phase 0 below).
+
+## Phase 0 — Fixed the Prisma baseline
+
+Read `prisma/schema.prisma` and ran `npx prisma validate` before
+touching anything, rather than trusting the migration plan's
+description of the bug. **The plan doc was stale**: it described a
+broken `role Role @default(USER)` line referencing an undefined enum —
+that line does not exist in the file as it stands today (the schema
+has evidently changed since the plan was written). The actual, current
+bug was different: `notificationPreferences Jsn?` — a typo (`Jsn`
+instead of `Json`) — confirmed via `prisma validate`'s exact error
+message ("Type Jsn is neither a built-in type..."). Fixed the real bug,
+not the one described in the doc.
+
+Added, as genuinely new functionality (not "restoring" anything):
+- `Role` model — dynamic, admin-manageable collection (`id`, `name`,
+  `description`, `permissions: String[]`, timestamps, `users`
+  back-relation), per kls-architecture-rules' "dynamic tables, not
+  enums, for anything an admin manages" and the fact that
+  `/dashboard/roles` already implements Role as live CRUD data.
+- `User.roleId`/`role` relation (optional, so existing/seed users
+  aren't forced to have a role immediately).
+- `User.firstName`/`lastName`, added alongside the existing `name`
+  field after re-reading `contexts/auth-context.tsx` in full and
+  confirming its `User` interface actually has both split fields, not
+  just a single combined name.
+
+`Account`/`Session`/`VerificationToken`/`Authenticator` left untouched.
+
+This is the first time `prisma/schema.prisma` has ever been committed
+to git — it was untracked before this phase (confirmed via `git log
+--all -- prisma/schema.prisma`, which shows the file was never part of
+any commit).
+
+**Verification:** `npx prisma validate` and `npx prisma generate` both
+succeed cleanly against the real `DATABASE_URL`. (One transient false
+alarm during verification: an earlier `prisma validate` run failed with
+a URL-protocol error that looked like a real `.env` parsing bug —
+traced it by passing the same connection string directly as a shell
+env var, which worked, then re-ran the bare `.env`-based command again
+and it also succeeded — concluded it was a stale env var cached in that
+shell session, not a real bug, and moved on rather than chasing a
+non-reproducible issue further.)
+
+## Phase 1 — Roles, Invitations, Audit Log: real models + CRUD APIs
+
+Explored the real current mock stores directly before modeling (paths
+confirmed unchanged since the earlier KCS-Map merge, which only touched
+the KCS categories domain, not roles/invitations/audit-log):
+`app/dashboard/roles/_components/{roles-data.ts,use-roles.ts}`,
+`app/dashboard/invitations/_components/{invitations-data.ts,
+invitation-schema.ts,use-invitations.ts}`,
+`app/dashboard/audit-log/_components/{audit-log-data.ts,
+use-audit-log.ts}`.
+
+**Schema additions:**
+- `Invitation` — real `roleId` FK to `Role`, replacing the mock's
+  free-text `role: (typeof invitableRoles)[number]` union (confirmed
+  fragile: `invitableRoles` is `['Manager', 'Staff']` today, matched
+  only by spelling against `Role.name`, no id relation anywhere).
+  Optional `invitedByUserId` FK to `User`. `InvitationStatus` enum
+  (`PENDING`/`ACCEPTED`/`EXPIRED`) — a real Prisma enum is correct here
+  (unlike `Role`), since invitation status is a fixed lifecycle, not
+  something an admin manages as data.
+- `AuditLog` — kept the mock's human-readable `actor`/`target`/`notes`
+  snapshot fields (an audit entry should still read sensibly after the
+  entity it describes is later renamed or deleted) and added real,
+  optional `actorId`/`targetId`/`targetType` fields alongside them —
+  the mock has zero id fields today, only free text.
+
+Schema pushed to the real MongoDB via `npx prisma db push` — `Role`,
+`Invitation`, `AuditLog` collections now exist for real.
+
+**API routes** (Prisma directly, no mock data left in these three
+domains, matching the `{data, message, code, status}` + pagination
+shape already established in `app/api/users/route.ts` — the first real,
+Prisma-backed routes in this codebase; all 4 previously-existing routes
+under `app/api/` are still fully mocked):
+- `app/api/roles/route.ts` + `[id]/route.ts` — GET list (search +
+  pagination), POST (duplicate-name guard), GET/PATCH/DELETE by id
+  (delete blocked while `_count.users > 0`, computed live via Prisma,
+  not a hand-maintained `userCount` field like the mock).
+- `app/api/invitations/route.ts` + `[id]/route.ts` — GET list (search +
+  status filter + pagination), POST (validates `roleId` against the
+  real `Role` collection before creating), GET/PATCH/DELETE by id.
+- `app/api/audit-log/route.ts` — GET list (search + action filter +
+  pagination), POST (append) only — no PATCH/DELETE, since an audit
+  log is append-only per RULES.md §10 and the mock's own doc comment.
+
+Frontend mock stores/UI intentionally **not** touched or wired up —
+out of scope for this task, a separate later migration step.
+
+**Bug caught and fixed during verification, not left in place:** the
+first version of `GET /api/roles/[id]` and the `PATCH` handler spread
+`...role` directly into the response, leaking Prisma's internal
+`_count: { users: N }` object alongside the derived `userCount` field.
+Caught by inspecting the actual JSON response, not just checking the
+status code — fixed by destructuring `_count` out before spreading.
+
+**Verification — real request/response round-trips against the live
+MongoDB, not just build/typecheck:**
+- Roles: created via POST, confirmed persisted via GET list and GET by
+  id (including across a full dev-server restart, proving it's real
+  DB state and not in-memory), duplicate name correctly rejected (409),
+  PATCH updates `updatedAt`, DELETE correctly blocked (409) while a
+  real `User` document referenced the role via `roleId` (created a
+  throwaway user directly via a one-off Prisma script to force this
+  case), then correctly succeeds (200) once that reference is removed.
+- Invitations: POST with a real `roleId` correctly joins and returns
+  the role's name; POST with a fabricated/invalid `roleId` correctly
+  rejected (400) before any write; PATCH (status transition) and
+  DELETE both confirmed.
+- Audit Log: POST (append) and GET (list, search filter, action
+  filter) all confirmed against the real collection; missing-required-
+  field POST correctly rejected (400).
+- One genuine mid-verification incident: the dev server became
+  completely unresponsive to new connections after a slow `DELETE`
+  request (a fresh MongoDB cluster showed increasing per-request
+  latency across the session, up to ~49s for one route's first
+  compile). Diagnosed properly rather than assumed: checked for a
+  literal crash (none logged), checked for a rogue respawning process
+  (found none — two long-lived Amazon Q language-server `node.exe`
+  processes were an unrelated false lead), then simply killed and
+  restarted the dev server cleanly, after which the same request
+  completed successfully. Not a bug in the new routes.
+- Build (`npm run build`) and `npx tsc --noEmit` both clean; all 5 new
+  route files present in the build's route table.
+- Test data cleaned up afterward (roles, invitations, throwaway test
+  user all deleted) except one `AuditLog` entry, deliberately left in
+  place since audit logs are append-only by design.
+
+## Needs human input
+
+None new. Pre-existing, unrelated changes already present in the
+working tree before this task started (`.env`, `package.json`/
+`package-lock.json`'s `next-auth`/`bcryptjs`/Prisma-version changes,
+`app/api/auth/**`) were identified and deliberately left untouched —
+they're the user's own separate in-progress work on real auth, not
+something this task created or was asked to manage.
+
