@@ -2341,3 +2341,37 @@ working tree before this task started (`.env`, `package.json`/
 they're the user's own separate in-progress work on real auth, not
 something this task created or was asked to manage.
 
+# Real Backend Migration — Autonomous Run Setup (Phases 2-8)
+
+## Needs human input — CLAUDE.md is gitignored, cannot be committed as instructed
+
+A follow-up task asked me to add an "Autonomous Mode Rules" section
+(plus two related "Permission to evolve/extend" sections) to
+`CLAUDE.md` and **commit that change on its own** before starting
+Phase 2. On inspection, `CLAUDE.md` already contains all three
+sections verbatim, word-for-word matching what was requested — so no
+edit was needed there.
+
+However, `CLAUDE.md` is listed in `.gitignore` (line 19, alongside
+`.claude/`) — confirmed via `git check-ignore -v CLAUDE.md` and `git
+log --all -- CLAUDE.md`, which shows this file has **never been part
+of any commit** in this repo's history. This looks like a deliberate,
+existing project convention (agent-memory/instruction files kept
+local-only, not tracked), not an oversight.
+
+Per rule 2, I'm treating "force-add and commit a file the project has
+deliberately gitignored" as a hard-to-reverse convention change I
+shouldn't make unilaterally, rather than silently `git add -f`-ing it
+or silently skipping the instruction without saying so. **Flagging for
+human review**: if CLAUDE.md should actually be tracked going forward
+(e.g. so this exact ruleset ships with the repo for other
+contributors/agents), remove line 19 from `.gitignore` and commit both
+files together; if the gitignore is intentional, no action needed — the
+ruleset is already in effect locally regardless of git tracking, so
+this doesn't block the rest of the autonomous run.
+
+Proceeding directly to Phase 2 per rule 2's "skip only the blocked
+item, continue with everything else" instruction — this is a
+self-contained setup step, not a dependency of any schema/API/frontend
+work below.
+
