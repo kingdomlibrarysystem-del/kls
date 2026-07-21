@@ -2447,3 +2447,15 @@ since every subsequent phase has the same dependency on a stable,
 confirmed `DATABASE_URL` — continuing past this point risks compounding
 the same problem across more phases before a human can weigh in.
 
+**Resolved:** user confirmed `.env` now points at `kcs_app` (updated it
+directly) and directed the migration to target that database. Verified
+via a throwaway script that Phase 0/1's leftover `AuditLog` test entry
+is visible again through the current `DATABASE_URL`, confirming it's
+genuinely the same database Phase 0/1 wrote to, not just a
+same-named-but-different one. `npx prisma db push` run and confirmed
+via its own output line ("Datasource `db`: MongoDB database `kcs_app`
+at `cluster0.eau1pmo.mongodb.net`") that it applied against the correct
+target: `Category` and `Resource` collections created, plus the unique
+index on `Category.slug`. Resuming the autonomous run from here through
+Phase 2's remaining steps (API routes, frontend wiring) and Phases 3-8.
+
