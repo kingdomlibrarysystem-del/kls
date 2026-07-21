@@ -82,23 +82,68 @@ model User {
   accounts                Account[]
   sessions                Session[]
   Authenticator           Authenticator[]
+  invitationsSent         Invitation[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
 }
 
 /// Dynamic, admin-manageable role — rows an admin creates/edits/deletes at
-/// runtime (matches the existing /dashboard/kcs "Manage Categories"-style
-/// live CRUD pattern already used for roles at app/dashboard/roles), not a
-/// static Prisma enum. auth-context.tsx's mock UserRole ("admin"/"manager"/
-/// "staff"/"member") is the seed vocabulary this collection should be
-/// populated with once wired up for real.
+/// runtime (matches the live CRUD pattern the mock at
+/// app/dashboard/roles/_components/roles-data.ts + use-roles.ts already
+/// implements), not a static Prisma enum. auth-context.tsx's mock UserRole
+/// ("admin"/"manager"/"staff"/"member") is the seed vocabulary this
+/// collection should be populated with once wired up for real.
 model Role {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String       @unique
   description String?
   permissions String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   users       User[]
+  invitations Invitation[]
+}
+
+/// Email invitation to join the platform with a specific Role — mirrors
+/// app/dashboard/invitations/_components/invitations-data.ts's Invitation
+/// shape, with `role: string` replaced by a real `roleId` FK (the mock's
+/// `role` was a free-text union matched only by spelling against Role.name,
+/// confirmed via invitation-schema.ts's `invitableRoles`).
+model Invitation {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  email           String
+  roleId          String           @db.ObjectId
+  role            Role             @relation(fields: [roleId], references: [id])
+  status          InvitationStatus @default(PENDING)
+  invitedByUserId String?          @db.ObjectId
+  invitedBy       User?            @relation(fields: [invitedByUserId], references: [id])
+  sentAt          DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+/// Append-only audit trail, per RULES.md §10. Keeps the mock's
+/// human-readable `actor`/`target`/`notes` snapshot fields (an audit log
+/// should still read sensibly after the entity it describes is later
+/// renamed or deleted) but adds real `actorId`/`targetId`/`targetType` so
+/// entries are also genuinely joinable — the mock at
+/// app/dashboard/audit-log/_components/audit-log-data.ts has zero id
+/// fields today, only free text.
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  actor      String
+  actorId    String?  @db.ObjectId
+  action     String
+  target     String
+  targetId   String?  @db.ObjectId
+  targetType String?
+  ipAddress  String?
+  notes      String?
+  timestamp  DateTime @default(now())
 }
