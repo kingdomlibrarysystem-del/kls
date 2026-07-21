@@ -2375,3 +2375,75 @@ item, continue with everything else" instruction — this is a
 self-contained setup step, not a dependency of any schema/API/frontend
 work below.
 
+# Phase 2 (Digital Library + KCS Taxonomy) — STOPPED, rule-2 blocker: DATABASE_URL target changed mid-run
+
+**Status: blocked, needs human input before any `db push`/API/frontend
+work for Phase 2 can safely proceed.**
+
+While designing Phase 2's `Category`/`Resource` models (schema itself
+is written and `npx prisma validate` passes — see below), I hit two
+consecutive transient-looking `prisma validate` failures
+("the URL must start with the protocol `mongo`") — the same class of
+flake seen once in Phase 0 and dismissed as a session-local quirk at
+the time. This time I checked further before dismissing it again, and
+found it was **not transient** — it was a real, live change:
+
+- `.env`'s `DATABASE_URL` **changed during this session**, from the
+  `mongodb+srv://...cluster0.eau1pmo.mongodb.net/kcs_app` connection
+  string Phase 0/1 used, to
+  `mongodb+srv://...cluster0.eau1pmo.mongodb.net/kcs` — same cluster,
+  **different database name** (`kcs` vs. `kcs_app`). One intermediate
+  read even briefly showed a `postgresql://` value, suggesting the file
+  was being actively edited (likely by the user directly, in the IDE —
+  `CLAUDE.md`/`prisma/schema.prisma` were both flagged as open in the
+  editor for this session) while I was reading it, not a corruption I
+  caused.
+- Confirmed via a throwaway script (not printing the connection string
+  itself, per the standing `.env` secrecy rule) that the currently-
+  configured database is genuinely **empty** — none of Phase 0/1's
+  `Role`/`Invitation`/`AuditLog` collections or test data are visible
+  through it. Phase 0/1's real, verified work exists in `kcs_app`; this
+  session is now pointed at `kcs`.
+
+**Why this is a rule-2 stop, not a rule-1 judgment call:** proceeding
+with `npx prisma db push` right now would create the new `Category`/
+`Resource` collections (and, if I keep going through the remaining
+phases, every subsequent phase's collections) in whichever database
+`.env` happens to resolve to at that moment — silently fragmenting the
+migration across two different MongoDB databases depending on when
+each phase's `db push` ran, or masking a deliberate database rename the
+user is actively making for a reason I don't know. This is exactly
+"changing a shared data model in a breaking way" / a decision that's
+hard to reverse once collections and data start landing in the wrong
+place across multiple phases.
+
+**What I did NOT do:** I did not guess which database is "correct" and
+push to it anyway. I did not revert `.env` to the old value. I did not
+print or log the connection string's credentials.
+
+**What's needed from a human:** confirm which database
+(`kcs_app` or `kcs`) is the intended target going forward for this
+migration, and whether the rename (if intentional) means Phase 0/1's
+already-created `Role`/`Invitation`/`AuditLog` collections need to be
+recreated/re-pushed against the new target, or whether `.env` should be
+pointed back at `kcs_app`. Once that's confirmed, Phase 2's schema
+(already written and passing `prisma validate` below) can be pushed and
+the rest of this phase (API routes, frontend wiring) completed in a
+follow-up run.
+
+**Work already done and safe to keep** (schema-only, not yet pushed to
+any database): added `Category` (self-referencing, `parentId` FK,
+`CategoryStatus` enum) and `Resource` (`categoryId` FK to `Category`,
+`ResourceStatus`/`BindingType`/`MediaType` enums) models to
+`prisma/schema.prisma`, mirroring `lib/kcs-taxonomy`'s and
+`resources-data.ts`'s real current shapes exactly (re-verified against
+the actual mock files, not just the migration plan doc, per this run's
+own standing instruction). `npx prisma validate` passes. **Not yet
+run**: `npx prisma db push` (the actual database write step) — withheld
+pending the database-target confirmation above.
+
+Stopping the autonomous run here rather than continuing to Phase 3+,
+since every subsequent phase has the same dependency on a stable,
+confirmed `DATABASE_URL` — continuing past this point risks compounding
+the same problem across more phases before a human can weigh in.
+

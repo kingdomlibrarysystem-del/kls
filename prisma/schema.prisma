@@ -147,3 +147,109 @@ model AuditLog {
   notes      String?
   timestamp  DateTime @default(now())
 }
+
+/// Canonical Kingdom Classification System (KCS) taxonomy — one flat,
+/// self-referencing collection for both the 8 root pillars and their ~75
+/// child scrolls (Bible books), mirroring `lib/kcs-taxonomy`'s already-
+/// consolidated `Category` shape (itself the result of merging 3
+/// previously hand-duplicated mock copies — see that module's own
+/// docstring). `parentId: null` marks a root; root-only content fields
+/// (`code`/`subtitle`/`range`/`theme`/`description`/`detail`/`heroImage`)
+/// are left null on children, and `status` (leaf-only) is left null on
+/// roots, matching the mock's optional-field convention exactly.
+///
+/// Kept as ONE collection (not split into separate Pillar/Scroll models)
+/// because every real consumer (KCS Map, admin Categories CRUD, member
+/// library, public library filter) already walks this as one tree via
+/// `parentId`, and a scroll needs independent querying/filtering/search
+/// separate from its parent pillar (ruling out embedding children inside
+/// their root document).
+model Category {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String     @unique
+  nameEn      String
+  nameFr      String
+  nameRw      String
+  parentId    String?    @db.ObjectId
+  parent      Category?  @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    Category[] @relation("CategoryToParent")
+  /// KCS classification code, e.g. "KCS-FND". Roots only.
+  code        String?
+  /// Tagline, e.g. "Constitution of the Kingdom". Roots only.
+  subtitle    String?
+  /// Book span covered by this pillar, e.g. "Genesis – Deuteronomy". Roots only.
+  range       String?
+  /// Theme phrase, e.g. "Origins and Covenant". Roots only.
+  theme       String?
+  /// One-sentence description. Roots only.
+  description String?
+  /// Longer descriptive paragraph. Roots only.
+  detail      String?
+  /// Hero/header image URL. Roots only.
+  heroImage   String?
+  /// Availability status. Leaf/scroll rows only.
+  status      CategoryStatus?
+  resources   Resource[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum CategoryStatus {
+  AVAILABLE
+  ARCHIVED
+  OUT_OF_STOCK
+}
+
+/// Digital library resource — a "scroll" filed under a KCS category.
+/// Mirrors `app/dashboard/library/_components/resources-data.ts`'s
+/// `Resource` shape exactly, with `categoryId` now a real `@db.ObjectId`
+/// FK (the mock's own docstring already documents this field as "FK into
+/// the canonical KCS taxonomy," replacing an even-older free-text
+/// `category: string` from before that merge — this schema is the final
+/// step of making that FK real, not a new decision).
+model Resource {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  author       String
+  publisher    String
+  categoryId   String       @db.ObjectId
+  category     Category     @relation(fields: [categoryId], references: [id])
+  type         String
+  format       String
+  language     String
+  year         Int
+  pages        Int
+  isbn         String
+  price        Float
+  totalQty     Int
+  availableQty Int
+  status       ResourceStatus @default(AVAILABLE)
+  coverImages  String[]
+  bindingType  BindingType
+  mediaType    MediaType
+  description  String
+  tags         String[]
+  documentUrl  String?
+  audioUrl     String?
+  videoUrl     String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum ResourceStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum BindingType {
+  SOFT
+  HARD
+}
+
+enum MediaType {
+  VIDEO
+  DOCUMENT
+  TEXT
+  COMBINATION
+}
