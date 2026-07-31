@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
-import { Search, Grid3X3, List, Feather, Info } from "lucide-react";
+import { Search, Grid3X3, List, Feather, Info, AlertTriangle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getRootCategories, getChildCategories } from "@/lib/kcs-taxonomy";
+import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
 import { sectionIcons } from "./_components/section-icons";
 import { ScrollCard, ScrollListItem } from "./_components/scroll-card";
 import { WriteScrollModal } from "./_components/write-scroll-modal";
 import { ContinueReadingSection } from "./_components/continue-reading-section";
-
-const rootSections = getRootCategories();
 
 export default function MemberLibraryPage() {
   const [search, setSearch] = useState("");
@@ -16,7 +17,22 @@ export default function MemberLibraryPage() {
   const [showAbout, setShowAbout] = useState(false);
   const [writeOpen, setWriteOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const { loading, error } = useCategories();
 
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} aria-label="Loading Kingdom Library">
+        <Skeleton style={{ height: 60, borderRadius: 8 }} />
+        <Skeleton style={{ height: 300, borderRadius: 8 }} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the Kingdom Library" description={error} style={{ color: "var(--text-secondary)" }} />;
+  }
+
+  const rootSections = getRootCategories();
   const sections = activeSection === "All" ? rootSections : rootSections.filter((s) => s.name.en === activeSection);
 
   const filteredSections = sections.map((section) => ({

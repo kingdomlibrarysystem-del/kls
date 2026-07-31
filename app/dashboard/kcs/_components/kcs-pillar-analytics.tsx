@@ -32,7 +32,7 @@ interface StatDef {
  * shown alongside any of the three.
  */
 export function KcsPillarAnalytics({ pillar, scrolls }: KcsPillarAnalyticsProps) {
-  const resources = useResources()
+  const { data: resources } = useResources()
 
   const available = scrolls.filter((s) => (s.status ?? 'AVAILABLE') === 'AVAILABLE').length
   const archived = scrolls.filter((s) => s.status === 'ARCHIVED').length

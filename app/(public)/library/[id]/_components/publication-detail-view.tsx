@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
@@ -14,35 +14,27 @@ import { mockCatalog, languageBadgeLabels } from '@/app/dashboard/publishing/cat
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 
-/** Simulated network delay before the mock publication becomes visible. */
-const LOAD_DELAY_MS = 400
-
 interface PublicationDetailViewProps {
   id: string
 }
 
 /**
  * Publication detail: looks up the book by ID against both the shared
- * resources store (browse-grid IDs, e.g. '1'-'16') and the publishing
- * catalog (admin-catalog IDs, e.g. 'cat-001') — the browse grid and the
- * admin Published Catalog page both link here, using their own ID spaces,
- * so both must resolve rather than picking one and breaking the other.
+ * resources store (browse-grid IDs, real Resource ObjectIds) and the
+ * publishing catalog (admin-catalog IDs, e.g. 'cat-001') — the browse grid
+ * and the admin Published Catalog page both link here, using their own ID
+ * spaces, so both must resolve rather than picking one and breaking the
+ * other.
  */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
-  const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const { isAuthenticated } = useAuth()
-  const resources = useResources()
+  const { data: resources, loading, error } = useResources()
   const readableContent = useReadableContent()
 
   const resource = resources.find((r) => r.id === id)
   const catalogBook = mockCatalog.find((b) => b.id === id)
   const isReadable = !!readableContent[id]
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
 
   if (loading) {
     return (
@@ -54,6 +46,16 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           <Skeleton className="h-24 w-full rounded" />
         </div>
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Couldn't load this publication"
+        description={error}
+      />
     )
   }
 

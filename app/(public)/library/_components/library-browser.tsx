@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, BookOpen, X } from 'lucide-react'
+import { Search, BookOpen, X, AlertTriangle } from 'lucide-react'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { getCategoryById } from '@/lib/kcs-taxonomy'
@@ -19,7 +21,7 @@ const formats = ['All', ...Object.values(mediaTypeLabels)]
  * actually produces filtered results on arrival, not just a page reload.
  */
 export function LibraryBrowser() {
-  const books = useResources()
+  const { data: books, loading, error } = useResources()
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
   const [search, setSearch] = useState(initialQuery)
@@ -41,6 +43,18 @@ export function LibraryBrowser() {
       (format === 'All' || mediaTypeLabels[b.mediaType] === format)
     )
   })
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5" aria-label="Loading books">
+        {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
+      </div>
+    )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the library" description={error} />
+  }
 
   return (
     <>

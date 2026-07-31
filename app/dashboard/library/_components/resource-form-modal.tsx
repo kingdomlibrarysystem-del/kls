@@ -8,18 +8,10 @@ import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { categories as taxonomyCategories, getRootCategories } from '@/lib/kcs-taxonomy'
+import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 import { type Resource } from './resources-data'
 import { resourceSchema, defaultResourceFormValues, type ResourceFormData } from './resource-form-schema'
 import { ResourceFormDetails } from './resource-form-details'
-
-/**
- * Leaf/scroll-level categories only, grouped under their root pillar label
- * — a real cataloguer classifies a specific book (e.g. "Genesis"), not a
- * whole pillar, so the picker offers scrolls, not the 8 roots.
- */
-const leafCategories = taxonomyCategories.filter((c) => c.parentId !== null)
-const rootCategories = getRootCategories()
 
 interface ResourceFormModalProps {
   open: boolean
@@ -32,6 +24,16 @@ interface ResourceFormModalProps {
 /** Create/Edit modal for a digital library resource — covers the full canonical Resource shape the Detail modal already displays. */
 export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFormModalProps) {
   const [submitError, setSubmitError] = useState('')
+  const { data: allCategories } = useCategories()
+  /**
+   * Leaf/scroll-level categories only, grouped under their root pillar label
+   * — a real cataloguer classifies a specific book (e.g. "Genesis"), not a
+   * whole pillar, so the picker offers scrolls, not the 8 roots. Computed
+   * from the live `useCategories()` result (not a module-scope snapshot of
+   * the old static array), since the taxonomy is now fetched, not seeded.
+   */
+  const leafCategories = allCategories.filter((c) => c.parentId !== null)
+  const rootCategories = allCategories.filter((c) => c.parentId === null)
   const {
     register,
     control,

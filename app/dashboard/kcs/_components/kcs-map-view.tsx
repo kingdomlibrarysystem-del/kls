@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { AlertTriangle } from 'lucide-react'
+import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 import { getRootCategories, getCategoryById } from '@/lib/kcs-taxonomy'
 import { KcsPillarView } from './kcs-pillar-view'
 import { KcsTaxonomyAnalytics } from './kcs-taxonomy-analytics'
 import { ManageCategoriesSection } from './manage-categories-section'
-
-const DEFAULT_PILLAR_SLUG = getRootCategories()[0].slug
 
 /**
  * Client wrapper resolving the active pillar from the `?pillar=` search
@@ -25,18 +27,42 @@ const DEFAULT_PILLAR_SLUG = getRootCategories()[0].slug
  * real "Manage Categories" CRUD section — the former standalone
  * `/dashboard/library/categories` admin page, absorbed here since KCS Map
  * is now the single home for both browsing and managing this taxonomy.
+ *
+ * The default pillar can no longer be computed at module scope (that
+ * assumed the mock's always-populated static array) — `getRootCategories()`
+ * only has real data once `useCategories()`'s fetch resolves, so this
+ * component gates its own render on that hook's `loading`/`error` state
+ * before picking a default and rendering the rest of the page.
  */
 export function KcsMapView() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const paramPillar = searchParams.get('pillar')
-  const [pillarSlug, setPillarSlug] = useState(
-    paramPillar && getCategoryById(paramPillar) ? paramPillar : DEFAULT_PILLAR_SLUG
-  )
+  const { loading, error } = useCategories()
+  const [pillarSlug, setPillarSlug] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (loading || error || pillarSlug) return
+    const defaultSlug = getRootCategories()[0]?.slug ?? null
+    setPillarSlug(paramPillar && getCategoryById(paramPillar) ? paramPillar : defaultSlug)
+  }, [loading, error, paramPillar, pillarSlug])
 
   const handlePillarChange = (next: string) => {
     setPillarSlug(next)
     router.replace(`/dashboard/kcs?pillar=${next}`, { scroll: false })
+  }
+
+  if (loading || !pillarSlug) {
+    return (
+      <div className="space-y-4" aria-label="Loading KCS Map">
+        <Skeleton className="h-40 w-full rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-lg" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the KCS taxonomy" description={error} />
   }
 
   return (

@@ -1,20 +1,66 @@
 import type { Category } from './types'
-import { kcsRoots } from './roots-data'
-import { kcsScrolls } from './scrolls-data'
 
 /**
- * The full canonical taxonomy: 8 root pillars + 75 child scrolls. This
- * array is the one source of truth for the whole app — admin Categories
- * CRUD, the KCS Map, the member library, the public library filter, and
- * `Resource.categoryId` all resolve against it.
+ * The full canonical taxonomy — now a real, fetch()-backed module-level
+ * cache instead of a static seed array (previously `[...kcsRoots,
+ * ...kcsScrolls]` from roots-data.ts/scrolls-data.ts, both deleted once
+ * this and every consumer were rewired — see PROGRESS.md's Phase 2 entry).
  *
- * ID scheme: every id is that category's own `slug` (roots use their
- * existing `kcs-xxx` slugs, e.g. `"kcs-fnd"`; scrolls use their book slug,
- * e.g. `"genesis"`). Verified unique across all 83 rows before adopting
- * this scheme — simpler and more self-documenting than a `root-N`/`sub-N`
- * counter scheme, and just as stable since slugs don't change once seeded.
+ * Kept as a synchronous, always-populated-after-first-fetch cache
+ * (rather than converting every helper below to async) so the ~19 real
+ * consumers of `getCategoryById`/`getChildCategories`/`getRootCategories`/
+ * `resourceCountFor` across admin, member, and public pages don't all
+ * need to become async-aware individually — only `useCategories()` (the
+ * one hook components actually subscribe to for loading/error state) and
+ * this module's own `loadCategories()` bootstrap need to know about the
+ * fetch. Every plain helper function still reads this array synchronously,
+ * exactly as before; it's just populated from a real API call now.
  */
-export const categories: Category[] = [...kcsRoots, ...kcsScrolls]
+export let categories: Category[] = []
+let hasFetched = false
+let fetchPromise: Promise<void> | null = null
+const listeners = new Set<() => void>()
+
+function notify() {
+  listeners.forEach((l) => l())
+}
+
+/** Internal: fetches the real Category collection once, caching the in-flight promise so concurrent callers share one request. */
+export function loadCategories(): Promise<void> {
+  if (hasFetched) return Promise.resolve()
+  if (fetchPromise) return fetchPromise
+
+  fetchPromise = fetch('/api/categories?pageSize=1000')
+    .then((res) => {
+      if (!res.ok) throw new Error(`Failed to fetch categories (${res.status})`)
+      return res.json()
+    })
+    .then((json) => {
+      if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch categories')
+      categories = json.data
+      hasFetched = true
+      notify()
+    })
+    .finally(() => {
+      fetchPromise = null
+    })
+
+  return fetchPromise
+}
+
+export function subscribeCategories(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+export function categoriesHaveLoaded(): boolean {
+  return hasFetched
+}
+
+export async function refetchCategories(): Promise<void> {
+  hasFetched = false
+  await loadCategories()
+}
 
 export function getCategoryById(id: string): Category | undefined {
   return categories.find((c) => c.id === id)

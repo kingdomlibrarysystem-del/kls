@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
@@ -16,9 +16,6 @@ import { useChapterSelection } from './use-chapter-selection'
 import { NotesPanel } from './notes-panel'
 import { ChapterSearch } from './chapter-search'
 import { HighlightsNotesList } from './highlights-notes-list'
-
-/** Simulated network delay before the mock chapter content becomes visible. */
-const LOAD_DELAY_MS = 400
 
 interface ReaderViewProps {
   resourceId: string
@@ -37,8 +34,7 @@ interface ReaderViewProps {
  * (e.g. Phase 3's "Continue Reading" links there directly).
  */
 export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
-  const [loading, setLoading] = useState(true)
-  const resources = useResources()
+  const { data: resources, loading, error } = useResources()
   const content = useReadableContent()
   const progressEntries = useReadingProgress()
 
@@ -54,11 +50,6 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const highlightEntries = useHighlights()
   const { pending, captureSelection, clearSelection } = useChapterSelection()
   const [noteHighlight, setNoteHighlight] = useState<Highlight | null>(null)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
 
   useEffect(() => {
     if (initialized.current || chapters.length === 0) return
@@ -80,6 +71,10 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
         <Skeleton style={{ height: 320, borderRadius: 8 }} />
       </div>
     )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load this book" description={error} style={{ color: 'var(--text-secondary)' }} />
   }
 
   if (!resource || !readable || chapters.length === 0) {

@@ -14,7 +14,7 @@ import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_sha
  * separates in-progress from CompletedCoursesSection).
  */
 export function ContinueReadingSection() {
-  const resources = useResources()
+  const { data: resources } = useResources()
   const progress = useReadingProgress()
 
   const inProgress = progress
