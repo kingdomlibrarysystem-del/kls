@@ -83,6 +83,8 @@ model User {
   sessions                Session[]
   Authenticator           Authenticator[]
   invitationsSent         Invitation[]
+  borrows                 Borrow[]
+  reservations            Reservation[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -232,6 +234,8 @@ model Resource {
   documentUrl  String?
   audioUrl     String?
   videoUrl     String?
+  borrows      Borrow[]
+  reservations Reservation[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -252,4 +256,77 @@ enum MediaType {
   DOCUMENT
   TEXT
   COMBINATION
+}
+
+/// Real borrow record, replacing the two disconnected mock stores found
+/// at app/dashboard/library/borrowings/_components/borrowings-data.ts
+/// (admin, free-text memberName/memberEmail alongside an unresolved
+/// memberId, no resourceId at all) and
+/// app/member/borrowings/_components/borrowings-data.ts (member, numeric
+/// id, title/author only, no ids whatsoever). Both collapse into this one
+/// collection with real userId/resourceId FKs, per the migration plan's
+/// Phase 3 design. `memberName`/`memberEmail` are kept as point-in-time
+/// snapshot fields (so a borrow record still reads sensibly if the user's
+/// name/email later changes) alongside the real userId FK, not instead of
+/// it — same pattern already used for AuditLog's actor/actorId.
+model Borrow {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String       @db.ObjectId
+  user          User         @relation(fields: [userId], references: [id])
+  memberName    String
+  memberEmail   String
+  resourceId    String       @db.ObjectId
+  resource      Resource     @relation(fields: [resourceId], references: [id])
+  borrowDate    DateTime     @default(now())
+  dueDate       DateTime
+  returnDate    DateTime?
+  status        BorrowStatus @default(PENDING)
+  renewalCount  Int          @default(0)
+  fineAmount    Float?
+  finePaid      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+enum BorrowStatus {
+  PENDING
+  ACTIVE
+  OVERDUE
+  RETURNED
+  REJECTED
+}
+
+/// Real reservation record, replacing the two disconnected mock stores at
+/// app/dashboard/reservations/_components/reservations-data.ts (admin —
+/// its resourceId values like "res-3" were confirmed NOT to match any
+/// real Resource.id, a fabricated-looking FK) and
+/// app/member/reservations/_components/reservations-data.ts (member,
+/// numeric id, title/author only). `queuePosition` is kept as a real,
+/// stored field (not computed on read) so the existing claim-countdown
+/// and queue-promotion-by-title logic (see use-reservations.ts's
+/// fulfillReservation) has a direct field to update, matching how the
+/// mock already modeled it.
+model Reservation {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  user            User              @relation(fields: [userId], references: [id])
+  memberName      String
+  memberEmail     String
+  resourceId      String            @db.ObjectId
+  resource        Resource          @relation(fields: [resourceId], references: [id])
+  queuePosition   Int
+  reservationDate DateTime          @default(now())
+  notifiedAt      DateTime?
+  claimDeadline   DateTime?
+  status          ReservationStatus @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+enum ReservationStatus {
+  PENDING
+  NOTIFIED
+  CLAIMED
+  EXPIRED
+  CANCELLED
 }
