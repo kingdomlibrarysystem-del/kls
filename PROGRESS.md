@@ -2585,6 +2585,282 @@ None. No rule-2-class blockers hit during this phase's close-out.
 - `7131e6b` — `feat(api): add real Category/Resource CRUD API routes for Phase 2`
 - `24d8d2b` — `feat(library): wire Category/Resource frontend to real API, delete mocks`
 
-Proceeding automatically to Phase 3 (Borrowing & Reservations) per the
-standing Autonomous Mode instruction.
+# Phase 3 (Borrowing & Reservations) — rule-2 blocker: no real User identity exists to attach borrow/reserve writes to
+
+**Status: schema + read-side API + admin-facing CRUD can proceed; the
+live "current user borrows/reserves a book" write path from the public
+library and member dashboard is blocked pending human input on how to
+handle auth.**
+
+## Re-verification of the plan doc against real code (done first, per this run's standing instruction)
+
+Independently re-read all four real mock files the plan's Phase 3
+section names, plus their wrapping hooks and the one write-path
+component that creates records (`borrow-reserve-confirm-modal.tsx`).
+Confirmed the plan's descriptions are accurate:
+
+- `app/dashboard/library/borrowings/_components/borrowings-data.ts` —
+  `Borrowing { id, memberId, memberName, memberEmail, resourceTitle,
+  resourceType, isbn, borrowDate, dueDate, returnDate, status:
+  'pending'|'active'|'overdue'|'returned'|'rejected', renewalCount,
+  fineAmount, finePaid }`, 12 rows. `memberId` present but never
+  resolved against anything; no `resourceId` at all.
+- `app/dashboard/reservations/_components/reservations-data.ts` —
+  `Reservation { id, memberId, memberName, memberEmail, resourceId,
+  resourceTitle, resourceAuthor, resourceType, totalCopies,
+  borrowedCopies, queuePosition, reservationDate, notifiedAt,
+  claimDeadline, status: 'pending'|'notified'|'claimed'|'expired'|
+  'cancelled' }`, 12 rows. Confirmed the plan's specific claim that
+  `resourceId` values (`res-3`, `res-7`, etc.) **do not match** the real
+  seeded `Resource.id` scheme from Phase 2 (now real MongoDB
+  ObjectIds) — these are fabricated placeholder ids with no real
+  referent, exactly as the plan described.
+- `app/member/borrowings/_components/borrowings-data.ts` — completely
+  separate `Borrowing { id: number, title, author, borrowed, due,
+  status: 'Active'|'Overdue'|'Returned', returned? }`, 5 rows. No
+  `memberId`/`resourceId` whatsoever, different status vocabulary,
+  different id type than the admin version.
+- `app/member/reservations/_components/reservations-data.ts` — same
+  pattern, `Reservation { id: number, title, author, reserved, status:
+  'Ready'|'Waiting'|'Fulfilled', queue?, fulfilled? }`, 4 rows.
+- Confirmed via grep that these are genuinely two disconnected
+  systems: the admin pages (`app/dashboard/library/borrowings/`,
+  `app/dashboard/reservations/`) and member pages
+  (`app/member/borrowings/`, `app/member/reservations/`) each have
+  their own data file, hook, and detail-modal component, with zero
+  shared code between them apart from the one write path below.
+- The one bridge between them: `app/(public)/library/_components/
+  borrow-reserve-confirm-modal.tsx`, rendered from the public library
+  browse/detail pages, calls `addBorrowing(title, author)` /
+  `addReservation(title, author)` from `app/member/_shared/
+  use-{borrowings,reservations}.ts` — these are genuine, non-trivial
+  business-logic stores (queue-position promotion by title match on
+  `fulfillReservation`, due-date-from-settings calculation) that write
+  directly into the **member**-side mock store only, by title/author
+  string, with no `resourceId` and no real user attached. The admin
+  side has no live write path at all — its 12+12 rows are static
+  fixtures only.
+
+## The blocker
+
+The plan's own Phase 3 design (§458) correctly calls for real `Borrow`/
+`Reservation` collections with **hard `userId`/`resourceId` FKs**,
+replacing both disconnected mock stores with one real collection each.
+`resourceId` is solvable now — Phase 2 made `Resource` real, and the
+admin mock's `resourceTitle` (plus the public modal's real `bookTitle`)
+can resolve to a real `Resource._id` by title match at seed/create
+time, same technique already used in Phase 2's own seed script.
+
+`userId` is not solvable the same way, and not for a reversible reason:
+
+1. **The real `User` collection is empty.** Checked directly via a
+   throwaway Prisma script (immediately deleted after, per the
+   established one-off-verification-script pattern): `prisma.user.findMany()`
+   returns `[]`, count 0. Phase 1 built the `User` schema/API but never
+   seeded any actual user rows — there was no reason to yet, since nothing
+   before Phase 3 needed a real user to exist.
+2. **Auth itself is still 100% mocked**, per CLAAUDE.md's own explicit
+   statement ("Auth (`contexts/auth-context.tsx`) is a `localStorage` +
+   in-memory mock") — confirmed by reading the file directly. The
+   "current user" the whole app treats as authenticated is one of four
+   hardcoded `User` objects (`id: "1"|"2"|"3"|"5"`) held in
+   `localStorage`, with **no relationship whatsoever** to the real
+   MongoDB `User` collection's `@db.ObjectId` ids. These string ids are
+   not stale — they never referred to a real document to begin with.
+3. Every real write-path candidate for Phase 3
+   (`borrow-reserve-confirm-modal.tsx`'s Borrow/Reserve buttons, the
+   member borrowings/reservations pages, a future admin "approve
+   borrow" action) ultimately needs to answer "which real user is
+   this?", and today there is no real answer available anywhere in the
+   running app.
+
+**Why this is a rule-2 stop, not a rule-1 judgment call:** the two ways
+around this are both high-stakes. Fabricating a single hardcoded
+"current user" `ObjectId` to attach every borrow/reserve write to would
+silently misrepresent mocked auth as if it were real per-user data —
+indistinguishable from real multi-user borrowing until someone tries a
+second real account and finds every borrow attributed to the same
+fabricated identity. Alternatively, wiring real auth now (NextAuth is
+listed in CLAUDE.md as "not yet wired," a separate, larger task of its
+own) would be a significant, unscoped expansion of this migration into
+a different task entirely, without being asked to. Both options are
+exactly "changing a shared data model in a breaking way" / "anything
+touching auth" per CLAUDE.md's rule-2 examples.
+
+**What I did NOT do:** did not fabricate a fake `userId` to unblock the
+live write path. Did not start wiring real NextAuth as a workaround.
+Did not skip Phase 3 entirely — see below for what proceeds.
+
+## What proceeds now, scoped around the blocker
+
+Rule 2 says skip only the blocked item and continue with the rest of
+the phase. Scoping Phase 3 to what's genuinely unblocked:
+
+- **Proceeds:** `Borrow`/`Reservation` schema with a real `resourceId`
+  FK into `Resource` and a `userId` field typed as a real
+  `@db.ObjectId` FK into `User` (schema-correct for when auth is real),
+  populated at **seed time** by creating placeholder `User` documents
+  from the mock data's existing `memberName`/`memberEmail` values (this
+  mirrors exactly how Phase 2 derived real `Category`/`Resource` rows
+  from mock arrays — reversible, not a live-auth decision, and gives
+  the admin-side list/filter/detail/status-transition UI a fully real,
+  functional backing collection). Real API routes for admin-side
+  list/update/status-transition (approve, mark returned, cancel,
+  fulfill) proceed fully, since none of that requires knowing "who is
+  currently logged in" — it's an admin acting on an existing record by
+  its own id.
+- **Blocked, left on the existing mock for now:** the public
+  library's Borrow/Reserve buttons and the member-side "my
+  borrowings"/"my reservations" pages, since both require attaching a
+  write to a real current user that doesn't exist yet. These keep
+  using `app/member/_shared/use-{borrowings,reservations}.ts` exactly
+  as they are today — not rewired, not deleted — until a human
+  resolves how member-side identity should work (either: wire real
+  auth as an explicit, separately-scoped task first, or explicitly
+  approve a specific placeholder-user convention for the mocked-auth
+  phase).
+
+**What's needed from a human:** a decision on one of:
+(a) treat real NextAuth wiring as a prerequisite task inserted before
+Phase 3's member-facing write path can be completed, or
+(b) explicitly approve a specific, documented convention for mapping
+the mock `localStorage` auth's `id: "1"|"2"|"3"|"5"` personas onto
+real seeded `User` documents (e.g. seed exactly those 4 users with
+matching real ids/emails, and treat that as the accepted bridge for
+this mocked-auth phase), or
+(c) some other approach a human specifies.
+
+Continuing with the rest of Phase 3 (schema, seed, admin-side real
+API+frontend) now; will flag the member-facing/public-write gap again
+at phase close-out rather than silently shipping it as "done."
+
+## Phase 3 — Completed (admin-side scope; member-side/public write path remains blocked)
+
+**Schema:** added `Borrow` (`userId`/`resourceId` real `@db.ObjectId`
+FKs, `BorrowStatus` enum `PENDING/ACTIVE/OVERDUE/RETURNED/REJECTED`,
+`memberName`/`memberEmail` kept as point-in-time snapshot fields
+alongside the real `userId` FK — same pattern as `AuditLog.actor`/
+`actorId`) and `Reservation` (`userId`/`resourceId` FKs,
+`ReservationStatus` enum `PENDING/NOTIFIED/CLAIMED/EXPIRED/CANCELLED`,
+`queuePosition` stored as a real field so the queue-renumbering logic
+has something concrete to update). `npx prisma validate` passed, `npx
+prisma db push` confirmed applied against `kcs_app`.
+
+**Seed** (`prisma/seed/seed-phase3.mjs`): confirmed the real `User`
+collection was empty via a throwaway script (deleted immediately after
+use). Created 15 placeholder `User` documents from the mock
+borrowings/reservations' own `memberName`/`memberEmail` fields, then
+seeded 12 `Borrow` + 12 `Reservation` rows. The mocks' `resourceTitle`
+values (e.g. "Ancient Civilizations," "The Pursuit of Knowledge") don't
+match any real seeded `Resource` (Phase 2 only seeded the 16 Bible-book
+scrolls) — mapped round-robin onto the real `Resource` rows rather than
+left dangling, a documented, reversible seed-data judgment call
+distinct from the blocked real-identity question above.
+
+**API routes** (`app/api/borrowings/route.ts` + `[id]/route.ts`,
+`app/api/reservations/route.ts` + `[id]/route.ts` — the pre-existing
+`borrowings` route was a 2-row placeholder using yet another
+vocabulary, fully rewritten): real list/filter/pagination, create (FK
+existence checks on `userId`/`resourceId`), and status-transition PATCH
+actions porting every business rule found in the admin mocks —
+`approve`/`reject`/`return` (fine = days-overdue × 200 RWF, only
+computed if the borrowing was actually overdue)/`waiveFine` for
+borrowings; `notify` (sets a real 48h `claimDeadline`)/
+`convertToBorrow`/`cancel` (re-numbers `queuePosition` for every other
+`PENDING` reservation on the same resource, via a `$transaction`)/
+`expire` for reservations. Each transition is guarded server-side
+(e.g. re-approving an already-`ACTIVE` borrowing returns 409), not
+trusted from the client.
+
+**Verified via curl round-trips** before any frontend wiring: list +
+filter, create, approve (plus a repeat-approve 409), return-with-fine
+computation, notify (real 48h deadline in the response), a live
+two-reservation queue test confirming `cancel` correctly renumbers the
+remaining reservation's `queuePosition` down by one, a missing-fields
+400, and a nonexistent-FK 400.
+
+**Frontend wiring (admin side only):** `app/dashboard/library/
+borrowings/page.tsx` and `app/dashboard/reservations/page.tsx` rewired
+from local `useState(initialData)` to real fetch-backed hooks
+(`use-borrowings-admin.ts`, `use-reservations-admin.ts`, same
+module-cache + listener-Set pattern as Phase 2), with real
+Skeleton/EmptyState loading and error states. `BorrowingsTable`/
+`Stats`/`DetailModal` and `ReservationsTable`/`Stats`/`DetailModal`
+needed **no changes** — they already accepted plain data + callback
+props, and the API's serialized shape matches their existing
+`Borrowing`/`Reservation` interfaces field-for-field.
+
+**Explicitly NOT wired, left on the mock, per the blocker above:** the
+public library's Borrow/Reserve confirm modal
+(`app/(public)/library/_components/borrow-reserve-confirm-modal.tsx`)
+and the member-side `app/member/borrowings/`, `app/member/
+reservations/` pages + their `use-{borrowings,reservations}.ts` shared
+stores. These still work exactly as before (title/author-only, no real
+user, no real resourceId) — not broken, but not migrated either.
+
+**Not deleted:** `app/dashboard/library/borrowings/_components/
+borrowings-data.ts`'s `initialData`/`daysOverdue`/`statusConfig` and
+`app/dashboard/reservations/_components/reservations-data.ts`'s
+`initialData`/`hoursFromNow`/`statusConfig` are still real dependencies
+— confirmed via grep that `app/dashboard/reports/_components/
+cross-module-data.ts` (Phase 8's territory) still imports `initialData`
+from the admin borrowings mock for cross-module aggregation, and the
+table/stats/detail-modal components still import `statusConfig`/
+`daysOverdue`. Only `page.tsx`'s own direct `initialData` usage was
+replaced; the mock data files themselves stay in place until Phase 8
+converts `cross-module-data.ts` to real aggregate queries.
+
+## Verification
+
+- `npx tsc --noEmit`: clean.
+- `npm run build`: clean, all routes compile.
+- **Verified via real dev server + curl**: confirmed `/dashboard/
+  library/borrowings` and `/dashboard/reservations` return HTTP 200,
+  and that `/api/borrowings`/`/api/reservations` list endpoints reflect
+  the exact status distribution expected after the verification-phase
+  PATCH calls (5 active/1 overdue/1 pending/1 rejected/4 returned;
+  1 cancelled/2 claimed/2 expired/3 notified/4 pending) — confirming
+  the admin pages' fetch hooks are reading genuinely live, mutated
+  database state, not a static snapshot.
+- Full interactive click-through of the admin pages' buttons (Approve/
+  Reject/Return/Waive Fine, Notify/Convert/Cancel/Expire) was verified
+  via code-path trace (the underlying PATCH actions were independently
+  curl-verified above; the page components call the same hook
+  functions those actions map to) rather than a live browser click
+  session — Playwright remains unavailable as a project dependency, per
+  the same note in Phase 2's verification section.
+- Dev server shut down cleanly afterward (killed only the one `next
+  dev` process tree this run started).
+
+## Files created
+
+- `app/api/borrowings/[id]/route.ts`, `app/api/reservations/route.ts`,
+  `app/api/reservations/[id]/route.ts`
+- `prisma/seed/seed-phase3.mjs`
+- `app/dashboard/library/borrowings/_components/use-borrowings-admin.ts`,
+  `app/dashboard/reservations/_components/use-reservations-admin.ts`
+
+## Files modified
+
+`prisma/schema.prisma`, `app/api/borrowings/route.ts`,
+`app/dashboard/library/borrowings/page.tsx`,
+`app/dashboard/reservations/page.tsx`
+
+## Needs human input
+
+Carried forward from above, unresolved: a decision on how member-side/
+public borrow-reserve identity should work before that write path can
+be completed — real NextAuth wiring as a prerequisite task, an
+explicitly-approved placeholder-user convention, or another approach.
+This blocks only the public Borrow/Reserve buttons and the member
+borrowings/reservations pages; everything else in Phase 3 is complete
+and real.
+
+## Commits
+
+- `30d3d4c` — `feat(api): add real Borrow/Reservation models + CRUD API routes for Phase 3`
+- `7214723` — `feat(library): wire admin Borrowings/Reservations pages to real API`
+
+Proceeding automatically to Phase 4 (Publishing) per the standing
+Autonomous Mode instruction.
 
