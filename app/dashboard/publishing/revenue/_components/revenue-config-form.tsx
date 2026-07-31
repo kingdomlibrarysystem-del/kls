@@ -8,7 +8,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { revenueConfigSchema, type RevenueConfigFormData } from './revenue-config-schema'
-import { setDefaultRevenueShare } from './use-revenue'
+import { setDefaultRevenueShare } from '../../_shared/use-publications'
 
 /**
  * Default revenue-share config panel: contributor % and platform % (must sum

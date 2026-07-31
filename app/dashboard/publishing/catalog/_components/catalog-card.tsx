@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Star, Eye, BookMarked, Film, Package } from 'lucide-react'
 import type { PublishedBook } from './catalog-data'
 import { languageBadgeLabels, bindingTypeLabels, mediaTypeLabels } from './catalog-data'
-import { toggleFeatured } from './use-catalog'
+import { toggleFeaturedPublication } from '../../_shared/use-publications'
 
 interface CatalogCardProps {
   book: PublishedBook
@@ -60,7 +60,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
             <Eye size={12} /> Details
           </Link>
           <button
-            onClick={() => toggleFeatured(book.id)}
+            onClick={() => { toggleFeaturedPublication(book.id).catch(() => {}) }}
             aria-label={book.featured ? `Remove ${book.title} from featured` : `Mark ${book.title} as featured`}
             className={`flex items-center justify-center p-1.5 rounded border text-xs font-lato transition-colors ${
               book.featured

@@ -1,15 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { DollarSign } from 'lucide-react'
+import { useState } from 'react'
+import { DollarSign, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useRevenue } from './use-revenue'
+import { usePublications } from '../../_shared/use-publications'
 import type { RevenueRow } from './revenue-data'
-
-/** Simulated network delay before mock revenue rows become visible. */
-const LOAD_DELAY_MS = 400
 
 const columns: Column<RevenueRow>[] = [
   { key: 'publication', label: 'Publication', sortable: true, render: (r) => <span className="font-semibold text-w-950 max-w-55 truncate block">{r.publication}</span> },
@@ -31,14 +28,18 @@ const columns: Column<RevenueRow>[] = [
  * page needed.
  */
 export function RevenueTable() {
-  const [loading, setLoading] = useState(true)
   const [contributorFilter, setContributorFilter] = useState('all')
-  const revenue = useRevenue()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: publications, loading, error } = usePublications()
+  const revenue: RevenueRow[] = publications
+    .filter((p) => p.revenueShare)
+    .map((p) => ({
+      id: p.id,
+      publication: p.title,
+      contributor: p.contributor,
+      contributorShare: p.revenueShare!.contributorShare,
+      platformShare: p.revenueShare!.platformShare,
+      totalRevenue: p.revenueShare!.totalRevenue,
+    }))
 
   if (loading) {
     return (
@@ -48,6 +49,10 @@ export function RevenueTable() {
         ))}
       </div>
     )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load revenue data" description={error} />
   }
 
   if (revenue.length === 0) {

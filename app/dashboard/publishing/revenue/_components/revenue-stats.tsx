@@ -1,21 +1,22 @@
 'use client'
 
 import { RankingBarChart } from '@/components/ui/ranking-bar-chart'
-import { useRevenue } from './use-revenue'
+import { usePublications } from '../../_shared/use-publications'
 
 /**
  * Total-revenue stat card plus a revenue-by-publication ranking chart —
- * same shape as the contributor earnings chart, reading the live
- * `useRevenue()` store so a newly-approved submission's revenue row
- * appears here immediately, not just in the table below.
+ * reads the live `usePublications()` store so a newly-approved
+ * submission's real RevenueShare row (created server-side in the
+ * approve action) appears here immediately, not just in the table below.
  */
 export function RevenueStats() {
-  const revenue = useRevenue()
-  const totalRevenue = revenue.reduce((sum, r) => sum + r.totalRevenue, 0)
-  const maxValue = Math.max(1, ...revenue.map((r) => r.totalRevenue))
+  const { data: publications } = usePublications()
+  const revenue = publications.filter((p) => p.revenueShare)
+  const totalRevenue = revenue.reduce((sum, r) => sum + r.revenueShare!.totalRevenue, 0)
+  const maxValue = Math.max(1, ...revenue.map((r) => r.revenueShare!.totalRevenue))
 
   const chartData = revenue
-    .map((r) => ({ name: r.publication, value: r.totalRevenue }))
+    .map((r) => ({ name: r.title, value: r.revenueShare!.totalRevenue }))
     .sort((a, b) => b.value - a.value)
 
   return (
