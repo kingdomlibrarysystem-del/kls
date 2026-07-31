@@ -3078,3 +3078,69 @@ added, as item 7 immediately after existing rule 6:
    PROGRESS.md, and proceed. There is no other exception.
 ```
 
+**2026-07-31, mid-Phase 5 — consolidated `.claude/settings.json`'s
+`permissions.allow` list**, per explicit user instruction. The list had
+accumulated ~30 narrow, literal-string-match entries (one exact curl
+URL, grep pattern, or mkdir path per past verification step), so a new
+variant of the same safe command class kept triggering fresh permission
+prompts instead of matching an existing rule. Replaced the accumulated
+one-off entries with a small number of general, prefix-based patterns
+covering the actual safe command classes this migration repeatedly
+needs — read-only HTTP checks, read-only greps, ad hoc directory
+creation for new migration files, and local dev-server restarts.
+`git`/`npm`/`npx`/`node`/`Read`/`Write`/`Edit` (already full-category
+allows from initial setup) were left untouched, `permissions.deny` was
+not touched (there is none), and nothing destructive (force-push,
+`rm -rf`, `.env` reads) was added — consistent with the existing hard
+boundary. Full diff:
+
+```diff
+-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+       "Bash(break)",
+-      "Bash(npx --yes playwright --version)",
+-      "Bash(npx --yes tsx verify-phase-b.mjs)",
+       "Bash(pkill -f \"npm run dev\")",
+       "Edit(/.claude/skills/kls-page-builder/**)",
+-      "Bash(npx --yes tsx verify-phase-c.mjs)",
+-      "Bash(curl -s http://localhost:3000/dashboard/e-learning/quizzes)",
+-      "Bash(curl -s http://localhost:3000/dashboard/e-learning/quizzes -o /tmp/quizzes.html -w \"%{http_code}\\\\n\")",
+-      "Bash(tee /tmp/tsc-output.log)",
++      "Bash(tee /tmp/*.log)",
+       "Bash(echo \"---EXIT CODE: $?---\")",
+-      "Bash(tee /tmp/build-output.log)",
+-      "Bash(npx --yes tsx verify-regression.mjs)",
+-      "Bash(npx --yes tsx verify-regression-item4.mjs)",
+-      "Bash(npx --yes tsx verify-regression-item5.mjs)",
+-      "Bash(npx --yes tsx verify-enrollments-fragmentation.mjs)",
+-      "Bash(curl -sI -o /dev/null -w \"%{http_code}\" \"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=400&fit=crop\")",
+-      "Bash(curl -sI -k -o /dev/null -w \"%{http_code}\\\\n\" \"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=400&fit=crop\")",
+-      "Bash(curl -v \"https://images.unsplash.com\")",
+-      "Bash(curl -s -k -o /dev/null -w \"next/image optimizer: %{http_code}\\\\n\" \"http://localhost:3000/_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1481627834876-b7833e8f5570%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=640&q=75\")",
+-      "Bash(taskkill //F //IM node.exe)",
++      "Bash(curl -s*)",
++      "Bash(curl -sI*)",
++      "Bash(curl -sL*)",
++      "Bash(curl -v*)",
++      "Bash(grep *)",
+       "Bash(xargs -I{} echo {})",
+-      "Bash(xargs grep -ln \"useState\")",
+-      "Bash(xargs grep -l \"style={{.*var\\(--\")",
+-      "Bash(grep -rn \"background:.*#\\\\|color:.*#[0-9a-fA-F]\\\\{3,6\\\\}\" app/dashboard/beauty/page.tsx app/dashboard/counseling/page.tsx)",
+-      "Bash(grep -rn \"library/\\\\${\" app/dashboard/publishing)",
+-      "Bash(grep -rln \"PublicationDetailView\\\\|/library/\\\\[id\\\\]\\\\|\\\\`/library/\" app/dashboard/publishing --include=\"*.tsx\")",
+-      "Bash(mkdir -p \"app/member/courses/[courseId]/_components\")",
++      "Bash(xargs grep *)",
++      "Bash(mkdir -p *)",
+       "Bash(cat > *)",
+-      "Bash(npx --no-install playwright --version)",
+-      "Bash(curl -sL -o /tmp/notif-page.html -w \"final: %{http_code} url: %{url_effective}\\\\n\" http://localhost:3000/dashboard/notifications)",
+-      "Bash(curl -sL -o /tmp/notif-page.html -w \"final: %{http_code}\\\\n\" http://localhost:3001/dashboard/notifications)",
+-      "Bash(npm root *)",
+-      "Read(//c//**)",
+-      "Bash(mkdir -p \"app/member/sessions/_components\" \"app/member/sessions/[id]/room\")",
+-      "Bash(mkdir -p \"components/session-room\")",
+-      "Bash(grep -rn \"#[0-9a-fA-F]\\\\{3,6\\\\}\" components/session-room lib/messaging)"
++      "Bash(taskkill *)",
++      "Read(//c//**)"
+```
+
