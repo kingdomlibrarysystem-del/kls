@@ -1,0 +1,111 @@
+/**
+ * COMPLETED, NON-RUNNABLE ARCHIVE. This one-off Phase 2 seed script already
+ * ran successfully against the real kcs_app MongoDB database (Category: 83,
+ * Resource: 16 rows confirmed). Its source mock files (roots-data.ts,
+ * scrolls-data.ts, resources-data.ts's initialResources array) have since
+ * been deleted now that Category/Resource are fully API-backed, so this
+ * script can no longer execute as-is. Kept only as a historical record of
+ * how the initial data was populated — renamed to .completed so it isn't
+ * mistaken for a runnable script.
+ */
+import { PrismaClient } from '@prisma/client'
+import { kcsRoots } from '../../lib/kcs-taxonomy/roots-data.ts'
+import { kcsScrolls } from '../../lib/kcs-taxonomy/scrolls-data.ts'
+import { initialResources } from '../../app/dashboard/library/_components/resources-data.ts'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  console.log('Clearing existing Category/Resource collections...')
+  await prisma.resource.deleteMany({})
+  await prisma.category.deleteMany({})
+
+  console.log(`Seeding ${kcsRoots.length} root categories...`)
+  const slugToId = new Map()
+  for (const root of kcsRoots) {
+    const created = await prisma.category.create({
+      data: {
+        slug: root.slug,
+        nameEn: root.name.en,
+        nameFr: root.name.fr,
+        nameRw: root.name.rw,
+        parentId: null,
+        code: root.code ?? null,
+        subtitle: root.subtitle ?? null,
+        range: root.range ?? null,
+        theme: root.theme ?? null,
+        description: root.description ?? null,
+        detail: root.detail ?? null,
+        heroImage: root.heroImage ?? null,
+        status: null,
+      },
+    })
+    slugToId.set(root.slug, created.id)
+  }
+
+  console.log(`Seeding ${kcsScrolls.length} child scrolls...`)
+  for (const scroll of kcsScrolls) {
+    const parentObjectId = slugToId.get(scroll.parentId)
+    if (!parentObjectId) {
+      throw new Error(`Scroll "${scroll.slug}" references unknown parent slug "${scroll.parentId}"`)
+    }
+    const created = await prisma.category.create({
+      data: {
+        slug: scroll.slug,
+        nameEn: scroll.name.en,
+        nameFr: scroll.name.fr,
+        nameRw: scroll.name.rw,
+        parentId: parentObjectId,
+        status: scroll.status ?? 'AVAILABLE',
+      },
+    })
+    slugToId.set(scroll.slug, created.id)
+  }
+
+  console.log(`Seeding ${initialResources.length} resources...`)
+  for (const resource of initialResources) {
+    const categoryObjectId = slugToId.get(resource.categoryId)
+    if (!categoryObjectId) {
+      throw new Error(`Resource "${resource.title}" references unknown category slug "${resource.categoryId}"`)
+    }
+    await prisma.resource.create({
+      data: {
+        title: resource.title,
+        author: resource.author,
+        publisher: resource.publisher,
+        categoryId: categoryObjectId,
+        type: resource.type,
+        format: resource.format,
+        language: resource.language,
+        year: resource.year,
+        pages: resource.pages,
+        isbn: resource.isbn,
+        price: resource.price,
+        totalQty: resource.totalQty,
+        availableQty: resource.availableQty,
+        status: resource.status.toUpperCase(),
+        coverImages: resource.coverImages,
+        bindingType: resource.bindingType,
+        mediaType: resource.mediaType,
+        description: resource.description,
+        tags: resource.tags,
+        documentUrl: resource.documentUrl ?? null,
+        audioUrl: resource.audioUrl ?? null,
+        videoUrl: resource.videoUrl ?? null,
+      },
+    })
+  }
+
+  const categoryCount = await prisma.category.count()
+  const resourceCount = await prisma.resource.count()
+  console.log(`Done. Category count: ${categoryCount}, Resource count: ${resourceCount}`)
+}
+
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
