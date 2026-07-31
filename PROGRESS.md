@@ -3192,3 +3192,89 @@ further settings.json edits for this same issue; any further
 permission prompts this session are answered as they come and
 otherwise ignored.
 
+**2026-07-31, same day — updated `CLAUDE.md`'s "Current phase" section
+and "Where to look" table**, which had gone stale: they still described
+the project as a "fully mocked prototype" with "prisma/ intentionally
+removed" and "only 4 API routes," directly contradicting the real state
+after Phases 0-5 (a real `prisma/schema.prisma` on disk, real API
+routes across Users/Roles/Categories/Resources/Borrow/Reservation/
+Publication/RevenueShare/Course/Lesson/Enrollment/Assessment/
+AssessmentAttempt/Certificate/SessionRequest, all backed by real
+`db push`es against `kcs_app`). Updated to point at `PROGRESS.md`'s
+phase log as the most current source of truth, while keeping what's
+still genuinely true (auth still mocked, Phase 9's six modules still
+schema-less). Full diff:
+
+```diff
+-## Current phase — read this before touching any file
+-
+-**The frontend is being built as a fully mocked prototype.** The Prisma schema
+-(originally 43 models) and the phase-by-phase spec in `APP_DOC.md`
+-already describe the target data model in detail. **`prisma/` has since been
+-intentionally removed from the working tree for this frontend-only phase** —
+-its field names and status vocabulary are preserved in the
+-`kls-product-spec` skill, so treat that skill (backed by `APP_DOC.md`) as the
+-source of truth for mock data shape, not a schema file on disk. Almost
+-nothing else is wired to a real backend yet either:
+-
+-- Auth (`contexts/auth-context.tsx`) is a `localStorage` + in-memory mock.
+-- Only 4 API routes exist (`resources`, `users`, `categories`, `borrowings`),
+-  and they return hardcoded arrays, not database queries.
+-- There is no `middleware.ts` for RBAC yet.
+-
+-**Unless a task explicitly asks for backend/API/auth/database work, stay
+-frontend-only and fully mocked** — no `fetch`, no ORM client usage, no API
+-route creation, no "TODO: wire to backend" comments. Build every new page as
+-if the mock data were real, matching the vocabulary (status enums, field
+-names) already defined in the `kls-product-spec` skill and `APP_DOC.md` so the
+-UI is a faithful preview of what the real data will look like.
++## Current phase — read this before touching any file
++
++**A real Prisma + MongoDB backend is being built out phase-by-phase,
++in progress as of 2026-07-31.** `prisma/schema.prisma` is real and on
++disk (not removed) — it now contains real models for Users/Roles/
++Invitations/AuditLog (Phase 0-1), Categories/Resources (Phase 2),
++Borrow/Reservation (Phase 3), Publication/RevenueShare (Phase 4), and
++Course/Lesson/Enrollment/Assessment/AssessmentAttempt/Certificate/
++SessionRequest (Phase 5, in progress). Real CRUD API routes exist for
++all of the above under `app/api/**`, backed by real `npx prisma db
++push`es against the `kcs_app` MongoDB database — not hardcoded arrays.
++See `.claude/skills/kls-page-builder/references/prisma-migration-plan.md`
++for the full phase plan and `PROGRESS.md`'s phase-by-phase log (search
++for "Phase N — Completed") for exactly what's real vs. still mocked at
++any point in time — **treat PROGRESS.md as more current than this
++section**, since this file is updated less frequently than each
++phase's own log entry.
++
++Two things genuinely remain unmocked, don't treat as done:
++- Auth (`contexts/auth-context.tsx`) is still a `localStorage` +
++  in-memory mock, not wired to the real `User` collection or a real
++  session. Several phases (3, 4, 5) hit this as a documented rule-2
++  blocker for live member-facing writes (enroll, borrow, submit) that
++  need a real "current user" — those specific write paths remain on
++  the mock pending real auth, even though their surrounding schema/
++  API/admin-frontend work is real. Check a given module's own
++  PROGRESS.md entry before assuming a write path is live.
++- The 6 Phase-9 modules (Health, Beauty, Counseling, Rehabilitation,
++  Donations, News) still have zero schema/API — see "Known
++  inconsistencies" below, unchanged.
++
++**For any new page/feature in an already-migrated module** (Categories,
++Resources, Borrowing, Reservations, Publishing, or E-Learning once
++Phase 5 closes out), wire it to the real API like the rest of that
++module — do not add a new mock array alongside a real backend. **For a
++module not yet migrated** (Research, Messaging/Notifications/Sessions-
++the-messaging-kind, Reports — see the migration plan for the remaining
++phases), the old mocked-frontend convention still applies until its own
++phase runs: no `fetch`, no ORM usage, match the `kls-product-spec`
++skill's vocabulary in mock data.
+```
+
+And in the "Where to look" table:
+
+```diff
+-| Full DB schema (target design — not currently on disk) | `prisma/` was intentionally removed from the working tree during this frontend-only phase. The condensed field names and status enums it defined now live in `.claude/skills/kls-product-spec/SKILL.md` — use that instead of expecting a schema file to exist. |
++| Full DB schema (real, on disk)                          | `prisma/schema.prisma` — real and growing phase-by-phase (see "Current phase" above). `.claude/skills/kls-product-spec/SKILL.md` still documents the target shape for modules not yet migrated. |
++| What's real vs. still mocked, phase by phase            | `PROGRESS.md` — search for "Phase N — Completed"; the most current source of truth, more granular than this file. |
+```
+
