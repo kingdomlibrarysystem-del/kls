@@ -1,53 +1,73 @@
 'use client'
 
 import { useState } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
-import { initialData, hoursFromNow, type Reservation, type ReservationStatus } from './_components/reservations-data'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import type { Reservation, ReservationStatus } from './_components/reservations-data'
+import { useReservationsAdmin, notifyReservation, convertReservationToBorrow, cancelReservation, expireReservation } from './_components/use-reservations-admin'
 import { ReservationsStats } from './_components/reservations-stats'
 import { ReservationsTable } from './_components/reservations-table'
 import { ReservationDetailModal } from './_components/reservation-detail-modal'
 
 /** Reservations Management: approval workflow (not a create-a-record page) plus a details view per row. */
 export default function AdminReservationsPage() {
-  const [data, setData] = useState<Reservation[]>(initialData)
+  const { data, loading, error } = useReservationsAdmin()
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'all'>('all')
   const [toast, setToast] = useState('')
   const [viewing, setViewing] = useState<Reservation | null>(null)
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
-  const updateRow = (id: string, patch: Partial<Reservation>) =>
-    setData((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
-
-  const handleNotify = (r: Reservation) => {
-    const deadline = hoursFromNow(48)
-    updateRow(r.id, { status: 'notified', notifiedAt: new Date().toISOString(), claimDeadline: deadline })
-    showToast(`Notification sent to ${r.memberName} — 48h claim window started.`)
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading reservations">
+        <Skeleton style={{ height: 60, borderRadius: 8 }} />
+        <Skeleton style={{ height: 300, borderRadius: 8 }} />
+      </div>
+    )
   }
 
-  const handleConvertToBorrow = (r: Reservation) => {
-    updateRow(r.id, { status: 'claimed' })
-    showToast(`Reservation converted to active borrow for ${r.memberName}.`)
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load reservations" description={error} />
   }
 
-  const handleCancel = (r: Reservation) => {
-    updateRow(r.id, { status: 'cancelled', claimDeadline: null })
-    setData((prev) => {
-      const sameResource = prev
-        .filter((x) => x.resourceId === r.resourceId && x.status === 'pending' && x.id !== r.id)
-        .sort((a, b) => a.queuePosition - b.queuePosition)
-      return prev.map((x) => {
-        const idx = sameResource.findIndex((s) => s.id === x.id)
-        return idx >= 0 ? { ...x, queuePosition: idx + 1 } : x
-      })
-    })
-    showToast(`Reservation cancelled for ${r.memberName}. Queue updated.`)
+  const handleNotify = async (r: Reservation) => {
+    try {
+      await notifyReservation(r.id)
+      showToast(`Notification sent to ${r.memberName} — 48h claim window started.`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not notify this member')
+    }
   }
 
-  const handleExpire = (r: Reservation) => {
-    updateRow(r.id, { status: 'expired' })
-    showToast(`Reservation expired for ${r.memberName}. Next in queue will be notified.`)
+  const handleConvertToBorrow = async (r: Reservation) => {
+    try {
+      await convertReservationToBorrow(r.id)
+      showToast(`Reservation converted to active borrow for ${r.memberName}.`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not convert this reservation')
+    }
+  }
+
+  const handleCancel = async (r: Reservation) => {
+    try {
+      await cancelReservation(r.id)
+      showToast(`Reservation cancelled for ${r.memberName}. Queue updated.`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not cancel this reservation')
+    }
+  }
+
+  const handleExpire = async (r: Reservation) => {
+    try {
+      await expireReservation(r.id)
+      showToast(`Reservation expired for ${r.memberName}. Next in queue will be notified.`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not expire this reservation')
+    }
   }
 
   return (
