@@ -17,7 +17,7 @@ function serializeResource(r: {
   title: string
   author: string
   publisher: string
-  categoryId: string
+  categoryId: string | null
   type: string
   format: string
   language: string
@@ -42,7 +42,11 @@ function serializeResource(r: {
     title: r.title,
     author: r.author,
     publisher: r.publisher,
-    categoryId: r.categoryId,
+    // Publishing-created resources (see Publication.status PUBLISHED
+    // auto-create) may have no KCS categoryId — the frontend Resource
+    // type still expects a string, so this falls back to '' rather than
+    // widening that type across ~19 existing consumers for one new case.
+    categoryId: r.categoryId ?? '',
     type: r.type,
     format: r.format,
     language: r.language,

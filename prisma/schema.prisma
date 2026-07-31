@@ -85,6 +85,7 @@ model User {
   invitationsSent         Invitation[]
   borrows                 Borrow[]
   reservations            Reservation[]
+  publications            Publication[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -214,8 +215,16 @@ model Resource {
   title        String
   author       String
   publisher    String
-  categoryId   String       @db.ObjectId
-  category     Category     @relation(fields: [categoryId], references: [id])
+  /// Optional as of Phase 4: published books (see Publication.status
+  /// PUBLISHED, which auto-creates a Resource row on approval) use a
+  /// free-text category vocabulary (Theology, Leadership, etc.) that
+  /// doesn't map onto the KCS Bible taxonomy — forcing a categoryId here
+  /// would misrepresent the taxonomy rather than honestly reflect that
+  /// these are two different classification systems. Every Resource
+  /// created before Phase 4 (all 16 KCS scrolls) already has a real
+  /// categoryId and is unaffected by this widening.
+  categoryId   String?      @db.ObjectId
+  category     Category?    @relation(fields: [categoryId], references: [id])
   type         String
   format       String
   language     String
@@ -236,6 +245,13 @@ model Resource {
   videoUrl     String?
   borrows      Borrow[]
   reservations Reservation[]
+  /// Not truly one-to-many in practice — exactly one Publication ever
+  /// points at a given Resource, set once at approval time — but Prisma
+  /// requires a list back-relation for a non-unique FK (see
+  /// Publication.resourceId's docstring for why @unique doesn't work
+  /// here). List type is a Prisma-modeling artifact, not a real
+  /// multi-publication-per-resource case.
+  publications Publication[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -329,4 +345,95 @@ enum ReservationStatus {
   CLAIMED
   EXPIRED
   CANCELLED
+}
+
+/// Real publication submission, replacing
+/// app/dashboard/publishing/review/_components/review-data.ts's
+/// PublicationSubmission — already a single, unified mock store (unlike
+/// Borrowing/Reservation, the contributor/admin submission stores were
+/// already merged before this migration, so there's no duplicate-store
+/// problem to resolve here). A PUBLISHED Publication IS the catalog
+/// entry (replacing the separate PublishedBook/catalog-data.ts mock
+/// entirely) — the public/admin catalog reads Publication rows filtered
+/// by status, rather than a second parallel model. Approving a
+/// submission (status -> PUBLISHED) auto-creates a matching Resource row
+/// (see app/api/publications/[id]/route.ts's approve action), the real
+/// relationship the migration plan flagged as missing from the mock
+/// entirely — resourceId is populated only once that happens.
+/// `category` stays free text (not a KCS categoryId): confirmed the
+/// mock's categories (Theology, Leadership, Family & Marriage...) are a
+/// different, non-Bible classification system than the KCS taxonomy —
+/// forcing them into KCS pillars would misrepresent the taxonomy rather
+/// than honestly reflect they're separate systems, the same judgment
+/// call kls-architecture-rules already made for e-learning's category
+/// field.
+model Publication {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  contributorId  String            @db.ObjectId
+  contributor    User              @relation(fields: [contributorId], references: [id])
+  contributorName String
+  category       String
+  language       PublicationLanguage @default(EN)
+  coverImage     String?
+  description    String
+  status         PublicationStatus @default(DRAFT)
+  /// Real Resource FK, populated when this Publication is approved and
+  /// published — see the model docstring above.
+  /// Not @unique: MongoDB/Prisma's sparse-unique-index behavior treats
+  /// multiple null values as colliding (confirmed empirically — seeding
+  /// a second Publication with no resourceId yet threw P2002 against the
+  /// first's null), which is wrong for a field that's null for every
+  /// non-published row. One-to-one-ness is enforced at the application
+  /// level instead: resourceId is only ever set once, inside the
+  /// approve-action transaction in app/api/publications/[id]/route.ts.
+  resourceId     String?           @db.ObjectId
+  resource       Resource?         @relation(fields: [resourceId], references: [id])
+  /// Sale price and stock, only meaningful once PUBLISHED — mirrors
+  /// catalog-data.ts's PublishedBook.price/quantity/bindingType/mediaType,
+  /// which had no equivalent on the pre-publish submission.
+  price          Float?
+  quantity       Int?
+  bindingType    BindingType?
+  mediaType      MediaType?
+  featured       Boolean           @default(false)
+  submittedAt    DateTime          @default(now())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  revenueShare   RevenueShare?
+}
+
+enum PublicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+enum PublicationLanguage {
+  EN
+  FR
+  RW
+}
+
+/// Per-publication revenue split, replacing
+/// app/dashboard/publishing/revenue/_components/revenue-data.ts's
+/// RevenueRow (`publication`/`contributor` free text with no FK at all).
+/// One-to-one with Publication (a row is created only once, at
+/// approval time, mirroring the mock's own addRevenueRowForApproval) —
+/// kept as its own collection rather than embedded fields on Publication
+/// since Task 5.3's earnings/revenue reporting needs independent
+/// date-range queries across all publications' revenue, per the
+/// migration plan's own reasoning for this domain.
+model RevenueShare {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  publicationId     String      @unique @db.ObjectId
+  publication       Publication @relation(fields: [publicationId], references: [id])
+  contributorShare  Int
+  platformShare     Int
+  totalRevenue      Float       @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
