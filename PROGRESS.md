@@ -3048,3 +3048,33 @@ no such page currently exists to wire.
 Proceeding automatically to Phase 5 (E-Learning) per the standing
 Autonomous Mode instruction.
 
+## Local rule-file changes (not git-tracked)
+
+`CLAUDE.md` and `.claude/settings.json` are both `.gitignore`d
+(confirmed via `git check-ignore -v` on both), so edits to either
+cannot be committed as a standalone diff the way the "commit rule-doc
+edits on their own" instruction expects. Per explicit correction from
+the user mid-Phase-5, this section is the audit trail instead —
+verbatim diffs pasted here whenever either file is edited during this
+run, since PROGRESS.md itself is git-tracked even though the source
+files aren't.
+
+**2026-07-31, mid-Phase 5 — added rule 7 to `CLAUDE.md`'s Autonomous
+Mode Rules section**, disabling `AskUserQuestion` for the remainder of
+this run after two mid-run uses of it that the user flagged as
+misclassifying ordinary scope/complexity as a rule-2 case. Exact text
+added, as item 7 immediately after existing rule 6:
+
+```
+7. AskUserQuestion is DISABLED for the remainder of any autonomous
+   migration run. Do not call it for any reason, including "this phase
+   is large," "there are multiple reasonable options," or any framing
+   that isn't a strict rule-2 case (destructive action, auth/payment
+   change, breaking a prior explicit product decision, irreversible
+   data loss). If you notice yourself about to call AskUserQuestion,
+   that impulse itself is the signal you've misclassified a rule-1
+   situation as rule-2 -- resolve it as rule-1 instead: pick the most
+   reasonable option, document it in the commit message or
+   PROGRESS.md, and proceed. There is no other exception.
+```
+
