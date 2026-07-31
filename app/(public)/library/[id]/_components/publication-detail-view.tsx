@@ -10,7 +10,8 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
-import { mockCatalog, languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
+import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
+import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 
@@ -29,11 +30,29 @@ interface PublicationDetailViewProps {
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const { isAuthenticated } = useAuth()
-  const { data: resources, loading, error } = useResources()
+  const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
+  const { data: publications, loading: publicationsLoading, error: publicationsError } = usePublications()
   const readableContent = useReadableContent()
 
+  const loading = resourcesLoading || publicationsLoading
+  const error = resourcesError ?? publicationsError
+
   const resource = resources.find((r) => r.id === id)
-  const catalogBook = mockCatalog.find((b) => b.id === id)
+  const publication = publications.find((p) => p.id === id && p.status === 'PUBLISHED')
+  const catalogBook = publication
+    ? {
+        title: publication.title,
+        contributor: publication.contributor,
+        coverImages: publication.coverImage ? [publication.coverImage] : [],
+        description: publication.description,
+        bindingType: publication.bindingType ?? 'SOFT',
+        mediaType: publication.mediaType ?? 'TEXT',
+        price: publication.price ?? 0,
+        quantity: publication.quantity ?? 0,
+        available: (publication.quantity ?? 0) > 0,
+        language: publication.language,
+      }
+    : undefined
   const isReadable = !!readableContent[id]
 
   if (loading) {

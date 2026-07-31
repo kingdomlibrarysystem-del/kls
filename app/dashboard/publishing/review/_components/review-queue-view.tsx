@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, ClipboardList } from 'lucide-react'
+import { useState } from 'react'
+import { CheckCircle, XCircle, ClipboardList, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -9,11 +9,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
 import { publicationStatusConfig, type PublicationSubmission } from './review-data'
 import { ReviewModal } from './review-modal'
-import { addRevenueRowForApproval } from '../../revenue/_components/use-revenue'
-import { useReviewQueue, setSubmissionStatus } from './use-review-queue'
-
-/** Simulated network delay before mock submissions become visible. */
-const LOAD_DELAY_MS = 400
+import { usePublications, approvePublication, rejectPublication, type PublicationRecord } from '../../_shared/use-publications'
 
 /** Statuses actionable from this queue — a submission still awaiting a manager's decision. Everything else (DRAFT/APPROVED/REJECTED/PUBLISHED) has already moved past this stage and lives on in the shared store for the contributor's own My Submissions view, not deleted. */
 const QUEUE_STATUSES: PublicationSubmission['status'][] = ['SUBMITTED', 'UNDER_REVIEW']
@@ -22,41 +18,35 @@ type ModalAction = 'approve' | 'reject' | null
 
 /**
  * Review Queue: submissions with SUBMITTED/UNDER_REVIEW status, Approve/Reject
- * buttons that open a confirmation modal. Reads the shared `useReviewQueue()`
- * store — the same one the contributor's My Submissions page reads (see
- * use-review-queue.ts's docstring) — so a decision here is immediately
- * visible there too, with no separate sync step.
+ * buttons that open a confirmation modal. Reads the shared `usePublications()`
+ * store — the same real Publication collection the Catalog and Revenue
+ * pages read — so a decision here is immediately visible there too, with
+ * no separate sync step.
  */
 export function ReviewQueueView() {
-  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
-  const [modalTarget, setModalTarget] = useState<PublicationSubmission | null>(null)
+  const [modalTarget, setModalTarget] = useState<PublicationRecord | null>(null)
   const [modalAction, setModalAction] = useState<ModalAction>(null)
 
-  const allSubmissions = useReviewQueue()
+  const { data: allSubmissions, loading, error } = usePublications()
   const queue = allSubmissions.filter((s) => QUEUE_STATUSES.includes(s.status))
   const { user: currentUser } = useAuth()
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Manager User'
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
-
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
-  const openModal = (submission: PublicationSubmission, action: 'approve' | 'reject') => {
+  const openModal = (submission: PublicationRecord, action: 'approve' | 'reject') => {
     setModalTarget(submission)
     setModalAction(action)
   }
 
   const closeModal = () => { setModalTarget(null); setModalAction(null) }
 
-  const handleConfirm = (notes: string) => {
+  const handleConfirm = async (notes: string) => {
     try {
       if (!modalTarget || !modalAction) throw new Error('No submission selected')
-      if (modalAction === 'approve') addRevenueRowForApproval(modalTarget.title, modalTarget.contributor)
-      setSubmissionStatus(modalTarget.id, modalAction === 'approve' ? 'APPROVED' : 'REJECTED')
+      if (modalAction === 'approve') await approvePublication(modalTarget.id)
+      else await rejectPublication(modalTarget.id)
       logAuditEvent({
         actor: actorName,
         action: modalAction === 'approve' ? 'PUBLICATION_APPROVED' : 'PUBLICATION_REJECTED',
@@ -67,8 +57,8 @@ export function ReviewQueueView() {
         `${modalAction === 'approve' ? 'Approved' : 'Rejected'} "${modalTarget.title}"${notes ? ` — notes: ${notes}` : ''}`
       )
       closeModal()
-    } catch {
-      showToast('Could not update this submission — please try again')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not update this submission — please try again')
     }
   }
 
@@ -82,7 +72,11 @@ export function ReviewQueueView() {
     )
   }
 
-  const columns: Column<PublicationSubmission>[] = [
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the review queue" description={error} />
+  }
+
+  const columns: Column<PublicationRecord>[] = [
     { key: 'title', label: 'Title', sortable: true, render: (s) => <span className="font-semibold text-w-950 max-w-55 truncate block">{s.title}</span> },
     { key: 'contributor', label: 'Contributor', sortable: true, render: (s) => <span className="text-w-700">{s.contributor}</span> },
     { key: 'category', label: 'Category', sortable: true, render: (s) => <span className="text-w-700">{s.category}</span> },
@@ -129,7 +123,7 @@ export function ReviewQueueView() {
       {queue.length === 0 ? (
         <EmptyState icon={ClipboardList} title="Review queue is empty" description="All submissions have been reviewed." />
       ) : (
-        <DataTable<PublicationSubmission>
+        <DataTable<PublicationRecord>
           data={queue}
           columns={columns}
           rowKey={(s) => s.id}
