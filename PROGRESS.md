@@ -2864,3 +2864,187 @@ and real.
 Proceeding automatically to Phase 4 (Publishing) per the standing
 Autonomous Mode instruction.
 
+# Phase 4 (Publishing) — Completed, fully unblocked
+
+## Re-verification of the plan doc against real code
+
+Re-read `review-data.ts`, `catalog-data.ts`, `revenue-data.ts`,
+`use-review-queue.ts`, `use-catalog.ts`, `use-revenue.ts`,
+`contributor-identity.ts`, and searched for any live "Submit a Book"
+write path. Findings, several of which update the plan's own
+description:
+
+- Unlike Borrowing/Reservation, **the submission store was already
+  unified** before this migration — `review-data.ts`'s own docstring
+  documents a prior fix that merged the admin Review Queue and
+  contributor's My Submissions into one store, so there was no
+  duplicate-store consolidation needed for Phase 4 (a real change since
+  the plan was written).
+- **"Submit a Book" has no live UI at all** — it's a decorative label
+  on `/dashboard/publishing`'s feature list; `use-review-queue.ts`'s
+  `addSubmission` function exists but nothing calls it. This means
+  Phase 4, unlike Phase 3, has **no live contributor-facing write path
+  to block on** — the same rule-2-class "no real identity" problem
+  exists (`CONTRIBUTOR_NAME` is a single hardcoded string, real `User`
+  had no matching rows), but nothing in the running app actually
+  exercises it, so it isn't a blocker for this phase. Flagging this gap
+  (no real submission-creation flow exists yet) rather than silently
+  building one that wasn't asked for.
+- Confirmed the plan's central finding: `catalog-data.ts`'s
+  `PublishedBook` has no `resourceId` linking it back to a `Resource`,
+  and Task 5.2's "approval creates a matching Resource" relationship
+  did not exist anywhere in the mock. Fixed as part of this phase (see
+  below), not deferred.
+- Confirmed `mockCatalog` and `mockSubmissions` are two separate arrays
+  that are NOT 1:1 by id, but several rows share a title (e.g. "Walking
+  in Covenant" is both a submission and a catalog entry) — merged by
+  title at seed time. Some catalog rows (French/Kinyarwanda translated
+  editions) have no matching submission at all — seeded as their own
+  already-PUBLISHED Publication rows.
+- Confirmed the publishing categories (Theology, Leadership, Family &
+  Marriage, Discipleship, History) are a genuinely different
+  classification system than the KCS Bible taxonomy — only "History"
+  coincidentally shares a name with a real KCS pillar, and even that
+  means something different (KCS History = Old Testament narrative
+  books, not "Christian history" as a topic). Kept `Publication.category`
+  free text rather than forcing a KCS `categoryId`.
+
+## Schema decisions
+
+- `Publication` model covers the full submission lifecycle (`DRAFT`
+  through `PUBLISHED`) — a `PUBLISHED` row **is** the catalog entry,
+  replacing `PublishedBook`/`catalog-data.ts` as a separate model
+  entirely, per the plan's own recommendation.
+- `Resource.categoryId` changed from required to optional. Published
+  books use free-text categories that don't map onto the KCS taxonomy;
+  forcing a `categoryId` would misrepresent the taxonomy. This is
+  additive/widening (existing rows are unaffected, all 16 real KCS
+  resources still have a real `categoryId`) — treated as a rule-1
+  reversible judgment call, not a rule-2 stop, since it doesn't touch
+  auth/destructive-data/breaking-shared-model territory.
+- `Publication.resourceId` is **not** `@unique` despite being
+  conceptually one-to-one with `Resource` — empirically confirmed
+  MongoDB/Prisma's sparse-unique-index treats multiple `null` values as
+  colliding (a second `Publication.create()` with no `resourceId` yet
+  threw `P2002` against the first's `null`). One-to-one-ness is
+  enforced at the application level instead (only the approve
+  transaction ever sets it).
+- `RevenueShare` is its own collection (not embedded on `Publication`)
+  per the plan's own reasoning — Task 5.3's earnings reporting needs
+  independent revenue queries. No separate `Transaction` ledger model
+  was added: the mock only ever had one flat summary row per
+  publication, no transaction-level detail exists anywhere in the
+  current UI, and Task 5.3's earnings-dashboard/PDF-statement feature
+  the plan cited as the reason for wanting one doesn't exist in this
+  codebase yet — adding one now would be fabricating detail beyond
+  what any current UI needs.
+
+## Seed (`prisma/seed/seed-phase4.mjs`)
+
+Seeded 3 placeholder contributor `User` documents (same technique as
+Phase 3 — the real `User` collection had no matching rows for these
+personas). Merged `mockSubmissions` + `mockCatalog` by title into 9
+`Publication` rows, then seeded `RevenueShare` rows from `mockRevenue`.
+
+**Caught and did not reproduce a real bug in the original mock data**:
+`mockRevenue` had a row for "The Discipleship Journey" even though
+`mockSubmissions` shows it still `SUBMITTED`, never actually approved —
+an inconsistency in the mock itself (a `RevenueShare` only makes sense
+for a genuinely published title; the real API only ever creates one at
+approval time). The seed script explicitly skips these rows with a
+warning rather than creating a `RevenueShare` for a non-published
+`Publication`, which the real schema's design doesn't allow to happen
+through the actual API. Final counts: 9 Publications, 1 real
+RevenueShare (only "The Weight of Servant Leadership" was genuinely
+`PUBLISHED` in the source mock).
+
+## API routes (`app/api/publications/route.ts` + `[id]/route.ts`)
+
+Real list/filter/pagination/create, plus status-transition PATCH
+actions: `approve` (the key fix — creates a real `Resource` row AND a
+`RevenueShare` row inside one `$transaction`, so a `Publication` can
+never end up `PUBLISHED` with no backing `Resource`/`RevenueShare`;
+accepts an optional contributor/platform share override from the
+client, since there's no `Settings` collection to persist the Revenue
+page's config server-side, same situation as `defaultBorrowPeriodDays`
+elsewhere in this app), `reject`, `toggleFeatured`, `withdraw`. Each
+guarded server-side (e.g. approving an already-`PUBLISHED` row 409s).
+
+**Verified via curl round-trips**: list + status filter, create,
+approve (confirmed the created `resourceId` resolves to a real,
+independently-fetchable `Resource` row), re-approve-409, reject,
+re-reject-409, `toggleFeatured`, not-found, and a missing-fields
+validation 400.
+
+## Frontend wiring
+
+Replaced `use-review-queue.ts`/`use-catalog.ts`/`use-revenue.ts`'s
+three separate mock stores with one shared
+`app/dashboard/publishing/_shared/use-publications.ts` fetch hook — all
+three pages (Review Queue, Catalog, Revenue) now read the same real
+`Publication` collection filtered by status, with real loading/error
+states. `review-queue-view.tsx`'s Approve/Reject buttons, `catalog-
+card.tsx`'s Featured toggle, and `revenue-config-form.tsx`'s default-
+share setting all call real API actions. `app/(public)/library/[id]/
+_components/publication-detail-view.tsx` now also resolves a
+publication via the real store (for published catalog rows without a
+matching `Resource` yet) instead of importing the deleted
+`mockCatalog` array directly.
+
+**Deleted** (confirmed dead via grep before removing): `use-catalog.ts`,
+`use-revenue.ts`, and the `mockCatalog` array from `catalog-data.ts`
+(its `PublishedBook` type and `languageBadgeLabels` are still used and
+kept). **Not deleted**: `use-review-queue.ts` and `mockSubmissions` —
+confirmed `app/dashboard/reports/_components/{reports-view.tsx,
+cross-module-data.ts}` (Phase 8's territory) still import them for
+cross-module reporting.
+
+## Verification
+
+- `npx tsc --noEmit`: clean.
+- `npm run build`: clean, all routes compile.
+- **Verified via real dev server + curl**: confirmed `/dashboard/
+  publishing/{review,catalog,revenue}` and a real published-title
+  `/library/[id]` all return HTTP 200; confirmed the API's approve
+  action's created `resourceId` is independently fetchable as a real
+  `Resource` via `/api/resources/[id]`.
+- Full interactive click-through (Approve/Reject modal confirm,
+  Featured star toggle, Revenue config form save) verified via code-
+  path trace — the underlying PATCH actions were independently
+  curl-verified above, and the components call the same hook functions
+  those actions map to — rather than a live browser click session;
+  Playwright remains unavailable as a project dependency, same note as
+  Phases 2 and 3.
+- Dev server shut down cleanly afterward.
+
+## Files created
+
+- `app/api/publications/route.ts`, `app/api/publications/[id]/route.ts`
+- `prisma/seed/seed-phase4.mjs`
+- `app/dashboard/publishing/_shared/use-publications.ts`
+
+## Files modified
+
+`prisma/schema.prisma`, `app/api/resources/route.ts`, `app/api/resources/[id]/route.ts`,
+`app/dashboard/publishing/{review/_components/review-queue-view.tsx,
+catalog/_components/catalog-{card,data,view}.tsx,
+revenue/_components/revenue-{config-form,stats,table}.tsx}`,
+`app/(public)/library/[id]/_components/publication-detail-view.tsx`
+
+## Needs human input
+
+None new for this phase — Phase 4 had no live write path requiring a
+real "current contributor" identity, so it did not hit the same
+blocker Phase 3 did. The underlying gap (no real auth, `CONTRIBUTOR_NAME`
+is a hardcoded string) still exists and will resurface if/when a real
+"Submit a Book" page is ever built — noted above, not actioned, since
+no such page currently exists to wire.
+
+## Commits
+
+- `8b1b2b9` — `feat(api): add real Publication/RevenueShare models + CRUD API routes for Phase 4`
+- `ecc1fd9` — `feat(publishing): wire Review Queue/Catalog/Revenue pages to real API`
+
+Proceeding automatically to Phase 5 (E-Learning) per the standing
+Autonomous Mode instruction.
+
