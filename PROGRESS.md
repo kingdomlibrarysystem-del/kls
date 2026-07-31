@@ -2459,3 +2459,132 @@ target: `Category` and `Resource` collections created, plus the unique
 index on `Category.slug`. Resuming the autonomous run from here through
 Phase 2's remaining steps (API routes, frontend wiring) and Phases 3-8.
 
+## Phase 2 — Completed
+
+**Seed:** `prisma/seed/seed-phase2.mjs` (now archived as `.completed`
+— see below) read the real, then-current mock data directly (not a
+hand-copied duplicate) from `lib/kcs-taxonomy/{roots-data,scrolls-data}.ts`
+and `app/dashboard/library/_components/resources-data.ts`'s
+`initialResources`, and inserted it into the real `kcs_app` database:
+83 categories (8 roots + 75 scrolls), 16 resources. Confirmed via the
+script's own final DB count query.
+
+**API routes** (`app/api/categories/route.ts` + `[id]/route.ts`,
+`app/api/resources/route.ts` + `[id]/route.ts`): real GET (search +
+parentId/categoryId/status filters + pagination) and POST/PATCH/DELETE
+against the Prisma models, matching the `{data, message, code, status}`
++ pagination shape. Ported the mock's business rules into the server:
+category DELETE is blocked if it (or any child) still has resources, or
+if it has child categories; resource POST validates the `categoryId`
+FK exists first. Verified via direct curl round-trips (create, list,
+filter, update, delete, one validation-rejection, one not-found) before
+any frontend wiring began.
+
+**Frontend wiring:** replaced the static-array taxonomy/resource mock
+stores with real `fetch()`-backed hooks, using a module-level mutable
+cache + listener `Set` + in-flight-promise dedup pattern (see
+`lib/kcs-taxonomy/taxonomy-helpers.ts`'s `loadCategories()` and
+`app/dashboard/library/_components/use-resources.ts`). All existing
+synchronous helpers (`getCategoryById`, `getRootCategories`, etc.) kept
+their exact original signatures — this was a deliberate choice to avoid
+rewriting ~19 downstream consumer files to be async-aware individually;
+only the two hook files needed the real async logic.
+
+Every one of those ~19 consumer call sites (public library browse/
+detail, admin KCS Map + categories management, admin library, member
+library browse/detail/reader/continue-reading/favorites) was updated to
+destructure the hooks' new `{ data, loading, error }` shape and render
+real `Skeleton`/`EmptyState` states instead of the old fake `setTimeout`
+delays.
+
+**Bugs found and fixed as part of this migration** (not present before
+it — a systemic hazard of the sync-mock-to-async-fetch transition):
+three files (`kcs-map-view.tsx`, `resource-form-modal.tsx`,
+`member/library/page.tsx`) computed derived taxonomy values like
+`getRootCategories()[0].slug` at **module scope**, which only worked
+because the old mock was a static array populated at import time. Under
+the new fetch-backed cache (empty until the first fetch resolves), this
+crashes (`undefined.slug`) the instant the module loads. Found
+systematically via
+`grep -rn "^const.*getRootCategories()\|^const.*getCategoryById(\|^const.*taxonomyCategories"`
+across `app/`, `components/`, `lib/`; fixed by moving each computation
+inside the component body, gated behind that component's own
+`loading`/`error` checks.
+
+**Dead mock files deleted:** `lib/kcs-taxonomy/roots-data.ts`,
+`lib/kcs-taxonomy/scrolls-data.ts` (fully superseded by the real
+`Category` collection — confirmed zero remaining references via grep
+before deleting), and the `initialResources` seed array from
+`resources-data.ts` (its `Resource`/`BindingType`/`MediaType` type
+exports and `statusConfig`/`bindingTypeLabels`/`mediaTypeLabels` label
+constants are still used across many files and were kept). The one-off
+seed script that depended on the deleted mock files was renamed to
+`prisma/seed/seed-phase2.mjs.completed` with a note explaining it's a
+non-runnable historical artifact now that its source data no longer
+exists — its job (seeding the real DB) is already done and doesn't need
+to be repeatable.
+
+## Verification
+
+- `npx tsc --noEmit`: clean, no errors.
+- `npm run build`: clean, all 87 routes compile (12 API routes + 75
+  pages).
+- **Verified via real dev server + curl** (not just code-path trace):
+  started `npm run dev` (came up on port 3001 — 3000 was occupied by an
+  unrelated stray process), confirmed `/api/categories` and
+  `/api/resources` return real MongoDB-backed JSON with genuine
+  ObjectId-style ids (e.g. `6a60bce47706dcabcc50c91f`), and that
+  `/dashboard/kcs`, `/dashboard/library`, `/member/library`, `/library`
+  all return HTTP 200 with the real fetched data's title strings
+  present and no "Couldn't load" error-state text present.
+- **Verified via code-path trace, not a live interactive browser
+  session** (flagging explicitly, per this project's verification-
+  honesty standard): full click-through of forms (create/edit/delete
+  category, create/edit/archive resource) and multi-step user flows
+  (borrow/reserve modal, favorites toggle, reading progress). Attempted
+  to add a real headless-browser check via Playwright, but it is not a
+  project dependency; installing it solely for this one-off check was
+  judged out of scope for this migration task, so this remains a
+  code-trace-only verification for interactive flows specifically (the
+  page-load / data-fetch path itself **was** confirmed live, as above).
+- Dev server processes cleanly shut down afterward (killed only the two
+  `next dev` process trees this run started, confirmed by PID/command
+  line via `wmic`; left an unrelated Amazon Q language server process
+  alone).
+
+## Files created
+
+- `app/api/categories/[id]/route.ts`, `app/api/resources/[id]/route.ts`
+- `prisma/seed/seed-phase2.mjs.completed` (archived, non-runnable)
+
+## Files deleted
+
+- `lib/kcs-taxonomy/roots-data.ts`, `lib/kcs-taxonomy/scrolls-data.ts`
+
+## Files modified
+
+`app/api/categories/route.ts`, `app/api/resources/route.ts`,
+`lib/kcs-taxonomy/taxonomy-helpers.ts`, `lib/kcs-taxonomy/use-categories.ts`,
+`app/dashboard/library/_components/{use-resources.ts,resources-data.ts,library-view.tsx,resource-form-modal.tsx}`,
+`app/dashboard/kcs/_components/{kcs-map-view.tsx,kcs-pillar-analytics.tsx,kcs-taxonomy-analytics.tsx,manage-categories-section.tsx}`,
+`app/dashboard/kcs/[pillar]/[scrollId]/_components/scroll-detail-view.tsx`,
+`app/(public)/library/_components/library-browser.tsx`,
+`app/(public)/library/[id]/_components/publication-detail-view.tsx`,
+`app/member/library/page.tsx`,
+`app/member/library/_components/{continue-reading-section.tsx,scroll-card.tsx}`,
+`app/member/library/[section]/[scrollId]/_components/scroll-detail-view.tsx`,
+`app/member/library/read/[resourceId]/_components/reader-view.tsx`,
+`app/member/_components/CurrentlyReading.tsx`
+
+## Needs human input
+
+None. No rule-2-class blockers hit during this phase's close-out.
+
+## Commits
+
+- `7131e6b` — `feat(api): add real Category/Resource CRUD API routes for Phase 2`
+- `24d8d2b` — `feat(library): wire Category/Resource frontend to real API, delete mocks`
+
+Proceeding automatically to Phase 3 (Borrowing & Reservations) per the
+standing Autonomous Mode instruction.
+
