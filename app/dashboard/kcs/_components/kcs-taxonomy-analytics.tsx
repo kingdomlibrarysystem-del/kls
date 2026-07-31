@@ -25,7 +25,7 @@ import { useResources } from '@/app/dashboard/library/_components/use-resources'
  * per-item `createdAt` at all — there is no real date variance to plot.
  */
 export function KcsTaxonomyAnalytics() {
-  const resources = useResources()
+  const { data: resources } = useResources()
   const roots = getRootCategories()
 
   const perPillar = roots.map((root) => ({

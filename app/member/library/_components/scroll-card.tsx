@@ -20,7 +20,7 @@ function useIsFavorited(id: string) {
 
 /** The one readable-online match for this scroll, if any — a real `categoryId` FK match, not a title-string hack. */
 function useReadableResourceId(categoryId: string): string | undefined {
-  const resources = useResources()
+  const { data: resources } = useResources()
   const content = useReadableContent()
   const match = findResourcesForScroll(categoryId, resources).find((r) => !!content[r.id])
   return match?.id

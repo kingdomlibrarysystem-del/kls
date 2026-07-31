@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Settings2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { EMPTY_CATEGORY_FORM, toSlug, resourceCountFor, type Category, type CategoryFormState } from '@/lib/kcs-taxonomy'
 import { useCategories, addCategory, updateCategory, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
@@ -30,8 +31,8 @@ import { CategoriesStats } from './manage-categories/categories-stats'
  * browsing UI above it.
  */
 export function ManageCategoriesSection() {
-  const categories = useCategories()
-  const resources = useResources()
+  const { data: categories, loading: categoriesLoading } = useCategories()
+  const { data: resources, loading: resourcesLoading } = useResources()
   const [form, setForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
   const [errors, setErrors] = useState<Partial<CategoryFormState>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -60,39 +61,34 @@ export function ManageCategoriesSection() {
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
     setSubmitting(true)
 
-    setTimeout(() => {
-      try {
-        if (editTarget) {
-          updateCategory(editTarget.id, {
-            slug: form.slug,
-            name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
-            parentId: form.parentId || null,
-          })
-          showToast(`Category "${form.nameEn}" updated.`)
-          setEditTarget(null)
-        } else {
-          const newCat: Category = {
-            id: form.slug || crypto.randomUUID(),
-            slug: form.slug,
-            name: { en: form.nameEn, fr: form.nameFr || form.nameEn, rw: form.nameRw || form.nameEn },
-            parentId: form.parentId || null,
-            createdAt: new Date().toISOString().split('T')[0],
-          }
-          addCategory(newCat)
-          showToast(`Category "${form.nameEn}" created.`)
-        }
-        setForm(EMPTY_CATEGORY_FORM)
-      } catch {
-        showToast('Could not save this category — please try again.', 'error')
-      } finally {
-        setSubmitting(false)
+    try {
+      if (editTarget) {
+        await updateCategory(editTarget.id, {
+          slug: form.slug,
+          name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
+          parentId: form.parentId || null,
+        })
+        showToast(`Category "${form.nameEn}" updated.`)
+        setEditTarget(null)
+      } else {
+        await addCategory({
+          slug: form.slug,
+          name: { en: form.nameEn, fr: form.nameFr || form.nameEn, rw: form.nameRw || form.nameEn },
+          parentId: form.parentId || null,
+        })
+        showToast(`Category "${form.nameEn}" created.`)
       }
-    }, 600)
+      setForm(EMPTY_CATEGORY_FORM)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not save this category — please try again.', 'error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleEdit = (cat: Category) => {
@@ -107,7 +103,7 @@ export function ManageCategoriesSection() {
     setErrors({})
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return
     const count = resourceCountFor(deleteTarget.id, resources)
     if (count > 0) {
@@ -115,9 +111,14 @@ export function ManageCategoriesSection() {
       setDeleteTarget(null)
       return
     }
-    removeCategory(deleteTarget.id)
-    showToast(`Category "${deleteTarget.name.en}" deleted.`)
-    setDeleteTarget(null)
+    try {
+      await removeCategory(deleteTarget.id)
+      showToast(`Category "${deleteTarget.name.en}" deleted.`)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not delete this category — please try again.', 'error')
+    } finally {
+      setDeleteTarget(null)
+    }
   }
 
   const parentOptions = categories.filter((c) => !c.parentId && c.id !== editTarget?.id)
@@ -132,6 +133,13 @@ export function ManageCategoriesSection() {
         Create, edit, or delete KCS categories — the same 8 root pillars and their scrolls shown above.
       </p>
 
+      {(categoriesLoading || resourcesLoading) && (
+        <div className="space-y-3 mb-4" aria-label="Loading category management data">
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-lg" />
+        </div>
+      )}
+
       {toast && (
         <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded font-lato text-sm border ${
           toast.type === 'success'
@@ -143,31 +151,35 @@ export function ManageCategoriesSection() {
         </div>
       )}
 
-      <CategoriesStats categories={categories} resources={resources} />
+      {!categoriesLoading && !resourcesLoading && (
+        <>
+          <CategoriesStats categories={categories} resources={resources} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-lato text-xs text-w-600 dark:text-white/50 uppercase tracking-wider font-semibold">{categories.length} categories total</p>
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-lato text-xs text-w-600 dark:text-white/50 uppercase tracking-wider font-semibold">{categories.length} categories total</p>
+              </div>
+              <CategoriesTable categories={categories} resources={resources} onView={setViewTarget} onEdit={handleEdit} onDelete={setDeleteTarget} />
+            </div>
+
+            <CategoryFormPanel
+              form={form}
+              errors={errors}
+              submitting={submitting}
+              editTarget={editTarget}
+              parentOptions={parentOptions}
+              onNameEnChange={handleNameEn}
+              onFieldChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((e) => ({ ...e, ...(patch.slug !== undefined ? { slug: '' } : {}) })) }}
+              onSubmit={handleSubmit}
+              onCancelEdit={handleCancelEdit}
+            />
           </div>
-          <CategoriesTable categories={categories} resources={resources} onView={setViewTarget} onEdit={handleEdit} onDelete={setDeleteTarget} />
-        </div>
 
-        <CategoryFormPanel
-          form={form}
-          errors={errors}
-          submitting={submitting}
-          editTarget={editTarget}
-          parentOptions={parentOptions}
-          onNameEnChange={handleNameEn}
-          onFieldChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((e) => ({ ...e, ...(patch.slug !== undefined ? { slug: '' } : {}) })) }}
-          onSubmit={handleSubmit}
-          onCancelEdit={handleCancelEdit}
-        />
-      </div>
-
-      <CategoryDetailModal category={viewTarget} resources={resources} onClose={() => setViewTarget(null)} />
-      <DeleteCategoryModal category={deleteTarget} resourceCount={deleteTarget ? resourceCountFor(deleteTarget.id, resources) : 0} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
+          <CategoryDetailModal category={viewTarget} resources={resources} onClose={() => setViewTarget(null)} />
+          <DeleteCategoryModal category={deleteTarget} resourceCount={deleteTarget ? resourceCountFor(deleteTarget.id, resources) : 0} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
+        </>
+      )}
     </div>
   )
 }

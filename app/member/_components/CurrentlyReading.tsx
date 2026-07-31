@@ -13,7 +13,7 @@ import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_sha
  * /member/library's own Continue Reading section already read.
  */
 export default function CurrentlyReading() {
-  const resources = useResources();
+  const { data: resources } = useResources();
   const progress = useReadingProgress();
 
   const rows = progress

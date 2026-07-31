@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ScrollText, Package, BookX, GraduationCap } from 'lucide-react'
+import { ChevronLeft, ScrollText, Package, BookX, GraduationCap, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RelatedResourceCard } from '@/components/ui/related-resource-card'
@@ -10,13 +10,11 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 import { getCategoryById, getChildCategories, type CategoryStatus } from '@/lib/kcs-taxonomy'
+import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 import { KcsViewToggle, type KcsContentView } from '../../../_components/kcs-view-toggle'
 import { ScrollResourcesTable } from './scroll-resources-table'
 import { ScrollResourcesList } from './scroll-resources-list'
 import { ScrollAnalytics } from './scroll-analytics'
-
-/** Simulated network delay before the mock scroll + related resources become visible. */
-const LOAD_DELAY_MS = 400
 
 const statusConfig: Record<CategoryStatus, { label: string; color: string; bg: string }> = {
   AVAILABLE: { label: 'Available', color: 'var(--green-light)', bg: 'var(--green-dim)' },
@@ -52,20 +50,15 @@ interface ScrollDetailViewProps {
  * would be worse than admitting the relationship doesn't exist yet.
  */
 export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewProps) {
-  const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const [view, setView] = useState<KcsContentView>('table')
   const [showAnalytics, setShowAnalytics] = useState(true)
   const { isAuthenticated } = useAuth()
-  const resources = useResources()
+  const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
+  const { loading: categoriesLoading, error: categoriesError } = useCategories()
 
-  const pillar = getCategoryById(pillarSlug)
-  const scroll = pillar ? getChildCategories(pillar.id).find((s) => s.slug === scrollSlug) : undefined
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const loading = resourcesLoading || categoriesLoading
+  const error = categoriesError ?? resourcesError
 
   if (loading) {
     return (
@@ -75,6 +68,13 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
       </div>
     )
   }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load this scroll" description={error} />
+  }
+
+  const pillar = getCategoryById(pillarSlug)
+  const scroll = pillar ? getChildCategories(pillar.id).find((s) => s.slug === scrollSlug) : undefined
 
   if (!pillar || !scroll) {
     return <EmptyState icon={BookX} title="Scroll not found" description="This scroll doesn't exist in the KCS Map." />

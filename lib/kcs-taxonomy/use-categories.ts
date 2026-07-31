@@ -1,52 +1,76 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { categories as initialCategories } from './taxonomy-helpers'
+import { useEffect, useState } from 'react'
+import {
+  categories as cache,
+  loadCategories,
+  subscribeCategories,
+  categoriesHaveLoaded,
+  refetchCategories,
+} from './taxonomy-helpers'
 import type { Category } from './types'
 
 /**
- * Module-level mutable store so the admin Categories CRUD (now the "Manage
- * Categories" section on `/dashboard/kcs`, previously a standalone
- * `/dashboard/library/categories` page before that page was absorbed into
- * KCS Map) survives a route remount instead of resetting to the seed array
- * every time — mirrors the `use-roles.ts` / `use-resources.ts` pattern
- * already established in this codebase.
+ * Real, fetch()-backed categories store — replaces the previous
+ * `useSyncExternalStore` in-memory mock. Same async-store pattern
+ * `use-resources.ts` establishes (see that file's docstring and
+ * PROGRESS.md's Phase 2 entry): components subscribing via
+ * `useCategories()` now get a genuine `loading`/`error` phase instead of
+ * assuming the taxonomy is already there. The underlying cache lives in
+ * `taxonomy-helpers.ts` (not here) so the many synchronous
+ * `getCategoryById`/`getChildCategories`/etc. helpers used throughout
+ * this app keep working unchanged once that cache is populated — only
+ * this hook and `loadCategories()` know about the fetch itself.
  */
-let categories: Category[] = [...initialCategories]
-const listeners = new Set<() => void>()
-
-function emitChange() {
-  listeners.forEach((listener) => listener())
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-function getSnapshot() {
-  return categories
-}
-
-/** Appends a new category to the shared store. */
-export function addCategory(category: Category) {
-  categories = [category, ...categories]
-  emitChange()
-}
-
-/** Patches an existing category in place (used by the edit panel). */
-export function updateCategory(id: string, updates: Partial<Omit<Category, 'id'>>) {
-  categories = categories.map((c) => (c.id === id ? { ...c, ...updates } : c))
-  emitChange()
-}
-
-/** Removes a category from the shared store. */
-export function removeCategory(id: string) {
-  categories = categories.filter((c) => c.id !== id)
-  emitChange()
-}
-
-/** Live-subscribes to the shared categories store. */
 export function useCategories() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => initialCategories)
+  const [data, setData] = useState<Category[]>(cache)
+  const [loading, setLoading] = useState(!categoriesHaveLoaded())
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const unsubscribe = subscribeCategories(() => setData([...cache]))
+
+    if (!categoriesHaveLoaded()) {
+      loadCategories()
+        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load categories'))
+        .finally(() => setLoading(false))
+    } else {
+      setLoading(false)
+    }
+
+    return unsubscribe
+  }, [])
+
+  return { data, loading, error }
+}
+
+export async function addCategory(input: { slug: string; name: { en: string; fr?: string; rw?: string }; parentId: string | null }): Promise<Category> {
+  const res = await fetch('/api/categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to create category')
+  await refetchCategories()
+  return json.data
+}
+
+export async function updateCategory(id: string, updates: Partial<{ slug: string; name: { en?: string; fr?: string; rw?: string }; parentId: string | null }>): Promise<Category> {
+  const res = await fetch(`/api/categories/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update category')
+  await refetchCategories()
+  return json.data
+}
+
+export async function removeCategory(id: string): Promise<void> {
+  const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to delete category')
+  await refetchCategories()
 }

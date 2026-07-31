@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ScrollText, Heart, Package, BookX, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ScrollText, Heart, Package, BookX, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RelatedResourceCard } from '@/components/ui/related-resource-card'
@@ -12,9 +12,7 @@ import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(publ
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { getCategoryById, getChildCategories } from '@/lib/kcs-taxonomy'
-
-/** Simulated network delay before the mock scroll + related resources become visible. */
-const LOAD_DELAY_MS = 400
+import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 
 interface ScrollDetailViewProps {
   scrollId: string
@@ -32,22 +30,16 @@ interface ScrollDetailViewProps {
  * flattened list, which has been folded into `lib/kcs-taxonomy` and removed.
  */
 export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
-  const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const [actionTarget, setActionTarget] = useState<{ title: string; author: string } | null>(null)
   const { isAuthenticated } = useAuth()
-  const resources = useResources()
+  const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
+  const { loading: categoriesLoading, error: categoriesError } = useCategories()
   const favorites = useFavorites()
   const readableContent = useReadableContent()
 
-  const scroll = getCategoryById(scrollId)
-  const section = scroll?.parentId ? getCategoryById(scroll.parentId) : undefined
-  const liked = scroll ? favorites.some((f) => f.id === scroll.id) : false
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const loading = resourcesLoading || categoriesLoading
+  const error = categoriesError ?? resourcesError
 
   if (loading) {
     return (
@@ -57,6 +49,14 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
       </div>
     )
   }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load this scroll" description={error} style={{ color: 'var(--text-secondary)' }} />
+  }
+
+  const scroll = getCategoryById(scrollId)
+  const section = scroll?.parentId ? getCategoryById(scroll.parentId) : undefined
+  const liked = scroll ? favorites.some((f) => f.id === scroll.id) : false
 
   if (!scroll || !section || !getChildCategories(section.id).some((c) => c.id === scroll.id)) {
     return <EmptyState icon={BookX} title="Scroll not found" description="This scroll doesn't exist in the Kingdom Library." style={{ color: 'var(--text-secondary)' }} />
