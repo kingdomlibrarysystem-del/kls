@@ -92,6 +92,8 @@ model User {
   certificates            Certificate[]
   sessionRequestsAsLearner  SessionRequest[] @relation("SessionRequestLearner")
   sessionRequestsAsLecturer SessionRequest[] @relation("SessionRequestLecturer")
+  projectMemberships        ProjectMember[]
+  researchPapers             ResearchPaper[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -689,4 +691,73 @@ enum SessionRequestStatus {
 enum SessionRequestMode {
   SCHEDULED
   INSTANT
+}
+
+/// Real research project, replacing
+/// app/dashboard/research/collaborations/_components/collaborations-data.ts's
+/// ResearchProjectSummary. Its embedded Contributor.id (c-001..c-006) was
+/// confirmed to be a self-invented id space matching nothing else in the
+/// app — resolved into a real many-to-many via ProjectMember below.
+/// Collaborations view (/dashboard/research/collaborations) is read-only
+/// today — no create/edit/delete UI exists for projects or their
+/// contributor lists — so this phase seeds real data from the mock
+/// without needing to design a live write path for it.
+model ResearchProject {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  status      ResearchProjectStatus @default(ACTIVE)
+  startDate   DateTime          @default(now())
+  members     ProjectMember[]
+  papers      ResearchPaper[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+enum ResearchProjectStatus {
+  ACTIVE
+  COMPLETED
+  SUSPENDED
+}
+
+/// Join row resolving ResearchProject's contributor list into real User
+/// FKs, replacing the mock's embedded `contributors: Contributor[]`
+/// (Contributor.id was fake — see ResearchProject's docstring).
+model ProjectMember {
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String          @db.ObjectId
+  project   ResearchProject @relation(fields: [projectId], references: [id])
+  userId    String          @db.ObjectId
+  user      User            @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+
+  @@unique([projectId, userId])
+}
+
+/// Real research paper, replacing
+/// app/dashboard/research/repository/_components/repository-data.ts's
+/// ResearchPaper (`author`/`project` free text, matched only by spelling).
+/// `abstract` is added here — the Submit Paper form already collects one
+/// but the mock's ResearchPaper type had nowhere to store it, silently
+/// discarding it on submit.
+model ResearchPaper {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  abstract      String
+  authorId      String          @db.ObjectId
+  author        User            @relation(fields: [authorId], references: [id])
+  authorName    String
+  projectId     String          @db.ObjectId
+  project       ResearchProject @relation(fields: [projectId], references: [id])
+  keywords      String[]
+  publishedAt   DateTime        @default(now())
+  status        ResearchPaperStatus @default(DRAFT)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+enum ResearchPaperStatus {
+  DRAFT
+  SUBMITTED
+  PUBLISHED
 }
