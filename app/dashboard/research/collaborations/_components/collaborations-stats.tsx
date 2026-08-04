@@ -1,7 +1,11 @@
-import { mockProjects, projectStatusConfig, type ProjectStatus } from './collaborations-data'
+import { projectStatusConfig, type ProjectStatus, type ResearchProjectSummary } from './collaborations-data'
 
-/** Active/Completed/Suspended project-count stat cards, derived from the same `mockProjects` the grid below renders. */
-export function CollaborationsStats() {
+interface CollaborationsStatsProps {
+  data: ResearchProjectSummary[]
+}
+
+/** Active/Completed/Suspended project-count stat cards, derived from the same real project list the grid below renders. */
+export function CollaborationsStats({ data }: CollaborationsStatsProps) {
   const colorFor: Record<ProjectStatus, string> = {
     ACTIVE: 'text-green-700',
     COMPLETED: 'text-w-600',
@@ -9,10 +13,10 @@ export function CollaborationsStats() {
   }
 
   const stats = [
-    { label: 'Total Projects', value: mockProjects.length, color: 'text-w-950' },
+    { label: 'Total Projects', value: data.length, color: 'text-w-950' },
     ...(Object.keys(projectStatusConfig) as ProjectStatus[]).map((s) => ({
       label: projectStatusConfig[s].label,
-      value: mockProjects.filter((p) => p.status === s).length,
+      value: data.filter((p) => p.status === s).length,
       color: colorFor[s],
     })),
   ]
