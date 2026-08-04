@@ -86,6 +86,12 @@ model User {
   borrows                 Borrow[]
   reservations            Reservation[]
   publications            Publication[]
+  coursesTeaching         Course[]
+  enrollments             Enrollment[]
+  assessmentAttempts      AssessmentAttempt[]
+  certificates            Certificate[]
+  sessionRequestsAsLearner  SessionRequest[] @relation("SessionRequestLearner")
+  sessionRequestsAsLecturer SessionRequest[] @relation("SessionRequestLecturer")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -436,4 +442,251 @@ model RevenueShare {
   totalRevenue      Float       @default(0)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+}
+
+/// Real course, consolidating THREE previously-unreconciled mock catalogs
+/// found in the Phase 5 re-verification:
+/// app/dashboard/e-learning/_shared/course-catalog-data.ts (admin
+/// authoring — status/category/language/author fields), app/member/_shared/
+/// course-catalog-data.ts (member browse/enroll — the richer catalog with
+/// real lesson/rating/student counts, actually driving the live enroll
+/// flow), and app/(public)/courses/[id]/_components/course-preview-data.ts
+/// (a public preview catalog found to be an ORPHANED duplicate — its own
+/// docstring claimed it mirrored a `mockCourses` array in
+/// app/member/courses/page.tsx that has since been deleted in favor of
+/// importing the real catalog directly, so this third file was stale
+/// against nothing anymore). All three collapse into one Course model.
+/// `lecturerId` is a real FK into User (see seed-phase5.mjs — the real
+/// User collection had no rows for the 3 lecturer personas, same
+/// situation as contributors in Phase 4).
+model Course {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  category      String
+  language      CourseLanguage @default(EN)
+  status        CourseStatus   @default(DRAFT)
+  author        String
+  lecturerId    String?        @db.ObjectId
+  lecturer      User?          @relation(fields: [lecturerId], references: [id])
+  /// Cover image URL, from the member catalog's real Unsplash images.
+  image         String?
+  duration      String?
+  rating        String?
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  assessments   Assessment[]
+  certificates  Certificate[]
+  sessionRequests SessionRequest[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum CourseLanguage {
+  EN
+  FR
+  RW
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Real lesson, replacing app/member/_shared/lesson-data.ts's
+/// Record<courseId, CourseLessons> shape — already a single store read
+/// and written by BOTH the admin Lessons page and the member lesson
+/// viewer (no duplicate-store problem here, unlike the course catalogs).
+model Lesson {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  courseId        String             @db.ObjectId
+  course          Course             @relation(fields: [courseId], references: [id])
+  title           String
+  contentType     LessonContentType
+  durationMinutes Int
+  content         String
+  order           Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+enum LessonContentType {
+  TEXT
+  VIDEO
+  FILE
+}
+
+/// Real enrollment, replacing app/member/_shared/enrollment-data.ts's
+/// CourseEnrollment (single-persona — no userId field at all, since
+/// there is only ever one live "member" persona in the mock). userId is
+/// a real FK; completedLessonIds stays an array of Lesson ObjectId
+/// strings, same shape the mock already used.
+model Enrollment {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String           @db.ObjectId
+  user                User             @relation(fields: [userId], references: [id])
+  courseId            String           @db.ObjectId
+  course              Course           @relation(fields: [courseId], references: [id])
+  status              EnrollmentStatus @default(ENROLLED)
+  enrolledAt          DateTime         @default(now())
+  completedLessonIds  String[]
+  totalLessons        Int
+  assessmentPassed    Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  COMPLETED
+  DROPPED
+}
+
+/// Real assessment (quiz/exam/project), replacing
+/// app/member/_shared/assessment-data.ts's TakeableAssessment. Questions
+/// are embedded (not a separate collection) since a question is always
+/// fetched alongside its assessment and never queried independently —
+/// same embed-vs-reference reasoning the migration plan already applied
+/// to AuditLog's review_notes.
+model Assessment {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  kind             AssessmentKind
+  courseId         String           @db.ObjectId
+  course           Course           @relation(fields: [courseId], references: [id])
+  durationSeconds  Int?
+  questions        Question[]
+  brief            String?
+  submissionFormat ProjectSubmissionFormat?
+  projectMarks     Int?
+  attempts         AssessmentAttempt[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+type Question {
+  id                    String
+  text                  String
+  type                  QuestionType
+  context               String?
+  options               String[]
+  correctOptionIndex    Int?
+  correctOptionIndices  Int[]
+  marks                 Int
+}
+
+enum QuestionType {
+  SINGLE_SELECT
+  MULTI_SELECT
+  OPEN
+}
+
+enum AssessmentKind {
+  QUIZ
+  EXAM
+  PROJECT
+}
+
+enum ProjectSubmissionFormat {
+  TEXT
+  LINK
+  FILE_REF
+}
+
+/// Real assessment attempt, replacing the single-persona
+/// AssessmentAttempt embedded in app/member/_shared/enrollment-data.ts
+/// (no userId — same identity gap as Enrollment). openAnswers/openScores
+/// stay Json (keyed by Question.id, exactly as the mock modeled them)
+/// since Mongo has no native map-of-string type suited to this shape.
+model AssessmentAttempt {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String         @db.ObjectId
+  user           User           @relation(fields: [userId], references: [id])
+  assessmentId   String         @db.ObjectId
+  assessment     Assessment     @relation(fields: [assessmentId], references: [id])
+  status         AttemptResult
+  reviewStatus   AttemptReviewStatus
+  score          Int
+  totalMarks     Int
+  takenAt        DateTime       @default(now())
+  openAnswers    Json?
+  openScores     Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum AttemptResult {
+  PASSED
+  FAILED
+}
+
+enum AttemptReviewStatus {
+  AUTO_GRADED
+  PENDING_REVIEW
+  GRADED
+}
+
+/// Real certificate, replacing
+/// app/dashboard/e-learning/certificates/_components/certificates-data.ts.
+/// `memberName`/`courseTitle` kept as point-in-time snapshot fields
+/// alongside real userId/courseId FKs — same AuditLog.actor/actorId
+/// pattern used throughout this migration, since a certificate should
+/// still read sensibly if the course is later renamed.
+model Certificate {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @db.ObjectId
+  user             User     @relation(fields: [userId], references: [id])
+  memberName       String
+  courseId         String?  @db.ObjectId
+  course           Course?  @relation(fields: [courseId], references: [id])
+  courseTitle      String
+  issuedAt         DateTime @default(now())
+  verificationCode String   @unique
+  revoked          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+/// Real live-session booking request, replacing
+/// lib/sessions/session-requests-data.ts's SessionRequest. Confirmed via
+/// grep this feature has ZERO cross-imports with lib/messaging — it's a
+/// self-contained course/lecturer-scoped booking feature, architecturally
+/// distinct from the DM/channel messaging system despite the migration
+/// plan's Phase 7 grouping lumping them together. Migrated here in Phase
+/// 5 instead, since courseId is a hard dependency on Course existing and
+/// there's no reason to defer a fully independent feature to a later
+/// phase just because a stale plan grouped it elsewhere.
+model SessionRequest {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  learnerId     String        @db.ObjectId
+  learner       User          @relation("SessionRequestLearner", fields: [learnerId], references: [id])
+  learnerName   String
+  lecturerId    String        @db.ObjectId
+  lecturer      User          @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
+  lecturerName  String
+  courseId      String        @db.ObjectId
+  course        Course        @relation(fields: [courseId], references: [id])
+  courseTitle   String
+  requestedAt   DateTime      @default(now())
+  proposedTime  DateTime
+  status        SessionRequestStatus @default(PENDING)
+  mode          SessionRequestMode   @default(SCHEDULED)
+  scheduledAt   DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum SessionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum SessionRequestMode {
+  SCHEDULED
+  INSTANT
 }
