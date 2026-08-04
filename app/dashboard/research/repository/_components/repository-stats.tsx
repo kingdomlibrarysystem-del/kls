@@ -11,7 +11,7 @@ import { useRepository } from './use-repository'
  * with no real signal.
  */
 export function RepositoryStats() {
-  const papers = useRepository()
+  const { data: papers } = useRepository()
   const published = papers.filter((p) => p.status === 'PUBLISHED').length
   const submitted = papers.filter((p) => p.status === 'SUBMITTED').length
   const draft = papers.filter((p) => p.status === 'DRAFT').length

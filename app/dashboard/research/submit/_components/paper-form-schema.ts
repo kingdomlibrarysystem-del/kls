@@ -16,15 +16,3 @@ export function parseKeywords(raw: string): string[] {
     .map((k) => k.trim())
     .filter((k) => k.length > 0)
 }
-
-/** Mock projects a paper can be linked to, per APP_DOC Task 7.1 / Prisma `ResearchProject`. */
-export interface ResearchProjectOption {
-  id: string
-  title: string
-}
-
-export const mockProjectOptions: ResearchProjectOption[] = [
-  { id: 'proj-001', title: 'Faith & Technology in Rural Rwanda' },
-  { id: 'proj-002', title: 'Discipleship Retention Among Youth' },
-  { id: 'proj-003', title: 'Oral History of the East African Revival' },
-]
