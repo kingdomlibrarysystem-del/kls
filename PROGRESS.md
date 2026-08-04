@@ -3278,3 +3278,195 @@ And in the "Where to look" table:
 +| What's real vs. still mocked, phase by phase            | `PROGRESS.md` — search for "Phase N — Completed"; the most current source of truth, more granular than this file. |
 ```
 
+# Phase 5 (E-Learning) — Completed, largest phase so far
+
+## Re-verification of the plan doc against real code
+
+Confirmed and extended the plan's own findings via direct reads of every
+named file plus a dedicated research pass:
+
+- **Three course catalogs confirmed**, but the plan's description of
+  the third (`course-preview-data.ts`) was stale: its docstring claims
+  it mirrors a `mockCourses` array in `app/member/courses/page.tsx`,
+  but that array had already been deleted (that page now imports the
+  real `courseCatalog` directly) — leaving `course-preview-data.ts` an
+  orphaned duplicate mirroring nothing. Resolved by consolidating all
+  three into one real `Course` model, keyed by the member catalog (the
+  richer, actually-enrolled-in one) merged with the admin catalog's
+  authoring fields (status/category/author) for admin-only courses
+  that had no member-catalog counterpart.
+- **Lesson and Assessment stores were already single, shared
+  admin+member stores** (no duplicate-store consolidation needed,
+  unlike the course catalogs) — confirmed via their own docstrings and
+  cross-import checks.
+- **`AssessmentAttempt`'s mutators live in a separate file**
+  (`use-assessment-attempts.ts`) from where the type is defined
+  (`enrollment-data.ts`) — a minor plan-doc imprecision, not a real
+  discrepancy.
+- **Sessions/Session Room is architecturally independent of
+  Messaging** — confirmed via grep that `lib/sessions/**` has zero
+  cross-imports with `lib/messaging/**`, despite the plan's Phase 7
+  grouping lumping them together. Migrated `SessionRequest` here in
+  Phase 5 instead, since `courseId` is a hard dependency on the real
+  `Course` collection this phase creates, and there was no reason to
+  defer a fully independent feature to a later phase just because a
+  stale plan grouped it elsewhere.
+- **`progress-data.ts` confirmed "fully fragile" exactly as the plan
+  says** — zero ids anywhere in `topPerformers`/`enrolledMembers`, pure
+  hand-typed aggregate data. Left entirely on the mock; this is Phase
+  8's territory (converting hand-typed aggregates into real computed
+  queries), not something to force into Phase 5.
+
+## Schema
+
+Added `Course`, `Lesson`, `Enrollment` (`@@unique([userId, courseId])`
+blocks double-enrollment), `Assessment` (embedded `Question` type —
+always fetched with its parent assessment, never queried
+independently, same embed-vs-reference reasoning already applied to
+`AuditLog`'s notes), `AssessmentAttempt`, `Certificate`, and
+`SessionRequest`. All real `@db.ObjectId` FKs into `User`/`Course`/
+`Assessment`. `npx prisma db push` confirmed applied against `kcs_app`.
+
+## Seed (`prisma/seed/seed-phase5.mjs`)
+
+Seeded placeholder lecturer Users (3, from `lecturerRoster`) and member
+Users (7, from the enrollments/certificates mocks) — **upserting by
+email rather than delete-then-recreate**, after the first run threw a
+`P2014` referential-integrity error: several of these exact people
+already existed as real `User` documents from Phase 3/4's own seeds
+(with real `Borrow`/`Reservation`/`Publication` rows pointing at them),
+so deleting and recreating them would have violated those relations.
+Seeded 16 Courses (12 from the member catalog + 4 admin-only), 48
+Lessons (4 per member-catalog course), 10 Enrollments, 5 Assessments,
+3 AssessmentAttempts, 3 Certificates, 3 SessionRequests.
+
+## API routes
+
+`/api/courses`, `/api/lessons`, `/api/enrollments`, `/api/assessments`,
+`/api/assessment-attempts`, `/api/certificates`, `/api/session-requests`
+(+ `[id]` routes for each). Every route ports real business logic from
+the mocks: lesson completion recomputes `Enrollment.completedLessonIds`
+and auto-flips status to `COMPLETED`, with `progress` computed
+server-side (not stored redundantly, unlike the old admin mock's
+directly-stored percentage); assessment submission auto-grades
+`SINGLE_SELECT`/`MULTI_SELECT` and lands `OPEN`-question attempts
+`PENDING_REVIEW`; grading sums the auto-graded + manually-entered score
+and finalizes pass/fail (guarded: only a `PENDING_REVIEW` attempt can
+be graded); session-request `approve`/`reject`/`complete` are guarded
+status transitions.
+
+**Verified via curl**: full CRUD + every status transition for every
+model — including a live lesson-completion progress recompute (25% →
+50% → 75%), auto-grading a fully-correct quiz submission (20/20,
+PASSED) and a mixed submission with an `OPEN` question (30/50,
+`PENDING_REVIEW`), manually grading it (48/50, `PASSED`, `GRADED`) with
+a 409 guard on re-grading, certificate revoke/restore, and session
+approve → complete with a 409 on completing an already-completed one.
+
+## Frontend wiring
+
+Rewired `use-course-catalog.ts`, `use-lessons.ts`, and
+`use-assessments.ts` (all three already-shared admin+member stores) to
+real fetch-backed hooks. Added four **admin-scoped** real hooks for
+surfaces where the admin action itself needs no real "current user" —
+only the target record's own id — even though the record's *creation*
+write path is still blocked (see blockers below):
+`use-attempts-admin.ts` (Review Queue read/grade), `use-enrollments-
+admin.ts` (replaces a 5-row static mock + an ad hoc "live John Doe row"
+derivation with one real read), `use-certificates-admin.ts` (admin
+table read/revoke), `use-session-requests-admin.ts` (admin oversight
+approve/reject/complete).
+
+**Found and fixed a systemic bug while wiring**: six admin-side files
+(`enrollments-view.tsx`, all four quiz CRUD modals, `quiz-detail-
+modal.tsx`, `review-queue-view.tsx`) looked up course titles against
+the old static member `course-catalog-data.ts` array by id — this
+became silently wrong the moment real courses got real MongoDB
+ObjectIds instead of `'1'..'12'`. All six now resolve course titles
+through the real `Course` collection via `useCourseCatalog()`.
+
+## Blockers — member-facing write paths still on the mock
+
+Confirmed via direct reads that these member-facing write paths hit
+the same "no real user identity" rule-2 blocker Phase 3/4 already
+documented (auth is still `localStorage`-mocked, real `User` rows exist
+only as this migration's own seed placeholders):
+
+- **Enroll in a course** (`app/member/_shared/use-enrollments.ts`'s
+  `enrollInCourse`) — auto-enrolls on first navigation into a course,
+  no explicit button, but still needs a real learner id.
+- **Mark a lesson complete** (`use-enrollments.ts`'s
+  `markLessonComplete`) and **take a quiz/exam/submit a project**
+  (`use-assessment-attempts.ts`'s `recordAssessmentAttempt`/
+  `recordProjectSubmission`) — both call `applyAttemptOutcome`, which
+  is tied to the same single-persona mock enrollment store.
+- **Automatic certificate issuance** (`use-certificates.ts`'s
+  `issueCertificate`) — only ever called from the blocked enrollment
+  flow above, so it stays on the mock too (revoking an already-issued
+  certificate is real; issuing a new one via the real flow is not).
+- **Request or start a live session** (`lib/sessions/use-session-
+  requests.ts`'s `requestSession`/`startInstantSession`) — creating a
+  new request needs a real learner id; approving/rejecting/completing
+  an existing one (admin-only, no learner identity needed) is real.
+
+None of these were newly discovered in this phase — they're the exact
+same class of blocker Phase 3 (borrow/reserve) and Phase 4 (submit a
+book) already hit and documented, confirming the pattern is systemic
+to this app's auth state rather than incidental to any one module.
+
+**Not touched**: `app/dashboard/e-learning/progress` — confirmed fully
+name-based with zero ids, explicitly Phase 8's territory per the
+migration plan, not this phase's to fix.
+
+## Verification
+
+- `npx tsc --noEmit`: clean.
+- `npm run build`: clean, all routes compile.
+- **Verified via real dev server + curl**: all 8 admin e-learning pages
+  (`catalog`, `lessons`, `quizzes`, `quizzes/review`, `enrollments`,
+  `certificates`, `sessions`, `progress`) return HTTP 200; confirmed
+  `/api/enrollments`, `/api/certificates`, `/api/session-requests`
+  return real MongoDB-backed data (real ObjectIds, not the old mock
+  string/numeric ids).
+- Full interactive click-through (grade modal, revoke confirm,
+  approve/reject modal, add/edit/delete course/lesson/quiz) verified
+  via code-path trace — the underlying PATCH/POST/DELETE actions were
+  independently curl-verified above, and the components call the same
+  hook functions those actions map to — rather than a live browser
+  click session; Playwright remains unavailable as a project
+  dependency, same note as every prior phase.
+- Dev server shut down cleanly afterward.
+
+## Files created
+
+- `app/api/{courses,lessons,enrollments,assessments,assessment-attempts,certificates,session-requests}/route.ts` + `[id]/route.ts` for each
+- `prisma/seed/seed-phase5.mjs`
+- `app/dashboard/e-learning/{enrollments,certificates}/_components/use-{enrollments,certificates}-admin.ts`
+- `app/dashboard/e-learning/quizzes/review/_components/use-attempts-admin.ts`
+- `app/dashboard/e-learning/sessions/_components/use-session-requests-admin.ts`
+
+## Files modified
+
+`prisma/schema.prisma`, `app/dashboard/e-learning/_shared/use-course-catalog.ts`,
+`app/member/_shared/{use-lessons.ts,use-assessments.ts}`, and 24 consumer
+components across admin e-learning (catalog/lessons/quizzes/review/
+enrollments/certificates/sessions) and member (assessments, lesson
+viewer) — full list in the commit diff.
+
+## Needs human input
+
+Carried forward from Phase 3/4, unresolved: a decision on how member-
+side identity should work before enroll/mark-complete/take-quiz/
+book-a-session/issue-certificate can be completed for real. This is
+the same open question logged in Phase 3's PROGRESS.md entry — not a
+new blocker, just confirmed to recur in every phase with a live
+member-facing write path.
+
+## Commits
+
+- `3c9c83f` — `feat(api): add real Course/Lesson/Enrollment/Assessment/Certificate/SessionRequest models + CRUD API routes for Phase 5`
+- `e14ba92` — `feat(e-learning): wire admin catalog/lessons/quizzes/enrollments/certificates/sessions to real API`
+
+Proceeding automatically to Phase 6 (Research) per the standing
+Autonomous Mode instruction.
+
