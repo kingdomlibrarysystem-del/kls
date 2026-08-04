@@ -3470,3 +3470,130 @@ member-facing write path.
 Proceeding automatically to Phase 6 (Research) per the standing
 Autonomous Mode instruction.
 
+# Phase 6 (Research) — Completed, fully unblocked
+
+## Re-verification of the plan doc against real code
+
+Confirmed the plan's central finding exactly: `Contributor.id`
+(`c-001`..`c-006` in `collaborations-data.ts`) is a self-invented id
+space matching nothing else in the app — a "fragile look-alike FK," per
+the plan's own phrasing. Also confirmed:
+
+- **Collaborations (`/dashboard/research/collaborations`) is fully
+  read-only** — no create/edit/delete UI exists for projects or their
+  contributor lists anywhere in this module. This meant no live write
+  path needed designing for `ResearchProject`/`ProjectMember` — the
+  phase only needed to seed real data from the mock.
+- **Submit Paper's hardcoded `SUBMITTING_AUTHOR` ("Pastor Emmanuel
+  Rugamba") is a genuinely different situation from Phase 3/4/5's
+  identity blockers**: this is an admin tool attributing a submission
+  to a known, fixed contributor persona, not a "who is currently
+  logged in" question — there's no session/auth gate on this form at
+  all. Resolving the name to a real `authorId` therefore did not hit
+  the same rule-2 blocker; it's a straightforward lookup, same as
+  resolving `CONTRIBUTOR_NAME` was in Phase 4.
+- **The Submit Paper form already collects an `abstract` field that
+  the mock `ResearchPaper` type had nowhere to store** — confirmed by
+  reading `paper-form-schema.ts` and `repository-data.ts` side by
+  side; the mock's `addPaperToRepository` call silently dropped
+  `data.abstract` on every submission. Fixed by adding a real
+  `abstract` field to the schema rather than perpetuating the gap.
+- `repository-data.ts`'s `project`/`author` fields matched the plan's
+  description exactly — free text, matched only by spelling against
+  `collaborations-data.ts`'s project titles and contributor names.
+
+## Schema
+
+Added `ResearchProject`, a `ProjectMember` join table
+(`@@unique([projectId, userId])`) resolving the mock's fake
+`Contributor.id` into real `User` FKs, and `ResearchPaper` (`authorId`/
+`projectId` real FKs, plus the new `abstract` field). `npx prisma
+validate`/`db push` confirmed applied against `kcs_app`.
+
+## Seed (`prisma/seed/seed-phase6.mjs`)
+
+Resolved 6 distinct contributor names to real Users by upsert-by-
+derived-email — several (Pastor Emmanuel Rugamba, Dr. Alice Mutoni)
+already existed as real Users from Phase 4's Publishing seed, and
+correctly resolved to the exact same `User._id` across both modules,
+confirming cross-phase identity consistency rather than creating
+duplicate person records. Seeded 4 ResearchProjects, 9 ProjectMember
+rows, 3 ResearchPapers.
+
+## API routes
+
+`/api/research-projects` (+ `[id]`) and `/api/research-papers`
+(+ `[id]`). Project `PATCH` supports a full contributor-list replace
+via `contributorIds` (delete-all-then-recreate the join rows) rather
+than a separate add/remove-member endpoint — simpler and safe at this
+data's scale. Project `DELETE` is guarded: blocks removing a project
+that still has papers, mirroring the "don't silently orphan real
+content" guard already used for Category/Course deletes.
+
+**Verified via curl**: full CRUD for both models, contributor-list
+resolution on create, a 409 on deleting a project with papers (and a
+successful delete on one with none), paper submission with a real
+author/project FK, and missing-fields/not-found paths.
+
+## Frontend wiring
+
+Added `app/dashboard/research/_shared/use-research-projects.ts`
+(shared real read hook) and rewired `use-repository.ts` to fetch-
+backed. `CollaborationsView`/`CollaborationsStats` now read real
+`ResearchProject` data (still read-only, matching the existing UI —
+no new write capability was added since none existed to preserve).
+`RepositoryView` reads real `ResearchPaper` data with a working
+search/author-filter. `PaperFormView` now posts a real
+`{title, abstract, authorId, projectId, keywords}` to `/api/research-
+papers`, resolving `SUBMITTING_AUTHOR` to a real id by scanning the
+real project list's contributor rows, and populates the "Linked
+Project" dropdown from real projects instead of the stale
+`mockProjectOptions` array (deleted — its `'proj-00N'` ids no longer
+matched anything once real projects got real MongoDB ObjectIds).
+
+## Verification
+
+- `npx tsc --noEmit`: clean.
+- `npm run build`: clean, all routes compile.
+- **Verified via real dev server + curl**: all three research pages
+  (`collaborations`, `repository`, `submit`) return HTTP 200; confirmed
+  `/api/research-projects` and `/api/research-papers` return real
+  MongoDB-backed data with contributor names correctly resolved
+  through the join table.
+- Interactive click-through (submitting a paper via the form, viewing
+  a project's contributor list) verified via code-path trace — the
+  underlying POST/GET actions were independently curl-verified above —
+  rather than a live browser click session; Playwright remains
+  unavailable as a project dependency, same note as every prior phase.
+- Dev server shut down cleanly afterward.
+
+## Files created
+
+- `app/api/research-projects/route.ts` + `[id]/route.ts`
+- `app/api/research-papers/route.ts` + `[id]/route.ts`
+- `prisma/seed/seed-phase6.mjs`
+- `app/dashboard/research/_shared/use-research-projects.ts`
+
+## Files modified
+
+`prisma/schema.prisma`, `app/dashboard/research/collaborations/
+_components/{collaborations-stats.tsx,collaborations-view.tsx}`,
+`app/dashboard/research/repository/_components/{repository-stats.tsx,
+repository-view.tsx,use-repository.ts}`, `app/dashboard/research/
+submit/_components/{paper-form-schema.ts,paper-form-view.tsx}`
+
+## Needs human input
+
+None new. No rule-2-class blockers hit in this phase — a genuine
+change of pace from Phase 3/4/5, since Research's one real write path
+(Submit Paper) attributes to a fixed known persona rather than
+depending on a live "current user."
+
+## Commits
+
+- `2728ce5` — `feat(api): add real ResearchProject/ProjectMember/ResearchPaper models + CRUD API routes for Phase 6`
+- `38d884c` — `feat(research): wire Collaborations/Repository/Submit Paper to real API`
+
+Proceeding automatically to Phase 7 (Messaging, Notifications,
+Sessions) per the standing Autonomous Mode instruction.
+
