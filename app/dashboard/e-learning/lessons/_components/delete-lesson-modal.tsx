@@ -13,13 +13,13 @@ interface DeleteLessonModalProps {
 
 /** Delete confirmation modal — a lesson can be safely removed since no separate completion record depends on its row surviving (enrollment progress only stores completed lesson IDs). */
 export function DeleteLessonModal({ lesson, onClose }: DeleteLessonModalProps) {
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!lesson) return
     try {
-      removeLesson(lesson.courseId, lesson.lessonId)
+      await removeLesson(lesson.courseId, lesson.lessonId)
       onClose()
     } catch {
-      // In-memory write; failures aren't expected here.
+      // Real error surfaced via the lessons hook's own error state on next load.
     }
   }
 

@@ -46,13 +46,13 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
     }
   }, [course, reset])
 
-  const onSubmit = (data: CourseFormData) => {
+  const onSubmit = async (data: CourseFormData) => {
     if (!course) return
     try {
-      updateCourseInCatalog(course.id, { ...data, lecturerId: data.lecturerId || undefined })
+      await updateCourseInCatalog(course.id, { ...data, lecturerId: data.lecturerId || undefined })
       onClose()
     } catch {
-      // Update is a synchronous in-memory write; failures aren't expected here.
+      // Real error surfaced via the catalog hook's own error state on next load.
     }
   }
 

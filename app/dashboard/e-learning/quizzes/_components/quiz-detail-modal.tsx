@@ -1,6 +1,8 @@
+'use client'
+
 import { CheckCircle2, Circle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { projectSubmissionFormatLabels } from '@/app/member/_shared/assessment-data'
 import { kindConfig, type TakeableAssessment } from './quizzes-config'
 
@@ -11,6 +13,7 @@ interface QuizDetailModalProps {
 
 /** Read-only details view for a single quiz/exam/project: full question list for QUIZ/EXAM, brief + submission format + total marks for PROJECT (no question list at all). */
 export function QuizDetailModal({ assessment, onClose }: QuizDetailModalProps) {
+  const { data: courseCatalog } = useCourseCatalog()
   const courseTitle = assessment ? courseCatalog.find((c) => c.id === assessment.courseId)?.title ?? 'Unknown course' : ''
 
   return (

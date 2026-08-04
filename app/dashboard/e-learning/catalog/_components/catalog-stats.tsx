@@ -15,7 +15,7 @@ import type { CourseStatus } from './catalog-config'
  * a course is saved as a draft.
  */
 export function CatalogStats() {
-  const catalog = useCourseCatalog()
+  const { data: catalog } = useCourseCatalog()
   const published = catalog.filter((c) => c.status === 'PUBLISHED').length
   const draft = catalog.filter((c) => c.status === 'DRAFT').length
   const totalEnrolled = catalog.reduce((sum, c) => sum + c.enrolledCount, 0)

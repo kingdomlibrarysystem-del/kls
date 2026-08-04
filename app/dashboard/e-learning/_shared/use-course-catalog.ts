@@ -1,66 +1,115 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { initialCourseCatalog, type CourseCatalogEntry } from './course-catalog-data'
+import { useEffect, useState } from 'react'
+import type { CourseCatalogEntry } from './course-catalog-data'
 
 /**
- * Module-level mutable store so the Add-Course form (`/dashboard/e-learning/add`)
- * and the Course Catalog list (`/dashboard/e-learning/catalog`) share one course
- * list across route navigations, without a backend. Scoped to the admin
- * `/dashboard/e-learning/*` domain only — not shared with `/contributor/courses`
- * or `/member/courses`, which keep their own separate mock datasets.
+ * Real fetch()-backed Course store, replacing the module-level mock
+ * array shared by the Add-Course form and admin Course Catalog list.
+ * Now backed by the real Course collection (Phase 5), which also
+ * unifies what used to be three separate catalogs (admin/member/public
+ * preview) — this hook reads the same collection the member browse
+ * pages read, just without a status filter.
  */
-let catalog: CourseCatalogEntry[] = [...initialCourseCatalog]
+let cache: CourseCatalogEntry[] = []
+let hasFetched = false
+let fetchPromise: Promise<void> | null = null
 const listeners = new Set<() => void>()
 
-function emitChange() {
-  listeners.forEach((listener) => listener())
+function notify() {
+  listeners.forEach((l) => l())
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+function loadCatalog(): Promise<void> {
+  if (hasFetched) return Promise.resolve()
+  if (fetchPromise) return fetchPromise
+  fetchPromise = fetch('/api/courses?pageSize=1000')
+    .then((res) => {
+      if (!res.ok) throw new Error(`Failed to fetch courses (${res.status})`)
+      return res.json()
+    })
+    .then((json) => {
+      if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch courses')
+      cache = json.data.map((c: { id: string; title: string; description: string; category: string; language: string; status: string; author: string; lecturerId?: string; createdAt: string }) => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        category: c.category,
+        language: c.language,
+        status: c.status,
+        enrolledCount: 0,
+        createdAt: c.createdAt,
+        author: c.author,
+        lecturerId: c.lecturerId,
+      }))
+      hasFetched = true
+      notify()
+    })
+    .finally(() => {
+      fetchPromise = null
+    })
+  return fetchPromise
 }
 
-function getSnapshot() {
-  return catalog
+export function useCourseCatalog() {
+  const [data, setData] = useState<CourseCatalogEntry[]>(cache)
+  const [loading, setLoading] = useState(!hasFetched)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const listener = () => setData([...cache])
+    listeners.add(listener)
+    if (!hasFetched) {
+      loadCatalog()
+        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load courses'))
+        .finally(() => setLoading(false))
+    } else {
+      setLoading(false)
+    }
+    return () => {
+      listeners.delete(listener)
+    }
+  }, [])
+
+  return { data, loading, error }
 }
 
-function nextId() {
-  const max = catalog.reduce((m, c) => {
-    const n = Number(c.id.replace('crs-', ''))
-    return Number.isFinite(n) && n > m ? n : m
-  }, 0)
-  return `crs-${String(max + 1).padStart(3, '0')}`
+export async function refetchCourseCatalog(): Promise<void> {
+  hasFetched = false
+  await loadCatalog()
 }
 
-export function addCourseToCatalog(entry: Omit<CourseCatalogEntry, 'id' | 'enrolledCount' | 'createdAt'>) {
-  const created: CourseCatalogEntry = {
-    ...entry,
-    id: nextId(),
-    enrolledCount: 0,
-    createdAt: new Date().toISOString().slice(0, 10),
-  }
-  catalog = [created, ...catalog]
-  emitChange()
-  return created
+export async function addCourseToCatalog(entry: Omit<CourseCatalogEntry, 'id' | 'enrolledCount' | 'createdAt'>): Promise<CourseCatalogEntry> {
+  const res = await fetch('/api/courses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to create course')
+  await refetchCourseCatalog()
+  return json.data
 }
 
-export function updateCourseInCatalog(id: string, updates: Partial<Omit<CourseCatalogEntry, 'id'>>) {
-  catalog = catalog.map((c) => (c.id === id ? { ...c, ...updates } : c))
-  emitChange()
+export async function updateCourseInCatalog(id: string, updates: Partial<Omit<CourseCatalogEntry, 'id'>>): Promise<CourseCatalogEntry> {
+  const res = await fetch(`/api/courses/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update course')
+  await refetchCourseCatalog()
+  return json.data
 }
 
 export function archiveCourseInCatalog(id: string) {
-  updateCourseInCatalog(id, { status: 'DRAFT' })
+  return updateCourseInCatalog(id, { status: 'DRAFT' })
 }
 
-export function removeCourseFromCatalog(id: string) {
-  catalog = catalog.filter((c) => c.id !== id)
-  emitChange()
-}
-
-/** Live-subscribes to the shared course catalog store. */
-export function useCourseCatalog() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => initialCourseCatalog)
+export async function removeCourseFromCatalog(id: string): Promise<void> {
+  const res = await fetch(`/api/courses/${id}`, { method: 'DELETE' })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to delete course')
+  await refetchCourseCatalog()
 }

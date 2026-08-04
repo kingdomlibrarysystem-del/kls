@@ -27,8 +27,8 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const [loading, setLoading] = useState(true)
   const [markError, setMarkError] = useState('')
   const enrollments = useEnrollments()
-  const lessonsByCourse = useLessonsByCourse()
-  const assessmentCatalog = useAssessmentCatalog()
+  const { data: lessonsByCourse } = useLessonsByCourse()
+  const { data: assessmentCatalog } = useAssessmentCatalog()
 
   const course = lessonsByCourse[courseId]
   const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? -1

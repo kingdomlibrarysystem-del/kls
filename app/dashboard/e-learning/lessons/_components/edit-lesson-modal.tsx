@@ -41,13 +41,13 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
     }
   }, [lesson, reset])
 
-  const onSubmit = (data: EditFormData) => {
+  const onSubmit = async (data: EditFormData) => {
     if (!lesson) return
     try {
-      updateLesson(lesson.courseId, lesson.lessonId, data)
+      await updateLesson(lesson.courseId, lesson.lessonId, data)
       onClose()
     } catch {
-      // In-memory write; failures aren't expected here.
+      // Real error surfaced via the lessons hook's own error state on next load.
     }
   }
 

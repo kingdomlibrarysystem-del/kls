@@ -57,9 +57,8 @@ export function CourseFormView() {
     setSubmitError('')
     setSubmitSuccess(false)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
       if (!data.title.trim()) throw new Error('Title cannot be empty')
-      addCourseToCatalog({
+      await addCourseToCatalog({
         title: data.title,
         description: data.description,
         category: data.category,
