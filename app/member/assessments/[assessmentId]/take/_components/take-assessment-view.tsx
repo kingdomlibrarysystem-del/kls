@@ -41,7 +41,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [submitError, setSubmitError] = useState('')
   const [result, setResult] = useState<AssessmentAttempt | null>(null)
 
-  const assessmentCatalog = useAssessmentCatalog()
+  const { data: assessmentCatalog } = useAssessmentCatalog()
   const assessment = assessmentCatalog[assessmentId]
 
   useEffect(() => {

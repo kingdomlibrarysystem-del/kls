@@ -1,21 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Video, Eye, Pencil, Trash2, PlusCircle, ArrowUp, ArrowDown } from 'lucide-react'
+import { useState } from 'react'
+import { Video, Eye, Pencil, Trash2, PlusCircle, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useLessonsByCourse, reorderLesson } from '@/app/member/_shared/use-lessons'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { contentTypeConfig, type LessonRow } from './lessons-config'
 import { AddLessonModal } from './add-lesson-modal'
 import { LessonDetailModal } from './lesson-detail-modal'
 import { EditLessonModal } from './edit-lesson-modal'
 import { DeleteLessonModal } from './delete-lesson-modal'
-
-/** Simulated network delay before the lesson catalog becomes visible. */
-const LOAD_DELAY_MS = 400
 
 function LoadingSkeleton() {
   return (
@@ -29,26 +26,25 @@ function LoadingSkeleton() {
 
 /**
  * Admin Lessons management: a flattened, filterable table of every lesson
- * across all 12 catalog courses, backed by the shared `/member/_shared`
- * lesson store so admin edits are immediately visible to the member lesson
- * viewer taking the same course.
+ * across all courses, backed by the real Lesson collection so admin
+ * edits are immediately visible to the member lesson viewer taking the
+ * same course.
  */
 export function LessonsView() {
-  const [loading, setLoading] = useState(true)
   const [courseFilter, setCourseFilter] = useState<string | 'all'>('all')
   const [adding, setAdding] = useState(false)
   const [viewing, setViewing] = useState<LessonRow | null>(null)
   const [editing, setEditing] = useState<LessonRow | null>(null)
   const [deleting, setDeleting] = useState<LessonRow | null>(null)
 
-  const lessonsByCourse = useLessonsByCourse()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: lessonsByCourse, loading, error } = useLessonsByCourse()
+  const { data: courseCatalog } = useCourseCatalog()
 
   if (loading) return <LoadingSkeleton />
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load lessons" description={error} />
+  }
 
   const allRows: LessonRow[] = Object.values(lessonsByCourse).flatMap((course) =>
     course.lessons.map((lesson, index) => ({

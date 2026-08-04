@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, Eye, Pencil, Archive, PlusCircle } from 'lucide-react'
+import { BookOpen, Eye, Pencil, Archive, PlusCircle, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -14,9 +14,6 @@ import { EditCourseModal } from './edit-course-modal'
 import { ArchiveCourseModal } from './archive-course-modal'
 import { statusConfig, type CourseCatalogEntry, type CourseStatus } from './catalog-config'
 import { CatalogStats } from './catalog-stats'
-
-/** Simulated network delay before the catalog becomes visible. */
-const LOAD_DELAY_MS = 400
 
 function LoadingSkeleton() {
   return (
@@ -30,26 +27,23 @@ function LoadingSkeleton() {
 
 /**
  * Admin Course Catalog: lists every course created via Add Course, with
- * Details, Edit, and Archive actions. Reads from the shared
- * `/dashboard/e-learning/*` course catalog store, so newly-created courses
- * appear here immediately.
+ * Details, Edit, and Archive actions. Reads from the real Course
+ * collection, so newly-created courses appear here immediately.
  */
 export function CatalogView() {
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<CourseStatus | 'all'>('all')
   const [authorFilter, setAuthorFilter] = useState('all')
   const [viewing, setViewing] = useState<CourseCatalogEntry | null>(null)
   const [editing, setEditing] = useState<CourseCatalogEntry | null>(null)
   const [archiving, setArchiving] = useState<CourseCatalogEntry | null>(null)
 
-  const catalog = useCourseCatalog()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: catalog, loading, error } = useCourseCatalog()
 
   if (loading) return <LoadingSkeleton />
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the course catalog" description={error} />
+  }
 
   if (catalog.length === 0) {
     return (
@@ -157,8 +151,14 @@ export function CatalogView() {
       <ArchiveCourseModal
         course={archiving}
         onClose={() => setArchiving(null)}
-        onConfirm={() => {
-          if (archiving) archiveCourseInCatalog(archiving.id)
+        onConfirm={async () => {
+          if (archiving) {
+            try {
+              await archiveCourseInCatalog(archiving.id)
+            } catch {
+              /* real error surfaced via the hook's own error state on next load */
+            }
+          }
           setArchiving(null)
         }}
       />

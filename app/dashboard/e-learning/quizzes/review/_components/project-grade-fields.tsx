@@ -2,12 +2,12 @@
 
 import { projectSubmissionFormatLabels } from '@/app/member/_shared/assessment-data'
 import type { TakeableAssessment } from '@/app/member/_shared/assessment-data'
-import type { AssessmentAttempt } from '@/app/member/_shared/enrollment-data'
 import { PROJECT_SUBMISSION_KEY } from '@/app/member/_shared/use-assessment-attempts'
+import type { AttemptRecord } from './use-attempts-admin'
 
 interface ProjectGradeFieldsProps {
   assessment: TakeableAssessment
-  attempt: AssessmentAttempt
+  attempt: AttemptRecord
   score: number
   onScoreChange: (value: number) => void
 }

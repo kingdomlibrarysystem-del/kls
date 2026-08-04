@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { addLesson } from '@/app/member/_shared/use-lessons'
 import { lessonSchema, contentTypeLabels, type LessonFormData } from './lesson-form-schema'
 
@@ -15,8 +15,9 @@ interface AddLessonModalProps {
   onClose: () => void
 }
 
-/** Create modal for a new lesson — appends to the shared lesson store for the selected course. */
+/** Create modal for a new lesson — appends to the real Lesson collection for the selected course. */
 export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
+  const { data: courseCatalog } = useCourseCatalog()
   const {
     register,
     handleSubmit,
@@ -27,11 +28,11 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
     defaultValues: { courseId: courseCatalog[0]?.id ?? '', contentType: 'VIDEO', durationMinutes: 10 },
   })
 
-  const onSubmit = (data: LessonFormData) => {
+  const onSubmit = async (data: LessonFormData) => {
     try {
       const course = courseCatalog.find((c) => c.id === data.courseId)
       if (!course) throw new Error('Course not found')
-      addLesson(data.courseId, course.title, {
+      await addLesson(data.courseId, course.title, {
         title: data.title,
         contentType: data.contentType,
         durationMinutes: data.durationMinutes,
@@ -40,7 +41,7 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
       reset()
       onClose()
     } catch {
-      // In-memory write; failures aren't expected here.
+      // Real error surfaced via the lessons hook's own error state on next load.
     }
   }
 

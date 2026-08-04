@@ -14,7 +14,7 @@ const LOAD_DELAY_MS = 300;
 export default function AssessmentsPage() {
   const [loading, setLoading] = useState(true);
   const attempts = useAssessmentAttempts();
-  const takeableAssessments = useAssessmentCatalog();
+  const { data: takeableAssessments } = useAssessmentCatalog();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS);

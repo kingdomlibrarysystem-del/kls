@@ -1,42 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ClipboardCheck, Clock } from 'lucide-react'
+import { useState } from 'react'
+import { ClipboardCheck, Clock, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useAssessmentAttempts } from '@/app/member/_shared/use-assessment-attempts'
 import { useAssessmentCatalog } from '@/app/member/_shared/use-assessments'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
-import type { AssessmentAttempt } from '@/app/member/_shared/enrollment-data'
+import { useCourseCatalog } from '../../../_shared/use-course-catalog'
+import { useAttemptsAdmin, type AttemptRecord } from './use-attempts-admin'
 import { GradeAttemptModal } from './grade-attempt-modal'
-
-/** Simulated network delay before the shared attempt store's initial snapshot is shown. */
-const LOAD_DELAY_MS = 400
-
-/** This mock has a single member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const MEMBER_NAME = 'John Doe'
 
 /**
  * Admin review queue for anything a manager must manually grade: OPEN-
  * question answers and PROJECT (hackathon-style) submissions alike, since
- * both land as PENDING_REVIEW. Opens `GradeAttemptModal`, which branches
- * per assessment kind — grading transitions the attempt to GRADED, which
- * flows back into the member's Assessment History and, if it completes
- * the course, certificate eligibility (see gradeOpenAnswers docstring).
+ * both land as PENDING_REVIEW. Reads the real AssessmentAttempt
+ * collection — grading is an admin-only action with no dependency on a
+ * real "current user" for the grader, so this surface is fully real
+ * even though the member's own take-quiz submission path is not yet
+ * (see PROGRESS.md's Phase 5 entry).
  */
 export function ReviewQueueView() {
-  const [loading, setLoading] = useState(true)
-  const [grading, setGrading] = useState<AssessmentAttempt | null>(null)
+  const [grading, setGrading] = useState<AttemptRecord | null>(null)
   const [toast, setToast] = useState('')
 
-  const attempts = useAssessmentAttempts()
-  const catalog = useAssessmentCatalog()
+  const { data: attempts, loading: attemptsLoading, error: attemptsError } = useAttemptsAdmin()
+  const { data: catalog, loading: catalogLoading, error: catalogError } = useAssessmentCatalog()
+  const { data: courseCatalog } = useCourseCatalog()
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const loading = attemptsLoading || catalogLoading
+  const error = attemptsError ?? catalogError
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
@@ -50,6 +42,10 @@ export function ReviewQueueView() {
     )
   }
 
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the review queue" description={error} />
+  }
+
   const pending = attempts.filter((a) => a.reviewStatus === 'PENDING_REVIEW')
 
   const courseTitleFor = (assessmentId: string) => {
@@ -57,7 +53,7 @@ export function ReviewQueueView() {
     return courseCatalog.find((c) => c.id === assessment?.courseId)?.title ?? 'Unknown course'
   }
 
-  const columns: Column<AssessmentAttempt>[] = [
+  const columns: Column<AttemptRecord>[] = [
     {
       key: 'assessmentId', label: 'Assessment', sortable: true,
       render: (a) => (
@@ -67,7 +63,6 @@ export function ReviewQueueView() {
         </div>
       ),
     },
-    { key: 'member', label: 'Member', render: () => <span className="text-w-700">{MEMBER_NAME}</span> },
     { key: 'takenAt', label: 'Submitted', sortable: true, render: (a) => <span className="text-w-700">{a.takenAt}</span> },
     {
       key: 'score', label: 'Auto-graded so far', sortable: true,
@@ -110,10 +105,10 @@ export function ReviewQueueView() {
       {pending.length === 0 ? (
         <EmptyState icon={ClipboardCheck} title="Review queue is empty" description="No open-ended answers or project submissions are awaiting review." />
       ) : (
-        <DataTable<AssessmentAttempt>
+        <DataTable<AttemptRecord>
           data={pending}
           columns={columns}
-          rowKey={(a) => a.assessmentId}
+          rowKey={(a) => a.id}
           searchPlaceholder="Search assessment title..."
           searchFilter={(a, q) => (catalog[a.assessmentId]?.title ?? '').toLowerCase().includes(q)}
           emptyMessage="No pending attempts match your search."

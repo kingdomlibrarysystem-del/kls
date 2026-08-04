@@ -5,12 +5,12 @@ import { CheckCircle, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAssessmentCatalog } from '@/app/member/_shared/use-assessments'
-import { gradeOpenAnswers, PROJECT_SUBMISSION_KEY } from '@/app/member/_shared/use-assessment-attempts'
-import type { AssessmentAttempt } from '@/app/member/_shared/enrollment-data'
+import { PROJECT_SUBMISSION_KEY } from '@/app/member/_shared/use-assessment-attempts'
+import { gradeAttempt, type AttemptRecord } from './use-attempts-admin'
 import { ProjectGradeFields } from './project-grade-fields'
 
 interface GradeAttemptModalProps {
-  attempt: AssessmentAttempt | null
+  attempt: AttemptRecord | null
   onClose: () => void
   onGraded: (assessmentTitle: string) => void
 }
@@ -29,7 +29,7 @@ interface GradeAttemptModalProps {
 export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptModalProps) {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [error, setError] = useState('')
-  const catalog = useAssessmentCatalog()
+  const { data: catalog } = useAssessmentCatalog()
 
   const assessment = attempt ? catalog[attempt.assessmentId] : undefined
   const isProject = assessment?.kind === 'PROJECT'
@@ -50,12 +50,12 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
     setScores((prev) => ({ ...prev, [questionId]: bounded }))
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     try {
       if (!isProject && openQuestions.some((q) => scores[q.id] === undefined)) {
         throw new Error('Enter a score for every open-ended question')
       }
-      gradeOpenAnswers(attempt.assessmentId, assessment.courseId, scores, attempt.score, attempt.totalMarks)
+      await gradeAttempt(attempt.id, scores)
       onGraded(assessment.title)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this grade')

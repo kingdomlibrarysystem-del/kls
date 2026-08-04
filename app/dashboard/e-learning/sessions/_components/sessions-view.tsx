@@ -1,18 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { CalendarClock, Zap, CheckCircle, XCircle, Video } from 'lucide-react'
+import { CalendarClock, Zap, CheckCircle, XCircle, Video, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useSessionRequests, approveSession, rejectSession } from '@/lib/sessions/use-session-requests'
+import { useSessionRequestsAdmin, approveSessionAdmin, rejectSessionAdmin } from './use-session-requests-admin'
 import { sessionStatusConfig, type SessionRequest, type SessionStatus } from '@/lib/sessions/session-requests-data'
 import { SessionDecisionModal } from '@/lib/sessions/session-decision-modal'
 import { SessionsStats } from './sessions-stats'
-
-/** Simulated network delay before mock session requests become visible. */
-const LOAD_DELAY_MS = 400
 
 type ModalAction = 'approve' | 'reject' | null
 
@@ -78,32 +75,34 @@ function buildColumns(onOpenModal: (r: SessionRequest, action: 'approve' | 'reje
  * ones for courses one specific lecturer teaches.
  */
 export function SessionsView() {
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'all'>('all')
   const [modalTarget, setModalTarget] = useState<SessionRequest | null>(null)
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [toast, setToast] = useState('')
-  const requests = useSessionRequests()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: requests, loading, error } = useSessionRequestsAdmin()
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
   const closeModal = () => { setModalTarget(null); setModalAction(null) }
 
-  const handleApprove = (scheduledAt: string, notes: string) => {
+  const handleApprove = async (scheduledAt: string, notes: string) => {
     if (!modalTarget) return
-    approveSession(modalTarget.id, scheduledAt, notes || undefined)
-    showToast(`Approved session with ${modalTarget.learnerName}`)
+    try {
+      await approveSessionAdmin(modalTarget.id, scheduledAt, notes || undefined)
+      showToast(`Approved session with ${modalTarget.learnerName}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not approve this session')
+    }
     closeModal()
   }
 
-  const handleReject = (notes: string) => {
+  const handleReject = async (notes: string) => {
     if (!modalTarget) return
-    rejectSession(modalTarget.id, notes)
-    showToast(`Rejected session with ${modalTarget.learnerName}`)
+    try {
+      await rejectSessionAdmin(modalTarget.id, notes)
+      showToast(`Rejected session with ${modalTarget.learnerName}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not reject this session')
+    }
     closeModal()
   }
 
@@ -115,6 +114,10 @@ export function SessionsView() {
         ))}
       </div>
     )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load session requests" description={error} />
   }
 
   const tableData = statusFilter === 'all' ? requests : requests.filter((r) => r.status === statusFilter)

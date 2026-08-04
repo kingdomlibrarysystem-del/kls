@@ -13,13 +13,13 @@ interface DeleteQuizModalProps {
 
 /** Delete confirmation modal for a quiz/exam. */
 export function DeleteQuizModal({ assessment, onClose }: DeleteQuizModalProps) {
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!assessment) return
     try {
-      removeAssessment(assessment.id)
+      await removeAssessment(assessment.id)
       onClose()
     } catch {
-      // In-memory write; failures aren't expected here.
+      // Real error surfaced via the assessment hook's own error state on next load.
     }
   }
 
