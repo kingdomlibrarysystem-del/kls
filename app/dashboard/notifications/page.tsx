@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell, BookOpen, CalendarClock, GraduationCap, BookCopy, AlertCircle, ChevronRight } from 'lucide-react'
+import { Bell, BookOpen, CalendarClock, GraduationCap, BookCopy, AlertCircle, ChevronRight, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageTransition } from '@/components/ui/page-transition'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import type { NotificationType } from './_components/notifications-data'
 import { useNotifications, markNotificationRead } from './_components/use-notifications'
@@ -25,8 +27,30 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
  */
 export default function NotificationsPage() {
   const { user } = useAuth()
-  const notifications = useNotifications(user?.role)
+  const { data: notifications, loading, error } = useNotifications(user?.role)
   const unread = notifications.filter((n) => !n.read).length
+
+  if (loading) {
+    return (
+      <PageTransition>
+        <PageHeader title="Notifications" subtitle="Loading…" />
+        <div className="space-y-2" aria-label="Loading notifications">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      </PageTransition>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageTransition>
+        <PageHeader title="Notifications" subtitle="" />
+        <EmptyState icon={AlertTriangle} title="Couldn't load notifications" description={error} />
+      </PageTransition>
+    )
+  }
 
   return (
     <PageTransition>
@@ -40,7 +64,7 @@ export default function NotificationsPage() {
           <Link
             key={n.id}
             href={n.href}
-            onClick={() => markNotificationRead(n.id)}
+            onClick={() => { markNotificationRead(n.id).catch(() => {}) }}
             aria-label={`View details for: ${n.title}`}
             className={`flex items-start gap-4 p-4 rounded-lg border transition-colors hover:border-w-500 ${
               n.read ? 'bg-white border-w-300' : 'bg-form-highlight border-w-400'

@@ -106,7 +106,7 @@ export function sendMessage(channelId: string, senderName: string, senderRole: U
         message: `${senderName}: ${body.length > 60 ? `${body.slice(0, 60)}…` : body}`,
         href: '/member/messages',
         recipientRole,
-      })
+      }).catch(() => {})
     }
   }
 
