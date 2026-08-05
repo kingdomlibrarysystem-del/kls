@@ -94,6 +94,8 @@ model User {
   sessionRequestsAsLecturer SessionRequest[] @relation("SessionRequestLecturer")
   projectMemberships        ProjectMember[]
   researchPapers             ResearchPaper[]
+  messagesSent               Message[]
+  notifications               Notification[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -480,6 +482,7 @@ model Course {
   assessments   Assessment[]
   certificates  Certificate[]
   sessionRequests SessionRequest[]
+  channels      Channel[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -760,4 +763,84 @@ enum ResearchPaperStatus {
   DRAFT
   SUBMITTED
   PUBLISHED
+}
+
+/// Real chat channel, replacing lib/messaging/types.ts's Channel — the
+/// migration plan's flagged "channel id derived from names" problem
+/// (`dm-${[nameA,nameB].sort().join('__')}` string keys, course channels
+/// never stored at all) resolved into a real collection with a real id
+/// and real participantIds. `courseId` is set for a COURSE channel (one
+/// real Channel row per Course, created once rather than re-derived on
+/// every read); null for a DM. Every known persona in this mock's closed
+/// roster (see lib/messaging/known-people.ts's docstring: "there's no
+/// general user directory") already resolves to a real User from prior
+/// phases' seeds, so participantIds are real @db.ObjectId FKs, not a
+/// speculative design.
+model Channel {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  kind           ChannelKind
+  name           String
+  participantIds String[]      @db.ObjectId
+  courseId       String?       @db.ObjectId
+  course         Course?       @relation(fields: [courseId], references: [id])
+  messages       Message[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum ChannelKind {
+  COURSE
+  DM
+}
+
+/// Real chat message, replacing lib/messaging/types.ts's Message
+/// (senderName/readBy/reactedBy were all free-text names, zero real
+/// ids). `readByIds`/reaction `reactedByIds` are real User id arrays.
+model Message {
+  id         String            @id @default(auto()) @map("_id") @db.ObjectId
+  channelId  String            @db.ObjectId
+  channel    Channel           @relation(fields: [channelId], references: [id])
+  senderId   String            @db.ObjectId
+  sender     User              @relation(fields: [senderId], references: [id])
+  senderName String
+  body       String
+  sentAt     DateTime          @default(now())
+  readByIds  String[]          @db.ObjectId
+  reactions  MessageReaction[]
+}
+
+type MessageReaction {
+  emoji      String
+  reactedByIds String[]
+}
+
+/// Real notification, replacing
+/// app/dashboard/notifications/_components/notifications-data.ts's
+/// Notification. `recipientId` is added alongside the mock's existing
+/// role-level `recipientRole` (kept, not replaced — plenty of real
+/// notifications in this app are genuinely role-broadcast, e.g. "a new
+/// course enrollment" is meaningful to any admin/staff viewer, not one
+/// specific person) so a notification CAN be scoped to one real person
+/// once a caller has one, without forcing every notification to require
+/// one.
+model Notification {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  type          NotificationType
+  title         String
+  message       String
+  href          String
+  read          Boolean            @default(false)
+  recipientRole String
+  recipientId   String?            @db.ObjectId
+  recipient     User?              @relation(fields: [recipientId], references: [id])
+  createdAt     DateTime           @default(now())
+}
+
+enum NotificationType {
+  BORROW
+  RESERVATION
+  COURSE
+  PUBLICATION
+  DUE
+  SYSTEM
 }
