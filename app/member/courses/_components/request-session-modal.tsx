@@ -56,7 +56,7 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
         message: `${CURRENT_MEMBER_NAME} requested a live session for "${course.title}" with ${lecturer.name}.`,
         href: '/dashboard/e-learning/sessions',
         recipientRole: 'admin',
-      })
+      }).catch(() => {})
 
       setProposedTime('')
       setNotes('')
