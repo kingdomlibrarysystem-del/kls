@@ -3597,3 +3597,157 @@ depending on a live "current user."
 Proceeding automatically to Phase 7 (Messaging, Notifications,
 Sessions) per the standing Autonomous Mode instruction.
 
+# Phase 7 (Messaging, Notifications) — Completed for Notifications; Messaging schema+API real, live writes blocked
+
+Note: Sessions-the-live-booking-feature was already migrated in Phase
+5 (confirmed independent of Messaging via a zero-cross-import grep at
+the time) — this phase covers Messaging (chat) and Notifications only.
+
+## Re-verification of the plan doc against real code
+
+Confirmed the plan's core finding precisely: `lib/messaging/types.ts`'s
+`Channel.id` for a DM is `dm-${[nameA,nameB].sort().join('__')}` — a
+string key derived from display names, not a real id — and course
+channels were never stored at all, re-derived from
+`enrollment + lecturerId` data on every read via `derive-channels.ts`.
+`participantNames`/`senderName`/`readBy`/`reactedBy` are ALL free-text
+names, with zero real ids anywhere in the mock.
+
+**Also found, not in the plan**: `derive-channels.ts` still imported
+the OLD static member `course-catalog-data.ts` array by id — the exact
+same systemic bug class fixed 6 times during Phase 5 (courses now have
+real MongoDB ObjectIds, not `'1'..'12'`), confirming this file was
+never touched during that phase's cleanup pass. Resolved by this
+phase's real `Channel` model instead of patching the derivation.
+
+**Key finding that shaped this phase's scope**: `lib/messaging/
+known-people.ts`'s own docstring states "there's no general user
+directory" — the entire messaging system operates on a closed, fixed
+roster of exactly 5 named personas (the one mock member, one
+contributor, three lecturers). Every one of these personas already
+resolves to a real seeded `User` from Phases 3-6 (confirmed identical
+`User._id` values reused across phases via each seed script's
+upsert-by-email). This made the **schema** buildable with real
+`senderId`/`participantIds` FKs, even though the **live write path**
+(`app/member/messages/page.tsx` hardcodes `personName="John Doe"` with
+no `useAuth()` call at all — presenting itself as "your own inbox"
+with no real session behind that claim) is the same class of gap
+Phase 3/4/5 already declined to paper over, so it stays blocked.
+
+Confirmed `lib/messaging/use-messages.ts`'s mock message store starts
+genuinely empty (`let allMessages: Message[] = []`) — no seed message
+data existed to migrate.
+
+Confirmed `notifications-data.ts`'s `recipientRole`-only design
+(`UserRole`, no `recipientId`) is a deliberate, documented
+simplification for a mock with exactly one persona per role — and,
+critically, that role-level notification create/read/mark-read
+genuinely needs no specific person's identity, only a role — so this
+surface hit **no** identity blocker at all, unlike Messaging.
+
+## Schema
+
+Added `Channel` (`kind` COURSE/DM, real `participantIds` User FKs,
+`courseId` set for a COURSE channel) and `Message` (real `senderId`
+FK, `readByIds`/reaction `reactedByIds` as real User id arrays).
+Added `Notification` alongside the mock's `recipientRole` (kept — many
+notifications are genuinely role-broadcast) with an added optional
+`recipientId`. `npx prisma db push` confirmed applied against `kcs_app`.
+
+## Seed (`prisma/seed/seed-phase7.mjs`)
+
+Created one real `Channel` per real `Course` that has a `lecturerId`
+(13 of 16), with `participantIds` resolved from that course's real
+lecturer plus every real `Enrollment.userId` for it. Seeded the 5 mock
+`Notification` rows. No `Message` rows to seed (confirmed empty mock
+store above).
+
+## API routes
+
+`/api/channels` (GET only — channels are created by seed or lazily by
+the first message), `/api/messages` (+ `[id]`), `/api/notifications`
+(+ `[id]`). Message `POST` lazily creates a DM channel if `channelId`
+is omitted and exactly 2 `participantIds` are given, matching the
+mock's own "a DM channel only exists once a first message is sent"
+semantics but with a real sorted-participantIds lookup instead of a
+string-concatenated name key. `PATCH` on a message supports `markRead`
+and `toggleReaction` (a genuine toggle — reacting twice with the same
+emoji removes it, matching the mock).
+
+**Verified via curl**: fetching channels, sending a DM (confirmed lazy
+channel creation), replying into the same existing channel (confirmed
+channel reuse, not a duplicate), mark-read, reaction toggle both
+on and off, notification create/list/filter/mark-read, and
+missing-fields validation.
+
+## Frontend wiring
+
+Rewired `use-notifications.ts` to fetch-backed. Found and fixed both
+real consumers via grep (one more than expected — `AppTopbar`'s unread
+badge reads `useNotifications()` directly as a local variable, not
+through a `notificationCount` prop as an earlier grep assumed): the
+`/dashboard/notifications` page and `components/app-shell/app-topbar.tsx`'s
+bell badge both now read real data.
+
+The two real `addNotification()` call sites that live inside
+already-blocked write paths (`request-session-modal.tsx`'s session
+request creation, `use-messages.ts`'s `sendMessage`) call the new
+async function fire-and-forget with an explicit `.catch` — left
+exactly as blocked as their surrounding flow, since partially wiring
+just the notification half would create an inconsistent state (a fake
+session request or chat message alongside a real notification).
+
+**Not wired — logged as a blocker, not silently left broken**:
+`lib/messaging/use-messages.ts` (`sendMessage`, `markChannelRead`,
+`toggleReaction`, `startDm`) and the `/member/messages` page that
+calls them remain on the mock. The real `Channel`/`Message` API above
+is fully built and verified so a genuine auth-aware caller can use it
+the moment real sessions exist — this phase intentionally did not
+build the API and then also silently leave it disconnected from any
+real caller.
+
+## Verification
+
+- `npx tsc --noEmit`: clean.
+- `npm run build`: clean, all routes compile.
+- **Verified via real dev server + curl**: `/dashboard/notifications`
+  and `/member/messages` both return HTTP 200; confirmed
+  `/api/notifications` and `/api/channels` return real MongoDB-backed
+  data.
+- Interactive click-through of the Notifications page (click-to-mark-
+  read) verified via code-path trace — the underlying PATCH action was
+  independently curl-verified above; Playwright remains unavailable as
+  a project dependency, same note as every prior phase.
+- Dev server shut down cleanly afterward.
+
+## Files created
+
+- `app/api/channels/route.ts`
+- `app/api/messages/route.ts` + `[id]/route.ts`
+- `app/api/notifications/route.ts` + `[id]/route.ts`
+- `prisma/seed/seed-phase7.mjs`
+
+## Files modified
+
+`prisma/schema.prisma`, `app/dashboard/notifications/{page.tsx,
+_components/use-notifications.ts}`, `components/app-shell/app-topbar.tsx`,
+`app/member/courses/_components/request-session-modal.tsx`,
+`lib/messaging/use-messages.ts`
+
+## Needs human input
+
+Carried forward from Phase 3/4/5, unresolved: the same "no real
+current user" question, now confirmed to also block Messaging's live
+send/read/react actions. Not a new blocker — the closed 5-person roster
+made the schema/API buildable for real (unlike a fully open user base
+would have), but the live UI still needs a real session to know which
+of those 5 people is actually typing.
+
+## Commits
+
+- `25fafbc` — `feat(api): add real Channel/Message/Notification models + CRUD API routes for Phase 7`
+- `3bf2040` — `feat(notifications): wire notifications page + topbar badge to real API`
+
+Proceeding automatically to Phase 8 (Reports & Analytics) per the
+standing Autonomous Mode instruction.
+
