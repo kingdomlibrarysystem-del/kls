@@ -3,8 +3,11 @@
 import { AlertTriangle, TrendingUp } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { RankingBarChart } from '@/components/ui/ranking-bar-chart'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { exportToCsv } from '@/lib/utils'
-import { overdueList, topResources, fineCollection, type OverdueEntry, type TopResourceEntry, type FineEntry, type FineStatus } from './reports-data'
+import { useLibraryReports } from './use-library-reports'
+import type { OverdueEntry, TopResourceEntry, FineEntry, FineStatus } from './reports-data'
 
 const fineStatusConfig: Record<FineStatus, { label: string; cls: string }> = {
   UNPAID: { label: 'Unpaid', cls: 'bg-red-50    text-red-800    border-red-200'    },
@@ -54,10 +57,17 @@ const fineColumns: Column<FineEntry>[] = [
   },
 ]
 
+function LoadingSkeleton() {
+  return <Skeleton className="h-40 w-full rounded-lg" aria-label="Loading report" />
+}
+
 export function OverdueTable() {
+  const { data, loading, error } = useLibraryReports()
+  if (loading) return <LoadingSkeleton />
+  if (error || !data) return <EmptyState icon={AlertTriangle} title="Couldn't load overdue items" description={error ?? 'Failed to load report data'} />
   return (
     <DataTable<OverdueEntry>
-      data={overdueList}
+      data={data.overdueList}
       columns={overdueColumns}
       rowKey={(r) => r.id}
       searchPlaceholder="Search overdue member or resource..."
@@ -69,25 +79,31 @@ export function OverdueTable() {
 
 /** Ranking chart of the same top-borrowed resources shown in the table below, sized to the data's own max borrow count rather than a fixed percentage scale. */
 export function TopResourcesChart() {
-  const maxValue = Math.max(...topResources.map((r) => r.borrowCount))
-  const data = topResources
+  const { data, loading, error } = useLibraryReports()
+  if (loading) return <LoadingSkeleton />
+  if (error || !data || data.topResources.length === 0) return null
+  const maxValue = Math.max(...data.topResources.map((r) => r.borrowCount))
+  const chartData = data.topResources
     .map((r) => ({ name: r.title, value: r.borrowCount }))
     .sort((a, b) => b.value - a.value)
   return (
     <RankingBarChart
-      data={data}
+      data={chartData}
       unit=""
       maxValue={Math.ceil(maxValue / 5) * 5}
-      height={Math.max(160, data.length * 40)}
+      height={Math.max(160, chartData.length * 40)}
       ariaLabel="Top-borrowed resources ranked by number of times borrowed"
     />
   )
 }
 
 export function TopResourcesTable() {
+  const { data, loading, error } = useLibraryReports()
+  if (loading) return <LoadingSkeleton />
+  if (error || !data) return <EmptyState icon={TrendingUp} title="Couldn't load top resources" description={error ?? 'Failed to load report data'} />
   return (
     <DataTable<TopResourceEntry>
-      data={topResources}
+      data={data.topResources}
       columns={topResourceColumns}
       rowKey={(r) => r.id}
       searchPlaceholder="Search resource or category..."
@@ -97,7 +113,7 @@ export function TopResourcesTable() {
   )
 }
 
-function exportFineCollection() {
+function exportFineCollection(fineCollection: FineEntry[]) {
   exportToCsv('fine-collection', [
     { label: 'Member', get: (r: FineEntry) => r.memberName },
     { label: 'Resource', get: (r: FineEntry) => r.resourceTitle },
@@ -108,14 +124,17 @@ function exportFineCollection() {
 }
 
 export function FineCollectionTable() {
+  const { data, loading, error } = useLibraryReports()
+  if (loading) return <LoadingSkeleton />
+  if (error || !data) return <EmptyState icon={AlertTriangle} title="Couldn't load fine collection" description={error ?? 'Failed to load report data'} />
   return (
     <DataTable<FineEntry>
-      data={fineCollection}
+      data={data.fineCollection}
       columns={fineColumns}
       rowKey={(r) => r.id}
       searchPlaceholder="Search member or resource..."
       searchFilter={(r, q) => r.memberName.toLowerCase().includes(q) || r.resourceTitle.toLowerCase().includes(q)}
-      onExport={exportFineCollection}
+      onExport={() => exportFineCollection(data.fineCollection)}
       emptyMessage="No fines recorded."
     />
   )
