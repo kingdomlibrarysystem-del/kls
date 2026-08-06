@@ -1,6 +1,22 @@
-import { overdueList, topResources, fineCollection } from './reports-data'
+'use client'
+
+import { Skeleton } from '@/components/ui/skeleton'
+import { useLibraryReports } from './use-library-reports'
 
 export function ReportsSummaryCards() {
+  const { data, loading } = useLibraryReports()
+
+  if (loading || !data) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6" aria-label="Loading report summary">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+        ))}
+      </div>
+    )
+  }
+
+  const { overdueList, topResources, fineCollection } = data
   const totalFines = fineCollection.reduce((sum, f) => sum + f.amount, 0)
   const unpaidFines = fineCollection.filter((f) => f.status === 'UNPAID').reduce((sum, f) => sum + f.amount, 0)
   const totalBorrowedToday = topResources.reduce((sum, r) => sum + r.borrowCount, 0)
