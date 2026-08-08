@@ -6,15 +6,13 @@ import { Zap, CalendarPlus, Link2, ChevronDown } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 import { useEnrollments } from '@/app/member/_shared/use-enrollments'
-import { courseCatalog, type CatalogCourse } from '@/app/member/_shared/course-catalog-data'
+import { useCourses, type CatalogCourse } from '@/app/member/_shared/use-courses'
 import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import { startInstantSession } from '@/lib/sessions/use-session-requests'
 import { InviteLinkModal } from '@/components/session-room/invite-link-modal'
 import { RequestSessionModal } from '@/app/member/courses/_components/request-session-modal'
-
-/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const CURRENT_MEMBER_NAME = 'John Doe'
 
 /**
  * Meet-style 3-way choice for the member side, symmetric to the
@@ -26,7 +24,10 @@ const CURRENT_MEMBER_NAME = 'John Doe'
  */
 export function StartSessionMenu() {
   const router = useRouter()
-  const enrollments = useEnrollments()
+  const { user } = useAuth()
+  const currentMemberName = user ? `${user.firstName} ${user.lastName}`.trim() : ''
+  const { data: enrollments } = useEnrollments()
+  const { data: courseCatalog } = useCourses()
   const myCourses = enrollments
     .map((e) => courseCatalog.find((c) => c.id === e.courseId))
     .filter((c): c is CatalogCourse => !!c)
@@ -51,7 +52,7 @@ export function StartSessionMenu() {
     const course = myCourses.find((c) => c.id === courseId) ?? myCourses[0]
     const lecturer = lecturerRoster.find((l) => l.id === course.lecturerId)
     const created = startInstantSession({
-      learnerName: CURRENT_MEMBER_NAME,
+      learnerName: currentMemberName,
       lecturerName: lecturer?.name ?? course.instructor,
       courseId: course.id,
       courseTitle: course.title,

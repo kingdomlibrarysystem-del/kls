@@ -2,14 +2,21 @@
 import { useState } from "react";
 import { PlayCircle, Clock, Star, Search, CheckCircle2, GraduationCap } from "lucide-react";
 import { RemoteImage } from "@/components/ui/remote-image";
-import { courseCatalog, courseCategories } from "../_shared/course-catalog-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/auth-context";
+import { useCourses } from "../_shared/use-courses";
 import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
 
 export default function ELearningPage() {
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
   const [enrollError, setEnrollError] = useState("");
-  const enrollments = useEnrollments();
+  const [enrolling, setEnrolling] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { data: courseCatalog, loading: coursesLoading } = useCourses();
+  const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments();
+
+  const categories = ["All", ...Array.from(new Set(courseCatalog.map((c) => c.category))).sort()];
 
   const filtered = courseCatalog.filter((c) => {
     const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
@@ -17,14 +24,28 @@ export default function ELearningPage() {
     return matchSearch && matchCat;
   });
 
-  const handleEnroll = (courseId: string, totalLessons: number) => {
+  const handleEnroll = async (courseId: string) => {
+    if (!user) return;
     setEnrollError("");
+    setEnrolling(courseId);
     try {
-      enrollInCourse(courseId, totalLessons);
+      await enrollInCourse(user.id, courseId);
+      await refetch();
     } catch (error) {
       setEnrollError(error instanceof Error ? error.message : "Could not enroll in this course");
+    } finally {
+      setEnrolling(null);
     }
   };
+
+  if (coursesLoading || enrollmentsLoading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-label="Loading courses">
+        <Skeleton style={{ height: 40, borderRadius: 8 }} />
+        <Skeleton style={{ height: 220, borderRadius: 8 }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -57,7 +78,7 @@ export default function ELearningPage() {
 
       {/* Categories */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {courseCategories.map((cat) => (
+        {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCat(cat)}
@@ -111,18 +132,19 @@ export default function ELearningPage() {
                   <PlayCircle size={14} color="var(--teal-light)" />
                   <span style={{ fontSize: 9, color: "var(--text-muted)", flex: 1 }}>{course.lessons} lessons</span>
                   <button
-                    onClick={() => handleEnroll(course.id, course.lessons)}
-                    disabled={enrolled}
+                    onClick={() => handleEnroll(course.id)}
+                    disabled={enrolled || enrolling === course.id}
                     aria-label={enrolled ? `Already enrolled in ${course.title}` : `Enroll in ${course.title}`}
                     style={{
                       display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, border: "none",
                       background: enrolled ? "var(--bg-section)" : "var(--teal-light)",
                       color: enrolled ? "var(--text-muted)" : "#fff",
                       fontSize: 10, fontWeight: 600, cursor: enrolled ? "default" : "pointer",
+                      opacity: enrolling === course.id ? 0.7 : 1,
                     }}
                   >
                     {enrolled && <CheckCircle2 size={11} />}
-                    {enrolled ? "Enrolled" : "Enroll"}
+                    {enrolled ? "Enrolled" : enrolling === course.id ? "Enrolling…" : "Enroll"}
                   </button>
                 </div>
               </div>

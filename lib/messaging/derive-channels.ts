@@ -1,17 +1,7 @@
-import type { CourseEnrollment } from '@/app/member/_shared/enrollment-data'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import type { CourseEnrollment } from '@/app/member/_shared/use-enrollments'
+import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { Channel, Message } from './types'
-
-/**
- * This mock has a single live member persona — see use-enrollments.ts's
- * CURRENT_MEMBER_NAME. A course channel's real participant list is
- * therefore always exactly [that one learner, the course's lecturer]
- * today; the derivation below reads the real enrollment store rather than
- * hardcoding that pairing, so it stays correct if this app ever supports
- * multiple concurrent learners.
- */
-const CURRENT_MEMBER_NAME = 'John Doe'
 
 export function courseChannelId(courseId: string): string {
   return `course-${courseId}`
@@ -22,10 +12,14 @@ export function courseChannelId(courseId: string): string {
  * data — never stored, per the confirmed design (the same "derive, don't
  * duplicate" principle getProgressPercent/isCertificateEligible already
  * use). A learner sees a channel per enrolled course; a lecturer sees a
- * channel per course they teach.
+ * channel per course they teach. `enrollments`/`courseCatalog` are now
+ * passed in by the caller (both come from real fetch hooks — see
+ * use-messages.ts's useChannelsFor) rather than read from a module-level
+ * mock array, since app/member/_shared/use-enrollments.ts and
+ * use-courses.ts moved to real /api/enrollments and /api/courses fetches.
  */
-export function deriveCourseChannels(personName: string, enrollments: CourseEnrollment[]): Channel[] {
-  const courses = personName === CURRENT_MEMBER_NAME
+export function deriveCourseChannels(personName: string, enrollments: CourseEnrollment[], courseCatalog: CatalogCourse[]): Channel[] {
+  const courses = enrollments.length > 0
     ? enrollments.map((e) => courseCatalog.find((c) => c.id === e.courseId)).filter((c): c is NonNullable<typeof c> => !!c)
     : courseCatalog.filter((c) => lecturerRoster.find((l) => l.id === c.lecturerId)?.name === personName)
 
@@ -35,7 +29,7 @@ export function deriveCourseChannels(personName: string, enrollments: CourseEnro
       id: courseChannelId(course.id),
       kind: 'course' as const,
       name: course.title,
-      participantNames: [CURRENT_MEMBER_NAME, lecturer?.name ?? course.instructor],
+      participantNames: [personName, lecturer?.name ?? course.instructor],
       courseId: course.id,
     }
   })

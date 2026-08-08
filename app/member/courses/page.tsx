@@ -1,27 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Award, BookX, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { courseCatalog, type CatalogCourse } from "../_shared/course-catalog-data";
+import { useCourses, type CatalogCourse } from "../_shared/use-courses";
 import { useEnrollments, getProgressPercent, isCertificateEligible } from "../_shared/use-enrollments";
 import { InProgressCoursesSection } from "./_components/in-progress-courses-section";
 import { CompletedCoursesSection } from "./_components/completed-courses-section";
 import { RequestSessionModal } from "./_components/request-session-modal";
-
-/** Simulated network delay before the shared enrollment store's initial snapshot is shown. */
-const LOAD_DELAY_MS = 300;
+import { useState } from "react";
 
 export default function MyCoursesPage() {
-  const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<CatalogCourse | null>(null);
-  const enrollments = useEnrollments();
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: enrollments, loading: enrollmentsLoading } = useEnrollments();
+  const { data: courseCatalog, loading: coursesLoading } = useCourses();
+  const loading = enrollmentsLoading || coursesLoading;
 
   if (loading) {
     return (

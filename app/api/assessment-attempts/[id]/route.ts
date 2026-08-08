@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 
 function serializeAttempt(a: {
   id: string
@@ -64,6 +65,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         where: { id },
         data: { openScores, score: finalScore, reviewStatus: 'GRADED', status },
       })
+
+      /**
+       * Ports use-enrollments.ts's applyAttemptOutcome for the "graded
+       * later" path: only now — once GRADED finalizes pass/fail — does the
+       * outcome apply to the enrollment and (if eligible) issue a
+       * certificate, matching the mock's rule that a PENDING_REVIEW
+       * attempt's provisional score never counts toward eligibility.
+       */
+      if (status === 'PASSED') {
+        const assessment = await prisma.assessment.findUnique({ where: { id: updated.assessmentId } })
+        if (assessment) {
+          const enrollment = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: updated.userId, courseId: assessment.courseId } } })
+          if (enrollment) {
+            await prisma.enrollment.update({ where: { id: enrollment.id }, data: { assessmentPassed: true } })
+            await issueCertificateIfEligible(updated.userId, assessment.courseId)
+          }
+        }
+      }
+
       return NextResponse.json({ data: serializeAttempt(updated), message: 'Attempt graded successfully', code: 'success', status: 200 })
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 
 function serializeEnrollment(e: {
   id: string
@@ -65,11 +66,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         : [...existing.completedLessonIds, body.lessonId]
       const status = completedLessonIds.length >= existing.totalLessons ? 'COMPLETED' : 'ENROLLED'
       const updated = await prisma.enrollment.update({ where: { id }, data: { completedLessonIds, status }, include: INCLUDE })
+      await issueCertificateIfEligible(updated.userId, updated.courseId)
       return NextResponse.json({ data: serializeEnrollment(updated), message: 'Lesson marked complete', code: 'success', status: 200 })
     }
 
     if (body.action === 'markAssessmentPassed') {
       const updated = await prisma.enrollment.update({ where: { id }, data: { assessmentPassed: true }, include: INCLUDE })
+      await issueCertificateIfEligible(updated.userId, updated.courseId)
       return NextResponse.json({ data: serializeEnrollment(updated), message: 'Enrollment updated successfully', code: 'success', status: 200 })
     }
 

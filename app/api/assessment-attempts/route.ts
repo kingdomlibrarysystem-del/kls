@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 
 /** Real AssessmentAttempt API, replacing the single-persona AssessmentAttempt embedded in app/member/_shared/enrollment-data.ts (no userId at all). */
 function serializeAttempt(a: {
@@ -133,6 +134,22 @@ export async function POST(request: NextRequest) {
         openAnswers: hasOpen ? openAnswers : undefined,
       },
     })
+
+    /**
+     * Ports use-enrollments.ts's applyAttemptOutcome: an AUTO_GRADED PASSED
+     * attempt (no OPEN questions) immediately flips the linked enrollment's
+     * assessmentPassed, then re-checks certificate eligibility — mirroring
+     * the mock's "pass/fail is only applied to the enrollment once it's
+     * final" rule (a PENDING_REVIEW attempt never reaches this branch).
+     */
+    if (reviewStatus === 'AUTO_GRADED' && status === 'PASSED') {
+      const enrollment = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: assessment.courseId } } })
+      if (enrollment) {
+        await prisma.enrollment.update({ where: { id: enrollment.id }, data: { assessmentPassed: true } })
+        await issueCertificateIfEligible(body.userId, assessment.courseId)
+      }
+    }
+
     return NextResponse.json({ data: serializeAttempt(attempt), message: 'Assessment attempt recorded', code: 'success', status: 201 }, { status: 201 })
   } catch {
     return NextResponse.json({ data: null, message: 'Failed to record assessment attempt', code: 'error', status: 500 }, { status: 500 })

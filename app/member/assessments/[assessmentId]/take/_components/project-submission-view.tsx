@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Send, AlertCircle, ClipboardList } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import { projectSubmissionSchema, type ProjectSubmissionData } from './project-submission-schema'
-import { recordProjectSubmission } from '../../../../_shared/use-assessment-attempts'
+import { recordProjectSubmission, type AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
 import type { TakeableAssessment } from '../../../../_shared/assessment-data'
-import type { AssessmentAttempt } from '../../../../_shared/enrollment-data'
 
 interface ProjectSubmissionViewProps {
   assessment: TakeableAssessment
@@ -25,6 +25,7 @@ interface ProjectSubmissionViewProps {
  * than inventing a new form pattern for this one screen.
  */
 export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmissionViewProps) {
+  const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
@@ -38,8 +39,8 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
     setSubmitting(true)
     setSubmitError('')
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      const attempt = recordProjectSubmission(assessment.id, assessment.projectMarks ?? 0, data.response)
+      if (!user) throw new Error('You must be signed in to submit a project')
+      const attempt = await recordProjectSubmission(user.id, assessment.id, data.response)
       onSubmitted(attempt)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not submit your project')

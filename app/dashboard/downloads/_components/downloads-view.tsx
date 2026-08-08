@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { Download, FileText, BarChart3, Eye, Lock } from 'lucide-react'
-import { useCertificates } from '@/app/dashboard/e-learning/certificates/_components/use-certificates'
-import type { Certificate } from '@/app/dashboard/e-learning/certificates/_components/certificates-data'
+import { useCertificatesAdmin, type CertificateRecord } from '@/app/dashboard/e-learning/certificates/_components/use-certificates-admin'
 import { CertificateViewModal } from '@/app/member/certificates/_components/certificate-view-modal'
 
 interface StaticDownloadItem {
@@ -40,8 +39,8 @@ const staticTypeIcon: Record<StaticDownloadItem['type'], React.ReactNode> = {
  * report data anywhere in this app.
  */
 export function DownloadsView() {
-  const certificates = useCertificates()
-  const [viewing, setViewing] = useState<Certificate | null>(null)
+  const { data: certificates } = useCertificatesAdmin()
+  const [viewing, setViewing] = useState<CertificateRecord | null>(null)
 
   return (
     <div>

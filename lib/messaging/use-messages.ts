@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from 'react'
 import { useEnrollments } from '@/app/member/_shared/use-enrollments'
+import { useCourses } from '@/app/member/_shared/use-courses'
 import { addNotification } from '@/app/dashboard/notifications/_components/use-notifications'
 import type { UserRole } from '@/contexts/auth-context'
 import { roleForName } from './identity'
@@ -48,9 +49,10 @@ export function startDm(nameA: string, nameB: string): Channel {
 
 /** All channels (course + DM) this person can see. Course channels are derived live; DM channels appear once a first message exists. */
 export function useChannelsFor(personName: string): Channel[] {
-  const enrollments = useEnrollments()
+  const { data: enrollments } = useEnrollments()
+  const { data: courseCatalog } = useCourses()
   const messages = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_MESSAGES)
-  return [...deriveCourseChannels(personName, enrollments), ...deriveDmChannels(personName, messages)]
+  return [...deriveCourseChannels(personName, enrollments, courseCatalog), ...deriveDmChannels(personName, messages)]
 }
 
 function nextMessageId() {

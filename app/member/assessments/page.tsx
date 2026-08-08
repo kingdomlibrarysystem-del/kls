@@ -1,25 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ClipboardList, CheckCircle2, XCircle, Clock, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { courseCatalog } from "../_shared/course-catalog-data";
+import { useCourses } from "../_shared/use-courses";
 import { useAssessmentAttempts } from "../_shared/use-assessment-attempts";
 import { useAssessmentCatalog } from "../_shared/use-assessments";
 
-/** Simulated network delay before the shared assessment-attempt store's initial snapshot is shown. */
-const LOAD_DELAY_MS = 300;
-
 export default function AssessmentsPage() {
-  const [loading, setLoading] = useState(true);
-  const attempts = useAssessmentAttempts();
-  const { data: takeableAssessments } = useAssessmentCatalog();
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: attempts, loading: attemptsLoading } = useAssessmentAttempts();
+  const { data: takeableAssessments, loading: catalogLoading } = useAssessmentCatalog();
+  const { data: courseCatalog, loading: coursesLoading } = useCourses();
+  const loading = attemptsLoading || catalogLoading || coursesLoading;
 
   if (loading) {
     return (
@@ -112,7 +104,7 @@ export default function AssessmentsPage() {
             const isPending = a.reviewStatus === "PENDING_REVIEW";
             const statusColor = isPending ? "var(--gold)" : a.status === "PASSED" ? "var(--green-light)" : "var(--red-light)";
             return (
-              <div key={a.assessmentId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px", borderBottom: "1px solid var(--border-light)" }}>
+              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px", borderBottom: "1px solid var(--border-light)" }}>
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--bg-section)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {isPending ? <Clock size={16} color={statusColor} /> : a.status === "PASSED" ? <CheckCircle2 size={16} color={statusColor} /> : <XCircle size={16} color={statusColor} />}
                 </div>

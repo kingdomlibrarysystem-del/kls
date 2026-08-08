@@ -1,19 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { FileX, AlertCircle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { useAuth } from '@/contexts/auth-context'
 import { CountdownTimer } from './countdown-timer'
 import { QuestionNavigator } from './question-navigator'
 import { ResultsScreen } from './results-screen'
 import { ProjectSubmissionView } from './project-submission-view'
-import { recordAssessmentAttempt, type SubmittedAnswer } from '../../../../_shared/use-assessment-attempts'
+import { recordAssessmentAttempt, type SubmittedAnswer, type AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
 import { useAssessmentCatalog } from '../../../../_shared/use-assessments'
-import type { AssessmentAttempt } from '../../../../_shared/enrollment-data'
-
-/** Simulated network delay before the mock assessment becomes visible. */
-const LOAD_DELAY_MS = 400
 
 interface TakeAssessmentViewProps {
   assessmentId: string
@@ -32,39 +29,36 @@ interface TakeAssessmentViewProps {
  * (its answer text persisted, not discarded) until a manager grades it.
  */
 export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
   const [questionIndex, setQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, SubmittedAnswer>>({})
-  const [secondsRemaining, setSecondsRemaining] = useState(0)
+  const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [autoSubmitted, setAutoSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [result, setResult] = useState<AssessmentAttempt | null>(null)
 
-  const { data: assessmentCatalog } = useAssessmentCatalog()
+  const { data: assessmentCatalog, loading } = useAssessmentCatalog()
   const assessment = assessmentCatalog[assessmentId]
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (assessment?.kind === 'EXAM' && assessment.durationSeconds) {
-        setSecondsRemaining(assessment.durationSeconds)
-      }
-      setLoading(false)
-    }, LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
+    if (assessment?.kind === 'EXAM' && assessment.durationSeconds) {
+      setSecondsRemaining(assessment.durationSeconds)
+    }
   }, [assessment])
 
-  const handleSubmit = useCallback((expired: boolean) => {
+  const handleSubmit = useCallback(async (expired: boolean) => {
     try {
       if (!assessment) throw new Error('Assessment not found')
-      const attempt = recordAssessmentAttempt(assessment.id, assessment.courseId, assessment.questions, answers)
+      if (!user) throw new Error('You must be signed in to submit an assessment')
+      const attempt = await recordAssessmentAttempt(user.id, assessment.id, answers)
       setResult(attempt)
       setAutoSubmitted(expired)
       setSubmitted(true)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not submit assessment')
     }
-  }, [assessment, answers])
+  }, [assessment, answers, user])
 
   if (loading) {
     return (
@@ -76,7 +70,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   }
 
   if (!assessment) {
-    return <EmptyState icon={FileX} title="Assessment not found" description="This assessment doesn't exist in the mock catalog." style={{ color: 'var(--text-secondary)' }} />
+    return <EmptyState icon={FileX} title="Assessment not found" description="This assessment doesn't exist in the catalog." style={{ color: 'var(--text-secondary)' }} />
   }
 
   if (submitted && result) {
@@ -93,7 +87,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{assessment.title}</h1>
-        {assessment.kind === 'EXAM' && (
+        {assessment.kind === 'EXAM' && secondsRemaining !== null && (
           <CountdownTimer
             secondsRemaining={secondsRemaining}
             onTick={setSecondsRemaining}

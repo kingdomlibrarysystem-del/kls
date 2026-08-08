@@ -1,31 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Award, Download, Eye, Star } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCertificates } from "@/app/dashboard/e-learning/certificates/_components/use-certificates";
-import type { Certificate } from "@/app/dashboard/e-learning/certificates/_components/certificates-data";
+import { useCertificates, type Certificate } from "@/app/member/_shared/use-certificates";
 import { CertificateViewModal } from "./_components/certificate-view-modal";
 
-/** Simulated network delay before the shared certificates store's initial snapshot is shown. */
-const LOAD_DELAY_MS = 300;
-
 /**
- * Real certificates earned by this member — reads the same shared store
- * the admin certificates page manages, so a certificate issued via the
- * enroll -> complete -> pass-assessment loop appears here automatically
- * (see app/member/_shared/use-enrollments.ts's issuance wiring).
+ * Real certificates earned by this member, fetched from /api/certificates
+ * filtered by the signed-in session's userId — issuance itself now happens
+ * server-side as a side effect of the real enroll -> complete -> pass-
+ * assessment loop (see app/api/_shared/issue-certificate-if-eligible.ts).
  */
 export default function CertificatesPage() {
-  const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState<Certificate | null>(null);
-  const allCertificates = useCertificates();
-  const certificates = allCertificates.filter((c) => c.member === "John Doe");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: certificates, loading } = useCertificates();
 
   if (loading) {
     return (
