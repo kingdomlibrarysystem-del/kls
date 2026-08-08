@@ -1,4 +1,5 @@
 import React from 'react'
+import { Loader2 } from 'lucide-react'
 
 interface ElegantButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -36,10 +37,12 @@ export const ElegantButton = React.forwardRef<
       <button
         ref={ref}
         disabled={disabled || loading}
+        aria-busy={loading}
         className={`
           px-6 py-3 font-lato text-sm font-normal rounded
           transition-all duration-200 ease-in-out
           disabled:opacity-60 disabled:cursor-not-allowed
+          flex items-center justify-center gap-2
           ${variantClasses[variant]}
           ${fullWidth ? 'w-full' : ''}
           ${className}
@@ -47,6 +50,7 @@ export const ElegantButton = React.forwardRef<
         style={{ letterSpacing: '0.5px' }}
         {...props}
       >
+        {loading && <Loader2 size={16} className="animate-spin" />}
         {loading ? 'Loading...' : children}
       </button>
     )
