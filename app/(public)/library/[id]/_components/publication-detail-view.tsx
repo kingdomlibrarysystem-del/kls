@@ -143,7 +143,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             </Link>
           )}
 
-          {isAuthenticated ? (
+          {isAuthenticated && resource ? (
             <div className="flex flex-col sm:flex-row gap-3">
               <ElegantButton
                 variant={isReadable ? 'outline' : 'primary'}
@@ -161,7 +161,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
                 Reserve
               </ElegantButton>
             </div>
-          ) : (
+          ) : isAuthenticated ? null : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
@@ -183,7 +183,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
+      <BorrowReserveConfirmModal action={action} resourceId={resource?.id ?? ''} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import type { PlatformUser, UserRoleValue } from './users-data'
+import type { PlatformUser } from './users-data'
 
 interface UsersStatsProps {
   data: PlatformUser[]
@@ -8,17 +8,16 @@ interface UsersStatsProps {
 export function UsersStats({ data }: UsersStatsProps) {
   const active = data.filter((u) => u.status === 'active').length
   const suspended = data.filter((u) => u.status === 'suspended').length
-  const byRole = (['admin', 'librarian', 'user'] as UserRoleValue[])
-    .map((r) => ({ role: r, count: data.filter((u) => u.role === r).length }))
-    .filter((r) => r.count > 0)
+  const roleCounts = new Map<string, number>()
+  data.forEach((u) => roleCounts.set(u.role, (roleCounts.get(u.role) ?? 0) + 1))
 
   const stats = [
     { label: 'Total Users', value: data.length, color: 'text-w-950' },
     { label: 'Active', value: active, color: 'text-green-700' },
     { label: 'Suspended', value: suspended, color: 'text-red-700' },
-    ...byRole.map((r) => ({
-      label: `${r.role.charAt(0).toUpperCase()}${r.role.slice(1)}s`,
-      value: r.count,
+    ...Array.from(roleCounts.entries()).map(([role, count]) => ({
+      label: `${role}s`,
+      value: count,
       color: 'text-w-600',
     })),
   ]

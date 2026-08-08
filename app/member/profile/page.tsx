@@ -19,13 +19,13 @@ const MEMBER_NAME = "John Doe";
 export default function ProfilePage() {
   const { user } = useAuth();
   const [editingProfile, setEditingProfile] = useState(false);
-  const borrowings = useBorrowings();
+  const { data: borrowings } = useBorrowings();
   const favorites = useFavorites();
   const enrollments = useEnrollments();
   const attempts = useAssessmentAttempts();
   const certificates = useCertificates();
 
-  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const booksRead = borrowings.filter((b) => b.status === "returned").length;
   const memberCertificates = certificates.filter((c) => c.member === MEMBER_NAME && !c.revoked).length;
   const decidedAttempts = attempts.filter((a) => a.reviewStatus !== "PENDING_REVIEW");
   const avgScore = decidedAttempts.length

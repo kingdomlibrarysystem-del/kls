@@ -1,52 +1,56 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { initialUsers, type PlatformUser } from './users-data'
+import { useState, useEffect, useCallback } from 'react'
+import type { PlatformUser } from './users-data'
 
-/**
- * Module-level mutable store so User Management's Create/Edit/Delete
- * survive a route remount instead of resetting to `initialUsers` every
- * time — mirrors the `use-audit-log.ts` / `use-resources.ts` pattern.
- */
-let users: PlatformUser[] = [...initialUsers]
-const listeners = new Set<() => void>()
+export type NewUserInput = { name: string; email: string; role: string; status: PlatformUser['status'] }
 
-function emitChange() {
-  listeners.forEach((listener) => listener())
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-function getSnapshot() {
-  return users
-}
-
-export type NewUserInput = { name: string; email: string; role: PlatformUser['role']; status: PlatformUser['status'] }
-
-/** Appends a new platform user to the shared store. */
-export function addUser(data: NewUserInput): PlatformUser {
-  const created: PlatformUser = { id: crypto.randomUUID(), joinDate: new Date().toISOString().split('T')[0], ...data }
-  users = [created, ...users]
-  emitChange()
-  return created
-}
-
-/** Updates an existing platform user in place. */
-export function updateUser(id: string, data: NewUserInput) {
-  users = users.map((u) => (u.id === id ? { ...u, ...data } : u))
-  emitChange()
-}
-
-/** Removes a platform user from the shared store. */
-export function removeUser(id: string) {
-  users = users.filter((u) => u.id !== id)
-  emitChange()
-}
-
-/** Live-subscribes to the shared platform-user list. */
+/** Fetches the real user list from /api/users and exposes Create/Update/Delete that hit the real API, then refetch. */
 export function useUsers() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => initialUsers)
+  const [users, setUsers] = useState<PlatformUser[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const refetch = useCallback(async () => {
+    const res = await fetch('/api/users?pageSize=1000')
+    const json = await res.json()
+    setUsers(json.data ?? [])
+  }, [])
+
+  useEffect(() => {
+    refetch().finally(() => setLoading(false))
+  }, [refetch])
+
+  const addUser = useCallback(async (data: NewUserInput) => {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.message ?? 'Failed to create user')
+    await refetch()
+    return json.data as PlatformUser
+  }, [refetch])
+
+  const updateUser = useCallback(async (id: string, data: NewUserInput) => {
+    const res = await fetch(`/api/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.message ?? 'Failed to update user')
+    await refetch()
+  }, [refetch])
+
+  const removeUser = useCallback(async (id: string) => {
+    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const json = await res.json().catch(() => null)
+      throw new Error(json?.message ?? 'Failed to delete user')
+    }
+    await refetch()
+  }, [refetch])
+
+  return { users, loading, addUser, updateUser, removeUser }
 }

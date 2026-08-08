@@ -19,13 +19,13 @@ const MEMBER_NAME = "John Doe";
  * rather than fabricating a number — flagged here, not silently invented.
  */
 export default function DashboardStats() {
-  const borrowings = useBorrowings();
+  const { data: borrowings } = useBorrowings();
   const favorites = useFavorites();
   const enrollments = useEnrollments();
   const attempts = useAssessmentAttempts();
   const certificates = useCertificates();
 
-  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const booksRead = borrowings.filter((b) => b.status === "returned").length;
   const booksLiked = favorites.length;
   const avgProgress = enrollments.length
     ? Math.round(enrollments.reduce((s, e) => s + getProgressPercent(e), 0) / enrollments.length)

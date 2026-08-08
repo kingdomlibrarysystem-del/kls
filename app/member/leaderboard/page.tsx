@@ -23,7 +23,7 @@ const medalIcons = [Trophy, Medal, Award];
  */
 function useRealRankings() {
   const certificates = useCertificates();
-  const borrowings = useBorrowings();
+  const { data: borrowings } = useBorrowings();
 
   const byMember = new Map<string, number>();
   certificates.filter((c) => !c.revoked).forEach((c) => {
@@ -31,7 +31,7 @@ function useRealRankings() {
   });
   if (!byMember.has(CURRENT_MEMBER_NAME)) byMember.set(CURRENT_MEMBER_NAME, 0);
 
-  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const booksRead = borrowings.filter((b) => b.status === "returned").length;
 
   return Array.from(byMember.entries())
     .map(([name, coursesCompleted]) => ({

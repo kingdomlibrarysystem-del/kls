@@ -1,6 +1,6 @@
 import { Mail, Shield, CalendarDays, Activity } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { roleColors, statusColors, type PlatformUser } from './users-data'
+import { roleColor, statusColors, type PlatformUser } from './users-data'
 
 interface UserDetailModalProps {
   user: PlatformUser | null
@@ -34,8 +34,8 @@ export function UserDetailModal({ user, onClose }: UserDetailModalProps) {
           </div>
 
           <div className="flex gap-2">
-            <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${roleColors[user.role]}`}>
-              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+            <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${roleColor(user.role)}`}>
+              {user.role}
             </span>
             <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${statusColors[user.status]}`}>
               {user.status.charAt(0).toUpperCase() + user.status.slice(1)}

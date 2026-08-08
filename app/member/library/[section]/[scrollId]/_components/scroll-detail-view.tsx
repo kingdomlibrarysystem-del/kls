@@ -31,7 +31,7 @@ interface ScrollDetailViewProps {
  */
 export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
-  const [actionTarget, setActionTarget] = useState<{ title: string; author: string } | null>(null)
+  const [actionTarget, setActionTarget] = useState<{ id: string; title: string; author: string } | null>(null)
   const { isAuthenticated } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
@@ -64,7 +64,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
 
   const matches = findResourcesForScroll(scroll.id, resources)
 
-  const startAction = (verb: BorrowReserveAction, resource: { title: string; author: string }) => {
+  const startAction = (verb: BorrowReserveAction, resource: { id: string; title: string; author: string }) => {
     setAction(verb)
     setActionTarget(resource)
   }
@@ -151,7 +151,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
       )}
 
       {actionTarget && (
-        <BorrowReserveConfirmModal action={action} bookTitle={actionTarget.title} bookAuthor={actionTarget.author} onClose={() => { setAction(null); setActionTarget(null) }} />
+        <BorrowReserveConfirmModal action={action} resourceId={actionTarget.id} bookTitle={actionTarget.title} bookAuthor={actionTarget.author} onClose={() => { setAction(null); setActionTarget(null) }} />
       )}
     </div>
   )

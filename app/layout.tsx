@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Cormorant_Garamond, Lato } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
+import { SessionProvider } from '@/components/session-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import './globals.css'
 
@@ -67,10 +68,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${cinzel.variable} ${cormorant.variable} ${lato.variable}`}>
       <body suppressHydrationWarning className="bg-white text-w-950 antialiased font-lato font-light">
         <ThemeProvider>
-          <AuthProvider>
-            {children}
-            {process.env.NODE_ENV === 'production' && <Analytics />}
-          </AuthProvider>
+          <SessionProvider>
+            <AuthProvider>
+              {children}
+              {process.env.NODE_ENV === 'production' && <Analytics />}
+            </AuthProvider>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>
