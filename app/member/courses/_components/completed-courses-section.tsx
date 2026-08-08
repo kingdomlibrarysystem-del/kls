@@ -2,9 +2,8 @@
 
 import { Award, GraduationCap, ChevronRight, CalendarPlus } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { isCertificateEligible } from '@/app/member/_shared/use-enrollments'
-import { courseCatalog, type CatalogCourse } from '@/app/member/_shared/course-catalog-data'
-import type { CourseEnrollment } from '@/app/member/_shared/enrollment-data'
+import { isCertificateEligible, type CourseEnrollment } from '@/app/member/_shared/use-enrollments'
+import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 
 interface CompletedCoursesSectionProps {
   completed: { enrollment: CourseEnrollment; course: CatalogCourse }[]
@@ -28,7 +27,7 @@ export function CompletedCoursesSection({ completed, onRequestSession }: Complet
         <Award size={14} color="var(--gold)" /> Completed
       </div>
       {completed.map(({ enrollment, course }) => {
-        const lecturerName = courseCatalog.find((c) => c.id === course.id)?.instructor
+        const lecturerName = course.instructor
         return (
           <div key={course.id} style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ width: 32, height: 32, borderRadius: 6, position: 'relative', overflow: 'hidden', background: 'rgba(212,168,67,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

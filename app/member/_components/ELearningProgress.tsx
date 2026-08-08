@@ -2,17 +2,18 @@
 
 import { GraduationCap, ChevronRight, Award } from "lucide-react";
 import { RankingBarChart } from "@/components/ui/ranking-bar-chart";
-import { courseCatalog } from "@/app/member/_shared/course-catalog-data";
+import { useCourses } from "@/app/member/_shared/use-courses";
 import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enrollments";
 
 /**
- * Dashboard-home widget showing real per-course progress from the shared
- * `/member/*` enrollment store (not a local mock array), rendered as a
- * horizontal ranking bar chart so multiple courses can be compared at a
- * glance instead of stacked flat progress bars.
+ * Dashboard-home widget showing real per-course progress from the real
+ * /api/enrollments (not a local mock array), rendered as a horizontal
+ * ranking bar chart so multiple courses can be compared at a glance
+ * instead of stacked flat progress bars.
  */
 export default function ELearningProgress() {
-  const enrollments = useEnrollments();
+  const { data: enrollments } = useEnrollments();
+  const { data: courseCatalog } = useCourses();
 
   const rows = enrollments
     .map((e) => ({ enrollment: e, course: courseCatalog.find((c) => c.id === e.courseId) }))

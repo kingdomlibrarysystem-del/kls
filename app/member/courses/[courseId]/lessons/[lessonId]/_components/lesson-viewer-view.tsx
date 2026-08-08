@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BookX } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -10,9 +10,6 @@ import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-e
 import { useLessonsByCourse } from '../../../../../_shared/use-lessons'
 import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
 
-/** Simulated network delay before mock lesson data becomes visible. */
-const LOAD_DELAY_MS = 400
-
 interface LessonViewerViewProps {
   courseId: string
   lessonId: string
@@ -20,15 +17,16 @@ interface LessonViewerViewProps {
 
 /**
  * Lesson viewer: page-local lesson-list sidebar + main content pane for the
- * active lesson. "Mark complete" writes to the shared `/member/*` enrollment
- * store, so progress is immediately reflected on My Courses.
+ * active lesson. "Mark complete" does a real PATCH against the member's
+ * enrollment (see use-enrollments.ts's markLessonComplete), so progress is
+ * immediately reflected on My Courses once the enrollment is refetched.
  */
 export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) {
-  const [loading, setLoading] = useState(true)
   const [markError, setMarkError] = useState('')
-  const enrollments = useEnrollments()
-  const { data: lessonsByCourse } = useLessonsByCourse()
-  const { data: assessmentCatalog } = useAssessmentCatalog()
+  const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments()
+  const { data: lessonsByCourse, loading: lessonsLoading } = useLessonsByCourse()
+  const { data: assessmentCatalog, loading: assessmentsLoading } = useAssessmentCatalog()
+  const loading = enrollmentsLoading || lessonsLoading || assessmentsLoading
 
   const course = lessonsByCourse[courseId]
   const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? -1
@@ -41,17 +39,13 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
     ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId)
     : undefined
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const handleMarkComplete = () => {
+  const handleMarkComplete = async () => {
     setMarkError('')
     try {
       if (!lesson) throw new Error('Lesson not found')
       if (!enrollment) throw new Error('You are not enrolled in this course')
-      markLessonComplete(courseId, lesson.id)
+      await markLessonComplete(enrollment.id, lesson.id)
+      await refetch()
     } catch (error) {
       setMarkError(error instanceof Error ? error.message : 'Could not mark lesson complete')
     }
@@ -71,7 +65,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
       <EmptyState
         icon={BookX}
         title="Lesson not found"
-        description="This course or lesson doesn't exist in the mock catalog."
+        description="This course or lesson doesn't exist in the catalog."
         style={{ color: 'var(--text-secondary)' }}
       />
     )

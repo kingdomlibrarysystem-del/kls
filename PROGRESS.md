@@ -3937,3 +3937,102 @@ section to stop describing the project as fully mocked.
 No further phases remain in the migration plan. Autonomous run ends
 here.
 
+---
+
+# Real Auth + Remaining Write-Path Wiring — In Progress (2026-08-08)
+
+The single recurring blocker documented above ("Auth is still a
+`localStorage` mock") is now resolved. Real next-auth (JWT strategy,
+Credentials provider, bcrypt-compare against the real `User.password`)
+is wired in: `lib/auth-options.ts`, `app/api/auth/[...nextauth]/
+route.ts`, `components/session-provider.tsx`, `types/next-auth.d.ts`.
+`contexts/auth-context.tsx` now wraps `useSession()`/`signIn`/`signOut`
+while preserving its exact prior `useAuth()` public interface, so none
+of its 25 consumers needed to change. Verified end-to-end via curl
+against a real running dev server: register → real bcrypt-hashed user
+→ login → real JWT session; wrong password correctly rejected with a
+401 and no fallback session (the old mock silently signed in as a
+generic "member" persona for any unrecognized email — that fallback,
+and the "switch role" instant-impersonation sidebar feature it made
+possible, are both removed entirely as a real privilege-escalation
+risk once auth became real).
+
+Per the recurring blocker's own resolution, every previously-deferred
+live member-facing write path is now back in scope. Progress so far:
+
+- **`/api/users` + `/api/users/[id]`**: were still a hardcoded 6-row
+  mock (a third, separate role/status vocabulary from both
+  `auth-context.tsx`'s old mock personas and the admin Users page's own
+  separate mock store) — discovered while wiring auth, fixed in the
+  same pass per explicit instruction. Added a real `status` field
+  (`UserStatus` enum: ACTIVE/INACTIVE/SUSPENDED) to the `User` model,
+  since no active/inactive/suspended concept existed on it at all.
+  Admin Users Management page rewired to this real API; `role` is now
+  the joined dynamic `Role.name`, not a hardcoded union.
+- **Borrow/Reserve** (public library + KCS scroll pages): now POST to
+  the real `/api/borrowings`/`/api/reservations` with the real session
+  `userId`/`memberName`/`memberEmail`. Member Borrowings/Reservations
+  pages fetch the member's own real records via `?userId=`, replacing
+  the old shared `useSyncExternalStore` mock stores. The mock's
+  member-side "convert a Ready reservation into a borrowing" self-serve
+  action was removed rather than faked — the real backend only allows
+  staff to `notify`/`convertToBorrow` a reservation (see
+  `app/api/reservations/[id]/route.ts`), so the member view is now
+  honestly read-only for that transition, matching the real approval
+  workflow Phase 3 already built for the admin side.
+- **Profile edit** (`updateUser`): now `PATCH`es `/api/users/[id]`
+  instead of writing to `localStorage`.
+- **Publication submission** (`paper-form-view.tsx`): re-checked,
+  already correctly resolves to a real `contributorId` via the real
+  research-projects API — this is an admin/staff tool attributing a
+  submission to a known contributor persona, not a "who is currently
+  logged in" question, so it never hit the auth blocker in the first
+  place. No change needed.
+- **E-learning** (enroll, mark-lesson-complete, take-quiz/assessment,
+  certificates): in progress — real `Course`/`Lesson`/`Enrollment`/
+  `Assessment`/`AssessmentAttempt`/`Certificate` APIs already exist
+  (Phase 5); the member-facing frontend (`use-enrollments.ts`,
+  `use-lessons.ts`, `use-assessment-attempts.ts`, the member-side
+  `use-certificates.ts` consumer, and course-catalog browsing) is being
+  rewired from its mock stores to these real APIs with the real session
+  `userId`.
+
+## Needs human input
+
+**Messaging (`lib/messaging/*`) cannot be fully wired to the real
+`/api/messages`/`/api/channels` without a product decision.** The real
+Message/Channel API is genuinely ID-based (`senderId`, `participantIds`
+are real `User.id`s — see `app/api/messages/route.ts`'s own doc
+comment, which already flagged this exact gap). The mock messaging
+system's course-channel/DM participants include "lecturer" and
+"contributor" personas (`lib/identity/lecturer-identity.ts`,
+`lib/identity/contributor-identity.ts`) that are **display-name-only
+constructs with no real signed-in `User` row** for most of them — a
+course's `lecturerId` FK on the real `Course` model does point to a
+real `User` (confirmed: 3 of the 3 lecturer personas used across
+seeded courses do have matching real `User` rows, e.g. "Dr. Elias
+Nkubito" → a real seeded lecturer user), but the general "start a DM
+with any known person" flow (`known-people.ts`) has no real user
+directory to resolve an arbitrary contributor/lecturer name against —
+several referenced personas have no backing `User` row at all.
+
+Wiring this fully requires deciding: (a) create real placeholder `User`
+rows for every mock lecturer/contributor persona that lacks one, so
+the real Channel/Message API's `participantIds` always resolve, or (b)
+scope member-facing messaging down to only DMs with other real
+members plus the real-`lecturerId` course channels, and leave the
+"start a DM with a named lecturer/contributor" picker as a documented
+gap until a real user directory exists. Both are legitimate product
+decisions, not implementation details — (a) fabricates data the app
+never had, (b) silently drops a currently-visible mock feature. Per
+CLAUDE.md's Autonomous Mode rule 2 (auth-adjacent, identity-model
+change), this is logged here rather than guessed.
+
+(Session-booking, which looked like the same class of gap at first,
+turned out NOT to be blocked: every course's `lecturerId` FK on the
+real `Course` model is either a real seeded `User` or `null` — there
+is no "unresolvable named persona" case the way messaging's general
+DM picker has, since session requests are always scoped to one
+specific course rather than an open directory of people. Wired
+directly; see below.)
+

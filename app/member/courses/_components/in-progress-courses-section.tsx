@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { PlayCircle, GraduationCap, CalendarPlus } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { getProgressPercent, getNextLessonId } from '@/app/member/_shared/use-enrollments'
-import { courseCatalog, type CatalogCourse } from '@/app/member/_shared/course-catalog-data'
-import type { CourseEnrollment } from '@/app/member/_shared/enrollment-data'
+import { getProgressPercent, getNextLessonId, type CourseEnrollment } from '@/app/member/_shared/use-enrollments'
+import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
+import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 
 interface InProgressCoursesSectionProps {
   inProgress: { enrollment: CourseEnrollment; course: CatalogCourse }[]
@@ -21,6 +21,7 @@ interface InProgressCoursesSectionProps {
  * the same unrestricted requestSession() call).
  */
 export function InProgressCoursesSection({ inProgress, onRequestSession }: InProgressCoursesSectionProps) {
+  const { data: lessonsByCourse } = useLessonsByCourse()
   if (inProgress.length === 0) return null
 
   return (
@@ -30,7 +31,7 @@ export function InProgressCoursesSection({ inProgress, onRequestSession }: InPro
       </div>
       {inProgress.map(({ enrollment, course }) => {
         const progress = getProgressPercent(enrollment)
-        const nextLessonId = getNextLessonId(enrollment)
+        const nextLessonId = getNextLessonId(enrollment, lessonsByCourse[course.id]?.lessons)
         return (
           <div key={course.id} style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ width: 40, height: 40, borderRadius: 8, position: 'relative', overflow: 'hidden', background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

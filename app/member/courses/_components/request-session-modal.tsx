@@ -4,13 +4,11 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 import { requestSession } from '@/lib/sessions/use-session-requests'
 import { addNotification } from '@/app/dashboard/notifications/_components/use-notifications'
 import { lecturerRoster } from '@/lib/identity/lecturer-identity'
-import type { CatalogCourse } from '@/app/member/_shared/course-catalog-data'
-
-/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const CURRENT_MEMBER_NAME = 'John Doe'
+import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 
 interface RequestSessionModalProps {
   course: CatalogCourse | null
@@ -27,6 +25,7 @@ interface RequestSessionModalProps {
  * every other notification in notifications-data.ts already follows.
  */
 export function RequestSessionModal({ course, onClose }: RequestSessionModalProps) {
+  const { user } = useAuth()
   const [proposedTime, setProposedTime] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
@@ -34,6 +33,7 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
   if (!course) return null
 
   const lecturer = lecturerRoster.find((l) => l.id === course.lecturerId)
+  const currentMemberName = user ? `${user.firstName} ${user.lastName}`.trim() : ''
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +42,7 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
       if (!lecturer) throw new Error('This course has no assigned lecturer')
 
       requestSession({
-        learnerName: CURRENT_MEMBER_NAME,
+        learnerName: currentMemberName,
         lecturerName: lecturer.name,
         courseId: course.id,
         courseTitle: course.title,
@@ -53,7 +53,7 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
       addNotification({
         type: 'course',
         title: 'Session Requested',
-        message: `${CURRENT_MEMBER_NAME} requested a live session for "${course.title}" with ${lecturer.name}.`,
+        message: `${currentMemberName} requested a live session for "${course.title}" with ${lecturer.name}.`,
         href: '/dashboard/e-learning/sessions',
         recipientRole: 'admin',
       }).catch(() => {})
