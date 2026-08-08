@@ -11,19 +11,12 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { FormSection } from '@/components/ui/form-section'
-import { useAuth } from '@/contexts/auth-context'
 
-const registerSchema = z
-  .object({
-    fullName: z.string().min(2, 'Full name must be at least 2 characters'),
-    email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  })
+const registerSchema = z.object({
+  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
 
 type RegisterFormData = z.infer<typeof registerSchema>
 
@@ -31,7 +24,6 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
-  const { register: registerUser } = useAuth()
 
   const {
     register,
@@ -46,7 +38,15 @@ export default function RegisterPage() {
     setSubmitError('')
 
     try {
-      await registerUser(data.fullName, data.email, data.password)
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const json = await res.json()
+      if (!res.ok || json.code !== 'success') {
+        throw new Error(json.message ?? 'Registration failed')
+      }
       setSubmitSuccess(true)
     } catch (error) {
       setSubmitError(
@@ -66,7 +66,7 @@ export default function RegisterPage() {
               Registration Successful
             </h2>
             <p className="font-lato text-w-700 mb-6">
-              Please check your email to verify your account before logging in.
+              Your account has been created. You can now sign in.
             </p>
             <Link href="/auth/login">
               <ElegantButton className="w-full">
