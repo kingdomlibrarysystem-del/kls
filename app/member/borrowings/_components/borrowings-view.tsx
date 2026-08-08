@@ -1,28 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BookOpen, RotateCcw, AlertTriangle, Calendar, ChevronRight, Clock, CheckCircle2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import type { Borrowing } from './borrowings-data'
+import type { Borrowing } from '@/app/dashboard/library/borrowings/_components/borrowings-data'
 import { useBorrowings } from '../../_shared/use-borrowings'
 import { BorrowingDetailModal } from './borrowing-detail-modal'
 
-/** Simulated network delay before mock borrowings become visible. */
-const LOAD_DELAY_MS = 400
-
 /** This member's borrowings: active/overdue list plus return history, each row opening a details modal. */
 export function BorrowingsView() {
-  const [loading, setLoading] = useState(true)
+  const { data: borrowings, loading } = useBorrowings()
   const [viewing, setViewing] = useState<Borrowing | null>(null)
-  const mockBorrowings = useBorrowings()
-  const active = mockBorrowings.filter((b) => b.status === 'Active' || b.status === 'Overdue')
-  const returned = mockBorrowings.filter((b) => b.status === 'Returned')
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const active = borrowings.filter((b) => b.status === 'active' || b.status === 'overdue' || b.status === 'pending')
+  const returned = borrowings.filter((b) => b.status === 'returned')
 
   if (loading) {
     return (
@@ -40,7 +31,7 @@ export function BorrowingsView() {
       <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         {[
           { icon: <BookOpen size={16} />, label: 'Active Loans', value: active.length.toString(), color: 'var(--gold)' },
-          { icon: <AlertTriangle size={16} />, label: 'Overdue', value: active.filter((b) => b.status === 'Overdue').length.toString(), color: 'var(--red-light)' },
+          { icon: <AlertTriangle size={16} />, label: 'Overdue', value: active.filter((b) => b.status === 'overdue').length.toString(), color: 'var(--red-light)' },
           { icon: <CheckCircle2 size={16} />, label: 'Returned', value: returned.length.toString(), color: 'var(--green-light)' },
         ].map((s) => (
           <div key={s.label} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -61,12 +52,12 @@ export function BorrowingsView() {
           <EmptyState icon={BookOpen} title="No active borrowings" description="Books you borrow will appear here until they're returned." style={{ color: 'var(--text-secondary)' }} />
         ) : (
           active.map((b) => {
-            const isOverdue = b.status === 'Overdue'
+            const isOverdue = b.status === 'overdue'
             return (
               <button
                 key={b.id}
                 onClick={() => setViewing(b)}
-                aria-label={`View details for ${b.title}`}
+                aria-label={`View details for ${b.resourceTitle}`}
                 className="w-full text-left"
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
               >
@@ -74,13 +65,13 @@ export function BorrowingsView() {
                   <BookOpen size={18} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{b.title}</div>
-                  <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.author}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{b.resourceTitle}</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.resourceType}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 9, color: isOverdue ? 'var(--red-light)' : 'var(--green-light)', fontWeight: 600 }}>{b.status}</div>
+                  <div style={{ fontSize: 9, color: isOverdue ? 'var(--red-light)' : 'var(--green-light)', fontWeight: 600 }}>{b.status === 'pending' ? 'Pending' : isOverdue ? 'Overdue' : 'Active'}</div>
                   <div style={{ fontSize: 8, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 1 }}>
-                    <Calendar size={10} /> Due {b.due}
+                    <Calendar size={10} /> Due {b.dueDate}
                   </div>
                 </div>
                 <ChevronRight size={14} color="var(--text-muted)" />
@@ -99,7 +90,7 @@ export function BorrowingsView() {
             <button
               key={b.id}
               onClick={() => setViewing(b)}
-              aria-label={`View details for ${b.title}`}
+              aria-label={`View details for ${b.resourceTitle}`}
               className="w-full text-left"
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
             >
@@ -107,12 +98,12 @@ export function BorrowingsView() {
                 <BookOpen size={18} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{b.title}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.author}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{b.resourceTitle}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{b.resourceType}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 9, color: 'var(--green-light)' }}>Returned</div>
-                <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{b.returned}</div>
+                <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{b.returnDate}</div>
               </div>
             </button>
           ))}

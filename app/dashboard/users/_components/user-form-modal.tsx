@@ -9,12 +9,12 @@ import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import type { PlatformUser, UserRoleValue, UserStatus } from './users-data'
+import { KNOWN_ROLES, type PlatformUser, type UserStatus } from './users-data'
 
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['user', 'librarian', 'admin']),
+  role: z.string().min(1, 'Role is required'),
   status: z.enum(['active', 'inactive', 'suspended']),
 })
 
@@ -38,12 +38,12 @@ export function UserFormModal({ open, editing, onClose, onSave }: UserFormModalP
     formState: { errors },
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: { name: '', email: '', role: 'user', status: 'active' },
+    defaultValues: { name: '', email: '', role: 'Member', status: 'active' },
   })
 
   useEffect(() => {
     if (open) {
-      reset(editing ? { name: editing.name, email: editing.email, role: editing.role, status: editing.status } : { name: '', email: '', role: 'user', status: 'active' })
+      reset(editing ? { name: editing.name, email: editing.email, role: editing.role, status: editing.status } : { name: '', email: '', role: 'Member', status: 'active' })
       setSubmitError('')
     }
   }, [open, editing, reset])
@@ -79,7 +79,7 @@ export function UserFormModal({ open, editing, onClose, onSave }: UserFormModalP
           <div>
             <FieldLabel htmlFor="role" required>Role</FieldLabel>
             <select id="role" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('role')}>
-              {(['user', 'librarian', 'admin'] as UserRoleValue[]).map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+              {KNOWN_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div>

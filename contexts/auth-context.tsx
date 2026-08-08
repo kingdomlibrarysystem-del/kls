@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useCallback, type ReactNode } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { logAuditEvent } from "@/app/dashboard/audit-log/_components/use-audit-log";
 
 export type UserRole = "admin" | "manager" | "staff" | "member";
@@ -19,89 +20,85 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  /** Returns `matched: false` when the email doesn't match a seed account — login still succeeds as the generic member persona (this is a mocked prototype with no real credential check), but the caller can now tell the caller apart from a real match to surface honest feedback instead of pretending it recognized the address. */
+  /** Returns `matched: false` when the credentials were rejected (wrong password or unknown email) — the caller decides how to surface that. */
   login: (email: string, password: string) => Promise<{ matched: boolean }>;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
-  /** Merges a partial edit (e.g. name/email from a profile form) into the current user and persists it, same as login/switchRole. */
+  /** Merges a partial edit (e.g. name/email from a profile form) into the current user via a real PATCH, then refreshes the session. */
   updateUser: (updates: Partial<Pick<User, "firstName" | "lastName" | "email">>) => void;
-  /** Creates a new mock member account and logs them in immediately, same as login. */
-  register: (fullName: string, email: string, _password: string) => Promise<void>;
-  /** Simulates sending a reset email — no real email/token flow exists to model, so this just resolves after a delay. */
+  /** Creates a real member account via /api/auth/register, then signs them in immediately. */
+  register: (fullName: string, email: string, password: string) => Promise<void>;
+  /** Simulates sending a reset email — no real email service is wired yet, so this just resolves after a delay. */
   forgotPassword: (email: string) => Promise<void>;
   /** Simulates confirming a verification token — resolves after a delay, no real token check. */
   verifyEmail: (token: string) => Promise<void>;
 }
 
-const mockUsers: Record<UserRole, User> = {
-  admin: { id: "1", firstName: "Admin", lastName: "User", email: "admin@kingdom.edu", role: "admin", roleName: "Administrator" },
-  manager: { id: "2", firstName: "Manager", lastName: "User", email: "manager@kingdom.edu", role: "manager", roleName: "Manager" },
-  staff: { id: "3", firstName: "Staff", lastName: "User", email: "staff@kingdom.edu", role: "staff", roleName: "Staff" },
-  member: { id: "5", firstName: "John", lastName: "Doe", email: "john@kingdom.edu", role: "member", roleName: "Kingdom Member" },
-};
+/** Maps a dynamic Role.name (admin-defined, free text) onto the fixed UserRole union the UI's RBAC checks use. Defaults to "member" for anything unrecognized. */
+function roleNameToUserRole(roleName: string): UserRole {
+  const normalized = roleName.trim().toLowerCase();
+  if (normalized === "admin" || normalized === "administrator") return "admin";
+  if (normalized === "manager") return "manager";
+  if (normalized === "staff") return "staff";
+  return "member";
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status, update } = useSession();
 
-  useEffect(() => {
-    const stored = localStorage.getItem("kcs_user");
-    if (stored) {
-      try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
-    }
-    setIsLoading(false);
-  }, []);
+  const isLoading = status === "loading";
+  const user: User | null = session?.user
+    ? {
+        id: session.user.id,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+        email: session.user.email ?? "",
+        role: roleNameToUserRole(session.user.roleName),
+        roleName: session.user.roleName,
+      }
+    : null;
 
-  const login = useCallback(async (email: string, _password: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    const found = Object.values(mockUsers).find((u) => u.email === email);
-    const u = found ?? mockUsers.member;
-    setUser(u);
-    localStorage.setItem("kcs_user", JSON.stringify(u));
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await signIn("credentials", { redirect: false, email, password });
+    const matched = !!result?.ok && !result.error;
     logAuditEvent({
-      actor: `${u.firstName} ${u.lastName}`,
+      actor: email,
       action: "LOGIN",
       target: "Session",
-      notes: found ? "Standard login, no prior failed attempts." : `Email "${email}" did not match a seed account — signed in as the default member persona.`,
+      notes: matched ? "Standard login, credentials verified." : `Login attempt for "${email}" failed — invalid credentials.`,
     });
-    setIsLoading(false);
-    return { matched: !!found };
+    return { matched };
   }, []);
 
   const logout = useCallback(() => {
     if (user) {
       logAuditEvent({ actor: `${user.firstName} ${user.lastName}`, action: "LOGOUT", target: "Session", notes: "Session ended by user." });
     }
-    setUser(null);
-    localStorage.removeItem("kcs_user");
+    signOut({ redirect: false });
   }, [user]);
 
-  const switchRole = useCallback((role: UserRole) => {
-    const u = mockUsers[role];
-    setUser(u);
-    localStorage.setItem("kcs_user", JSON.stringify(u));
-  }, []);
-
   const updateUser = useCallback((updates: Partial<Pick<User, "firstName" | "lastName" | "email">>) => {
-    setUser((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev, ...updates };
-      localStorage.setItem("kcs_user", JSON.stringify(next));
-      return next;
-    });
-  }, []);
+    if (!user) return;
+    const name = [updates.firstName ?? user.firstName, updates.lastName ?? user.lastName].join(" ").trim();
+    fetch(`/api/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email: updates.email }),
+    }).then(() => update());
+  }, [user, update]);
 
-  const register = useCallback(async (fullName: string, email: string, _password: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    const [firstName, ...rest] = fullName.trim().split(/\s+/);
-    const u: User = { id: crypto.randomUUID(), firstName: firstName || fullName, lastName: rest.join(" "), email, role: "member", roleName: "Kingdom Member" };
-    setUser(u);
-    localStorage.setItem("kcs_user", JSON.stringify(u));
-    setIsLoading(false);
+  const register = useCallback(async (fullName: string, email: string, password: string) => {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName, email, password }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => null);
+      throw new Error(json?.message ?? "Registration failed");
+    }
+    await signIn("credentials", { redirect: false, email, password });
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {
@@ -114,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, switchRole, updateUser, register, forgotPassword, verifyEmail }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, updateUser, register, forgotPassword, verifyEmail }}>
       {children}
     </AuthContext.Provider>
   );

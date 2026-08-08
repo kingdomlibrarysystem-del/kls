@@ -125,6 +125,7 @@ export function LibraryBrowser() {
 
       <BorrowReserveConfirmModal
         action={pending?.action ?? null}
+        resourceId={pending?.book.id ?? ''}
         bookTitle={pending?.book.title ?? ''}
         bookAuthor={pending?.book.author ?? ''}
         availableQty={pending?.book.availableQty}

@@ -167,7 +167,7 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
       </div>
 
       {borrowable && (
-        <BorrowReserveConfirmModal action={action} bookTitle={borrowable.title} bookAuthor={borrowable.author} onClose={() => setAction(null)} />
+        <BorrowReserveConfirmModal action={action} resourceId={borrowable.id} bookTitle={borrowable.title} bookAuthor={borrowable.author} onClose={() => setAction(null)} />
       )}
     </div>
   )

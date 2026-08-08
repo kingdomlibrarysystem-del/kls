@@ -77,6 +77,7 @@ model User {
   image                   String?
   password                String?
   notificationPreferences Json? // e.g., { "email": true, "sms": false }
+  status                  UserStatus      @default(ACTIVE)
   roleId                  String?         @db.ObjectId
   role                    Role?           @relation(fields: [roleId], references: [id])
   accounts                Account[]
@@ -99,6 +100,17 @@ model User {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
+}
+
+/// Account status — a real, admin-settable lifecycle state (suspend a
+/// user without deleting them), distinct from Role (what they can do).
+/// Added when wiring the admin Users Management page to real data: the
+/// mock's active/inactive/suspended vocabulary had no backing field on
+/// the real User model at all.
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
 /// Dynamic, admin-manageable role — rows an admin creates/edits/deletes at

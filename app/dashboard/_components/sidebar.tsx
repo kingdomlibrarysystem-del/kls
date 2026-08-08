@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { roleViewRoute, type SwitchableRole } from "@/lib/role-switcher";
 import { BookCopy, ChevronDown, ChevronLeft } from "lucide-react";
 import { adminMainNav, adminMgmtNav, memberNav, type NavItem } from "./nav-data";
 import { SidebarNavItem } from "./sidebar-nav-item";
@@ -16,7 +15,7 @@ export default function Sidebar() {
     "Publishing": false,
     "Research": false,
   });
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const isMember = user?.role === "member";
   const mainNav = isMember ? memberNav : adminMainNav;
   const mgmtNav = isMember ? [] : adminMgmtNav;
@@ -28,11 +27,6 @@ export default function Sidebar() {
 
   const isSectionActive = (item: NavItem) =>
     !!item.subItems?.some((sub) => currentRoute.startsWith(sub.href));
-
-  const handleSwitchRole = (role: SwitchableRole) => {
-    switchRole(role);
-    window.location.href = roleViewRoute[role];
-  };
 
   return (
     <aside
@@ -158,7 +152,7 @@ export default function Sidebar() {
           <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
         ))}
 
-        {!collapsed && <SidebarFooter currentRole={user?.role} onSwitchRole={handleSwitchRole} />}
+        {!collapsed && <SidebarFooter />}
       </div>
     </aside>
   );

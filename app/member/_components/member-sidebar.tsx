@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/contexts/auth-context";
-import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
   Home,
   BookOpen,
@@ -74,7 +72,6 @@ export default function MemberSidebar() {
     "Library": true,
     "E-Learning": false,
   });
-  const { user, switchRole } = useAuth();
   const currentRoute = usePathname();
 
   const toggleSection = (title: string) => {
@@ -237,38 +234,6 @@ export default function MemberSidebar() {
             {!collapsed && <span>{item.label}</span>}
           </Link>
         ))}
-
-        {/* Role simulation */}
-        {!collapsed && (
-          <>
-            <div style={{ height: 1, background: "var(--border)", margin: "6px 12px" }} />
-            <div style={{ padding: "6px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1 }}>
-              SWITCH VIEW
-            </div>
-            {SWITCHABLE_ROLES.map((r) => (
-              <div
-                key={r}
-                onClick={() => { switchRole(r); window.location.href = roleViewRoute[r]; }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "5px 12px",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  color: user?.role === r ? "var(--gold)" : "var(--text-secondary)",
-                  transition: "color 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-                onMouseLeave={(e) => {
-                  if (user?.role !== r) e.currentTarget.style.color = "var(--text-secondary)";
-                }}
-              >
-                {roleViewLabel[r]}
-              </div>
-            ))}
-          </>
-        )}
       </div>
     </aside>
   );

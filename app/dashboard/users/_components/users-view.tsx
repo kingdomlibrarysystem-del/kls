@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Eye, Pencil, Trash2, PlusCircle, Users as UsersIcon } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -8,26 +8,16 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
-import { roleColors, statusColors, type PlatformUser } from './users-data'
-import { useUsers, addUser, updateUser, removeUser } from './use-users'
+import { roleColor, statusColors, type PlatformUser } from './users-data'
+import { useUsers, type NewUserInput } from './use-users'
 import { UserFormModal } from './user-form-modal'
 import { UserDetailModal } from './user-detail-modal'
 import { DeleteUserModal } from './delete-user-modal'
 import { UsersStats } from './users-stats'
 
-/** Simulated network delay before mock users become visible. */
-const LOAD_DELAY_MS = 400
-
-/**
- * User Management: full CRUD over the shared platform-user store — Create
- * (via modal, appended to the store), Details (read-only modal), Edit
- * (pre-filled modal writing back to the store), Delete (confirmation modal
- * removing the row). Backed by `useUsers()` so the list survives a route
- * remount instead of resetting to the seed data.
- */
+/** User Management: full CRUD over the real /api/users backend. */
 export function UsersView() {
-  const [loading, setLoading] = useState(true)
-  const users = useUsers()
+  const { users, loading, addUser, updateUser, removeUser } = useUsers()
   const [toast, setToast] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformUser | null>(null)
@@ -36,32 +26,27 @@ export function UsersView() {
   const { user: currentUser } = useAuth()
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin User'
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
-
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   const openCreate = () => { setEditing(null); setFormOpen(true) }
   const openEdit = (user: PlatformUser) => { setEditing(user); setFormOpen(true) }
 
-  const handleSave = (data: { name: string; email: string; role: PlatformUser['role']; status: PlatformUser['status'] }, editingId: string | null) => {
+  const handleSave = async (data: NewUserInput, editingId: string | null) => {
     try {
       if (editingId) {
         const before = users.find((u) => u.id === editingId)
-        updateUser(editingId, data)
+        await updateUser(editingId, data)
         if (before && before.role !== data.role) {
           logAuditEvent({
             actor: actorName,
             action: 'ROLE_ASSIGNED',
-            target: `${data.name} → ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
-            notes: `Before: ${before.role.charAt(0).toUpperCase() + before.role.slice(1)}. After: ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}.`,
+            target: `${data.name} → ${data.role}`,
+            notes: `Before: ${before.role}. After: ${data.role}.`,
           })
         }
         showToast(`Updated "${data.name}".`)
       } else {
-        addUser(data)
+        await addUser(data)
         logAuditEvent({
           actor: actorName,
           action: 'USER_CREATED',
@@ -72,18 +57,18 @@ export function UsersView() {
       }
       setFormOpen(false)
       setEditing(null)
-    } catch {
-      showToast('Could not save this user — please try again.')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not save this user — please try again.')
     }
   }
 
-  const handleDelete = (user: PlatformUser) => {
+  const handleDelete = async (user: PlatformUser) => {
     try {
-      removeUser(user.id)
+      await removeUser(user.id)
       showToast(`Deleted "${user.name}".`)
       setDeleting(null)
-    } catch {
-      showToast('Could not delete this user — please try again.')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not delete this user — please try again.')
     }
   }
 
@@ -100,7 +85,7 @@ export function UsersView() {
     { key: 'email', label: 'Email', sortable: true, render: (u) => <span className="text-w-700">{u.email}</span> },
     {
       key: 'role', label: 'Role', sortable: true,
-      render: (u) => <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${roleColors[u.role]}`}>{u.role.charAt(0).toUpperCase() + u.role.slice(1)}</span>,
+      render: (u) => <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${roleColor(u.role)}`}>{u.role}</span>,
     },
     {
       key: 'status', label: 'Status', sortable: true,

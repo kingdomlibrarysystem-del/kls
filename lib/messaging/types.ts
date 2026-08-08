@@ -8,9 +8,9 @@ import type { UserRole } from '@/contexts/auth-context'
  * session-booking): unlike session booking, which the lecturer approves
  * and therefore "owns," chat has no single owning role — a course channel
  * is jointly used by its learner(s) and lecturer, and DMs can occur
- * between any two roles (member, lecturer, contributor). This mirrors
- * lib/role-switcher.ts, already genuinely cross-cutting, non-role-owned
- * shared code, rather than lib/utils.ts-style generic helpers.
+ * between any two roles (member, lecturer, contributor). This is
+ * genuinely cross-cutting, non-role-owned shared code, rather than
+ * lib/utils.ts-style generic helpers.
  *
  * Out of scope for this phase (noted here, not silently skipped): full
  * threading (replies-to-a-specific-message) and @mention autocomplete.
