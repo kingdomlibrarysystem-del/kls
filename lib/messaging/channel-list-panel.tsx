@@ -1,18 +1,35 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Hash, User, Plus } from 'lucide-react'
-import type { Channel } from './types'
+import type { Channel, Message } from './types'
+import { unreadCountFor } from './use-messages'
 
 interface ChannelListPanelProps {
+  userId: string
   channels: Channel[]
   activeChannelId: string | null
-  unreadFor: (channelId: string) => number
   onSelect: (channel: Channel) => void
   onNewDm: () => void
 }
 
-/** Left pane: course channels + DM threads, each with a real unread badge. */
-export function ChannelListPanel({ channels, activeChannelId, unreadFor, onSelect, onNewDm }: ChannelListPanelProps) {
+/** Left pane: course channels + DM threads. Fetches each channel's own messages just to compute a real unread badge — small channel counts here (course/DM lists are never large) make this an acceptable per-render cost, matching this codebase's other list-plus-badge patterns. */
+export function ChannelListPanel({ userId, channels, activeChannelId, onSelect, onNewDm }: ChannelListPanelProps) {
+  const [unreadByChannel, setUnreadByChannel] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all(channels.map((c) =>
+      fetch(`/api/messages?channelId=${c.id}`).then((r) => r.json()).then((j) => [c.id, (j.data ?? []) as Message[]] as const)
+    )).then((results) => {
+      if (cancelled) return
+      const counts: Record<string, number> = {}
+      results.forEach(([id, messages]) => { counts[id] = unreadCountFor(id, messages, userId) })
+      setUnreadByChannel(counts)
+    })
+    return () => { cancelled = true }
+  }, [channels, userId])
+
   const courseChannels = channels.filter((c) => c.kind === 'course')
   const dmChannels = channels.filter((c) => c.kind === 'dm')
 
@@ -26,7 +43,7 @@ export function ChannelListPanel({ channels, activeChannelId, unreadFor, onSelec
           <p style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 12px' }}>No course channels yet.</p>
         ) : (
           courseChannels.map((c) => (
-            <ChannelRow key={c.id} channel={c} icon={<Hash size={13} />} active={c.id === activeChannelId} unread={unreadFor(c.id)} onSelect={onSelect} />
+            <ChannelRow key={c.id} channel={c} icon={<Hash size={13} />} active={c.id === activeChannelId} unread={unreadByChannel[c.id] ?? 0} onSelect={onSelect} />
           ))
         )}
 
@@ -45,7 +62,7 @@ export function ChannelListPanel({ channels, activeChannelId, unreadFor, onSelec
           <p style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 12px' }}>No direct messages yet.</p>
         ) : (
           dmChannels.map((c) => (
-            <ChannelRow key={c.id} channel={c} icon={<User size={13} />} active={c.id === activeChannelId} unread={unreadFor(c.id)} onSelect={onSelect} />
+            <ChannelRow key={c.id} channel={c} icon={<User size={13} />} active={c.id === activeChannelId} unread={unreadByChannel[c.id] ?? 0} onSelect={onSelect} />
           ))
         )}
       </div>

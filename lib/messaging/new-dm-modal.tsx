@@ -1,21 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { knownPeopleExcluding } from './known-people'
+import { knownPeopleExcluding, type KnownPerson } from './known-people'
 
 interface NewDmModalProps {
   open: boolean
-  personName: string
+  userId: string
   onClose: () => void
-  onSelect: (otherName: string) => void
+  onSelect: (otherUserId: string) => void
 }
 
-/** Picker for starting a new DM — lists every known named person except yourself, since there's no general user directory to search. */
-export function NewDmModal({ open, personName, onClose, onSelect }: NewDmModalProps) {
+/** Picker for starting a new DM — lists every real platform user except yourself, from the real /api/users directory. */
+export function NewDmModal({ open, userId, onClose, onSelect }: NewDmModalProps) {
   const [selected, setSelected] = useState('')
-  const people = knownPeopleExcluding(personName)
+  const [people, setPeople] = useState<KnownPerson[]>([])
+
+  useEffect(() => {
+    if (open) knownPeopleExcluding(userId).then(setPeople)
+  }, [open, userId])
 
   const handleStart = () => {
     if (!selected) return
@@ -29,13 +33,13 @@ export function NewDmModal({ open, personName, onClose, onSelect }: NewDmModalPr
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {people.map((p) => (
           <button
-            key={p.name}
-            onClick={() => setSelected(p.name)}
-            aria-pressed={selected === p.name}
+            key={p.id}
+            onClick={() => setSelected(p.id)}
+            aria-pressed={selected === p.id}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px',
-              borderRadius: 6, border: `1px solid ${selected === p.name ? 'var(--gold)' : 'var(--border)'}`,
-              background: selected === p.name ? 'rgba(212,168,67,0.1)' : 'transparent', cursor: 'pointer', textAlign: 'left',
+              borderRadius: 6, border: `1px solid ${selected === p.id ? 'var(--gold)' : 'var(--border)'}`,
+              background: selected === p.id ? 'rgba(212,168,67,0.1)' : 'transparent', cursor: 'pointer', textAlign: 'left',
             }}
           >
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</span>
