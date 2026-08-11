@@ -27,10 +27,10 @@ interface AuthContextType {
   updateUser: (updates: Partial<Pick<User, "firstName" | "lastName" | "email">>) => void;
   /** Creates a real member account via /api/auth/register, then signs them in immediately. */
   register: (fullName: string, email: string, password: string) => Promise<void>;
-  /** Simulates sending a reset email — no real email service is wired yet, so this just resolves after a delay. */
+  /** Sends a real password-reset email via /api/auth/forgot-password. Always resolves (never reveals whether the email matched an account). */
   forgotPassword: (email: string) => Promise<void>;
-  /** Simulates confirming a verification token — resolves after a delay, no real token check. */
-  verifyEmail: (token: string) => Promise<void>;
+  /** Confirms a real email-verification token via /api/auth/verify-email. */
+  verifyEmail: (email: string, token: string) => Promise<void>;
 }
 
 /** Maps a dynamic Role.name (admin-defined, free text) onto the fixed UserRole union the UI's RBAC checks use. Defaults to "member" for anything unrecognized. */
@@ -102,12 +102,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {
-    await new Promise((r) => setTimeout(r, 300));
+    await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
     logAuditEvent({ actor: email, action: "PASSWORD_RESET", target: email, notes: 'Reset requested via "Forgot Password" flow.' });
   }, []);
 
-  const verifyEmail = useCallback(async (_token: string) => {
-    await new Promise((r) => setTimeout(r, 300));
+  const verifyEmail = useCallback(async (email: string, token: string) => {
+    const res = await fetch("/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, token }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => null);
+      throw new Error(json?.message ?? "Verification failed");
+    }
   }, []);
 
   return (
