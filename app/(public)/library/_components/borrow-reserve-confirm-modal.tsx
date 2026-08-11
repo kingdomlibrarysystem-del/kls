@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle2, AlertCircle, CalendarClock, Package, Users } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
@@ -24,10 +24,10 @@ interface BorrowReserveConfirmModalProps {
   onClose: () => void
 }
 
-/** Real borrowing-policy default this app already defines (app/dashboard/settings), not a fabricated number — see settings-schema.ts's defaultSystemSettings. */
-function dueDateLabel(): string {
+/** Preview of the due date /api/borrowings will actually compute, from the real /api/settings — falls back to the schema default only until the fetch resolves, never as a substitute for it. */
+function dueDateLabel(periodDays: number): string {
   const due = new Date()
-  due.setDate(due.getDate() + defaultSystemSettings.defaultBorrowPeriodDays)
+  due.setDate(due.getDate() + periodDays)
   return due.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
@@ -45,6 +45,15 @@ export function BorrowReserveConfirmModal({ action, resourceId, bookTitle, bookA
   const [result, setResult] = useState<ReservationResult | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [borrowPeriodDays, setBorrowPeriodDays] = useState(defaultSystemSettings.defaultBorrowPeriodDays)
+
+  useEffect(() => {
+    if (action !== 'borrow') return
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((json) => { if (json.data?.defaultBorrowPeriodDays) setBorrowPeriodDays(json.data.defaultBorrowPeriodDays) })
+      .catch(() => {})
+  }, [action])
 
   if (!action) return null
 
@@ -114,7 +123,7 @@ export function BorrowReserveConfirmModal({ action, resourceId, bookTitle, bookA
             <div className="text-left bg-form-highlight border border-w-300 rounded p-3 mb-4 space-y-1.5">
               {action === 'borrow' ? (
                 <p className="flex items-center gap-2 font-lato text-xs text-w-700">
-                  <CalendarClock size={13} className="text-w-600 shrink-0" /> Due back by <span className="font-semibold text-w-950">{dueDateLabel()}</span>
+                  <CalendarClock size={13} className="text-w-600 shrink-0" /> Due back by <span className="font-semibold text-w-950">{dueDateLabel(borrowPeriodDays)}</span>
                 </p>
               ) : (
                 <p className="flex items-center gap-2 font-lato text-xs text-w-700">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,36 +8,43 @@ import { FormSection } from '@/components/ui/form-section'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
-  organization: z.string().optional(),
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
 
-/** "Profile Information" form, extracted verbatim from the original page.tsx (no behavior changes). */
+/** "Profile Information" form — pre-filled from the real signed-in user, saves via a real PATCH /api/users/[id] (contexts/auth-context.tsx's updateUser). Phone/organization were dropped: the real User model has no such fields, and fabricating a save for them would be dishonest. */
 export function ProfileInfoForm() {
+  const { user, updateUser } = useAuth()
   const [profileSubmitting, setProfileSubmitting] = useState(false)
   const [profileSuccess, setProfileSuccess] = useState(false)
+  const [profileError, setProfileError] = useState('')
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      fullName: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 (555) 000-0000',
-      organization: 'University of Kingdom',
-    },
+    defaultValues: { fullName: '', email: '' },
   })
+
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({ fullName: `${user.firstName} ${user.lastName}`.trim(), email: user.email })
+    }
+  }, [user, profileForm])
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     setProfileSubmitting(true)
+    setProfileError('')
     try {
+      const [firstName, ...rest] = data.fullName.trim().split(/\s+/)
+      updateUser({ firstName: firstName || data.fullName, lastName: rest.join(' '), email: data.email })
       setProfileSuccess(true)
       setTimeout(() => setProfileSuccess(false), 3000)
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Failed to update profile')
     } finally {
       setProfileSubmitting(false)
     }
@@ -49,6 +56,11 @@ export function ProfileInfoForm() {
         {profileSuccess && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
             Profile updated successfully
+          </div>
+        )}
+        {profileError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            {profileError}
           </div>
         )}
 
@@ -73,26 +85,6 @@ export function ProfileInfoForm() {
             type="email"
             error={profileForm.formState.errors.email?.message}
             {...profileForm.register('email')}
-          />
-        </div>
-
-        <div>
-          <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
-          <FormInput
-            id="phone"
-            type="tel"
-            error={profileForm.formState.errors.phone?.message}
-            {...profileForm.register('phone')}
-          />
-        </div>
-
-        <div>
-          <FieldLabel htmlFor="organization">Organization</FieldLabel>
-          <FormInput
-            id="organization"
-            type="text"
-            error={profileForm.formState.errors.organization?.message}
-            {...profileForm.register('organization')}
           />
         </div>
 

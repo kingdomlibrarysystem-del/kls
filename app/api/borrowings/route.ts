@@ -123,7 +123,14 @@ export const POST = withErrorHandling('/api/borrowings', 'POST', async (request:
   if (!resource) throw new ApiError('The specified resource does not exist', 400)
 
   const borrowDate = body.borrowDate ? new Date(body.borrowDate) : new Date()
-  const dueDate = body.dueDate ? new Date(body.dueDate) : new Date(borrowDate.getTime() + 14 * 86400000)
+  let dueDate: Date
+  if (body.dueDate) {
+    dueDate = new Date(body.dueDate)
+  } else {
+    const settings = await prisma.settings.findFirst()
+    const periodDays = settings?.defaultBorrowPeriodDays ?? 14
+    dueDate = new Date(borrowDate.getTime() + periodDays * 86400000)
+  }
 
   /**
    * Guards against a double-submitted borrow request (e.g. a doubled
