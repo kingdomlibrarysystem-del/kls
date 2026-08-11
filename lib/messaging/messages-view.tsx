@@ -1,53 +1,50 @@
 'use client'
 
 import { useState } from 'react'
-import type { UserRole } from '@/contexts/auth-context'
-import { useChannelsFor, useAllMessages, unreadCountFor, startDm } from './use-messages'
+import { useChannelsFor } from './use-messages'
 import { ChannelListPanel } from './channel-list-panel'
 import { MessageThreadPanel } from './message-thread-panel'
 import { NewDmModal } from './new-dm-modal'
 import type { Channel } from './types'
 
 interface MessagesViewProps {
-  personName: string
-  personRole: UserRole
+  userId: string
 }
 
-/**
- * Shared two-pane chat UI, reachable from /member/messages — parameterized
- * by role rather than hardcoded to one persona, the same pattern
- * SessionCard/SessionRoomView already established (previously also
- * reachable from /lecturer/messages before that portal was deleted during
- * portal consolidation).
- */
-export function MessagesView({ personName, personRole }: MessagesViewProps) {
-  const channels = useChannelsFor(personName)
-  const allMessages = useAllMessages()
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(channels[0]?.id ?? null)
+/** Shared two-pane chat UI, reachable from /member/messages — backed by the real session user's id, real Channel/Message API. */
+export function MessagesView({ userId }: MessagesViewProps) {
+  const { data: channels, loading, refetch } = useChannelsFor(userId)
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
   const [newDmOpen, setNewDmOpen] = useState(false)
 
   const activeChannel = channels.find((c) => c.id === activeChannelId) ?? null
 
-  const unreadFor = (channelId: string) => unreadCountFor(channelId, allMessages, personName)
-
   const handleSelect = (channel: Channel) => setActiveChannelId(channel.id)
 
-  const handleStartDm = (otherName: string) => {
-    const channel = startDm(personName, otherName)
-    setActiveChannelId(channel.id)
+  const handleStartDm = (otherUserId: string) => {
+    setActiveChannelId(`pending-dm-${otherUserId}`)
+  }
+
+  if (loading) {
+    return <div style={{ height: 'calc(100vh - 140px)' }} />
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-3" style={{ height: 'calc(100vh - 140px)' }}>
       <ChannelListPanel
+        userId={userId}
         channels={channels}
         activeChannelId={activeChannelId}
-        unreadFor={unreadFor}
         onSelect={handleSelect}
         onNewDm={() => setNewDmOpen(true)}
       />
-      <MessageThreadPanel channel={activeChannel} personName={personName} personRole={personRole} />
-      <NewDmModal open={newDmOpen} personName={personName} onClose={() => setNewDmOpen(false)} onSelect={handleStartDm} />
+      <MessageThreadPanel
+        channel={activeChannel}
+        pendingDmUserId={activeChannelId?.startsWith('pending-dm-') ? activeChannelId.replace('pending-dm-', '') : null}
+        userId={userId}
+        onChannelCreated={(id) => { setActiveChannelId(id); refetch() }}
+      />
+      <NewDmModal open={newDmOpen} userId={userId} onClose={() => setNewDmOpen(false)} onSelect={handleStartDm} />
     </div>
   )
 }

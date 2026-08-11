@@ -4036,3 +4036,51 @@ DM picker has, since session requests are always scoped to one
 specific course rather than an open directory of people. Wired
 directly; see below.)
 
+## Update: messaging blocker resolved, session-booking wired (2026-08-10)
+
+The user chose to resolve the messaging blocker rather than leave it
+open: **create real `User` rows for every mock lecturer/contributor
+persona** (option (a) from the two documented above), rather than
+scoping the DM picker down to real members only.
+
+- Lecturer `User` rows already existed (seeded in Phase 5 — confirmed
+  `Dr. Elias Nkubito`/`Prof. Grace Nkomo`/`Dr. James Kariuki` all have
+  real `User.id`s). `lib/identity/lecturer-identity.ts`'s
+  `lecturerRoster` updated to use those real ids instead of fake
+  `lec-1`/`lec-2`/`lec-3` placeholders.
+- A real `User` row was created for `CONTRIBUTOR_NAME` ("Pastor
+  Emmanuel Rugamba", role: Contributor) — `lib/identity/
+  contributor-identity.ts` now also exports `CONTRIBUTOR_ID`.
+- **Messaging (`lib/messaging/*`) fully rewired to the real
+  `/api/messages`/`/api/channels`.** Real course `Channel` rows already
+  existed per-course from the Phase 7 seed (with real `participantIds`),
+  so course-channel derivation was deleted entirely rather than
+  reimplemented — channels are now fetched directly by `participantId`.
+  DMs are created lazily on first message, matching the real API's own
+  semantics. `derive-channels.ts` and `identity.ts` (the old
+  name-to-role resolver) were deleted as fully superseded.
+  `known-people.ts`'s "start a new DM" picker now lists the real
+  `/api/users` directory instead of a fixed 3-lecturer + 1-contributor
+  mock roster. One deliberate scope cut: the "new message" notification
+  side-effect (`addNotification` on send) was dropped rather than faked
+  — `Notification.recipientRole` is role-scoped, not per-user, and
+  neither lecturer nor contributor has a real signed-in role seat to
+  notify (no lecturer/contributor portal exists post-consolidation),
+  so there's no real inbox to route it to. This mirrors the notification
+  system's own already-documented per-user-vs-per-role limitation, not
+  a new gap.
+- **Session-booking (`lib/sessions/use-session-requests.ts`) wired to
+  the real `/api/session-requests`**, using the same real `lecturerId`
+  resolution now available via `CatalogCourse.lecturerId`.
+  `requestSession`/`startInstantSession` take real `learnerId`/
+  `lecturerId` instead of display names; `MySessionsView` fetches the
+  signed-in learner's own requests via `?learnerId=`; `SessionRoomView`
+  (shared by both the member and admin room routes) now fetches a
+  session by id directly via a new `fetchSessionRequestById`, since an
+  admin observer viewing a session isn't its learner and would get an
+  empty result from a learner-scoped list.
+
+Verified via `npx tsc --noEmit` and `npm run build`, both clean. Not
+yet verified live in a browser — see the standing distinction between
+"compiles" and "verified" flagged earlier in this run.
+
