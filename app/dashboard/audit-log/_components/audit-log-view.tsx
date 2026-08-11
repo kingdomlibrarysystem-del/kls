@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ScrollText, Eye } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,9 +10,6 @@ import { useAuditLog } from './use-audit-log'
 import { AuditEntryDetailModal } from './audit-entry-detail-modal'
 import { AuditLogStats } from './audit-log-stats'
 
-/** Simulated network delay before mock audit entries become visible. */
-const LOAD_DELAY_MS = 400
-
 function buildColumns(onView: (e: AuditEntry) => void): Column<AuditEntry>[] {
   return [
     { key: 'actor', label: 'Actor', sortable: true, render: (e) => <span className="font-semibold text-w-950">{e.actor}</span> },
@@ -21,7 +18,7 @@ function buildColumns(onView: (e: AuditEntry) => void): Column<AuditEntry>[] {
       render: (e) => <span className="px-2.5 py-0.5 rounded border border-w-300 bg-w-100 text-w-950 text-xs font-lato font-semibold">{auditActionLabels[e.action]}</span>,
     },
     { key: 'target', label: 'Target', sortable: true, render: (e) => <span className="text-w-700 max-w-70 truncate block">{e.target}</span> },
-    { key: 'timestamp', label: 'Timestamp', sortable: true, render: (e) => <span className="text-w-700">{e.timestamp}</span> },
+    { key: 'timestamp', label: 'Timestamp', sortable: true, render: (e) => <span className="text-w-700">{new Date(e.timestamp).toLocaleString()}</span> },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (e) => (
@@ -35,15 +32,9 @@ function buildColumns(onView: (e: AuditEntry) => void): Column<AuditEntry>[] {
 
 /** DataTable of audit-log entries (actor, action, target, timestamp), searchable and filterable by action. */
 export function AuditLogView() {
-  const [loading, setLoading] = useState(true)
   const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all')
   const [viewing, setViewing] = useState<AuditEntry | null>(null)
-  const entries = useAuditLog()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: entries, loading } = useAuditLog()
 
   if (loading) {
     return (

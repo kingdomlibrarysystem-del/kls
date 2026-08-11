@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { RefreshCcw, MailX, Eye, XCircle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,13 +9,11 @@ import { invitationStatusConfig, type Invitation } from './invitations-data'
 import { InvitationDetailModal } from './invitation-detail-modal'
 import { CancelInvitationModal } from './cancel-invitation-modal'
 
-/** Simulated network delay before mock invitations become visible. */
-const LOAD_DELAY_MS = 400
-
 interface InvitationsTableProps {
   invitations: Invitation[]
-  onUpdateInvitation: (invitation: Invitation) => void
-  onRemoveInvitation: (id: string) => void
+  loading: boolean
+  onResendInvitation: (id: string) => Promise<void>
+  onRemoveInvitation: (id: string) => Promise<void>
 }
 
 function buildColumns(
@@ -25,8 +23,8 @@ function buildColumns(
 ): Column<Invitation>[] {
   return [
     { key: 'email', label: 'Email', sortable: true, render: (i) => <span className="font-semibold text-w-950">{i.email}</span> },
-    { key: 'role', label: 'Role', sortable: true, render: (i) => <span className="text-w-700">{i.role}</span> },
-    { key: 'sentAt', label: 'Sent', sortable: true, render: (i) => <span className="text-w-700">{i.sentAt}</span> },
+    { key: 'role', label: 'Role', sortable: true, render: (i) => <span className="text-w-700">{i.role.name}</span> },
+    { key: 'sentAt', label: 'Sent', sortable: true, render: (i) => <span className="text-w-700">{new Date(i.sentAt).toLocaleDateString()}</span> },
     {
       key: 'status', label: 'Status', sortable: true,
       render: (i) => (
@@ -63,24 +61,18 @@ function buildColumns(
 }
 
 /** DataTable of pending/accepted/expired invitations with View, Resend (non-accepted), and Cancel (non-accepted) actions. */
-export function InvitationsTable({ invitations, onUpdateInvitation, onRemoveInvitation }: InvitationsTableProps) {
-  const [loading, setLoading] = useState(true)
+export function InvitationsTable({ invitations, loading, onResendInvitation, onRemoveInvitation }: InvitationsTableProps) {
   const [toast, setToast] = useState('')
   const [viewing, setViewing] = useState<Invitation | null>(null)
   const [cancelling, setCancelling] = useState<Invitation | null>(null)
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const handleResend = (invitation: Invitation) => {
+  const handleResend = async (invitation: Invitation) => {
     try {
-      onUpdateInvitation({ ...invitation, status: 'PENDING', sentAt: new Date().toISOString().split('T')[0] })
+      await onResendInvitation(invitation.id)
       setToast(`Invitation resent to ${invitation.email}`)
       setTimeout(() => setToast(''), 3000)
-    } catch {
-      setToast('Could not resend this invitation — please try again')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Could not resend this invitation — please try again')
     }
   }
 
@@ -110,7 +102,7 @@ export function InvitationsTable({ invitations, onUpdateInvitation, onRemoveInvi
         columns={buildColumns(handleResend, setViewing, setCancelling)}
         rowKey={(i) => i.id}
         searchPlaceholder="Search email or role..."
-        searchFilter={(i, q) => i.email.toLowerCase().includes(q) || i.role.toLowerCase().includes(q)}
+        searchFilter={(i, q) => i.email.toLowerCase().includes(q) || i.role.name.toLowerCase().includes(q)}
         emptyMessage="No invitations match your search."
       />
 
@@ -118,8 +110,8 @@ export function InvitationsTable({ invitations, onUpdateInvitation, onRemoveInvi
       <CancelInvitationModal
         invitation={cancelling}
         onClose={() => setCancelling(null)}
-        onConfirm={() => {
-          if (cancelling) onRemoveInvitation(cancelling.id)
+        onConfirm={async () => {
+          if (cancelling) await onRemoveInvitation(cancelling.id)
           setCancelling(null)
         }}
       />

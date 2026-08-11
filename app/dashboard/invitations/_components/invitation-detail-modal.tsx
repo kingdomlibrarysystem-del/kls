@@ -32,8 +32,8 @@ export function InvitationDetailModal({ invitation, onClose }: InvitationDetailM
 
           <div className="bg-form-highlight border border-w-300 rounded p-3 space-y-2">
             <DetailRow icon={<Mail size={13} />} label="Email" value={invitation.email} />
-            <DetailRow icon={<Shield size={13} />} label="Role" value={invitation.role} />
-            <DetailRow icon={<CalendarDays size={13} />} label="Sent" value={invitation.sentAt} />
+            <DetailRow icon={<Shield size={13} />} label="Role" value={invitation.role.name} />
+            <DetailRow icon={<CalendarDays size={13} />} label="Sent" value={new Date(invitation.sentAt).toLocaleDateString()} />
             <DetailRow icon={<Hash size={13} />} label="ID" value={invitation.id} />
           </div>
         </div>
