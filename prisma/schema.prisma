@@ -173,6 +173,23 @@ model AuditLog {
   timestamp  DateTime @default(now())
 }
 
+/// Single-row system settings — replaces the "client-held default,
+/// server never actually reads it" pattern the borrowing-policy form
+/// previously used (defaultSystemSettings in settings-schema.ts was a
+/// display-only constant; /api/borrowings hardcoded its own 14-day
+/// due-date independent of it, so an admin editing this form appeared
+/// to change policy but changed nothing real). Always exactly one row
+/// (upserted by a fixed known id) — no need for a real "which tenant"
+/// concept in this single-org app.
+model Settings {
+  id                          String   @id @default(auto()) @map("_id") @db.ObjectId
+  defaultBorrowPeriodDays     Int      @default(14)
+  maxRenewals                 Int      @default(2)
+  reservationClaimWindowHours Int      @default(48)
+  maxConcurrentBorrows        Int      @default(3)
+  updatedAt                   DateTime @updatedAt
+}
+
 /// Canonical Kingdom Classification System (KCS) taxonomy — one flat,
 /// self-referencing collection for both the 8 root pillars and their ~75
 /// child scrolls (Bible books), mirroring `lib/kcs-taxonomy`'s already-

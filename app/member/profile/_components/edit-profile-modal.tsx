@@ -29,11 +29,10 @@ interface EditProfileModalProps {
  * fields `AuthContext.User` actually has (no phone/address/avatar upload
  * field exists on the type), so those are the only fields this form
  * touches; the phone/location shown on the profile card below are static
- * placeholder copy, not part of the real user object. Unlike the admin
- * side's `ProfileInfoForm` (a no-op success toast that never touches
- * `useAuth()`), this genuinely calls `updateUser()`, so a saved edit is
- * immediately reflected in the profile card that reads `user?.firstName`/
- * `user?.email`.
+ * placeholder copy, not part of the real user object. Genuinely calls
+ * `updateUser()`, so a saved edit is immediately reflected in the profile
+ * card that reads `user?.firstName`/`user?.email` — matches the admin
+ * side's `ProfileInfoForm`, which does the same via the same `updateUser()`.
  */
 export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
   const { user, updateUser } = useAuth()

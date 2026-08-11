@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
@@ -10,11 +10,9 @@ import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { systemSettingsSchema, defaultSystemSettings, type SystemSettingsFormData } from './settings-schema'
 
-/**
- * System-wide borrowing/reservation policy form. Fully mocked: local state
- * only, simulates a short delay then shows an inline confirmation.
- */
+/** System-wide borrowing/reservation policy form — reads and writes the real, single-row Settings collection via /api/settings. defaultBorrowPeriodDays genuinely drives /api/borrowings' due-date calculation. */
 export function SettingsForm() {
+  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -22,19 +20,41 @@ export function SettingsForm() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<SystemSettingsFormData>({
     resolver: zodResolver(systemSettingsSchema),
     defaultValues: defaultSystemSettings,
   })
 
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data) {
+          reset({
+            defaultBorrowPeriodDays: json.data.defaultBorrowPeriodDays,
+            maxRenewals: json.data.maxRenewals,
+            reservationClaimWindowHours: json.data.reservationClaimWindowHours,
+            maxConcurrentBorrows: json.data.maxConcurrentBorrows,
+          })
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [reset])
+
   const onSubmit = async (data: SystemSettingsFormData) => {
     setSubmitting(true)
     setSubmitError('')
     setSubmitSuccess(false)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400))
-      if (data.maxRenewals < 0) throw new Error('Max renewals cannot be negative')
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const json = await res.json()
+      if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to save settings')
       setSubmitSuccess(true)
       setTimeout(() => setSubmitSuccess(false), 3500)
     } catch (error) {
@@ -43,6 +63,8 @@ export function SettingsForm() {
       setSubmitting(false)
     }
   }
+
+  if (loading) return null
 
   return (
     <div className="max-w-2xl">
