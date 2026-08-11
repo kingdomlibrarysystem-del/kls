@@ -109,13 +109,12 @@ export async function GET(request: NextRequest) {
 
 /**
  * Creating a reservation places it at the back of the real queue for that
- * resource — computed as a live count of PENDING reservations for the same
- * resourceId, porting the logic from
- * app/member/_shared/use-reservations.ts's addReservation (queueAhead =
- * count of same-title Waiting/Ready reservations). A queue position of 0
- * (no one ahead) still lands as PENDING here rather than auto-promoting to
- * NOTIFIED — notifying is a distinct admin action (see [id]/route.ts's
- * `notify`), matching the admin workflow's own explicit 4-step description.
+ * resource — assigned via Resource.reservationQueueCounter, an atomic
+ * per-resource counter (see the increment call below for why a derived
+ * count() is unsafe under concurrency). A reservation always lands as
+ * PENDING here rather than auto-promoting to NOTIFIED — notifying is a
+ * distinct admin action (see [id]/route.ts's `notify`), matching the
+ * admin workflow's own explicit 4-step description.
  */
 export const POST = withErrorHandling('/api/reservations', 'POST', async (request: NextRequest) => {
   const parsed = createReservationSchema.safeParse(await request.json())
@@ -131,36 +130,42 @@ export const POST = withErrorHandling('/api/reservations', 'POST', async (reques
   if (!user) throw new ApiError('The specified user does not exist', 400)
   if (!resource) throw new ApiError('The specified resource does not exist', 400)
 
+  const existing = await prisma.reservation.findFirst({
+    where: { userId: body.userId, resourceId: body.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },
+  })
+  if (existing) {
+    throw new ApiError('You already have an active reservation for this resource', 409)
+  }
+
   /**
-   * count() then create() is a read-then-write race: two concurrent
-   * reservations for the same resource could both read queueAhead=0
-   * and both land at queuePosition 1. Wrapping both in a single
-   * transaction serializes them against MongoDB's session-level
-   * write conflict detection — a second transaction touching the
-   * same reservation set is retried by Prisma rather than silently
-   * computing a stale count.
+   * A plain count()-then-create() is a read-then-write race: two
+   * concurrent reservations for the same resource could both read
+   * queueAhead=0 and both land at queuePosition 1 — confirmed by a
+   * failing concurrency test even when wrapped in $transaction, since
+   * Prisma's MongoDB transactions don't serialize concurrent
+   * transactions against each other the way a SQL SERIALIZABLE
+   * transaction would. Resource.reservationQueueCounter is instead
+   * incremented atomically (MongoDB guarantees single-document writes
+   * are atomic, with or without a transaction) and the returned
+   * post-increment value used directly as this reservation's queue
+   * position — no read-then-decide step for two requests to race on.
    */
-  const reservation = await prisma.$transaction(async (tx) => {
-    const existing = await tx.reservation.findFirst({
-      where: { userId: body.userId, resourceId: body.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },
-    })
-    if (existing) {
-      throw new ApiError('You already have an active reservation for this resource', 409)
-    }
-    const queueAhead = await tx.reservation.count({
-      where: { resourceId: body.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },
-    })
-    return tx.reservation.create({
-      data: {
-        userId: body.userId,
-        memberName: body.memberName,
-        memberEmail: body.memberEmail,
-        resourceId: body.resourceId,
-        queuePosition: queueAhead + 1,
-        status: 'PENDING',
-      },
-      include: RESOURCE_INCLUDE,
-    })
+  const updatedResource = await prisma.resource.update({
+    where: { id: body.resourceId },
+    data: { reservationQueueCounter: { increment: 1 } },
+    select: { reservationQueueCounter: true },
+  })
+
+  const reservation = await prisma.reservation.create({
+    data: {
+      userId: body.userId,
+      memberName: body.memberName,
+      memberEmail: body.memberEmail,
+      resourceId: body.resourceId,
+      queuePosition: updatedResource.reservationQueueCounter,
+      status: 'PENDING',
+    },
+    include: RESOURCE_INCLUDE,
   })
 
   return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation created successfully', code: 'success', status: 201 }, { status: 201 })

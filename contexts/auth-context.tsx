@@ -34,7 +34,7 @@ interface AuthContextType {
 }
 
 /** Maps a dynamic Role.name (admin-defined, free text) onto the fixed UserRole union the UI's RBAC checks use. Defaults to "member" for anything unrecognized. */
-function roleNameToUserRole(roleName: string): UserRole {
+export function roleNameToUserRole(roleName: string): UserRole {
   const normalized = roleName.trim().toLowerCase();
   if (normalized === "admin" || normalized === "administrator") return "admin";
   if (normalized === "manager") return "manager";
