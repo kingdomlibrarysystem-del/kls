@@ -256,6 +256,21 @@ model Resource {
   price        Float
   totalQty     Int
   availableQty Int
+  /// Monotonically-increasing counter used to atomically assign each new
+  /// reservation's queuePosition (see /api/reservations POST). A plain
+  /// `count()`-then-`create()` is a read-then-write race on MongoDB —
+  /// Prisma's $transaction does not serialize concurrent transactions
+  /// against each other the way a SQL SERIALIZABLE transaction would, so
+  /// two simultaneous reservations could both read the same count and
+  /// land on the same queue position (confirmed by a failing concurrency
+  /// test before this field was added). A single-document increment via
+  /// Prisma's atomic `increment` operation IS safe under concurrency on
+  /// MongoDB (single-document writes are always atomic), so this counter
+  /// — not a derived count of existing rows — is the real source of
+  /// truth for "next queue position," even though it never decreases
+  /// when a reservation is cancelled/claimed (queue positions are
+  /// display-order hints, not a compacted 1..N sequence).
+  reservationQueueCounter Int @default(0)
   status       ResourceStatus @default(AVAILABLE)
   coverImages  String[]
   bindingType  BindingType

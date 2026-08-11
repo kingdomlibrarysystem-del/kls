@@ -4084,3 +4084,149 @@ Verified via `npx tsc --noEmit` and `npm run build`, both clean. Not
 yet verified live in a browser — see the standing distinction between
 "compiles" and "verified" flagged earlier in this run.
 
+## Update: production-hardening pass (2026-08-11)
+
+After the identity/messaging/session-booking work above, the user
+asked directly whether "API + model + wiring" being real meant the app
+was production-ready, and named seven specific gaps to close. Six were
+implemented this pass; the seventh (full test coverage) was scoped
+down to a real but partial suite — see below for exactly what that
+means.
+
+1. **Real email verification** — `POST /api/auth/register` now sends
+   a real email via Nodemailer (`lib/mailer.ts`, using the existing
+   `NODEMAILER_USER`/`NODEMAILER_PASS` env vars — RULES.md's
+   established choice) with a single-use token stored in the
+   `VerificationToken` collection (already in schema, previously
+   unused by anything). New `POST /api/auth/verify-email` confirms the
+   token and stamps `User.emailVerified`. Registration still succeeds
+   if the send fails — a transient mail-provider error shouldn't block
+   account creation, an unverified account is a recoverable state.
+2. **Real password reset** — new `POST /api/auth/forgot-password`
+   (always returns success regardless of whether the email matched an
+   account, to avoid enumeration) and `POST /api/auth/reset-password`,
+   plus a new `/auth/reset-password` confirmation page.
+   `contexts/auth-context.tsx`'s `forgotPassword`/`verifyEmail` now
+   call these real endpoints instead of a `setTimeout` no-op.
+3. **Messaging real-wired** — already closed earlier in this same
+   pass (see above); listed here only because it was one of the
+   user's seven named gaps.
+4. **Concurrency guards** — `POST /api/borrowings` and
+   `POST /api/reservations` now reject a duplicate pending/active
+   request for the same user+resource with a 409. The reservation
+   queue-position race (two concurrent reservations both landing on
+   position 1) needed more than a `$transaction` wrapper to actually
+   fix — **a real bug was caught here by the test suite itself**: see
+   the "Testing" section below for the full story, since this became
+   the most significant finding of the pass.
+5. **Structured error handling** — new `lib/api-error-handler.ts`
+   (`withErrorHandling` + `ApiError`) gives every wrapped route
+   consistent JSON-structured `console.error` logging and the
+   project's standard `{data,message,code,status}` error shape,
+   instead of each route hand-rolling its own bare
+   `catch { return 500 }`. Applied to the highest-risk write paths:
+   all 5 auth routes, `/api/borrowings`, `/api/reservations`,
+   `/api/session-requests`, `/api/users`. **Not applied to the
+   remaining ~30 route files in `app/api/**`** — flagged here as a
+   real, scoped-out follow-up, not silently skipped. No log
+   aggregator (Sentry, Datadog, etc.) is wired in; `logApiError`'s own
+   docstring notes this is a placeholder for one.
+6. **Rate limiting** — new `lib/rate-limit.ts`, an in-memory per-IP
+   sliding-window limiter with an explicit documented caveat: it only
+   works correctly for a single-instance deployment (no Redis/shared
+   store exists), and resets on every restart. Applied to register
+   (5/15min), the next-auth credentials login callback specifically
+   (10/15min — wrapping only `/api/auth/[...nextauth]`'s
+   `callback/credentials` path, not every next-auth internal POST),
+   forgot-password (5/15min), reset-password and verify-email
+   (10/15min each).
+7. **Input validation hardening** — Zod schemas replace ad hoc
+   `if (!body.x)` presence checks on the same set of routes touched
+   by item 5 (real email-format/length/ISO-datetime validation, not
+   just "is it present"). Not yet extended to every route in the app,
+   same scoping note as item 5.
+
+### Testing (item 7 of the original 7 gaps — test coverage)
+
+**Full test coverage was not achieved — this is a real, partial start,
+not a claim of completeness.** Vitest was installed and configured
+(`vitest.config.ts`, `npm test`). 27 tests across 6 files, all passing:
+
+- Pure unit tests: `lib/rate-limit.ts`, `lib/api-error-handler.ts`,
+  `lib/mailer.ts` (the `appBaseUrl` helper), `lib/email-templates.ts`,
+  `contexts/auth-context.tsx`'s `roleNameToUserRole` (exported
+  specifically to make it testable).
+- One real integration test file,
+  `app/api/__tests__/borrow-reserve-concurrency.test.ts`, exercising
+  the actual `POST /api/borrowings`/`POST /api/reservations` route
+  handlers directly (not mocked) against the real configured database
+  — **no separate test database exists in this project** (single
+  `DATABASE_URL` pointing at the real `kcs_app` Atlas cluster), so
+  this suite creates its own uniquely-tagged throwaway `User`/
+  `Reservation`/`Borrow` rows and deletes them all in `afterAll`,
+  rather than requiring new test-infrastructure provisioning
+  (a separate Atlas database/cluster) that would need a human decision
+  about cost/access, not just code.
+
+**This integration suite caught a genuine, real concurrency bug before
+this pass could have otherwise claimed the guard "worked":** the first
+version of the reservation-queue fix wrapped a `count()`-then-`create()`
+in `prisma.$transaction()`, reasoning that MongoDB transactions would
+serialize concurrent requests the way a SQL `SERIALIZABLE` transaction
+would. A concurrency test that fired 3 simultaneous reservation
+requests at the same resource caught that **all 3 landed on queue
+position 1** — Prisma's MongoDB `$transaction` provides atomicity
+(all-or-nothing) and per-transaction snapshot isolation, but does
+**not** serialize separate concurrent transactions against each other,
+so all 3 independently read `count=0` before any had committed.
+
+The real fix: `Resource` gained a new `reservationQueueCounter Int
+@default(0)` field, incremented via Prisma's atomic `increment`
+operation (MongoDB guarantees single-document writes are atomic, with
+or without a transaction) — the post-increment value is used directly
+as the new reservation's queue position, with no read-then-decide step
+left for two requests to race on. Rerunning the same schema change
+(`npx prisma db push`) surfaced a second, related bug: MongoDB doesn't
+backfill new fields onto existing documents, so all 16 pre-existing
+`Resource` rows had a literal `null` for the new field — and MongoDB's
+`$inc` operator silently fails against a `null` field, not just an
+absent one, causing every increment to return `0`. Fixed with a
+one-time raw backfill (`$runCommandRaw` `update` matching
+`reservationQueueCounter: null`, setting it to `0` on all 16 rows).
+Both fixes were verified by rerunning the exact same concurrency test
+until it passed for the right reason, not just adjusted until green.
+
+**What "27 tests passing" does NOT mean**: no tests exist yet for
+login/registration/email-verification/password-reset flows, session-
+booking, messaging, or any of the ~30 other API routes in this app.
+This is a real foundation (a working test runner, a proven pattern for
+both pure-unit and real-database integration tests, and one concrete
+bug already found and fixed by it) — not comprehensive coverage.
+Extending it further is flagged as a follow-up, the same as items 5
+and 7's route-coverage gaps above.
+
+### Environment note: Prisma CLI/client version drift (fixed)
+
+Discovered mid-pass: `package.json` had drifted to `prisma` (CLI)
+`^7.8.0` while `@prisma/client` stayed pinned at `^5.22.0` — the
+actually-installed and working client all session. This happened
+silently, likely from an earlier `npx prisma generate` resolving a
+different cached/global version during this session's Windows
+file-lock troubleshooting (see the earlier "Prisma Client regeneration
+blocked by file lock" section of this run). Prisma 7's schema format
+(no inline `datasource.url`) is incompatible with this project's
+still-Prisma-5-shaped `schema.prisma`, and blocked the
+`reservationQueueCounter` schema push above until caught. Fixed by
+pinning `prisma` (CLI) back to `5.22.0` to match the client — a
+Prisma-5-to-7 migration is a real, separate, larger task, not
+something to do as a side effect of an unrelated schema field.
+
+## Needs human input (unchanged from above, still open)
+
+The messaging/session-booking blocker logged above has since been
+resolved per explicit direction (see the "Update: messaging blocker
+resolved" section). No new items are open as of this hardening pass —
+every gap addressed here was a rule-1 judgment call (reversible,
+reversible naming/pattern choices, no destructive action, no auth/
+payment behavior change beyond what was explicitly requested).
+
