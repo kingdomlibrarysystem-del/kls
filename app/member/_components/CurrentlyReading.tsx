@@ -6,10 +6,9 @@ import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_sha
 
 /**
  * Dashboard-home widget for in-progress reading, mirroring
- * ELearningProgress.tsx's live-wired pattern (real per-title progress
- * from the shared store, not a static mock array like BorrowedBooks.tsx
- * still uses) — every title and percentage here is real, derived from
- * the same useReadingProgress()/useResources() stores the reader and
+ * ELearningProgress.tsx's live-wired pattern — every title and
+ * percentage here is real, derived from the same
+ * useReadingProgress()/useResources() stores the reader and
  * /member/library's own Continue Reading section already read.
  */
 export default function CurrentlyReading() {

@@ -10,7 +10,7 @@ import { useAuditLog } from './use-audit-log'
  * this session immediately moves its category's count.
  */
 export function AuditLogStats() {
-  const entries = useAuditLog()
+  const { data: entries } = useAuditLog()
   const actions = Object.keys(auditActionLabels) as AuditAction[]
   const countsByAction = actions.map((a) => ({
     action: a,

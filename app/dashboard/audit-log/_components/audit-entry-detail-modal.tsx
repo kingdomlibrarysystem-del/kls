@@ -7,12 +7,12 @@ interface AuditEntryDetailModalProps {
   onClose: () => void
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
   return (
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium break-words">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium break-words">{value ?? '—'}</span>
     </div>
   )
 }
@@ -30,7 +30,7 @@ export function AuditEntryDetailModal({ entry, onClose }: AuditEntryDetailModalP
           <div className="bg-form-highlight border border-w-300 rounded p-3 space-y-2">
             <DetailRow icon={<User size={13} />} label="Actor" value={entry.actor} />
             <DetailRow icon={<Target size={13} />} label="Target" value={entry.target} />
-            <DetailRow icon={<CalendarClock size={13} />} label="Time" value={entry.timestamp} />
+            <DetailRow icon={<CalendarClock size={13} />} label="Time" value={new Date(entry.timestamp).toLocaleString()} />
             <DetailRow icon={<Globe size={13} />} label="IP" value={entry.ipAddress} />
             <DetailRow icon={<Hash size={13} />} label="ID" value={entry.id} />
           </div>
@@ -39,7 +39,7 @@ export function AuditEntryDetailModal({ entry, onClose }: AuditEntryDetailModalP
             <p className="flex items-center gap-1.5 font-lato text-xs font-semibold text-w-700 uppercase tracking-wide mb-1.5">
               <StickyNote size={12} /> Notes
             </p>
-            <p className="font-lato text-sm text-w-700 leading-relaxed">{entry.notes}</p>
+            <p className="font-lato text-sm text-w-700 leading-relaxed">{entry.notes ?? 'No notes recorded.'}</p>
           </div>
         </div>
       )}

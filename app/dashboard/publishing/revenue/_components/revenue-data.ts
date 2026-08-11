@@ -8,10 +8,3 @@ export interface RevenueRow {
   totalRevenue: number
 }
 
-export const mockRevenue: RevenueRow[] = [
-  { id: 'rev-001', publication: 'Walking in Covenant',       contributor: 'Pastor Emmanuel Rugamba', contributorShare: 70, platformShare: 30, totalRevenue: 245000 },
-  { id: 'rev-002', publication: 'Raising Kingdom Families',    contributor: 'Dr. Alice Mutoni',         contributorShare: 65, platformShare: 35, totalRevenue: 182500 },
-  { id: 'rev-003', publication: 'The Discipleship Journey',     contributor: 'Elder Samuel Byiringiro',  contributorShare: 70, platformShare: 30, totalRevenue: 96000  },
-  { id: 'rev-004', publication: 'Leading with Humility',         contributor: 'Pastor Emmanuel Rugamba', contributorShare: 70, platformShare: 30, totalRevenue: 138000 },
-  { id: 'rev-005', publication: 'The Weight of Servant Leadership', contributor: 'Pastor Emmanuel Rugamba', contributorShare: 65, platformShare: 35, totalRevenue: 176000 },
-]
