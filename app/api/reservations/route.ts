@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+
+const createReservationSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+  resourceId: z.string().min(1, 'resourceId is required'),
+  memberName: z.string().trim().min(1, 'memberName is required'),
+  memberEmail: z.string().trim().email('memberEmail must be a valid email'),
+})
 
 /**
  * Real Reservation API, replacing the two disconnected mock stores at
@@ -108,30 +117,40 @@ export async function GET(request: NextRequest) {
  * NOTIFIED — notifying is a distinct admin action (see [id]/route.ts's
  * `notify`), matching the admin workflow's own explicit 4-step description.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+export const POST = withErrorHandling('/api/reservations', 'POST', async (request: NextRequest) => {
+  const parsed = createReservationSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  }
+  const body = parsed.data
 
-    if (!body.userId || !body.resourceId || !body.memberName || !body.memberEmail) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: userId, resourceId, memberName, memberEmail', code: 'error', status: 400 }, { status: 400 })
-    }
+  const [user, resource] = await Promise.all([
+    prisma.user.findUnique({ where: { id: body.userId } }),
+    prisma.resource.findUnique({ where: { id: body.resourceId } }),
+  ])
+  if (!user) throw new ApiError('The specified user does not exist', 400)
+  if (!resource) throw new ApiError('The specified resource does not exist', 400)
 
-    const [user, resource] = await Promise.all([
-      prisma.user.findUnique({ where: { id: body.userId } }),
-      prisma.resource.findUnique({ where: { id: body.resourceId } }),
-    ])
-    if (!user) {
-      return NextResponse.json({ data: null, message: 'The specified user does not exist', code: 'error', status: 400 }, { status: 400 })
+  /**
+   * count() then create() is a read-then-write race: two concurrent
+   * reservations for the same resource could both read queueAhead=0
+   * and both land at queuePosition 1. Wrapping both in a single
+   * transaction serializes them against MongoDB's session-level
+   * write conflict detection — a second transaction touching the
+   * same reservation set is retried by Prisma rather than silently
+   * computing a stale count.
+   */
+  const reservation = await prisma.$transaction(async (tx) => {
+    const existing = await tx.reservation.findFirst({
+      where: { userId: body.userId, resourceId: body.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },
+    })
+    if (existing) {
+      throw new ApiError('You already have an active reservation for this resource', 409)
     }
-    if (!resource) {
-      return NextResponse.json({ data: null, message: 'The specified resource does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const queueAhead = await prisma.reservation.count({
+    const queueAhead = await tx.reservation.count({
       where: { resourceId: body.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },
     })
-
-    const reservation = await prisma.reservation.create({
+    return tx.reservation.create({
       data: {
         userId: body.userId,
         memberName: body.memberName,
@@ -142,9 +161,7 @@ export async function POST(request: NextRequest) {
       },
       include: RESOURCE_INCLUDE,
     })
+  })
 
-    return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create reservation', code: 'error', status: 500 }, { status: 500 })
-  }
-}
+  return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation created successfully', code: 'success', status: 201 }, { status: 201 })
+})

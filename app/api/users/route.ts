@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+
+const createUserSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(120),
+  email: z.string().trim().toLowerCase().email('Invalid email address'),
+  role: z.string().trim().min(1).max(60).optional(),
+  status: z.enum(['active', 'inactive', 'suspended', 'ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
+})
 
 /**
  * Real Users API, replacing a hardcoded 6-row mock array. This route
@@ -88,44 +97,40 @@ export async function GET(request: NextRequest) {
 }
 
 /** Admin-created user — no password set (no self-registration flow through this endpoint), so login for these rows only works once a real invite/set-password flow exists (out of scope here). */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-
-    if (!body.email || !body.name) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: email, name', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const existing = await prisma.user.findUnique({ where: { email: body.email } })
-    if (existing) {
-      return NextResponse.json({ data: null, message: 'A user with this email already exists', code: 'error', status: 409 }, { status: 409 })
-    }
-
-    let roleId: string | undefined
-    if (body.role) {
-      const role = await prisma.role.upsert({
-        where: { name: body.role },
-        update: {},
-        create: { name: body.role, permissions: [] },
-      })
-      roleId = role.id
-    }
-
-    const [firstName, ...rest] = String(body.name).trim().split(/\s+/)
-    const user = await prisma.user.create({
-      data: {
-        name: body.name,
-        firstName: firstName || body.name,
-        lastName: rest.join(' '),
-        email: body.email,
-        status: body.status ? body.status.toUpperCase() : 'ACTIVE',
-        roleId,
-      },
-      include: ROLE_INCLUDE,
-    })
-
-    return NextResponse.json({ data: serializeUser(user), message: 'User created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create user', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/users', 'POST', async (request: NextRequest) => {
+  const parsed = createUserSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const existing = await prisma.user.findUnique({ where: { email: body.email } })
+  if (existing) {
+    throw new ApiError('A user with this email already exists', 409)
+  }
+
+  let roleId: string | undefined
+  if (body.role) {
+    const role = await prisma.role.upsert({
+      where: { name: body.role },
+      update: {},
+      create: { name: body.role, permissions: [] },
+    })
+    roleId = role.id
+  }
+
+  const [firstName, ...rest] = body.name.split(/\s+/)
+  const user = await prisma.user.create({
+    data: {
+      name: body.name,
+      firstName: firstName || body.name,
+      lastName: rest.join(' '),
+      email: body.email,
+      status: body.status ? (body.status.toUpperCase() as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') : 'ACTIVE',
+      roleId,
+    },
+    include: ROLE_INCLUDE,
+  })
+
+  return NextResponse.json({ data: serializeUser(user), message: 'User created successfully', code: 'success', status: 201 }, { status: 201 })
+})

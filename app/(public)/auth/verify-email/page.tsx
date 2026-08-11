@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/auth-context'
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const email = searchParams.get('email')
   const { verifyEmail } = useAuth()
   const [verificationStatus, setVerificationStatus] = useState<
     'verifying' | 'success' | 'error'
@@ -19,14 +20,14 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     const runVerification = async () => {
-      if (!token) {
+      if (!token || !email) {
         setVerificationStatus('error')
         setErrorMessage('No verification token provided')
         return
       }
 
       try {
-        await verifyEmail(token)
+        await verifyEmail(email, token)
         setVerificationStatus('success')
       } catch (error) {
         setVerificationStatus('error')
@@ -37,7 +38,7 @@ function VerifyEmailContent() {
     }
 
     runVerification()
-  }, [token, verifyEmail])
+  }, [token, email, verifyEmail])
 
   if (verificationStatus === 'verifying') {
     return (

@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+
+const createSessionRequestSchema = z.object({
+  learnerId: z.string().min(1, 'learnerId is required'),
+  lecturerId: z.string().min(1, 'lecturerId is required'),
+  courseId: z.string().min(1, 'courseId is required'),
+  proposedTime: z.string().datetime({ message: 'proposedTime must be a valid ISO datetime' }),
+  mode: z.enum(['SCHEDULED', 'INSTANT']).optional(),
+  notes: z.string().trim().max(2000).optional(),
+})
 
 /**
  * Real SessionRequest API, replacing lib/sessions/session-requests-data.ts.
@@ -72,40 +83,38 @@ export async function GET(request: NextRequest) {
 }
 
 /** mode: INSTANT creates directly as APPROVED (skips PENDING/approval, mirroring mockSessionRequests' startInstantSession — there's no one to approve a session that's already starting). */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    if (!body.learnerId || !body.lecturerId || !body.courseId || !body.proposedTime) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: learnerId, lecturerId, courseId, proposedTime', code: 'error', status: 400 }, { status: 400 })
-    }
-    const [learner, lecturer, course] = await Promise.all([
-      prisma.user.findUnique({ where: { id: body.learnerId } }),
-      prisma.user.findUnique({ where: { id: body.lecturerId } }),
-      prisma.course.findUnique({ where: { id: body.courseId } }),
-    ])
-    if (!learner) return NextResponse.json({ data: null, message: 'The specified learner does not exist', code: 'error', status: 400 }, { status: 400 })
-    if (!lecturer) return NextResponse.json({ data: null, message: 'The specified lecturer does not exist', code: 'error', status: 400 }, { status: 400 })
-    if (!course) return NextResponse.json({ data: null, message: 'The specified course does not exist', code: 'error', status: 400 }, { status: 400 })
-
-    const isInstant = body.mode === 'INSTANT'
-    const proposedTime = new Date(body.proposedTime)
-    const sessionRequest = await prisma.sessionRequest.create({
-      data: {
-        learnerId: body.learnerId,
-        learnerName: learner.name ?? `${learner.firstName ?? ''} ${learner.lastName ?? ''}`.trim(),
-        lecturerId: body.lecturerId,
-        lecturerName: lecturer.name ?? `${lecturer.firstName ?? ''} ${lecturer.lastName ?? ''}`.trim(),
-        courseId: body.courseId,
-        courseTitle: course.title,
-        proposedTime,
-        mode: isInstant ? 'INSTANT' : 'SCHEDULED',
-        status: isInstant ? 'APPROVED' : 'PENDING',
-        scheduledAt: isInstant ? proposedTime : null,
-        notes: body.notes ?? null,
-      },
-    })
-    return NextResponse.json({ data: serializeSessionRequest(sessionRequest), message: 'Session request created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create session request', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/session-requests', 'POST', async (request: NextRequest) => {
+  const parsed = createSessionRequestSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const [learner, lecturer, course] = await Promise.all([
+    prisma.user.findUnique({ where: { id: body.learnerId } }),
+    prisma.user.findUnique({ where: { id: body.lecturerId } }),
+    prisma.course.findUnique({ where: { id: body.courseId } }),
+  ])
+  if (!learner) throw new ApiError('The specified learner does not exist', 400)
+  if (!lecturer) throw new ApiError('The specified lecturer does not exist', 400)
+  if (!course) throw new ApiError('The specified course does not exist', 400)
+
+  const isInstant = body.mode === 'INSTANT'
+  const proposedTime = new Date(body.proposedTime)
+  const sessionRequest = await prisma.sessionRequest.create({
+    data: {
+      learnerId: body.learnerId,
+      learnerName: learner.name ?? `${learner.firstName ?? ''} ${learner.lastName ?? ''}`.trim(),
+      lecturerId: body.lecturerId,
+      lecturerName: lecturer.name ?? `${lecturer.firstName ?? ''} ${lecturer.lastName ?? ''}`.trim(),
+      courseId: body.courseId,
+      courseTitle: course.title,
+      proposedTime,
+      mode: isInstant ? 'INSTANT' : 'SCHEDULED',
+      status: isInstant ? 'APPROVED' : 'PENDING',
+      scheduledAt: isInstant ? proposedTime : null,
+      notes: body.notes ?? null,
+    },
+  })
+  return NextResponse.json({ data: serializeSessionRequest(sessionRequest), message: 'Session request created successfully', code: 'success', status: 201 }, { status: 201 })
+})

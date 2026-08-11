@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+
+const createBorrowSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+  resourceId: z.string().min(1, 'resourceId is required'),
+  memberName: z.string().trim().min(1, 'memberName is required'),
+  memberEmail: z.string().trim().email('memberEmail must be a valid email'),
+  borrowDate: z.string().datetime().optional(),
+  dueDate: z.string().datetime().optional(),
+})
 
 /**
  * Real Borrow API, replacing the previous 2-row placeholder (which used a
@@ -97,29 +108,38 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+export const POST = withErrorHandling('/api/borrowings', 'POST', async (request: NextRequest) => {
+  const parsed = createBorrowSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  }
+  const body = parsed.data
 
-    if (!body.userId || !body.resourceId || !body.memberName || !body.memberEmail) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: userId, resourceId, memberName, memberEmail', code: 'error', status: 400 }, { status: 400 })
+  const [user, resource] = await Promise.all([
+    prisma.user.findUnique({ where: { id: body.userId } }),
+    prisma.resource.findUnique({ where: { id: body.resourceId } }),
+  ])
+  if (!user) throw new ApiError('The specified user does not exist', 400)
+  if (!resource) throw new ApiError('The specified resource does not exist', 400)
+
+  const borrowDate = body.borrowDate ? new Date(body.borrowDate) : new Date()
+  const dueDate = body.dueDate ? new Date(body.dueDate) : new Date(borrowDate.getTime() + 14 * 86400000)
+
+  /**
+   * Guards against a double-submitted borrow request (e.g. a doubled
+   * click or a retried request) creating two PENDING/ACTIVE rows for
+   * the same user+resource. The existence check and the create run
+   * inside one transaction so two near-simultaneous requests can't
+   * both pass the check before either has committed its create.
+   */
+  const borrow = await prisma.$transaction(async (tx) => {
+    const existing = await tx.borrow.findFirst({
+      where: { userId: body.userId, resourceId: body.resourceId, status: { in: ['PENDING', 'ACTIVE'] } },
+    })
+    if (existing) {
+      throw new ApiError('You already have a pending or active borrow request for this resource', 409)
     }
-
-    const [user, resource] = await Promise.all([
-      prisma.user.findUnique({ where: { id: body.userId } }),
-      prisma.resource.findUnique({ where: { id: body.resourceId } }),
-    ])
-    if (!user) {
-      return NextResponse.json({ data: null, message: 'The specified user does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    if (!resource) {
-      return NextResponse.json({ data: null, message: 'The specified resource does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const borrowDate = body.borrowDate ? new Date(body.borrowDate) : new Date()
-    const dueDate = body.dueDate ? new Date(body.dueDate) : new Date(borrowDate.getTime() + 14 * 86400000)
-
-    const borrow = await prisma.borrow.create({
+    return tx.borrow.create({
       data: {
         userId: body.userId,
         memberName: body.memberName,
@@ -131,9 +151,7 @@ export async function POST(request: NextRequest) {
       },
       include: { resource: { select: { title: true, type: true, isbn: true } } },
     })
+  })
 
-    return NextResponse.json({ data: serializeBorrow(borrow), message: 'Borrowing created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create borrowing', code: 'error', status: 500 }, { status: 500 })
-  }
-}
+  return NextResponse.json({ data: serializeBorrow(borrow), message: 'Borrowing created successfully', code: 'success', status: 201 }, { status: 201 })
+})
