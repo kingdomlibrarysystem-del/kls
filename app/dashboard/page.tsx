@@ -1,5 +1,4 @@
 import BorrowReturn       from "./_components/BorrowReturn";
-import ConsultationPanel  from "./_components/ConsultationPanel";
 import DigitalLibrary     from "./_components/DigitalLibrary";
 import { FooterSection, StatsBar } from "./_components/FooterSection";
 import InventoryOverview  from "./_components/InventoryOverview";
@@ -19,7 +18,6 @@ export default function DashboardPage() {
         {/* LEFT */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <BorrowReturn />
-          <ConsultationPanel />
         </div>
 
         {/* CENTRE */}

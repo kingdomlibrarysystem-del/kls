@@ -11,32 +11,35 @@ import {
   Lock,
   Users,
   Download,
-  ShoppingBag,
   Clock,
   Bot,
   Rocket,
 } from "lucide-react";
-
-const globalStats = [
-  { icon: <Users size={24} />, value: "50,000+",  label: "Active Members"    },
-  { icon: <Download size={24} />, value: "100,000+", label: "Items Borrowed"    },
-  { icon: <ShoppingBag size={24} />, value: "5,000+",  label: "Resources Sold"    },
-  { icon: <Globe size={24} />, value: "195+",     label: "Countries Reached" },
-  { icon: <Clock size={24} />, value: "24/7",     label: "Library Access"    },
-];
+import { useUsers } from "@/app/dashboard/users/_components/use-users";
+import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
 
 const features = [
-  { icon: <Brain size={20} />, label: "AI Knowledge Engine",  sub: "Smart recommendations"  },
-  { icon: <Map size={20} />, label: "Knowledge Map",        sub: "Visualize connections"   },
-  { icon: <Mic size={20} />, label: "Voice Search",         sub: "Search with your voice"  },
-  { icon: <Glasses size={20} />, label: "AR/VR Library",         sub: "Immersive Experience"    },
-  { icon: <Globe size={20} />, label: "Multi-Language AI",     sub: "Instant Translation"     },
-  { icon: <Bell size={20} />, label: "Smart Notifications",  sub: "Personalized Alerts"     },
-  { icon: <Gamepad2 size={20} />, label: "Gamified Learning",     sub: "Earn, Learn, Grow"       },
-  { icon: <Lock size={20} />, label: "Blockchain Security",  sub: "Library in Your Pocket"  },
+  { icon: <Brain size={20} />, label: "AI Knowledge Engine", sub: "Smart recommendations" },
+  { icon: <Map size={20} />, label: "Knowledge Map", sub: "Visualize connections" },
+  { icon: <Mic size={20} />, label: "Voice Search", sub: "Search with your voice" },
+  { icon: <Glasses size={20} />, label: "AR/VR Library", sub: "Immersive Experience" },
+  { icon: <Globe size={20} />, label: "Multi-Language AI", sub: "Instant Translation" },
+  { icon: <Bell size={20} />, label: "Smart Notifications", sub: "Personalized Alerts" },
+  { icon: <Gamepad2 size={20} />, label: "Gamified Learning", sub: "Earn, Learn, Grow" },
+  { icon: <Lock size={20} />, label: "Blockchain Security", sub: "Library in Your Pocket" },
 ];
 
+/** Real member count (/api/users) and real items-borrowed count (/api/borrowings) — "Resources Sold" and "Countries Reached" were removed entirely (no Sales/Transaction model, no geo data anywhere in the app). */
 export function StatsBar() {
+  const { users } = useUsers();
+  const { data: borrowings } = useBorrowingsAdmin();
+
+  const globalStats = [
+    { icon: <Users size={24} />, value: users.length.toLocaleString(), label: "Active Members" },
+    { icon: <Download size={24} />, value: borrowings.length.toLocaleString(), label: "Items Borrowed" },
+    { icon: <Clock size={24} />, value: "24/7", label: "Library Access" },
+  ];
+
   return (
     <div
       className="flex flex-wrap justify-center sm:justify-around gap-4"
