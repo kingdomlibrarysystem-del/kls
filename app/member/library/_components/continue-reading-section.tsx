@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { BookOpen, ScrollText } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 
@@ -14,8 +15,9 @@ import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_sha
  * separates in-progress from CompletedCoursesSection).
  */
 export function ContinueReadingSection() {
+  const { user } = useAuth()
   const { data: resources } = useResources()
-  const progress = useReadingProgress()
+  const progress = useReadingProgress(user?.id)
 
   const inProgress = progress
     .filter((p) => p.status === 'READING')

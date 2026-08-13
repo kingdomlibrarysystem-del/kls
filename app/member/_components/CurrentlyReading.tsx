@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
 import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_shared/use-reading-progress";
 
@@ -12,8 +13,9 @@ import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_sha
  * /member/library's own Continue Reading section already read.
  */
 export default function CurrentlyReading() {
+  const { user } = useAuth();
   const { data: resources } = useResources();
-  const progress = useReadingProgress();
+  const progress = useReadingProgress(user?.id);
 
   const rows = progress
     .filter((p) => p.status === "READING")

@@ -1,16 +1,16 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { initialNotes, type Note } from './note-data'
+import { useEffect, useSyncExternalStore } from 'react'
+import type { Note } from './note-data'
 
 /**
- * Module-level mutable store for reading notes — same
- * useSyncExternalStore pattern as use-highlights.ts, member-scoped,
- * kept as its own store rather than folded into highlights since a note
- * can exist per-chapter with no highlight at all (the two attachment
- * modes the phase spec calls for: per-page or per-highlight).
+ * Real notes store, backed by /api/notes — replacing note-data.ts's
+ * initialNotes (deliberately empty). Same module-level
+ * useSyncExternalStore + currentUserId design as use-favorites.ts.
  */
-let notes: Note[] = [...initialNotes]
+let notes: Note[] = []
+let currentUserId: string | null = null
+let loadedForUserId: string | null = null
 const listeners = new Set<() => void>()
 
 function emitChange() {
@@ -26,12 +26,13 @@ function getSnapshot() {
   return notes
 }
 
-function nextNoteId() {
-  const max = notes.reduce((m, n) => {
-    const num = Number(n.id.replace('note-', ''))
-    return Number.isFinite(num) && num > m ? num : m
-  }, 0)
-  return `note-${String(max + 1).padStart(3, '0')}`
+async function loadNotes(userId: string) {
+  loadedForUserId = userId
+  const res = await fetch(`/api/notes?userId=${userId}`)
+  const json = await res.json()
+  if (loadedForUserId !== userId) return
+  notes = json.data ?? []
+  emitChange()
 }
 
 export interface AddNoteInput {
@@ -41,22 +42,58 @@ export interface AddNoteInput {
   text: string
 }
 
-/** Creates a new note, either attached to a chapter generally or to a specific highlight within it. */
-export function addNote(input: AddNoteInput): Note {
-  const created: Note = { id: nextNoteId(), createdAt: new Date().toISOString().slice(0, 10), ...input }
-  notes = [created, ...notes]
+/** Creates a new note, either attached to a chapter generally or to a specific highlight within it. Optimistic — reconciled with the server id once the request resolves. */
+export function addNote(input: AddNoteInput) {
+  if (!currentUserId) return
+  const userId = currentUserId
+  const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const optimistic: Note = { id: tempId, createdAt: new Date().toISOString().slice(0, 10), ...input }
+  notes = [optimistic, ...notes]
   emitChange()
-  return created
+
+  fetch('/api/notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, ...input }),
+  })
+    .then((res) => res.json())
+    .then((json) => {
+      if (json.code !== 'success') throw new Error(json.message)
+      notes = notes.map((n) => (n.id === tempId ? json.data : n))
+      emitChange()
+    })
+    .catch(() => {
+      notes = notes.filter((n) => n.id !== tempId)
+      emitChange()
+    })
 }
 
 export function updateNote(id: string, text: string) {
+  const before = notes
   notes = notes.map((n) => (n.id === id ? { ...n, text } : n))
   emitChange()
+
+  fetch(`/api/notes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  }).catch(() => {
+    notes = before
+    emitChange()
+  })
 }
 
 export function removeNote(id: string) {
+  const removed = notes.find((n) => n.id === id)
   notes = notes.filter((n) => n.id !== id)
   emitChange()
+
+  fetch(`/api/notes/${id}`, { method: 'DELETE' }).catch(() => {
+    if (removed) {
+      notes = [removed, ...notes]
+      emitChange()
+    }
+  })
 }
 
 /** All notes for one chapter (both chapter-level and highlight-attached), newest first. */
@@ -64,7 +101,13 @@ export function getChapterNotes(resourceId: string, chapterId: string): Note[] {
   return notes.filter((n) => n.resourceId === resourceId && n.chapterId === chapterId)
 }
 
-/** Live-subscribes to the shared notes store. */
-export function useNotes() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => initialNotes)
+/** Live-subscribes to the shared notes store, loading it from the real API for the signed-in user. */
+export function useNotes(userId?: string) {
+  useEffect(() => {
+    if (!userId) return
+    currentUserId = userId
+    if (loadedForUserId !== userId) loadNotes(userId)
+  }, [userId])
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => [])
 }

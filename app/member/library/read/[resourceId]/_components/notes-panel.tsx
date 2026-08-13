@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { StickyNote, Trash2, Plus } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import { useNotes, addNote, removeNote } from '@/app/member/_shared/use-notes'
 import type { Highlight } from '@/app/member/_shared/highlight-data'
 
@@ -21,8 +22,9 @@ interface NotesPanelProps {
  * chapter body when general.
  */
 export function NotesPanel({ resourceId, chapterId, highlight, onClose }: NotesPanelProps) {
+  const { user } = useAuth()
   const [draft, setDraft] = useState('')
-  const allNotes = useNotes()
+  const allNotes = useNotes(user?.id)
   const notes = allNotes.filter((n) =>
     n.resourceId === resourceId && n.chapterId === chapterId && (highlight ? n.highlightId === highlight.id : !n.highlightId)
   )
