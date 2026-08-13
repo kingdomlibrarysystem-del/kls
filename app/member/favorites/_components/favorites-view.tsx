@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Heart, BookOpen, GraduationCap, X } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, removeFavorite } from '@/app/member/_shared/use-favorites'
 import type { FavoriteItem } from './favorites-data'
 import { FavoriteDetailModal } from './favorite-detail-modal'
@@ -17,10 +18,11 @@ const LOAD_DELAY_MS = 400
  * library page) stays in sync across both pages.
  */
 export function FavoritesView() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [removeError, setRemoveError] = useState('')
   const [viewing, setViewing] = useState<FavoriteItem | null>(null)
-  const favorites = useFavorites()
+  const favorites = useFavorites(user?.id)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)

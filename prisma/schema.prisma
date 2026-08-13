@@ -97,6 +97,13 @@ model User {
   researchPapers             ResearchPaper[]
   messagesSent               Message[]
   notifications               Notification[]
+  favorites                   Favorite[]
+  readingProgress              ReadingProgress[]
+  highlights                    Highlight[]
+  notes                         Note[]
+  appointments                   Appointment[]
+  healthRecords                   HealthRecord[]
+  immunizations                    Immunization[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -306,6 +313,8 @@ model Resource {
   /// here). List type is a Prisma-modeling artifact, not a real
   /// multi-publication-per-resource case.
   publications Publication[]
+  chapters     Chapter[]
+  readingProgress ReadingProgress[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -887,4 +896,218 @@ enum NotificationType {
   PUBLICATION
   DUE
   SYSTEM
+}
+
+/// Real favorite, replacing app/member/_shared/favorites-data.ts's mock
+/// store. A favorited item is either a Resource or a Course — two
+/// different collections — so this uses a polymorphic itemId/itemType
+/// pair rather than two nullable relation FKs. title/subtitle are
+/// denormalized at favorite-time (mirroring the mock's shape) so the list
+/// renders without an extra join per item and still shows something
+/// sensible if the source Resource/Course is later deleted.
+model Favorite {
+  id       String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String       @db.ObjectId
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId   String
+  itemType FavoriteType
+  title    String
+  subtitle String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+enum FavoriteType {
+  RESOURCE
+  COURSE
+}
+
+/// Real login event, per APP_DOC Task 1.7 — replacing both
+/// app/dashboard/profile/_components/security-mock-data.ts and
+/// app/member/profile/_components/security-mock-data.ts's identical
+/// mockLoginHistory arrays. Written from authorize() in lib/auth-options.ts
+/// on every real login attempt (success and failure), so `userId` is
+/// nullable — a failed attempt with an unrecognized email has no real
+/// User row to attach to, but is still a security-relevant event worth
+/// logging by the email that was tried.
+model LoginHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
+  email     String
+  ip        String
+  userAgent String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Real chapter body content for a readable Resource, replacing
+/// app/member/_shared/readable-content-data.ts's Record<string,
+/// ReadableContent> keyed by legacy mock resource ids ('1', '7', ...)
+/// that don't match any real Resource ObjectId post-migration — this
+/// feature was silently non-functional against real data before this
+/// model existed. A resource is "readable online" if it has 1+ Chapter
+/// rows; `order` gives the reader's chapter sequence and doubles as the
+/// stable unit reading-progress tracks against (mirrors Lesson.order).
+model Chapter {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  resourceId String   @db.ObjectId
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  title      String
+  body       String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([resourceId])
+}
+
+/// Real per-member reading progress, replacing
+/// app/member/_shared/reading-progress-data.ts's initialReadingProgress
+/// (2 hand-typed rows, no userId — single-persona mock). `progress%` is
+/// computed from completedChapterIds.length/totalChapters server-side
+/// (never stored), same convention as Enrollment.
+model ReadingProgress {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String            @db.ObjectId
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId         String            @db.ObjectId
+  resource           Resource          @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  status             ReadingStatus     @default(READING)
+  startedAt          DateTime          @default(now())
+  completedChapterIds String[]
+  totalChapters      Int
+  lastChapterId      String?
+  lastReadAt         DateTime          @default(now())
+
+  @@unique([userId, resourceId])
+}
+
+enum ReadingStatus {
+  READING
+  COMPLETED
+}
+
+/// Real reading highlight, replacing app/member/_shared/highlight-data.ts's
+/// initialHighlights (deliberately empty — a seeded highlight would
+/// reference offsets into chapter body text that could silently desync).
+/// startOffset/endOffset are real character positions into that
+/// Chapter's `body`, not decorative.
+model Highlight {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String        @db.ObjectId
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String        @db.ObjectId
+  chapterId   String        @db.ObjectId
+  startOffset Int
+  endOffset   Int
+  text        String
+  color       HighlightColor
+  createdAt   DateTime      @default(now())
+
+  @@index([userId, resourceId])
+}
+
+enum HighlightColor {
+  GOLD
+  GREEN
+  TEAL
+  PINK
+}
+
+/// Real reading note, replacing app/member/_shared/note-data.ts's
+/// initialNotes (deliberately empty, same reasoning as Highlight). Kept
+/// as its own model rather than folded into Highlight since a note can
+/// attach to a chapter generally (highlightId null) or to a specific
+/// highlight (the two attachment modes the product spec calls for).
+model Note {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String   @db.ObjectId
+  chapterId   String   @db.ObjectId
+  highlightId String?  @db.ObjectId
+  text        String
+  createdAt   DateTime @default(now())
+
+  @@index([userId, resourceId])
+}
+
+/// Real partnered clinic, replacing app/dashboard/health/_shared/
+/// health-data.ts's hand-typed `clinics` array. Admin-managed reference
+/// data (no admin CRUD UI yet — the mock had none either — so no
+/// createdBy/status lifecycle is added beyond what the mock already
+/// modeled). APP_DOC.md leaves Health System spec-less ("backlog only");
+/// this schema is authored from the existing mock's own field shape
+/// rather than an official spec, since none exists.
+model Clinic {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  specialty   String
+  location    String
+  image       String
+  appointments Appointment[]
+  healthRecords HealthRecord[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+/// Real checkup appointment, replacing health-data.ts's initialAppointments
+/// (hardcoded to a single 'John Doe' persona, no real userId — silently
+/// non-functional against any real signed-in member).
+model Appointment {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String            @db.ObjectId
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicId  String            @db.ObjectId
+  clinic    Clinic            @relation(fields: [clinicId], references: [id])
+  dateTime  DateTime
+  reason    String
+  status    AppointmentStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+/// Real consultation record, replacing health-data.ts's
+/// initialHealthRecords. Read-only from the member side (per the mock's
+/// own design note — no clinic-practitioner authoring UI exists), but a
+/// real per-user row rather than a name-matched mock entry.
+model HealthRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicId      String   @db.ObjectId
+  clinic        Clinic   @relation(fields: [clinicId], references: [id])
+  date          DateTime
+  summary       String
+  prescriptions String[]
+  referral      String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Real immunization entry, replacing health-data.ts's initialImmunizations.
+model Immunization {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vaccine          String
+  dateAdministered DateTime
+  nextDue          DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
 }

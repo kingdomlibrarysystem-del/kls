@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [editingProfile, setEditingProfile] = useState(false);
   const { data: borrowings } = useBorrowings();
-  const favorites = useFavorites();
+  const favorites = useFavorites(user?.id);
   const { data: enrollments } = useEnrollments();
   const { data: attempts } = useAssessmentAttempts();
   const { data: certificates } = useCertificates();

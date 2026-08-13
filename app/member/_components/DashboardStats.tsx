@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, Heart, GraduationCap, Award, Star, CreditCard } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
 import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enrollments";
@@ -16,8 +17,9 @@ import { useCertificates } from "@/app/member/_shared/use-certificates";
  * rather than fabricating a number — flagged here, not silently invented.
  */
 export default function DashboardStats() {
+  const { user } = useAuth();
   const { data: borrowings } = useBorrowings();
-  const favorites = useFavorites();
+  const favorites = useFavorites(user?.id);
   const { data: enrollments } = useEnrollments();
   const { data: attempts } = useAssessmentAttempts();
   const { data: certificates } = useCertificates();
