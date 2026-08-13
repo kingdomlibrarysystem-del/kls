@@ -2,20 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CURRENT_MEMBER_NAME } from '../../_shared/health-data'
+import { useAuth } from '@/contexts/auth-context'
 import { useAppointments } from '../../_shared/use-health'
 import { BookCheckupForm } from './book-checkup-form'
 import { MyAppointmentsList } from './my-appointments-list'
 
-/** Simulated network delay before mock appointments become visible. */
+/** Simulated network delay before appointments become visible. */
 const LOAD_DELAY_MS = 400
 
-/** Book a Checkup: real booking form + the current member's own appointment list. */
+/** Book a Checkup: real booking form + the signed-in member's own appointment list. */
 export function CheckupsView() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
-  const appointments = useAppointments()
-  const mine = appointments.filter((a) => a.member === CURRENT_MEMBER_NAME)
+  const appointments = useAppointments(user?.id)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
@@ -37,7 +37,7 @@ export function CheckupsView() {
     <div>
       {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <BookCheckupForm onBooked={() => showToast('Checkup requested — you\'ll be notified once the clinic confirms.')} />
-      <MyAppointmentsList appointments={mine} />
+      <MyAppointmentsList appointments={appointments} />
     </div>
   )
 }
