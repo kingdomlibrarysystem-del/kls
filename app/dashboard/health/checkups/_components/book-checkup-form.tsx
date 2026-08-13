@@ -5,16 +5,19 @@ import { AlertCircle, CalendarPlus } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { clinics } from '../../_shared/health-data'
-import { bookAppointment } from '../../_shared/use-health'
+import { useAuth } from '@/contexts/auth-context'
+import { useClinics, bookAppointment } from '../../_shared/use-health'
 
 interface BookCheckupFormProps {
   onBooked: () => void
 }
 
-/** Real booking form writing a new PENDING appointment to the shared health store. */
+/** Real booking form writing a new PENDING appointment for the signed-in member. */
 export function BookCheckupForm({ onBooked }: BookCheckupFormProps) {
-  const [clinicId, setClinicId] = useState(clinics[0]?.id ?? '')
+  const { user } = useAuth()
+  const { data: clinics } = useClinics()
+  const [clinicIdOverride, setClinicIdOverride] = useState('')
+  const clinicId = clinicIdOverride || clinics[0]?.id || ''
   const [dateTime, setDateTime] = useState('')
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
@@ -22,11 +25,12 @@ export function BookCheckupForm({ onBooked }: BookCheckupFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      if (!user) throw new Error('You must be signed in to book a checkup')
       if (!clinicId) throw new Error('Select a clinic')
       if (!dateTime) throw new Error('Choose a proposed date and time')
       if (!reason.trim()) throw new Error('Briefly describe the reason for your visit')
 
-      bookAppointment({ clinicId, dateTime: new Date(dateTime).toISOString(), reason: reason.trim() })
+      bookAppointment(user.id, { clinicId, dateTime: new Date(dateTime).toISOString(), reason: reason.trim() })
 
       setDateTime('')
       setReason('')
@@ -51,7 +55,7 @@ export function BookCheckupForm({ onBooked }: BookCheckupFormProps) {
         <select
           id="clinic"
           value={clinicId}
-          onChange={(e) => setClinicId(e.target.value)}
+          onChange={(e) => setClinicIdOverride(e.target.value)}
           className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
         >
           {clinics.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.specialty}</option>)}

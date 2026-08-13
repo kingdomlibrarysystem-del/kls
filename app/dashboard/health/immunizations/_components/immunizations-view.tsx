@@ -1,46 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Syringe, AlertTriangle } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { CURRENT_MEMBER_NAME } from '../../_shared/health-data'
+import { useAuth } from '@/contexts/auth-context'
 import { useImmunizations } from '../../_shared/use-health'
-
-/** Simulated network delay before mock immunization entries become visible. */
-const LOAD_DELAY_MS = 400
 
 /** A next-due date in the past means a booster/follow-up is overdue. */
 function isOverdue(nextDue?: string): boolean {
   return !!nextDue && new Date(nextDue) < new Date()
 }
 
-/** Read-only vaccination record + upcoming reminders for the current member. */
+/** Read-only vaccination record + upcoming reminders for the signed-in member. */
 export function ImmunizationsView() {
-  const [loading, setLoading] = useState(true)
-  const immunizations = useImmunizations()
-  const mine = immunizations.filter((i) => i.member === CURRENT_MEMBER_NAME)
+  const { user } = useAuth()
+  const immunizations = useImmunizations(user?.id)
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="space-y-3" aria-label="Loading immunization records">
-        {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
-      </div>
-    )
-  }
-
-  if (mine.length === 0) {
+  if (immunizations.length === 0) {
     return <EmptyState icon={Syringe} title="No immunization records yet" description="Your vaccination history and upcoming reminders will appear here." />
   }
 
   return (
     <div className="bg-white border border-w-300 rounded-lg overflow-hidden">
-      {mine.map((imm) => {
+      {immunizations.map((imm) => {
         const overdue = isOverdue(imm.nextDue)
         return (
           <div key={imm.id} className="px-4 py-3 border-b border-w-200 last:border-b-0 flex items-center gap-3 flex-wrap">

@@ -2,15 +2,17 @@
 
 import { CalendarClock, XCircle } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { clinics, appointmentStatusConfig, type Appointment } from '../../_shared/health-data'
-import { cancelAppointment } from '../../_shared/use-health'
+import { appointmentStatusConfig, type Appointment } from '../../_shared/health-data'
+import { useClinics, cancelAppointment } from '../../_shared/use-health'
 
 interface MyAppointmentsListProps {
   appointments: Appointment[]
 }
 
-/** Read + cancel view of the current member's booked appointments. */
+/** Read + cancel view of the signed-in member's booked appointments. */
 export function MyAppointmentsList({ appointments }: MyAppointmentsListProps) {
+  const { data: clinics } = useClinics()
+
   if (appointments.length === 0) {
     return <EmptyState icon={CalendarClock} title="No appointments yet" description="Book a checkup above to see it listed here." />
   }
