@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Highlighter, ChevronDown, ChevronUp, Trash2, StickyNote } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import { useHighlights, removeHighlight } from '@/app/member/_shared/use-highlights'
 import { useNotes, removeNote } from '@/app/member/_shared/use-notes'
 import { highlightColorTokens } from '@/app/member/_shared/highlight-data'
@@ -21,9 +22,10 @@ interface HighlightsNotesListProps {
  * to show here initially.
  */
 export function HighlightsNotesList({ resourceId, chapters, onJump }: HighlightsNotesListProps) {
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  const allHighlights = useHighlights().filter((h) => h.resourceId === resourceId)
-  const allNotes = useNotes().filter((n) => n.resourceId === resourceId)
+  const allHighlights = useHighlights(user?.id).filter((h) => h.resourceId === resourceId)
+  const allNotes = useNotes(user?.id).filter((n) => n.resourceId === resourceId)
 
   const chapterTitle = (chapterId: string) => chapters.find((c) => c.id === chapterId)?.title ?? chapterId
   const chapterIndex = (chapterId: string) => chapters.findIndex((c) => c.id === chapterId)

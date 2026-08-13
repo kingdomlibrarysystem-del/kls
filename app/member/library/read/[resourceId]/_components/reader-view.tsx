@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, startReading, markChapterRead, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
@@ -34,9 +35,10 @@ interface ReaderViewProps {
  * (e.g. Phase 3's "Continue Reading" links there directly).
  */
 export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
+  const { user } = useAuth()
   const { data: resources, loading, error } = useResources()
   const content = useReadableContent()
-  const progressEntries = useReadingProgress()
+  const progressEntries = useReadingProgress(user?.id)
 
   const resource = resources.find((r) => r.id === resourceId)
   const readable = content[resourceId]
@@ -47,7 +49,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const [chapterIndex, setChapterIndex] = useState(startIndex)
   const initialized = useRef(false)
   const bodyRef = useRef<HTMLDivElement>(null)
-  const highlightEntries = useHighlights()
+  const highlightEntries = useHighlights(user?.id)
   const { pending, captureSelection, clearSelection } = useChapterSelection()
   const [noteHighlight, setNoteHighlight] = useState<Highlight | null>(null)
 
