@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ScrollText, Heart, ChevronRight, BookOpenCheck } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
@@ -14,7 +15,8 @@ interface ScrollProps {
 }
 
 function useIsFavorited(id: string) {
-  const favorites = useFavorites()
+  const { user } = useAuth()
+  const favorites = useFavorites(user?.id)
   return favorites.some((f) => f.id === id)
 }
 
@@ -28,7 +30,8 @@ function useReadableResourceId(categoryId: string): string | undefined {
 
 /** This scroll's reading-progress percent, if the member has started reading it. */
 function useReadingPercent(resourceId: string | undefined): number | undefined {
-  const progress = useReadingProgress()
+  const { user } = useAuth()
+  const progress = useReadingProgress(user?.id)
   if (!resourceId) return undefined
   const entry = progress.find((p) => p.resourceId === resourceId)
   return entry ? getReadingProgressPercent(entry) : undefined

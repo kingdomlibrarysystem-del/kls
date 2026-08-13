@@ -1,11 +1,13 @@
 "use client";
 
 import { Heart, ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
 
 /** Dashboard-home widget for favorited items, reading from the shared favorites store — the same one the library page's heart toggle and the Favorites page's Remove action write to. */
 export default function FavoriteBooks() {
-  const favorites = useFavorites();
+  const { user } = useAuth();
+  const favorites = useFavorites(user?.id);
 
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>

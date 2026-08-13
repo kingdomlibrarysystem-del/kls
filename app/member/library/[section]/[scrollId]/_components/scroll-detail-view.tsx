@@ -32,10 +32,10 @@ interface ScrollDetailViewProps {
 export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const [actionTarget, setActionTarget] = useState<{ id: string; title: string; author: string } | null>(null)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
-  const favorites = useFavorites()
+  const favorites = useFavorites(user?.id)
   const readableContent = useReadableContent()
 
   const loading = resourcesLoading || categoriesLoading

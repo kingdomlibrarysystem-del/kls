@@ -124,6 +124,6 @@ export const memberNav: NavItem[] = [
   { icon: <GraduationCap size={14} />, label: "E-Learning", href: "/dashboard/e-learning" },
   { icon: <RotateCcw size={14} />, label: "My Borrowings", href: "/dashboard/library/borrowings" },
   { icon: <Clock size={14} />, label: "Reservations", href: "/dashboard/reservations" },
-  { icon: <Heart size={14} />, label: "Favorites", href: "#" },
+  { icon: <Heart size={14} />, label: "Favorites", href: "/member/favorites" },
   { icon: <User size={14} />, label: "Profile", href: "/dashboard/profile" },
 ];
