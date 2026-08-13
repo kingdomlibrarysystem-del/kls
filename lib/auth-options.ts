@@ -3,6 +3,17 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from '@/prisma/client'
 
+/** Same x-forwarded-for/x-real-ip extraction as lib/rate-limit.ts's clientKey, applied here to attribute a login attempt to a real IP. */
+function clientIp(headers: Record<string, string> | undefined): string {
+  const forwardedFor = headers?.['x-forwarded-for']
+  return forwardedFor?.split(',')[0]?.trim() || headers?.['x-real-ip'] || 'unknown'
+}
+
+/** Fire-and-forget: a login-history write must never block or fail the actual login. */
+function logLoginAttempt(fields: { userId: string | null; email: string; ip: string; userAgent: string; success: boolean }) {
+  prisma.loginHistory.create({ data: fields }).catch(() => {})
+}
+
 /**
  * Real credentials-based auth, replacing contexts/auth-context.tsx's
  * login() (which matched against 4 hardcoded mock personas and fell
@@ -25,16 +36,23 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        const ip = clientIp(req.headers)
+        const userAgent = req.headers?.['user-agent'] || 'unknown'
+
         if (!credentials?.email || !credentials?.password) return null
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: { role: { select: { name: true } } },
         })
-        if (!user || !user.password) return null
+        if (!user || !user.password) {
+          logLoginAttempt({ userId: null, email: credentials.email, ip, userAgent, success: false })
+          return null
+        }
 
         const valid = await bcrypt.compare(credentials.password, user.password)
+        logLoginAttempt({ userId: user.id, email: user.email, ip, userAgent, success: valid })
         if (!valid) return null
 
         return {
