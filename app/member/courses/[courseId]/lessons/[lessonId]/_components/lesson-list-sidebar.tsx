@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CheckCircle2, Circle, PlayCircle, FileText, Download } from 'lucide-react'
+import { CheckCircle2, Circle, PlayCircle, FileText, BookOpen } from 'lucide-react'
 import type { Lesson, LessonContentType } from '../../../../../_shared/lesson-data'
 
 interface LessonListSidebarProps {
@@ -12,7 +12,7 @@ interface LessonListSidebarProps {
 const contentIcon: Record<LessonContentType, React.ReactNode> = {
   VIDEO: <PlayCircle size={13} />,
   TEXT: <FileText size={13} />,
-  FILE: <Download size={13} />,
+  FILE: <BookOpen size={13} />,
 }
 
 /**

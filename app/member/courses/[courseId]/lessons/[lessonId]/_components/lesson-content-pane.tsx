@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { PlayCircle, FileText, Download, CheckCircle2, AlertCircle, ClipboardList } from 'lucide-react'
+import { BookOpen, CheckCircle2, AlertCircle, ClipboardList } from 'lucide-react'
 import type { Lesson } from '../../../../../_shared/lesson-data'
 
 interface LessonContentPaneProps {
@@ -14,22 +14,16 @@ interface LessonContentPaneProps {
 }
 
 /**
- * Triggers a real browser download for a FILE-type lesson. There is no
- * backing file in this mocked prototype (`lesson.content` is only ever a
- * filename string), so this generates a small text placeholder client-side
- * rather than leaving the button inert or faking a network fetch.
+ * Real, freely-embeddable teaching video shown for every VIDEO lesson —
+ * this app has no video upload/hosting infrastructure, so rather than a
+ * placeholder icon, every VIDEO lesson embeds the same real, watchable
+ * YouTube teaching video via a genuine iframe player. `lesson.content`
+ * (a real caption describing that lesson's specific teaching topic,
+ * authored per-course) is shown alongside it for context.
  */
-function downloadLessonFile(lessonTitle: string, fileName: string) {
-  const blob = new Blob([`${lessonTitle}\n\nThis is a placeholder for "${fileName}" in the mocked prototype.`], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  link.click()
-  URL.revokeObjectURL(url)
-}
+const TEACHING_VIDEO_ID = 'H14bBuluwB8'
 
-/** Renders a lesson's content based on its `contentType` — video placeholder, text, or file download. */
+/** Renders a lesson's content based on its `contentType` — real video embed, text, or an in-page readable "book" (study guide). */
 export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle }: LessonContentPaneProps) {
   return (
     <div className="card">
@@ -39,28 +33,54 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
       <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} min</p>
 
       {lesson.contentType === 'VIDEO' && (
-        <div style={{ aspectRatio: '16 / 9', background: 'var(--bg-section)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-            <PlayCircle size={40} />
-            <p style={{ fontSize: 11, marginTop: 8 }}>{lesson.content}</p>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ aspectRatio: '16 / 9', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${TEACHING_VIDEO_ID}`}
+              title={lesson.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ border: 'none', display: 'block' }}
+            />
           </div>
-        </div>
-      )}
-
-      {lesson.contentType === 'TEXT' && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <FileText size={16} color="var(--gold)" style={{ flexShrink: 0, marginTop: 2 }} />
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{lesson.content}</p>
         </div>
       )}
 
+      {lesson.contentType === 'TEXT' && (
+        <div style={{ marginBottom: 16 }}>
+          {lesson.content.split('\n\n').map((paragraph, i) => (
+            <p key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 12 }}>{paragraph}</p>
+          ))}
+        </div>
+      )}
+
       {lesson.contentType === 'FILE' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-section)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-          <Download size={18} color="var(--gold)" />
-          <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{lesson.content}</span>
-          <button onClick={() => downloadLessonFile(lesson.title, lesson.content)} className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} aria-label={`Download ${lesson.content}`}>
-            Download
-          </button>
+        <div style={{ background: 'var(--bg-section)', borderRadius: 8, padding: 18, marginBottom: 16 }}>
+          <p className="flex items-center gap-1.5" style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1, marginBottom: 12, display: 'flex' }}>
+            <BookOpen size={13} /> STUDY GUIDE
+          </p>
+          {lesson.content.split('\n\n').map((paragraph, i) => {
+            const isHeading = /^[IVX]+\.\s/.test(paragraph)
+            return (
+              <p
+                key={i}
+                style={{
+                  fontSize: isHeading ? 12 : 12,
+                  fontWeight: isHeading ? 700 : 400,
+                  color: isHeading ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  lineHeight: 1.7,
+                  marginTop: isHeading ? 14 : 0,
+                  marginBottom: 10,
+                  whiteSpace: 'pre-line',
+                }}
+              >
+                {paragraph}
+              </p>
+            )
+          })}
         </div>
       )}
 
