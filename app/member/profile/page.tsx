@@ -6,27 +6,24 @@ import { useBorrowings } from "@/app/member/_shared/use-borrowings";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
 import { useEnrollments } from "@/app/member/_shared/use-enrollments";
 import { useAssessmentAttempts } from "@/app/member/_shared/use-assessment-attempts";
-import { useCertificates } from "@/app/dashboard/e-learning/certificates/_components/use-certificates";
+import { useCertificates } from "@/app/member/_shared/use-certificates";
 import { NotificationPreferencesSection } from "./_components/notification-preferences-section";
 import { TwoFactorSection } from "./_components/two-factor-section";
 import { SessionsSection } from "./_components/sessions-section";
 import { LoginHistorySection } from "./_components/login-history-section";
 import { EditProfileModal } from "./_components/edit-profile-modal";
 
-/** This mock has a single member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const MEMBER_NAME = "John Doe";
-
 export default function ProfilePage() {
   const { user } = useAuth();
   const [editingProfile, setEditingProfile] = useState(false);
-  const borrowings = useBorrowings();
-  const favorites = useFavorites();
-  const enrollments = useEnrollments();
-  const attempts = useAssessmentAttempts();
-  const certificates = useCertificates();
+  const { data: borrowings } = useBorrowings();
+  const favorites = useFavorites(user?.id);
+  const { data: enrollments } = useEnrollments();
+  const { data: attempts } = useAssessmentAttempts();
+  const { data: certificates } = useCertificates();
 
-  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
-  const memberCertificates = certificates.filter((c) => c.member === MEMBER_NAME && !c.revoked).length;
+  const booksRead = borrowings.filter((b) => b.status === "returned").length;
+  const memberCertificates = certificates.filter((c) => !c.revoked).length;
   const decidedAttempts = attempts.filter((a) => a.reviewStatus !== "PENDING_REVIEW");
   const avgScore = decidedAttempts.length
     ? Math.round(decidedAttempts.reduce((s, a) => s + (a.totalMarks > 0 ? (a.score / a.totalMarks) * 100 : 0), 0) / decidedAttempts.length)

@@ -1,16 +1,12 @@
-import type { UserRole } from '@/contexts/auth-context'
-
 /**
  * Shared Message/Channel types for Slack-style chat — per-course channels
- * (auto-derived from enrollment + lecturer data) and 1:1 DMs (genuinely
- * stored). Lives in lib/messaging/ rather than under one role's _shared/
- * folder (e.g. app/lecturer/_shared/, the Phase 3 precedent for
- * session-booking): unlike session booking, which the lecturer approves
- * and therefore "owns," chat has no single owning role — a course channel
- * is jointly used by its learner(s) and lecturer, and DMs can occur
- * between any two roles (member, lecturer, contributor). This mirrors
- * lib/role-switcher.ts, already genuinely cross-cutting, non-role-owned
- * shared code, rather than lib/utils.ts-style generic helpers.
+ * (real Channel rows, one per Course, seeded in Phase 7) and 1:1 DMs
+ * (created lazily on first message). Backed by the real /api/messages and
+ * /api/channels — see their own docstrings for the collection shape.
+ * Identity is by real User.id throughout (senderId/participantIds), not
+ * display name — every participant (member, lecturer, contributor) now
+ * has a real backing User row (see lib/identity/lecturer-identity.ts and
+ * contributor-identity.ts).
  *
  * Out of scope for this phase (noted here, not silently skipped): full
  * threading (replies-to-a-specific-message) and @mention autocomplete.
@@ -19,31 +15,30 @@ import type { UserRole } from '@/contexts/auth-context'
 export type ChannelKind = 'course' | 'dm'
 
 export interface Channel {
-  /** `course-${courseId}` for a course channel, or a stable sorted-pair key for a DM — see dmChannelId() in use-messages.ts. */
   id: string
   kind: ChannelKind
   /** Course title for a course channel, or the other party's display name for a DM. */
   name: string
-  /** Everyone who can see this channel — all enrolled learners + the course's lecturer for a course channel, exactly 2 people for a DM. */
-  participantNames: string[]
+  /** Real User ids of everyone who can see this channel. */
+  participantIds: string[]
   /** Only set for kind === 'course'. */
   courseId?: string
 }
 
 export interface MessageReaction {
   emoji: string
-  /** Names of everyone who reacted with this emoji — toggling adds/removes your own name, mirroring a real reactions UI. */
-  reactedBy: string[]
+  /** Real User ids of everyone who reacted with this emoji — toggling adds/removes your own id. */
+  reactedByIds: string[]
 }
 
 export interface Message {
   id: string
   channelId: string
+  senderId: string
   senderName: string
-  senderRole: UserRole
   body: string
   sentAt: string
-  /** Names of everyone who has read this message — used to derive each channel's unread count per-viewer rather than storing a separate read flag per person. */
-  readBy: string[]
+  /** Real User ids of everyone who has read this message. */
+  readByIds: string[]
   reactions: MessageReaction[]
 }

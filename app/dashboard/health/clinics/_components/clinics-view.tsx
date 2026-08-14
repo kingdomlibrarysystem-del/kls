@@ -1,25 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { MapPin, Stethoscope as StethoscopeIcon, Search } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { clinics } from '../../_shared/health-data'
-
-/** Simulated network delay before mock clinics become visible. */
-const LOAD_DELAY_MS = 400
+import { useClinics } from '../../_shared/use-health'
 
 /** Searchable/filterable directory of partnered clinics and practitioners. */
 export function ClinicsView() {
-  const [loading, setLoading] = useState(true)
+  const { data: clinics, loading } = useClinics()
   const [search, setSearch] = useState('')
   const [specialtyFilter, setSpecialtyFilter] = useState('all')
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
 
   const specialties = ['all', ...Array.from(new Set(clinics.map((c) => c.specialty)))]
 

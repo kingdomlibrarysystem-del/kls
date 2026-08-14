@@ -3,31 +3,50 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle2, XCircle, Award } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCertificates } from '@/app/dashboard/e-learning/certificates/_components/use-certificates'
-
-/** Simulated network delay before the mock lookup result becomes visible. */
-const LOAD_DELAY_MS = 400
 
 interface CertificateVerifyViewProps {
   code: string
 }
 
+interface VerifiedCertificate {
+  member: string
+  course: string
+  issuedAt: string
+  verificationCode: string
+  revoked: boolean
+}
+
 /**
  * Public certificate verification — no login required, per APP_DOC Task
- * 6.7. Looks up the code from the URL against the mock certificate array
- * only; shows a valid or invalid state.
+ * 6.7. Looks up the code from the URL against the real /api/certificates
+ * (filtered server-side by verificationCode, so an unauthenticated visitor
+ * never receives the full certificate list) and shows a valid or invalid
+ * state.
  */
 export function CertificateVerifyView({ code }: CertificateVerifyViewProps) {
   const [loading, setLoading] = useState(true)
-  const certificates = useCertificates()
-
-  const certificate = certificates.find((c) => c.verificationCode.toUpperCase() === code.toUpperCase())
-  const isValid = !!certificate && !certificate.revoked
+  const [certificate, setCertificate] = useState<VerifiedCertificate | null>(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+    let cancelled = false
+    fetch(`/api/certificates?verificationCode=${encodeURIComponent(code.toUpperCase())}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return
+        setCertificate(json.code === 'success' && json.data?.[0] ? json.data[0] : null)
+      })
+      .catch(() => {
+        if (!cancelled) setCertificate(null)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [code])
+
+  const isValid = !!certificate && !certificate.revoked
 
   if (loading) {
     return (

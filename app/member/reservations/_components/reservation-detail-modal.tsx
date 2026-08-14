@@ -1,16 +1,10 @@
 import { User, CalendarDays, Users, CheckCircle2, Hash } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import type { Reservation } from './reservations-data'
+import { statusConfig, type Reservation } from '@/app/dashboard/reservations/_components/reservations-data'
 
 interface ReservationDetailModalProps {
   reservation: Reservation | null
   onClose: () => void
-}
-
-const statusColor: Record<Reservation['status'], string> = {
-  Ready: 'var(--green-light)',
-  Waiting: 'var(--gold)',
-  Fulfilled: 'var(--text-muted)',
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -30,18 +24,18 @@ export function ReservationDetailModal({ reservation, onClose }: ReservationDeta
       {reservation && (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="cinzel" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{reservation.title}</h3>
-            <span style={{ fontSize: 11, fontWeight: 700, color: statusColor[reservation.status], flexShrink: 0 }}>{reservation.status}</span>
+            <h3 className="cinzel" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{reservation.resourceTitle}</h3>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>{statusConfig[reservation.status].label}</span>
           </div>
 
           <div className="card space-y-2">
-            <DetailRow icon={<User size={13} />} label="Author" value={reservation.author} />
-            <DetailRow icon={<CalendarDays size={13} />} label="Reserved" value={reservation.reserved} />
-            {typeof reservation.queue === 'number' && reservation.queue > 0 && (
-              <DetailRow icon={<Users size={13} />} label="Queue" value={`${reservation.queue} ahead of you`} />
+            <DetailRow icon={<User size={13} />} label="Author" value={reservation.resourceAuthor} />
+            <DetailRow icon={<CalendarDays size={13} />} label="Reserved" value={reservation.reservationDate} />
+            {reservation.status === 'pending' && reservation.queuePosition > 0 && (
+              <DetailRow icon={<Users size={13} />} label="Queue" value={`Position ${reservation.queuePosition}`} />
             )}
-            {reservation.fulfilled && <DetailRow icon={<CheckCircle2 size={13} />} label="Fulfilled" value={reservation.fulfilled} />}
-            <DetailRow icon={<Hash size={13} />} label="ID" value={String(reservation.id)} />
+            {reservation.claimDeadline && <DetailRow icon={<CheckCircle2 size={13} />} label="Claim by" value={new Date(reservation.claimDeadline).toLocaleString()} />}
+            <DetailRow icon={<Hash size={13} />} label="ID" value={reservation.id} />
           </div>
         </div>
       )}

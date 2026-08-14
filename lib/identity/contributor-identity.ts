@@ -12,3 +12,6 @@
  * removal (see portal-consolidation-audit.md §4).
  */
 export const CONTRIBUTOR_NAME = 'Pastor Emmanuel Rugamba'
+
+/** Real seeded User.id for CONTRIBUTOR_NAME — required for messaging's real Channel/Message API, which needs a real participantId, not just a display name. */
+export const CONTRIBUTOR_ID = '6a6caab4cecf69deb2eaa1b7'

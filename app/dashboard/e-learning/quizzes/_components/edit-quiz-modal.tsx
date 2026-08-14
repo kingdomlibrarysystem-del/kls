@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { updateAssessment } from '@/app/member/_shared/use-assessments'
 import { quizFormSchema, type QuizFormData } from './quiz-form-schema'
 import { QuestionBuilder } from './question-builder'
@@ -21,6 +21,7 @@ interface EditQuizModalProps {
 
 /** Edit modal for an existing quiz/exam, reusing the same question builder as Add. */
 export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
+  const { data: courseCatalog } = useCourseCatalog()
   const {
     register,
     control,
@@ -56,10 +57,10 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
     }
   }, [assessment, reset])
 
-  const onSubmit = (data: QuizFormData) => {
+  const onSubmit = async (data: QuizFormData) => {
     if (!assessment) return
     try {
-      updateAssessment(assessment.id, {
+      await updateAssessment(assessment.id, {
         title: data.title,
         courseId: data.courseId,
         kind: data.kind,
@@ -80,7 +81,7 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
       })
       onClose()
     } catch {
-      // In-memory write; failures aren't expected here.
+      // Real error surfaced via the assessment hook's own error state on next load.
     }
   }
 

@@ -1,42 +1,74 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { mockPapers, type ResearchPaper } from './repository-data'
+import { useEffect, useState } from 'react'
+import type { ResearchPaper } from './repository-data'
 
-/**
- * Module-level mutable store so Submit Paper
- * (`/dashboard/research/submit`) can append a new paper and the Repository
- * table reflects it immediately, without a backend.
- */
-let papers: ResearchPaper[] = [...mockPapers]
+/** Real fetch()-backed ResearchPaper store, replacing repository-data.ts's mockPapers array. */
+let cache: ResearchPaper[] = []
+let hasFetched = false
+let fetchPromise: Promise<void> | null = null
 const listeners = new Set<() => void>()
 
-function emitChange() {
-  listeners.forEach((listener) => listener())
+function notify() {
+  listeners.forEach((l) => l())
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+function loadPapers(): Promise<void> {
+  if (hasFetched) return Promise.resolve()
+  if (fetchPromise) return fetchPromise
+  fetchPromise = fetch('/api/research-papers?pageSize=1000')
+    .then((res) => {
+      if (!res.ok) throw new Error(`Failed to fetch research papers (${res.status})`)
+      return res.json()
+    })
+    .then((json) => {
+      if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch research papers')
+      cache = json.data
+      hasFetched = true
+      notify()
+    })
+    .finally(() => {
+      fetchPromise = null
+    })
+  return fetchPromise
 }
 
-function getSnapshot() {
-  return papers
-}
-
-export function addPaperToRepository(entry: Omit<ResearchPaper, 'id' | 'publishedAt' | 'status'>) {
-  const created: ResearchPaper = {
-    ...entry,
-    id: `paper-${String(papers.length + 1).padStart(3, '0')}`,
-    publishedAt: new Date().toISOString().slice(0, 10),
-    status: 'SUBMITTED',
-  }
-  papers = [created, ...papers]
-  emitChange()
-  return created
-}
-
-/** Live-subscribes to the shared research-paper repository store. */
 export function useRepository() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => mockPapers)
+  const [data, setData] = useState<ResearchPaper[]>(cache)
+  const [loading, setLoading] = useState(!hasFetched)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const listener = () => setData([...cache])
+    listeners.add(listener)
+    if (!hasFetched) {
+      loadPapers()
+        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load research papers'))
+        .finally(() => setLoading(false))
+    } else {
+      setLoading(false)
+    }
+    return () => {
+      listeners.delete(listener)
+    }
+  }, [])
+
+  return { data, loading, error }
+}
+
+export async function refetchRepository(): Promise<void> {
+  hasFetched = false
+  await loadPapers()
+}
+
+export async function addPaperToRepository(entry: { title: string; abstract: string; authorId: string; projectId: string; keywords: string[] }): Promise<ResearchPaper> {
+  const res = await fetch('/api/research-papers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to submit research paper')
+  await refetchRepository()
+  return json.data
 }

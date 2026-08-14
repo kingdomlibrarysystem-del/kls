@@ -1,25 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { FileText, Pill, ArrowRightCircle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { CURRENT_MEMBER_NAME, clinics } from '../../_shared/health-data'
-import { useHealthRecords } from '../../_shared/use-health'
+import { useAuth } from '@/contexts/auth-context'
+import { useHealthRecords, useClinics } from '../../_shared/use-health'
 
-/** Simulated network delay before mock health records become visible. */
-const LOAD_DELAY_MS = 400
-
-/** Read-only consultation history for the current member — no clinic portal exists yet to write these, so this is a real but read-only view. */
+/** Read-only consultation history for the signed-in member — no clinic portal exists yet to write these, so this is a real but read-only view. */
 export function RecordsView() {
-  const [loading, setLoading] = useState(true)
-  const records = useHealthRecords()
-  const mine = records.filter((r) => r.member === CURRENT_MEMBER_NAME)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { user } = useAuth()
+  const records = useHealthRecords(user?.id)
+  const { data: clinics, loading } = useClinics()
 
   if (loading) {
     return (
@@ -29,13 +20,13 @@ export function RecordsView() {
     )
   }
 
-  if (mine.length === 0) {
+  if (records.length === 0) {
     return <EmptyState icon={FileText} title="No health records yet" description="Your consultation history, prescriptions, and referrals will appear here after a checkup." />
   }
 
   return (
     <div className="space-y-4">
-      {mine.map((rec) => {
+      {records.map((rec) => {
         const clinic = clinics.find((c) => c.id === rec.clinicId)
         return (
           <div key={rec.id} className="bg-white border border-w-300 rounded-lg p-5">

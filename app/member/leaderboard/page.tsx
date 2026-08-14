@@ -1,44 +1,44 @@
 "use client";
 import { TrendingUp, BookOpen, Award, Medal, Trophy } from "lucide-react";
-import { useCertificates } from "@/app/dashboard/e-learning/certificates/_components/use-certificates";
+import { useAuth } from "@/contexts/auth-context";
+import { useCertificatesAdmin } from "@/app/dashboard/e-learning/certificates/_components/use-certificates-admin";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
-
-/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const CURRENT_MEMBER_NAME = "John Doe";
 
 const medalColors = ["#D4AF37", "#A8A9AD", "#CD7F32"];
 const medalIcons = [Trophy, Medal, Award];
 
 /**
- * Real ranking derived from useCertificates() — courses completed is the
- * only metric this app tracks per-member across more than one persona
- * (certificates.member has 3 real distinct names in the seed data,
- * confirmed via direct read of certificates-data.ts). "Books read" has no
- * per-member field anywhere (Borrowing carries no member identity — it's
- * scoped to the single live "John Doe" persona only), so it's shown only
- * on the current member's own row rather than fabricated for everyone
- * else, matching DashboardStats.tsx's established precedent of leaving a
- * stat honestly absent (its "Payments" stat) rather than inventing a
- * number no store backs.
+ * Real ranking derived from the real, cross-member Certificate collection
+ * (via the admin certificates hook — reading across all members is
+ * inherently a cross-member view with no dependency on "current user",
+ * same reasoning use-certificates-admin.ts's own docstring already gives).
+ * "Books read" has no per-member field anywhere (Borrowing's real
+ * /api/borrowings is scoped to the signed-in session's own userId only),
+ * so it's shown only on the current member's own row rather than
+ * fabricated for everyone else, matching DashboardStats.tsx's established
+ * precedent of leaving a stat honestly absent (its "Payments" stat) rather
+ * than inventing a number no store backs.
  */
 function useRealRankings() {
-  const certificates = useCertificates();
-  const borrowings = useBorrowings();
+  const { user } = useAuth();
+  const { data: certificates } = useCertificatesAdmin();
+  const { data: borrowings } = useBorrowings();
+  const currentMemberName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
 
   const byMember = new Map<string, number>();
   certificates.filter((c) => !c.revoked).forEach((c) => {
     byMember.set(c.member, (byMember.get(c.member) ?? 0) + 1);
   });
-  if (!byMember.has(CURRENT_MEMBER_NAME)) byMember.set(CURRENT_MEMBER_NAME, 0);
+  if (currentMemberName && !byMember.has(currentMemberName)) byMember.set(currentMemberName, 0);
 
-  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const booksRead = borrowings.filter((b) => b.status === "returned").length;
 
   return Array.from(byMember.entries())
     .map(([name, coursesCompleted]) => ({
       name,
       coursesCompleted,
-      booksRead: name === CURRENT_MEMBER_NAME ? booksRead : undefined,
-      isYou: name === CURRENT_MEMBER_NAME,
+      booksRead: name === currentMemberName ? booksRead : undefined,
+      isYou: name === currentMemberName,
     }))
     .sort((a, b) => b.coursesCompleted - a.coursesCompleted)
     .map((m, i) => ({ ...m, rank: i + 1 }));
@@ -47,7 +47,6 @@ function useRealRankings() {
 export default function LeaderboardPage() {
   const ranked = useRealRankings();
   const top3 = ranked.slice(0, 3);
-  const rest = ranked.slice(3);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -56,7 +55,7 @@ export default function LeaderboardPage() {
           Leaderboard
         </div>
         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-          Ranked by real courses completed, from the shared certificates record
+          Ranked by real courses completed, from the real certificates record
         </div>
       </div>
 

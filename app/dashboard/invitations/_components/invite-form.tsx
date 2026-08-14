@@ -9,15 +9,14 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { invitationSchema, invitableRoles, type InvitationFormData } from './invitation-schema'
-import type { Invitation } from './invitations-data'
 
 interface InviteFormProps {
-  /** Called with the newly-created invitation so the parent can append it to the visible list. */
-  onInvited: (invitation: Invitation) => void
+  /** Sends a real invitation via the parent's useInvitations() hook. */
+  onInvite: (email: string, role: string) => Promise<unknown>
 }
 
-/** Invite-by-email form. On submit, appends a new PENDING invitation via `onInvited` so it's immediately visible in the invitations table. */
-export function InviteForm({ onInvited }: InviteFormProps) {
+/** Invite-by-email form. On submit, creates a real PENDING invitation via a real POST /api/invitations. */
+export function InviteForm({ onInvite }: InviteFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [sentTo, setSentTo] = useState('')
@@ -37,15 +36,7 @@ export function InviteForm({ onInvited }: InviteFormProps) {
     setSubmitError('')
     setSentTo('')
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      if (!data.email.trim()) throw new Error('Email cannot be empty')
-      onInvited({
-        id: `inv-${Date.now()}`,
-        email: data.email,
-        role: data.role,
-        status: 'PENDING',
-        sentAt: new Date().toISOString().split('T')[0],
-      })
+      await onInvite(data.email, data.role)
       setSentTo(data.email)
       reset({ email: '', role: 'Staff' })
       setTimeout(() => setSentTo(''), 3500)
@@ -58,7 +49,7 @@ export function InviteForm({ onInvited }: InviteFormProps) {
 
   return (
     <FormSection title="Invite a New User">
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {sentTo && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
             <CheckCircle2 size={15} /> Invitation sent to {sentTo}.

@@ -1,46 +1,18 @@
+'use client'
+
 import Link from 'next/link'
 import { ArrowRight, BookMarked, FlaskConical, Globe } from 'lucide-react'
+import { useRepository } from '@/app/dashboard/research/repository/_components/use-repository'
 
-const articles = [
-  {
-    tag: 'Featured Research',
-    icon: <FlaskConical size={16} />,
-    title: 'The Future of Digital Knowledge: How AI is Reshaping Academic Research',
-    excerpt:
-      'Explore how artificial intelligence is transforming the way scholars discover, synthesise, and publish research — and what this means for the next generation of knowledge workers.',
-    author: 'Dr. Amara Okafor',
-    role: 'Professor, University of Lagos',
-    readTime: '8 min read',
-    href: '/dashboard/research/repository',
-    highlight: true,
-  },
-  {
-    tag: 'Open Access',
-    icon: <Globe size={16} />,
-    title: 'Breaking Barriers: Publishing Your Research for a Global Audience',
-    excerpt:
-      'Open access publishing removes the walls between knowledge and people. Learn how Kingdom Library helps independent researchers reach millions of readers worldwide.',
-    author: 'James Mitchell',
-    role: 'Graduate Researcher, Oxford',
-    readTime: '5 min read',
-    href: '/dashboard/research/repository',
-    highlight: false,
-  },
-  {
-    tag: 'Collaboration',
-    icon: <BookMarked size={16} />,
-    title: 'Collaborative Research in the Digital Age: Building Your Network',
-    excerpt:
-      'Great discoveries rarely happen alone. Discover how our platform connects researchers across continents, enabling co-authorship and joint publications like never before.',
-    author: 'Dr. Sarah Chen',
-    role: 'Research Scholar, MIT',
-    readTime: '6 min read',
-    href: '/dashboard/research/collaborations',
-    highlight: false,
-  },
-]
+const tagIcons = [<FlaskConical size={16} key="f" />, <Globe size={16} key="g" />, <BookMarked size={16} key="b" />]
 
+/** Real published research papers from /api/research-papers — dropped fabricated author roles/excerpts/read-times the real ResearchPaper model has no field for. */
 export function ResearchSection() {
+  const { data: papers } = useRepository()
+  const published = papers.filter((p) => p.status === 'PUBLISHED').slice(0, 3)
+
+  if (published.length === 0) return null
+
   return (
     <div className="py-16 px-4 bg-white dark:bg-[#0a0d1a]">
       <div className="max-w-7xl mx-auto">
@@ -55,11 +27,11 @@ export function ResearchSection() {
               Research &amp; Insights
             </h2>
             <p className="font-lato text-w-700 dark:text-gray-400 mt-3 max-w-lg">
-              Stories and insights from our research community to spark your next big idea.
+              Published research from our contributor community.
             </p>
           </div>
           <Link
-            href="/dashboard/research"
+            href="/dashboard/research/repository"
             className="inline-flex items-center gap-2 font-lato font-semibold text-w-700 dark:text-gray-400 hover:text-w-950 dark:hover:text-gray-100 border-b border-w-600 dark:border-gray-600 hover:border-w-950 dark:hover:border-gray-100 transition pb-0.5 self-start md:self-auto"
           >
             View All Research <ArrowRight size={15} />
@@ -68,74 +40,71 @@ export function ResearchSection() {
 
         {/* Articles grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {articles.map((article) => (
+          {published.map((paper, i) => (
             <Link
-              key={article.title}
-              href={article.href}
+              key={paper.id}
+              href="/dashboard/research/repository"
               className={`group flex flex-col rounded-xl overflow-hidden border transition-shadow hover:shadow-lg dark:hover:shadow-black/40 ${
-                article.highlight
+                i === 0
                   ? 'border-w-600 dark:border-amber-900/50 bg-w-950 dark:bg-[#1a2035]'
                   : 'border-w-200 dark:border-white/10 bg-white dark:bg-[#111828]'
               }`}
             >
               {/* Top accent bar */}
-              <div className={`h-1 w-full ${article.highlight ? 'bg-w-accent' : 'bg-w-300 dark:bg-amber-900/60'}`} />
+              <div className={`h-1 w-full ${i === 0 ? 'bg-w-accent' : 'bg-w-300 dark:bg-amber-900/60'}`} />
 
               <div className="flex flex-col flex-1 p-6">
                 {/* Tag */}
                 <span
                   className={`inline-flex items-center gap-1.5 font-lato text-xs font-semibold uppercase tracking-wider mb-4 ${
-                    article.highlight
+                    i === 0
                       ? 'text-w-accent dark:text-amber-400'
                       : 'text-w-600 dark:text-amber-500/80'
                   }`}
                 >
-                  {article.icon}
-                  {article.tag}
+                  {tagIcons[i % tagIcons.length]}
+                  {paper.project}
                 </span>
 
                 {/* Title */}
                 <h3
                   className={`font-cinzel text-lg font-bold leading-snug mb-3 transition-colors ${
-                    article.highlight
+                    i === 0
                       ? 'text-w-100 dark:text-amber-100 group-hover:text-w-accent dark:group-hover:text-amber-300'
                       : 'text-w-950 dark:text-gray-100 group-hover:text-w-600 dark:group-hover:text-amber-400'
                   }`}
                 >
-                  {article.title}
+                  {paper.title}
                 </h3>
 
-                {/* Excerpt */}
+                {/* Keywords */}
                 <p
                   className={`font-lato text-sm leading-relaxed flex-1 mb-6 ${
-                    article.highlight
+                    i === 0
                       ? 'text-w-300 dark:text-gray-300'
                       : 'text-w-700 dark:text-gray-400'
                   }`}
                 >
-                  {article.excerpt}
+                  {paper.keywords.join(', ')}
                 </p>
 
                 {/* Footer */}
                 <div
                   className={`flex items-center justify-between border-t pt-4 text-xs font-lato ${
-                    article.highlight
+                    i === 0
                       ? 'border-w-800 dark:border-white/10 text-w-400 dark:text-gray-400'
                       : 'border-w-200 dark:border-white/10 text-w-700 dark:text-gray-400'
                   }`}
                 >
-                  <div>
-                    <p className={`font-semibold ${article.highlight ? 'text-w-200 dark:text-amber-200' : 'text-w-950 dark:text-gray-100'}`}>
-                      {article.author}
-                    </p>
-                    <p>{article.role}</p>
-                  </div>
+                  <p className={`font-semibold ${i === 0 ? 'text-w-200 dark:text-amber-200' : 'text-w-950 dark:text-gray-100'}`}>
+                    {paper.author}
+                  </p>
                   <span className={`px-2 py-1 rounded ${
-                    article.highlight
+                    i === 0
                       ? 'bg-w-800 dark:bg-white/10 text-w-300 dark:text-gray-200'
                       : 'bg-w-100 dark:bg-white/5 text-w-700 dark:text-gray-300'
                   }`}>
-                    {article.readTime}
+                    {new Date(paper.publishedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </span>
                 </div>
               </div>

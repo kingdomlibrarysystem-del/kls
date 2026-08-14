@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react'
 import type { TakeableAssessment } from '../../../../_shared/assessment-data'
-import type { AssessmentAttempt } from '../../../../_shared/enrollment-data'
+import type { AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
 
 interface ResultsScreenProps {
   assessment: TakeableAssessment

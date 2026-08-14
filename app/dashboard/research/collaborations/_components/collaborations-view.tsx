@@ -1,32 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Users } from 'lucide-react'
+import { useState } from 'react'
+import { Users, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { mockProjects, type ResearchProjectSummary } from './collaborations-data'
+import { useResearchProjects } from '../../_shared/use-research-projects'
+import type { ResearchProjectSummary } from './collaborations-data'
 import { ProjectCollaborationCard } from './project-collaboration-card'
 import { ProjectDetailModal } from './project-detail-modal'
 import { CollaborationsStats } from './collaborations-stats'
 
-/** Simulated network delay before mock project data becomes visible. */
-const LOAD_DELAY_MS = 400
-
 /**
- * Grid of research projects with their contributor lists, preceded by a
- * brief simulated loading state. The "Contributor" filter reproduces the
- * "my research" framing `/contributor/research` used to provide over
- * this exact `mockProjects` data.
+ * Grid of research projects with their contributor lists, reading the
+ * real ResearchProject collection. Read-only today — no create/edit/
+ * delete UI exists for projects or their contributor lists. The
+ * "Contributor" filter reproduces the "my research" framing
+ * `/contributor/research` used to provide over this data.
  */
 export function CollaborationsView() {
-  const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState<ResearchProjectSummary | null>(null)
   const [contributorFilter, setContributorFilter] = useState('all')
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: projects, loading, error } = useResearchProjects()
 
   if (loading) {
     return (
@@ -38,16 +32,20 @@ export function CollaborationsView() {
     )
   }
 
-  if (mockProjects.length === 0) {
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load research projects" description={error} />
+  }
+
+  if (projects.length === 0) {
     return <EmptyState icon={Users} title="No research projects yet" description="Projects and their contributors will appear here once created." />
   }
 
-  const contributors = Array.from(new Set(mockProjects.flatMap((p) => p.contributors.map((c) => c.name)))).sort()
-  const filtered = contributorFilter === 'all' ? mockProjects : mockProjects.filter((p) => p.contributors.some((c) => c.name === contributorFilter))
+  const contributors = Array.from(new Set(projects.flatMap((p) => p.contributors.map((c) => c.name)))).sort()
+  const filtered = contributorFilter === 'all' ? projects : projects.filter((p) => p.contributors.some((c) => c.name === contributorFilter))
 
   return (
     <>
-      <CollaborationsStats />
+      <CollaborationsStats data={projects} />
       <div className="mb-4">
         <select
           value={contributorFilter}

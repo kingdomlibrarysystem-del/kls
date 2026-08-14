@@ -1,28 +1,35 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Search, BookOpen } from 'lucide-react'
+import { useState } from 'react'
+import { Search, BookOpen, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { languageBadgeLabels, type PublishedBook } from './catalog-data'
-import { useCatalog } from './use-catalog'
+import { usePublications } from '../../_shared/use-publications'
 import { CatalogCard } from './catalog-card'
 import { CatalogStats } from './catalog-stats'
 
-/** Simulated network delay before mock catalog entries become visible. */
-const LOAD_DELAY_MS = 400
-
-/** Published Catalog: search + language filter over a responsive card grid. */
+/** Published Catalog: search + language filter over a responsive card grid. Reads real Publication rows filtered to status PUBLISHED — a published Publication IS the catalog entry now. */
 export function CatalogView() {
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [languageFilter, setLanguageFilter] = useState<PublishedBook['language'] | 'all'>('all')
-  const catalog = useCatalog()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: publications, loading, error } = usePublications()
+  const catalog: PublishedBook[] = publications
+    .filter((p) => p.status === 'PUBLISHED')
+    .map((p) => ({
+      id: p.id,
+      title: p.title,
+      contributor: p.contributor,
+      language: p.language,
+      coverImages: p.coverImage ? [p.coverImage] : [],
+      description: p.description,
+      available: true,
+      featured: p.featured,
+      bindingType: p.bindingType ?? 'SOFT',
+      mediaType: p.mediaType ?? 'TEXT',
+      price: p.price ?? 0,
+      quantity: p.quantity ?? 0,
+    }))
 
   if (loading) {
     return (
@@ -32,6 +39,10 @@ export function CatalogView() {
         ))}
       </div>
     )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the published catalog" description={error} />
   }
 
   const filtered = catalog.filter((b) => {

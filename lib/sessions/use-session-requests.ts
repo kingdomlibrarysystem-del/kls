@@ -1,125 +1,86 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { mockSessionRequests, type SessionRequest, type SessionStatus } from './session-requests-data'
+import { useEffect, useState, useCallback } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import type { SessionRequest } from './session-requests-data'
 
-/**
- * Module-level mutable store for live-session booking requests — mirrors
- * the exact pattern used by use-review-queue.ts/use-audit-log.ts. Read by
- * three surfaces: the learner (My Sessions), the lecturer role (Session
- * Requests queue + My Sessions — now surfaced entirely from admin, per
- * the portal consolidation), and admin's own read/write oversight at
- * /dashboard/e-learning/sessions. Relocated here (from
- * app/lecturer/_shared/) during portal consolidation Phase 3 — this was
- * genuinely shared cross-portal infrastructure that happened to live
- * inside the lecturer portal folder; it now lives in a neutral location
- * so removing that portal doesn't strand admin's and member's own
- * imports of it.
- */
-let requests: SessionRequest[] = [...mockSessionRequests]
-const listeners = new Set<() => void>()
+export type { SessionRequest }
 
-function emitChange() {
-  listeners.forEach((listener) => listener())
-}
+/** Fetches the signed-in member's own session requests from the real /api/session-requests, filtered by their session learnerId. */
+export function useSessionRequests() {
+  const { user } = useAuth()
+  const [data, setData] = useState<SessionRequest[]>([])
+  const [loading, setLoading] = useState(true)
 
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
+  const refetch = useCallback(async () => {
+    if (!user) { setData([]); return }
+    const res = await fetch(`/api/session-requests?learnerId=${user.id}&pageSize=1000`)
+    const json = await res.json()
+    setData(json.data ?? [])
+  }, [user])
 
-function getSnapshot() {
-  return requests
-}
+  useEffect(() => {
+    refetch().finally(() => setLoading(false))
+  }, [refetch])
 
-function nextId() {
-  const max = requests.reduce((m, r) => {
-    const n = Number(r.id.replace('sess-', ''))
-    return Number.isFinite(n) && n > m ? n : m
-  }, 0)
-  return `sess-${String(max + 1).padStart(3, '0')}`
+  return { data, loading, refetch }
 }
 
 export interface RequestSessionInput {
-  learnerName: string
-  lecturerName: string
+  learnerId: string
+  lecturerId: string
   courseId: string
-  courseTitle: string
   proposedTime: string
   notes?: string
 }
 
-/**
- * Creates a new PENDING session request. Per product decision, session
- * requests work like a "Slack huddle" — any authenticated member can
- * request a live session with any lecturer, for any course, at any time,
- * with no enrollment/completion/lecturer-match precondition. (Reverses
- * the enforcement added in 354306a.)
- */
-export function requestSession(input: RequestSessionInput): SessionRequest {
-  const created: SessionRequest = {
-    id: nextId(),
-    requestedAt: new Date().toISOString().slice(0, 10),
-    status: 'PENDING',
-    mode: 'SCHEDULED',
-    ...input,
-  }
-  requests = [created, ...requests]
-  emitChange()
-  return created
+/** Creates a new PENDING session request via a real POST /api/session-requests. */
+export async function requestSession(input: RequestSessionInput): Promise<SessionRequest> {
+  const res = await fetch('/api/session-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...input, mode: 'SCHEDULED' }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not submit this request')
+  return json.data
 }
 
 export interface StartInstantSessionInput {
-  learnerName: string
-  lecturerName: string
+  learnerId: string
+  lecturerId: string
   courseId: string
-  courseTitle: string
 }
 
-/**
- * Starts an INSTANT session — the Meet-style "start now" flow. Created
- * directly as APPROVED (no PENDING stage, nothing for either party to
- * approve) with scheduledAt stamped to the moment of creation, so
- * SessionCard's countdown gate treats it as already startable. Either
- * party can initiate one; both land in the same real session-room route
- * requestSession()'s scheduled flow already uses.
- */
-export function startInstantSession(input: StartInstantSessionInput): SessionRequest {
-  const now = new Date().toISOString()
-  const created: SessionRequest = {
-    id: nextId(),
-    requestedAt: now.slice(0, 10),
-    proposedTime: now,
-    status: 'APPROVED',
-    mode: 'INSTANT',
-    scheduledAt: now,
-    ...input,
-  }
-  requests = [created, ...requests]
-  emitChange()
-  return created
+/** Starts an INSTANT session — created directly as APPROVED via the real API, matching the "start now" flow. */
+export async function startInstantSession(input: StartInstantSessionInput): Promise<SessionRequest> {
+  const res = await fetch('/api/session-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...input, mode: 'INSTANT', proposedTime: new Date().toISOString() }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not start this session')
+  return json.data
 }
 
-/** Approves a PENDING request, setting the real scheduled start time. */
-export function approveSession(id: string, scheduledAt: string, notes?: string) {
-  requests = requests.map((r) => (r.id === id ? { ...r, status: 'APPROVED' as SessionStatus, scheduledAt, notes } : r))
-  emitChange()
+/** Fetches one session request by id directly — used by the session room, which is reachable by either party (learner or admin observer) regardless of whose "own list" it would otherwise appear in. */
+export async function fetchSessionRequestById(id: string): Promise<SessionRequest | undefined> {
+  const res = await fetch(`/api/session-requests/${id}`)
+  if (!res.ok) return undefined
+  const json = await res.json()
+  if (json.code !== 'success' || !json.data) return undefined
+  return json.data
 }
 
-/** Rejects a PENDING request — a reason is required, matching the publishing-review Reject pattern. */
-export function rejectSession(id: string, notes: string) {
-  if (!notes.trim()) throw new Error('Rejecting a session request requires a reason in the notes field')
-  requests = requests.map((r) => (r.id === id ? { ...r, status: 'REJECTED' as SessionStatus, notes } : r))
-  emitChange()
-}
-
-/** Marks an APPROVED session COMPLETED — called when the lecturer ends the mock session room. */
-export function completeSession(id: string) {
-  requests = requests.map((r) => (r.id === id ? { ...r, status: 'COMPLETED' as SessionStatus } : r))
-  emitChange()
-}
-
-/** Live-subscribes to the shared session-request list. */
-export function useSessionRequests() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => mockSessionRequests)
+/** Marks an APPROVED session COMPLETED via the real API — called when the admin ends the mock session room. */
+export async function completeSession(id: string): Promise<SessionRequest> {
+  const res = await fetch(`/api/session-requests/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'complete' }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not complete this session')
+  return json.data
 }

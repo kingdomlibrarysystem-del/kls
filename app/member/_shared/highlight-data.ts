@@ -17,28 +17,16 @@ export const highlightColorTokens: Record<HighlightColor, { label: string; backg
 
 export interface Highlight {
   id: string
-  /** Matches Resource.id from resources-data.ts. */
+  /** Matches a real Resource.id. */
   resourceId: string
-  /** Matches Chapter.id from readable-content-data.ts. */
+  /** Matches a real Chapter.id. */
   chapterId: string
   /** Character offsets into that chapter's `body` string — a real position range, not a decorative flag. */
   startOffset: number
   endOffset: number
-  /** Snapshot of the highlighted substring at creation time, so a highlights-list view (Phase 6) can render without re-slicing chapter body text on every read. */
+  /** Snapshot of the highlighted substring at creation time, so a highlights-list view can render without re-slicing chapter body text on every read. */
   text: string
   color: HighlightColor
   /** ISO date, stamped at creation time. */
   createdAt: string
 }
-
-/**
- * No seed rows — a seeded highlight would need to reference exact
- * character offsets into a specific chapter's body text, which would
- * silently desync (highlighting the wrong substring, or throwing on an
- * out-of-range offset) the moment that chapter's placeholder prose is
- * ever edited. Highlights are created only from a real text selection
- * the member makes in the reader, so there's no equivalent-safe way to
- * pre-populate one the way `initialFavorites`/`initialEnrollments` seed
- * rows that don't carry this fragile a dependency.
- */
-export const initialHighlights: Highlight[] = []

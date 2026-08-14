@@ -18,8 +18,12 @@ export const LECTURER_NAME = 'Dr. Elias Nkubito'
 /**
  * Small roster of named lecturer personas so "my course's lecturer" is a
  * real, distinct relationship rather than every course routing to one
- * person — see CatalogCourse.lecturerId in course-catalog-data.ts, which
- * assigns each of the 12 courses to one of these 3 lecturers.
+ * person — see CatalogCourse.lecturerId, which assigns each course to one
+ * of these 3 lecturers. `id` is now the real seeded User.id for each
+ * lecturer (see prisma/seed/seed-phase5.mjs's lecturerIdToUserId mapping)
+ * rather than a fake 'lec-1' placeholder — this is what makes messaging
+ * and session-booking's real Channel/Message/SessionRequest APIs able to
+ * resolve a course's lecturer to a real participantId/lecturerId.
  */
 export interface LecturerProfile {
   id: string
@@ -27,7 +31,7 @@ export interface LecturerProfile {
 }
 
 export const lecturerRoster: LecturerProfile[] = [
-  { id: 'lec-1', name: 'Dr. Elias Nkubito' },
-  { id: 'lec-2', name: 'Prof. Grace Nkomo' },
-  { id: 'lec-3', name: 'Dr. James Kariuki' },
+  { id: '6a6cc03c0dd150d62b116a14', name: 'Dr. Elias Nkubito' },
+  { id: '6a6cc03c0dd150d62b116a15', name: 'Prof. Grace Nkomo' },
+  { id: '6a6cc03c0dd150d62b116a16', name: 'Dr. James Kariuki' },
 ]

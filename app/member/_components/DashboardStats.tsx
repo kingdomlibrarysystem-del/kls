@@ -1,17 +1,15 @@
 "use client";
 
 import { BookOpen, Heart, GraduationCap, Award, Star, CreditCard } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
 import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enrollments";
 import { useAssessmentAttempts } from "@/app/member/_shared/use-assessment-attempts";
-import { useCertificates } from "@/app/dashboard/e-learning/certificates/_components/use-certificates";
-
-/** This mock has a single member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const MEMBER_NAME = "John Doe";
+import { useCertificates } from "@/app/member/_shared/use-certificates";
 
 /**
- * Dashboard-home stat grid, derived from the same real shared stores the
+ * Dashboard-home stat grid, derived from the same real fetch hooks the
  * rest of the member portal already reads — Books Read/E-Learning
  * Progress/Certificates/Avg Assessment Score are no longer hardcoded
  * literals. "Payments" has no real data model anywhere in this app
@@ -19,18 +17,19 @@ const MEMBER_NAME = "John Doe";
  * rather than fabricating a number — flagged here, not silently invented.
  */
 export default function DashboardStats() {
-  const borrowings = useBorrowings();
-  const favorites = useFavorites();
-  const enrollments = useEnrollments();
-  const attempts = useAssessmentAttempts();
-  const certificates = useCertificates();
+  const { user } = useAuth();
+  const { data: borrowings } = useBorrowings();
+  const favorites = useFavorites(user?.id);
+  const { data: enrollments } = useEnrollments();
+  const { data: attempts } = useAssessmentAttempts();
+  const { data: certificates } = useCertificates();
 
-  const booksRead = borrowings.filter((b) => b.status === "Returned").length;
+  const booksRead = borrowings.filter((b) => b.status === "returned").length;
   const booksLiked = favorites.length;
   const avgProgress = enrollments.length
     ? Math.round(enrollments.reduce((s, e) => s + getProgressPercent(e), 0) / enrollments.length)
     : 0;
-  const memberCertificates = certificates.filter((c) => c.member === MEMBER_NAME && !c.revoked).length;
+  const memberCertificates = certificates.filter((c) => !c.revoked).length;
   const decidedAttempts = attempts.filter((a) => a.reviewStatus !== "PENDING_REVIEW");
   const avgScore = decidedAttempts.length
     ? Math.round(decidedAttempts.reduce((s, a) => s + (a.totalMarks > 0 ? (a.score / a.totalMarks) * 100 : 0), 0) / decidedAttempts.length)

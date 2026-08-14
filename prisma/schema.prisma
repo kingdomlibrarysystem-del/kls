@@ -1,0 +1,1169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  email      String
+  identifier String?
+  token      String
+  expires    DateTime
+
+  @@unique([email, token])
+}
+
+model Authenticator {
+  credentialID         String  @id @map("_id")
+  userId               String  @db.ObjectId
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, credentialID])
+}
+
+model User {
+  id                      String          @id @default(auto()) @map("_id") @db.ObjectId
+  name                    String?
+  firstName               String?
+  lastName                String?
+  email                   String          @unique
+  country                 String?
+  phonenumber             String?
+  emailVerified           DateTime?
+  image                   String?
+  password                String?
+  notificationPreferences Json? // e.g., { "email": true, "sms": false }
+  status                  UserStatus      @default(ACTIVE)
+  roleId                  String?         @db.ObjectId
+  role                    Role?           @relation(fields: [roleId], references: [id])
+  accounts                Account[]
+  sessions                Session[]
+  Authenticator           Authenticator[]
+  invitationsSent         Invitation[]
+  borrows                 Borrow[]
+  reservations            Reservation[]
+  publications            Publication[]
+  coursesTeaching         Course[]
+  enrollments             Enrollment[]
+  assessmentAttempts      AssessmentAttempt[]
+  certificates            Certificate[]
+  sessionRequestsAsLearner  SessionRequest[] @relation("SessionRequestLearner")
+  sessionRequestsAsLecturer SessionRequest[] @relation("SessionRequestLecturer")
+  projectMemberships        ProjectMember[]
+  researchPapers             ResearchPaper[]
+  messagesSent               Message[]
+  notifications               Notification[]
+  favorites                   Favorite[]
+  readingProgress              ReadingProgress[]
+  highlights                    Highlight[]
+  notes                         Note[]
+  appointments                   Appointment[]
+  healthRecords                   HealthRecord[]
+  immunizations                    Immunization[]
+  userSessions                     UserSession[]
+  twoFactorSecret                  TwoFactorSecret?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt()
+}
+
+/// Account status — a real, admin-settable lifecycle state (suspend a
+/// user without deleting them), distinct from Role (what they can do).
+/// Added when wiring the admin Users Management page to real data: the
+/// mock's active/inactive/suspended vocabulary had no backing field on
+/// the real User model at all.
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+/// Dynamic, admin-manageable role — rows an admin creates/edits/deletes at
+/// runtime (matches the live CRUD pattern the mock at
+/// app/dashboard/roles/_components/roles-data.ts + use-roles.ts already
+/// implements), not a static Prisma enum. auth-context.tsx's mock UserRole
+/// ("admin"/"manager"/"staff"/"member") is the seed vocabulary this
+/// collection should be populated with once wired up for real.
+model Role {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String       @unique
+  description String?
+  permissions String[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]
+  invitations Invitation[]
+}
+
+/// Email invitation to join the platform with a specific Role — mirrors
+/// app/dashboard/invitations/_components/invitations-data.ts's Invitation
+/// shape, with `role: string` replaced by a real `roleId` FK (the mock's
+/// `role` was a free-text union matched only by spelling against Role.name,
+/// confirmed via invitation-schema.ts's `invitableRoles`).
+model Invitation {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  email           String
+  roleId          String           @db.ObjectId
+  role            Role             @relation(fields: [roleId], references: [id])
+  status          InvitationStatus @default(PENDING)
+  invitedByUserId String?          @db.ObjectId
+  invitedBy       User?            @relation(fields: [invitedByUserId], references: [id])
+  sentAt          DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+/// Append-only audit trail, per RULES.md §10. Keeps the mock's
+/// human-readable `actor`/`target`/`notes` snapshot fields (an audit log
+/// should still read sensibly after the entity it describes is later
+/// renamed or deleted) but adds real `actorId`/`targetId`/`targetType` so
+/// entries are also genuinely joinable — the mock at
+/// app/dashboard/audit-log/_components/audit-log-data.ts has zero id
+/// fields today, only free text.
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  actor      String
+  actorId    String?  @db.ObjectId
+  action     String
+  target     String
+  targetId   String?  @db.ObjectId
+  targetType String?
+  ipAddress  String?
+  notes      String?
+  timestamp  DateTime @default(now())
+}
+
+/// Single-row system settings — replaces the "client-held default,
+/// server never actually reads it" pattern the borrowing-policy form
+/// previously used (defaultSystemSettings in settings-schema.ts was a
+/// display-only constant; /api/borrowings hardcoded its own 14-day
+/// due-date independent of it, so an admin editing this form appeared
+/// to change policy but changed nothing real). Always exactly one row
+/// (upserted by a fixed known id) — no need for a real "which tenant"
+/// concept in this single-org app.
+model Settings {
+  id                          String   @id @default(auto()) @map("_id") @db.ObjectId
+  defaultBorrowPeriodDays     Int      @default(14)
+  maxRenewals                 Int      @default(2)
+  reservationClaimWindowHours Int      @default(48)
+  maxConcurrentBorrows        Int      @default(3)
+  updatedAt                   DateTime @updatedAt
+}
+
+/// Canonical Kingdom Classification System (KCS) taxonomy — one flat,
+/// self-referencing collection for both the 8 root pillars and their ~75
+/// child scrolls (Bible books), mirroring `lib/kcs-taxonomy`'s already-
+/// consolidated `Category` shape (itself the result of merging 3
+/// previously hand-duplicated mock copies — see that module's own
+/// docstring). `parentId: null` marks a root; root-only content fields
+/// (`code`/`subtitle`/`range`/`theme`/`description`/`detail`/`heroImage`)
+/// are left null on children, and `status` (leaf-only) is left null on
+/// roots, matching the mock's optional-field convention exactly.
+///
+/// Kept as ONE collection (not split into separate Pillar/Scroll models)
+/// because every real consumer (KCS Map, admin Categories CRUD, member
+/// library, public library filter) already walks this as one tree via
+/// `parentId`, and a scroll needs independent querying/filtering/search
+/// separate from its parent pillar (ruling out embedding children inside
+/// their root document).
+model Category {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String     @unique
+  nameEn      String
+  nameFr      String
+  nameRw      String
+  parentId    String?    @db.ObjectId
+  parent      Category?  @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    Category[] @relation("CategoryToParent")
+  /// KCS classification code, e.g. "KCS-FND". Roots only.
+  code        String?
+  /// Tagline, e.g. "Constitution of the Kingdom". Roots only.
+  subtitle    String?
+  /// Book span covered by this pillar, e.g. "Genesis – Deuteronomy". Roots only.
+  range       String?
+  /// Theme phrase, e.g. "Origins and Covenant". Roots only.
+  theme       String?
+  /// One-sentence description. Roots only.
+  description String?
+  /// Longer descriptive paragraph. Roots only.
+  detail      String?
+  /// Hero/header image URL. Roots only.
+  heroImage   String?
+  /// Availability status. Leaf/scroll rows only.
+  status      CategoryStatus?
+  resources   Resource[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum CategoryStatus {
+  AVAILABLE
+  ARCHIVED
+  OUT_OF_STOCK
+}
+
+/// Digital library resource — a "scroll" filed under a KCS category.
+/// Mirrors `app/dashboard/library/_components/resources-data.ts`'s
+/// `Resource` shape exactly, with `categoryId` now a real `@db.ObjectId`
+/// FK (the mock's own docstring already documents this field as "FK into
+/// the canonical KCS taxonomy," replacing an even-older free-text
+/// `category: string` from before that merge — this schema is the final
+/// step of making that FK real, not a new decision).
+model Resource {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  author       String
+  publisher    String
+  /// Optional as of Phase 4: published books (see Publication.status
+  /// PUBLISHED, which auto-creates a Resource row on approval) use a
+  /// free-text category vocabulary (Theology, Leadership, etc.) that
+  /// doesn't map onto the KCS Bible taxonomy — forcing a categoryId here
+  /// would misrepresent the taxonomy rather than honestly reflect that
+  /// these are two different classification systems. Every Resource
+  /// created before Phase 4 (all 16 KCS scrolls) already has a real
+  /// categoryId and is unaffected by this widening.
+  categoryId   String?      @db.ObjectId
+  category     Category?    @relation(fields: [categoryId], references: [id])
+  type         String
+  format       String
+  language     String
+  year         Int
+  pages        Int
+  isbn         String
+  price        Float
+  totalQty     Int
+  availableQty Int
+  /// Monotonically-increasing counter used to atomically assign each new
+  /// reservation's queuePosition (see /api/reservations POST). A plain
+  /// `count()`-then-`create()` is a read-then-write race on MongoDB —
+  /// Prisma's $transaction does not serialize concurrent transactions
+  /// against each other the way a SQL SERIALIZABLE transaction would, so
+  /// two simultaneous reservations could both read the same count and
+  /// land on the same queue position (confirmed by a failing concurrency
+  /// test before this field was added). A single-document increment via
+  /// Prisma's atomic `increment` operation IS safe under concurrency on
+  /// MongoDB (single-document writes are always atomic), so this counter
+  /// — not a derived count of existing rows — is the real source of
+  /// truth for "next queue position," even though it never decreases
+  /// when a reservation is cancelled/claimed (queue positions are
+  /// display-order hints, not a compacted 1..N sequence).
+  reservationQueueCounter Int @default(0)
+  status       ResourceStatus @default(AVAILABLE)
+  coverImages  String[]
+  bindingType  BindingType
+  mediaType    MediaType
+  description  String
+  tags         String[]
+  documentUrl  String?
+  audioUrl     String?
+  videoUrl     String?
+  borrows      Borrow[]
+  reservations Reservation[]
+  /// Not truly one-to-many in practice — exactly one Publication ever
+  /// points at a given Resource, set once at approval time — but Prisma
+  /// requires a list back-relation for a non-unique FK (see
+  /// Publication.resourceId's docstring for why @unique doesn't work
+  /// here). List type is a Prisma-modeling artifact, not a real
+  /// multi-publication-per-resource case.
+  publications Publication[]
+  chapters     Chapter[]
+  readingProgress ReadingProgress[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum ResourceStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum BindingType {
+  SOFT
+  HARD
+}
+
+enum MediaType {
+  VIDEO
+  DOCUMENT
+  TEXT
+  COMBINATION
+}
+
+/// Real borrow record, replacing the two disconnected mock stores found
+/// at app/dashboard/library/borrowings/_components/borrowings-data.ts
+/// (admin, free-text memberName/memberEmail alongside an unresolved
+/// memberId, no resourceId at all) and
+/// app/member/borrowings/_components/borrowings-data.ts (member, numeric
+/// id, title/author only, no ids whatsoever). Both collapse into this one
+/// collection with real userId/resourceId FKs, per the migration plan's
+/// Phase 3 design. `memberName`/`memberEmail` are kept as point-in-time
+/// snapshot fields (so a borrow record still reads sensibly if the user's
+/// name/email later changes) alongside the real userId FK, not instead of
+/// it — same pattern already used for AuditLog's actor/actorId.
+model Borrow {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String       @db.ObjectId
+  user          User         @relation(fields: [userId], references: [id])
+  memberName    String
+  memberEmail   String
+  resourceId    String       @db.ObjectId
+  resource      Resource     @relation(fields: [resourceId], references: [id])
+  borrowDate    DateTime     @default(now())
+  dueDate       DateTime
+  returnDate    DateTime?
+  status        BorrowStatus @default(PENDING)
+  renewalCount  Int          @default(0)
+  fineAmount    Float?
+  finePaid      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+enum BorrowStatus {
+  PENDING
+  ACTIVE
+  OVERDUE
+  RETURNED
+  REJECTED
+}
+
+/// Real reservation record, replacing the two disconnected mock stores at
+/// app/dashboard/reservations/_components/reservations-data.ts (admin —
+/// its resourceId values like "res-3" were confirmed NOT to match any
+/// real Resource.id, a fabricated-looking FK) and
+/// app/member/reservations/_components/reservations-data.ts (member,
+/// numeric id, title/author only). `queuePosition` is kept as a real,
+/// stored field (not computed on read) so the existing claim-countdown
+/// and queue-promotion-by-title logic (see use-reservations.ts's
+/// fulfillReservation) has a direct field to update, matching how the
+/// mock already modeled it.
+model Reservation {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  user            User              @relation(fields: [userId], references: [id])
+  memberName      String
+  memberEmail     String
+  resourceId      String            @db.ObjectId
+  resource        Resource          @relation(fields: [resourceId], references: [id])
+  queuePosition   Int
+  reservationDate DateTime          @default(now())
+  notifiedAt      DateTime?
+  claimDeadline   DateTime?
+  status          ReservationStatus @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+enum ReservationStatus {
+  PENDING
+  NOTIFIED
+  CLAIMED
+  EXPIRED
+  CANCELLED
+}
+
+/// Real publication submission, replacing
+/// app/dashboard/publishing/review/_components/review-data.ts's
+/// PublicationSubmission — already a single, unified mock store (unlike
+/// Borrowing/Reservation, the contributor/admin submission stores were
+/// already merged before this migration, so there's no duplicate-store
+/// problem to resolve here). A PUBLISHED Publication IS the catalog
+/// entry (replacing the separate PublishedBook/catalog-data.ts mock
+/// entirely) — the public/admin catalog reads Publication rows filtered
+/// by status, rather than a second parallel model. Approving a
+/// submission (status -> PUBLISHED) auto-creates a matching Resource row
+/// (see app/api/publications/[id]/route.ts's approve action), the real
+/// relationship the migration plan flagged as missing from the mock
+/// entirely — resourceId is populated only once that happens.
+/// `category` stays free text (not a KCS categoryId): confirmed the
+/// mock's categories (Theology, Leadership, Family & Marriage...) are a
+/// different, non-Bible classification system than the KCS taxonomy —
+/// forcing them into KCS pillars would misrepresent the taxonomy rather
+/// than honestly reflect they're separate systems, the same judgment
+/// call kls-architecture-rules already made for e-learning's category
+/// field.
+model Publication {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  contributorId  String            @db.ObjectId
+  contributor    User              @relation(fields: [contributorId], references: [id])
+  contributorName String
+  category       String
+  language       PublicationLanguage @default(EN)
+  coverImage     String?
+  description    String
+  status         PublicationStatus @default(DRAFT)
+  /// Real Resource FK, populated when this Publication is approved and
+  /// published — see the model docstring above.
+  /// Not @unique: MongoDB/Prisma's sparse-unique-index behavior treats
+  /// multiple null values as colliding (confirmed empirically — seeding
+  /// a second Publication with no resourceId yet threw P2002 against the
+  /// first's null), which is wrong for a field that's null for every
+  /// non-published row. One-to-one-ness is enforced at the application
+  /// level instead: resourceId is only ever set once, inside the
+  /// approve-action transaction in app/api/publications/[id]/route.ts.
+  resourceId     String?           @db.ObjectId
+  resource       Resource?         @relation(fields: [resourceId], references: [id])
+  /// Sale price and stock, only meaningful once PUBLISHED — mirrors
+  /// catalog-data.ts's PublishedBook.price/quantity/bindingType/mediaType,
+  /// which had no equivalent on the pre-publish submission.
+  price          Float?
+  quantity       Int?
+  bindingType    BindingType?
+  mediaType      MediaType?
+  featured       Boolean           @default(false)
+  submittedAt    DateTime          @default(now())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  revenueShare   RevenueShare?
+}
+
+enum PublicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+enum PublicationLanguage {
+  EN
+  FR
+  RW
+}
+
+/// Per-publication revenue split, replacing
+/// app/dashboard/publishing/revenue/_components/revenue-data.ts's
+/// RevenueRow (`publication`/`contributor` free text with no FK at all).
+/// One-to-one with Publication (a row is created only once, at
+/// approval time, mirroring the mock's own addRevenueRowForApproval) —
+/// kept as its own collection rather than embedded fields on Publication
+/// since Task 5.3's earnings/revenue reporting needs independent
+/// date-range queries across all publications' revenue, per the
+/// migration plan's own reasoning for this domain.
+model RevenueShare {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  publicationId     String      @unique @db.ObjectId
+  publication       Publication @relation(fields: [publicationId], references: [id])
+  contributorShare  Int
+  platformShare     Int
+  totalRevenue      Float       @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+/// Real course, consolidating THREE previously-unreconciled mock catalogs
+/// found in the Phase 5 re-verification:
+/// app/dashboard/e-learning/_shared/course-catalog-data.ts (admin
+/// authoring — status/category/language/author fields), app/member/_shared/
+/// course-catalog-data.ts (member browse/enroll — the richer catalog with
+/// real lesson/rating/student counts, actually driving the live enroll
+/// flow), and app/(public)/courses/[id]/_components/course-preview-data.ts
+/// (a public preview catalog found to be an ORPHANED duplicate — its own
+/// docstring claimed it mirrored a `mockCourses` array in
+/// app/member/courses/page.tsx that has since been deleted in favor of
+/// importing the real catalog directly, so this third file was stale
+/// against nothing anymore). All three collapse into one Course model.
+/// `lecturerId` is a real FK into User (see seed-phase5.mjs — the real
+/// User collection had no rows for the 3 lecturer personas, same
+/// situation as contributors in Phase 4).
+model Course {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  category      String
+  language      CourseLanguage @default(EN)
+  status        CourseStatus   @default(DRAFT)
+  author        String
+  lecturerId    String?        @db.ObjectId
+  lecturer      User?          @relation(fields: [lecturerId], references: [id])
+  /// Cover image URL, from the member catalog's real Unsplash images.
+  image         String?
+  duration      String?
+  rating        String?
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  assessments   Assessment[]
+  certificates  Certificate[]
+  sessionRequests SessionRequest[]
+  channels      Channel[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum CourseLanguage {
+  EN
+  FR
+  RW
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Real lesson, replacing app/member/_shared/lesson-data.ts's
+/// Record<courseId, CourseLessons> shape — already a single store read
+/// and written by BOTH the admin Lessons page and the member lesson
+/// viewer (no duplicate-store problem here, unlike the course catalogs).
+model Lesson {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  courseId        String             @db.ObjectId
+  course          Course             @relation(fields: [courseId], references: [id])
+  title           String
+  contentType     LessonContentType
+  durationMinutes Int
+  content         String
+  /// Real markdown-authored lesson body — a lesson can freely mix
+  /// headings, paragraphs, images, embedded video (as a markdown link/
+  /// image the renderer turns into a real <iframe>), and code blocks in
+  /// one document, replacing the old one-contentType-per-lesson model.
+  /// Nullable + `contentType`/`content` kept alongside it (not dropped)
+  /// so any future admin-authored lesson without markdown yet still
+  /// renders via the old fields — every lesson currently in the catalog
+  /// has been migrated to populate this field for real, though.
+  contentMarkdown String?
+  order           Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+enum LessonContentType {
+  TEXT
+  VIDEO
+  FILE
+}
+
+/// Real enrollment, replacing app/member/_shared/enrollment-data.ts's
+/// CourseEnrollment (single-persona — no userId field at all, since
+/// there is only ever one live "member" persona in the mock). userId is
+/// a real FK; completedLessonIds stays an array of Lesson ObjectId
+/// strings, same shape the mock already used.
+model Enrollment {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String           @db.ObjectId
+  user                User             @relation(fields: [userId], references: [id])
+  courseId            String           @db.ObjectId
+  course              Course           @relation(fields: [courseId], references: [id])
+  status              EnrollmentStatus @default(ENROLLED)
+  enrolledAt          DateTime         @default(now())
+  completedLessonIds  String[]
+  totalLessons        Int
+  assessmentPassed    Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  COMPLETED
+  DROPPED
+}
+
+/// Real assessment (quiz/exam/project), replacing
+/// app/member/_shared/assessment-data.ts's TakeableAssessment. Questions
+/// are embedded (not a separate collection) since a question is always
+/// fetched alongside its assessment and never queried independently —
+/// same embed-vs-reference reasoning the migration plan already applied
+/// to AuditLog's review_notes.
+model Assessment {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  kind             AssessmentKind
+  courseId         String           @db.ObjectId
+  course           Course           @relation(fields: [courseId], references: [id])
+  durationSeconds  Int?
+  questions        Question[]
+  brief            String?
+  submissionFormat ProjectSubmissionFormat?
+  projectMarks     Int?
+  attempts         AssessmentAttempt[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+type Question {
+  id                    String
+  text                  String
+  type                  QuestionType
+  context               String?
+  options               String[]
+  correctOptionIndex    Int?
+  correctOptionIndices  Int[]
+  marks                 Int
+}
+
+enum QuestionType {
+  SINGLE_SELECT
+  MULTI_SELECT
+  OPEN
+}
+
+enum AssessmentKind {
+  QUIZ
+  EXAM
+  PROJECT
+}
+
+enum ProjectSubmissionFormat {
+  TEXT
+  LINK
+  FILE_REF
+}
+
+/// Real assessment attempt, replacing the single-persona
+/// AssessmentAttempt embedded in app/member/_shared/enrollment-data.ts
+/// (no userId — same identity gap as Enrollment). openAnswers/openScores
+/// stay Json (keyed by Question.id, exactly as the mock modeled them)
+/// since Mongo has no native map-of-string type suited to this shape.
+model AssessmentAttempt {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String         @db.ObjectId
+  user           User           @relation(fields: [userId], references: [id])
+  assessmentId   String         @db.ObjectId
+  assessment     Assessment     @relation(fields: [assessmentId], references: [id])
+  status         AttemptResult
+  reviewStatus   AttemptReviewStatus
+  score          Int
+  totalMarks     Int
+  takenAt        DateTime       @default(now())
+  openAnswers    Json?
+  openScores     Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum AttemptResult {
+  PASSED
+  FAILED
+}
+
+enum AttemptReviewStatus {
+  AUTO_GRADED
+  PENDING_REVIEW
+  GRADED
+}
+
+/// Real certificate, replacing
+/// app/dashboard/e-learning/certificates/_components/certificates-data.ts.
+/// `memberName`/`courseTitle` kept as point-in-time snapshot fields
+/// alongside real userId/courseId FKs — same AuditLog.actor/actorId
+/// pattern used throughout this migration, since a certificate should
+/// still read sensibly if the course is later renamed.
+model Certificate {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @db.ObjectId
+  user             User     @relation(fields: [userId], references: [id])
+  memberName       String
+  courseId         String?  @db.ObjectId
+  course           Course?  @relation(fields: [courseId], references: [id])
+  courseTitle      String
+  issuedAt         DateTime @default(now())
+  verificationCode String   @unique
+  revoked          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+/// Real live-session booking request, replacing
+/// lib/sessions/session-requests-data.ts's SessionRequest. Confirmed via
+/// grep this feature has ZERO cross-imports with lib/messaging — it's a
+/// self-contained course/lecturer-scoped booking feature, architecturally
+/// distinct from the DM/channel messaging system despite the migration
+/// plan's Phase 7 grouping lumping them together. Migrated here in Phase
+/// 5 instead, since courseId is a hard dependency on Course existing and
+/// there's no reason to defer a fully independent feature to a later
+/// phase just because a stale plan grouped it elsewhere.
+model SessionRequest {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  learnerId     String        @db.ObjectId
+  learner       User          @relation("SessionRequestLearner", fields: [learnerId], references: [id])
+  learnerName   String
+  lecturerId    String        @db.ObjectId
+  lecturer      User          @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
+  lecturerName  String
+  courseId      String        @db.ObjectId
+  course        Course        @relation(fields: [courseId], references: [id])
+  courseTitle   String
+  requestedAt   DateTime      @default(now())
+  proposedTime  DateTime
+  status        SessionRequestStatus @default(PENDING)
+  mode          SessionRequestMode   @default(SCHEDULED)
+  scheduledAt   DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum SessionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum SessionRequestMode {
+  SCHEDULED
+  INSTANT
+}
+
+/// Real research project, replacing
+/// app/dashboard/research/collaborations/_components/collaborations-data.ts's
+/// ResearchProjectSummary. Its embedded Contributor.id (c-001..c-006) was
+/// confirmed to be a self-invented id space matching nothing else in the
+/// app — resolved into a real many-to-many via ProjectMember below.
+/// Collaborations view (/dashboard/research/collaborations) is read-only
+/// today — no create/edit/delete UI exists for projects or their
+/// contributor lists — so this phase seeds real data from the mock
+/// without needing to design a live write path for it.
+model ResearchProject {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  status      ResearchProjectStatus @default(ACTIVE)
+  startDate   DateTime          @default(now())
+  members     ProjectMember[]
+  papers      ResearchPaper[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+enum ResearchProjectStatus {
+  ACTIVE
+  COMPLETED
+  SUSPENDED
+}
+
+/// Join row resolving ResearchProject's contributor list into real User
+/// FKs, replacing the mock's embedded `contributors: Contributor[]`
+/// (Contributor.id was fake — see ResearchProject's docstring).
+model ProjectMember {
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String          @db.ObjectId
+  project   ResearchProject @relation(fields: [projectId], references: [id])
+  userId    String          @db.ObjectId
+  user      User            @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+
+  @@unique([projectId, userId])
+}
+
+/// Real research paper, replacing
+/// app/dashboard/research/repository/_components/repository-data.ts's
+/// ResearchPaper (`author`/`project` free text, matched only by spelling).
+/// `abstract` is added here — the Submit Paper form already collects one
+/// but the mock's ResearchPaper type had nowhere to store it, silently
+/// discarding it on submit.
+model ResearchPaper {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  abstract      String
+  authorId      String          @db.ObjectId
+  author        User            @relation(fields: [authorId], references: [id])
+  authorName    String
+  projectId     String          @db.ObjectId
+  project       ResearchProject @relation(fields: [projectId], references: [id])
+  keywords      String[]
+  publishedAt   DateTime        @default(now())
+  status        ResearchPaperStatus @default(DRAFT)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+enum ResearchPaperStatus {
+  DRAFT
+  SUBMITTED
+  PUBLISHED
+}
+
+/// Real chat channel, replacing lib/messaging/types.ts's Channel — the
+/// migration plan's flagged "channel id derived from names" problem
+/// (`dm-${[nameA,nameB].sort().join('__')}` string keys, course channels
+/// never stored at all) resolved into a real collection with a real id
+/// and real participantIds. `courseId` is set for a COURSE channel (one
+/// real Channel row per Course, created once rather than re-derived on
+/// every read); null for a DM. Every known persona in this mock's closed
+/// roster (see lib/messaging/known-people.ts's docstring: "there's no
+/// general user directory") already resolves to a real User from prior
+/// phases' seeds, so participantIds are real @db.ObjectId FKs, not a
+/// speculative design.
+model Channel {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  kind           ChannelKind
+  name           String
+  participantIds String[]      @db.ObjectId
+  courseId       String?       @db.ObjectId
+  course         Course?       @relation(fields: [courseId], references: [id])
+  messages       Message[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum ChannelKind {
+  COURSE
+  DM
+}
+
+/// Real chat message, replacing lib/messaging/types.ts's Message
+/// (senderName/readBy/reactedBy were all free-text names, zero real
+/// ids). `readByIds`/reaction `reactedByIds` are real User id arrays.
+model Message {
+  id         String            @id @default(auto()) @map("_id") @db.ObjectId
+  channelId  String            @db.ObjectId
+  channel    Channel           @relation(fields: [channelId], references: [id])
+  senderId   String            @db.ObjectId
+  sender     User              @relation(fields: [senderId], references: [id])
+  senderName String
+  body       String
+  sentAt     DateTime          @default(now())
+  readByIds  String[]          @db.ObjectId
+  reactions  MessageReaction[]
+}
+
+type MessageReaction {
+  emoji      String
+  reactedByIds String[]
+}
+
+/// Real notification, replacing
+/// app/dashboard/notifications/_components/notifications-data.ts's
+/// Notification. `recipientId` is added alongside the mock's existing
+/// role-level `recipientRole` (kept, not replaced — plenty of real
+/// notifications in this app are genuinely role-broadcast, e.g. "a new
+/// course enrollment" is meaningful to any admin/staff viewer, not one
+/// specific person) so a notification CAN be scoped to one real person
+/// once a caller has one, without forcing every notification to require
+/// one.
+model Notification {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  type          NotificationType
+  title         String
+  message       String
+  href          String
+  read          Boolean            @default(false)
+  recipientRole String
+  recipientId   String?            @db.ObjectId
+  recipient     User?              @relation(fields: [recipientId], references: [id])
+  createdAt     DateTime           @default(now())
+}
+
+enum NotificationType {
+  BORROW
+  RESERVATION
+  COURSE
+  PUBLICATION
+  DUE
+  SYSTEM
+}
+
+/// Real favorite, replacing app/member/_shared/favorites-data.ts's mock
+/// store. A favorited item is either a Resource or a Course — two
+/// different collections — so this uses a polymorphic itemId/itemType
+/// pair rather than two nullable relation FKs. title/subtitle are
+/// denormalized at favorite-time (mirroring the mock's shape) so the list
+/// renders without an extra join per item and still shows something
+/// sensible if the source Resource/Course is later deleted.
+model Favorite {
+  id       String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String       @db.ObjectId
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId   String
+  itemType FavoriteType
+  title    String
+  subtitle String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+enum FavoriteType {
+  RESOURCE
+  COURSE
+}
+
+/// Real login event, per APP_DOC Task 1.7 — replacing both
+/// app/dashboard/profile/_components/security-mock-data.ts and
+/// app/member/profile/_components/security-mock-data.ts's identical
+/// mockLoginHistory arrays. Written from authorize() in lib/auth-options.ts
+/// on every real login attempt (success and failure), so `userId` is
+/// nullable — a failed attempt with an unrecognized email has no real
+/// User row to attach to, but is still a security-relevant event worth
+/// logging by the email that was tried.
+model LoginHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
+  email     String
+  ip        String
+  userAgent String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Real chapter body content for a readable Resource, replacing
+/// app/member/_shared/readable-content-data.ts's Record<string,
+/// ReadableContent> keyed by legacy mock resource ids ('1', '7', ...)
+/// that don't match any real Resource ObjectId post-migration — this
+/// feature was silently non-functional against real data before this
+/// model existed. A resource is "readable online" if it has 1+ Chapter
+/// rows; `order` gives the reader's chapter sequence and doubles as the
+/// stable unit reading-progress tracks against (mirrors Lesson.order).
+model Chapter {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  resourceId String   @db.ObjectId
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  title      String
+  body       String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([resourceId])
+}
+
+/// Real per-member reading progress, replacing
+/// app/member/_shared/reading-progress-data.ts's initialReadingProgress
+/// (2 hand-typed rows, no userId — single-persona mock). `progress%` is
+/// computed from completedChapterIds.length/totalChapters server-side
+/// (never stored), same convention as Enrollment.
+model ReadingProgress {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String            @db.ObjectId
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId         String            @db.ObjectId
+  resource           Resource          @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  status             ReadingStatus     @default(READING)
+  startedAt          DateTime          @default(now())
+  completedChapterIds String[]
+  totalChapters      Int
+  lastChapterId      String?
+  lastReadAt         DateTime          @default(now())
+
+  @@unique([userId, resourceId])
+}
+
+enum ReadingStatus {
+  READING
+  COMPLETED
+}
+
+/// Real reading highlight, replacing app/member/_shared/highlight-data.ts's
+/// initialHighlights (deliberately empty — a seeded highlight would
+/// reference offsets into chapter body text that could silently desync).
+/// startOffset/endOffset are real character positions into that
+/// Chapter's `body`, not decorative.
+model Highlight {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String        @db.ObjectId
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String        @db.ObjectId
+  chapterId   String        @db.ObjectId
+  startOffset Int
+  endOffset   Int
+  text        String
+  color       HighlightColor
+  createdAt   DateTime      @default(now())
+
+  @@index([userId, resourceId])
+}
+
+enum HighlightColor {
+  GOLD
+  GREEN
+  TEAL
+  PINK
+}
+
+/// Real reading note, replacing app/member/_shared/note-data.ts's
+/// initialNotes (deliberately empty, same reasoning as Highlight). Kept
+/// as its own model rather than folded into Highlight since a note can
+/// attach to a chapter generally (highlightId null) or to a specific
+/// highlight (the two attachment modes the product spec calls for).
+model Note {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String   @db.ObjectId
+  chapterId   String   @db.ObjectId
+  highlightId String?  @db.ObjectId
+  text        String
+  createdAt   DateTime @default(now())
+
+  @@index([userId, resourceId])
+}
+
+/// Real partnered clinic, replacing app/dashboard/health/_shared/
+/// health-data.ts's hand-typed `clinics` array. Admin-managed reference
+/// data (no admin CRUD UI yet — the mock had none either — so no
+/// createdBy/status lifecycle is added beyond what the mock already
+/// modeled). APP_DOC.md leaves Health System spec-less ("backlog only");
+/// this schema is authored from the existing mock's own field shape
+/// rather than an official spec, since none exists.
+model Clinic {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  specialty   String
+  location    String
+  image       String
+  appointments Appointment[]
+  healthRecords HealthRecord[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+/// Real checkup appointment, replacing health-data.ts's initialAppointments
+/// (hardcoded to a single 'John Doe' persona, no real userId — silently
+/// non-functional against any real signed-in member).
+model Appointment {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String            @db.ObjectId
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicId  String            @db.ObjectId
+  clinic    Clinic            @relation(fields: [clinicId], references: [id])
+  dateTime  DateTime
+  reason    String
+  status    AppointmentStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+/// Real consultation record, replacing health-data.ts's
+/// initialHealthRecords. Read-only from the member side (per the mock's
+/// own design note — no clinic-practitioner authoring UI exists), but a
+/// real per-user row rather than a name-matched mock entry.
+model HealthRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicId      String   @db.ObjectId
+  clinic        Clinic   @relation(fields: [clinicId], references: [id])
+  date          DateTime
+  summary       String
+  prescriptions String[]
+  referral      String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Real immunization entry, replacing health-data.ts's initialImmunizations.
+model Immunization {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vaccine          String
+  dateAdministered DateTime
+  nextDue          DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Real per-device session record, enabling revocable "Sessions & Devices"
+/// under NextAuth v4's JWT-only constraint for Credentials-based auth (v4
+/// throws UnsupportedStrategy if session.strategy is "database" with only
+/// a Credentials provider — confirmed against NextAuth v4 source, see
+/// lib/auth-options.ts's jwt callback). `jti` is embedded in the signed
+/// JWT at login and checked against this table's `revokedAt` on every
+/// session read in the `jwt` callback — a revocable-JWT / server-side
+/// allowlist pattern, not a real invalidation of the JWT itself (the JWT
+/// stays cryptographically valid until `maxAge` expiry; enforcement is
+/// this app rejecting a session whose `jti` row is revoked). This is NOT
+/// the pre-existing `Session` model above, which is the unused NextAuth
+/// adapter table for database-strategy/OAuth flows.
+model UserSession {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  jti        String    @unique
+  userId     String    @db.ObjectId
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent  String
+  ip         String
+  lastActive DateTime  @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Real TOTP secret for 2FA, per APP_DOC Task 1.5 (admin/manager/staff
+/// only). `secret` is the raw base32 TOTP seed — acceptable to store in
+/// plaintext (industry-standard practice for TOTP, unlike passwords,
+/// since it must be read back to generate/verify codes; encrypting it
+/// at rest is a future hardening step, not required for a functional
+/// TOTP flow). `enabled` flips true only after the user confirms a real
+/// generated code during setup, not merely after a secret is issued —
+/// see /api/auth/2fa/verify.
+model TwoFactorSecret {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @unique @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret         String
+  enabled        Boolean  @default(false)
+  recoveryCodes  String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

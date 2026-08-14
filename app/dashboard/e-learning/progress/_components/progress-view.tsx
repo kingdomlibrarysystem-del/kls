@@ -1,30 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { RankingBarChart } from '@/components/ui/ranking-bar-chart'
-import { courseAnalytics, type CourseAnalytics } from './progress-data'
+import { useProgressAnalytics } from './use-progress-analytics'
+import type { CourseAnalytics } from './progress-data'
 import { CourseAnalyticsCard } from './course-analytics-card'
 import { CourseAnalyticsDetailModal } from './course-analytics-detail-modal'
-
-/** Simulated network delay before mock analytics become visible. */
-const LOAD_DELAY_MS = 450
 
 /**
  * Completion-rate comparison chart followed by a grid of per-course
  * analytics cards (completion rate, top performers, dropoff points),
- * preceded by a brief simulated loading state. Each card links to a full
- * details modal with the complete enrolled roster and lesson dropoff data.
+ * backed by real Enrollment/Lesson aggregates from
+ * /api/reports/e-learning-progress. Each card links to a full details
+ * modal with the complete enrolled roster and lesson dropoff data.
  */
 export function ProgressView() {
-  const [loading, setLoading] = useState(true)
+  const { data: courseAnalytics, loading, error } = useProgressAnalytics()
   const [viewing, setViewing] = useState<CourseAnalytics | null>(null)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
 
   if (loading) {
     return (
@@ -37,6 +32,14 @@ export function ProgressView() {
         </div>
       </div>
     )
+  }
+
+  if (error) {
+    return <EmptyState icon={BarChart3} title="Could not load course analytics" description={error} />
+  }
+
+  if (courseAnalytics.length === 0) {
+    return <EmptyState icon={BarChart3} title="No course analytics yet" description="Analytics appear once members enroll in a course." />
   }
 
   const ranking = [...courseAnalytics]

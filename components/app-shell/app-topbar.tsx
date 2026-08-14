@@ -31,7 +31,7 @@ interface AppTopbarProps {
  */
 export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
   const { user } = useAuth()
-  const notifications = useNotifications(user?.role)
+  const { data: notifications } = useNotifications(user?.role)
   const notificationCount = notifications.filter((n) => !n.read).length
 
   return (

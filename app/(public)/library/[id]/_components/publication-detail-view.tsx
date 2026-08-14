@@ -1,21 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
-import { mockCatalog, languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
+import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
+import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
-
-/** Simulated network delay before the mock publication becomes visible. */
-const LOAD_DELAY_MS = 400
 
 interface PublicationDetailViewProps {
   id: string
@@ -23,26 +21,39 @@ interface PublicationDetailViewProps {
 
 /**
  * Publication detail: looks up the book by ID against both the shared
- * resources store (browse-grid IDs, e.g. '1'-'16') and the publishing
- * catalog (admin-catalog IDs, e.g. 'cat-001') — the browse grid and the
- * admin Published Catalog page both link here, using their own ID spaces,
- * so both must resolve rather than picking one and breaking the other.
+ * resources store (browse-grid IDs, real Resource ObjectIds) and the
+ * publishing catalog (admin-catalog IDs, e.g. 'cat-001') — the browse grid
+ * and the admin Published Catalog page both link here, using their own ID
+ * spaces, so both must resolve rather than picking one and breaking the
+ * other.
  */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
-  const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const { isAuthenticated } = useAuth()
-  const resources = useResources()
+  const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
+  const { data: publications, loading: publicationsLoading, error: publicationsError } = usePublications()
   const readableContent = useReadableContent()
 
-  const resource = resources.find((r) => r.id === id)
-  const catalogBook = mockCatalog.find((b) => b.id === id)
-  const isReadable = !!readableContent[id]
+  const loading = resourcesLoading || publicationsLoading
+  const error = resourcesError ?? publicationsError
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const resource = resources.find((r) => r.id === id)
+  const publication = publications.find((p) => p.id === id && p.status === 'PUBLISHED')
+  const catalogBook = publication
+    ? {
+        title: publication.title,
+        contributor: publication.contributor,
+        coverImages: publication.coverImage ? [publication.coverImage] : [],
+        description: publication.description,
+        bindingType: publication.bindingType ?? 'SOFT',
+        mediaType: publication.mediaType ?? 'TEXT',
+        price: publication.price ?? 0,
+        quantity: publication.quantity ?? 0,
+        available: (publication.quantity ?? 0) > 0,
+        language: publication.language,
+      }
+    : undefined
+  const isReadable = !!readableContent[id]
 
   if (loading) {
     return (
@@ -54,6 +65,16 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           <Skeleton className="h-24 w-full rounded" />
         </div>
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Couldn't load this publication"
+        description={error}
+      />
     )
   }
 
@@ -122,7 +143,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             </Link>
           )}
 
-          {isAuthenticated ? (
+          {isAuthenticated && resource ? (
             <div className="flex flex-col sm:flex-row gap-3">
               <ElegantButton
                 variant={isReadable ? 'outline' : 'primary'}
@@ -140,7 +161,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
                 Reserve
               </ElegantButton>
             </div>
-          ) : (
+          ) : isAuthenticated ? null : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
@@ -162,7 +183,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={action} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
+      <BorrowReserveConfirmModal action={action} resourceId={resource?.id ?? ''} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
     </div>
   )
 }

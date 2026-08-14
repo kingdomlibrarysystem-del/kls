@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import {
   BookOpen,
   Bookmark,
@@ -15,19 +15,19 @@ import {
   ChevronDown,
   Library,
   Menu,
-} from 'lucide-react'
-import { ProfileDropdown } from './profile-dropdown'
-import { LanguageSwitcher } from './language-switcher'
+} from "lucide-react";
+import { ProfileDropdown } from "./profile-dropdown";
+import { LanguageSwitcher } from "./language-switcher";
 
 interface NavItem {
-  label: string
-  href: string
-  icon: React.ReactNode
+  label: string;
+  href: string;
+  icon: React.ReactNode;
 }
 
 interface NavSection {
-  title: string
-  items: NavItem[]
+  title: string;
+  items: NavItem[];
 }
 
 /**
@@ -38,33 +38,60 @@ interface NavSection {
  */
 const navSections: NavSection[] = [
   {
-    title: 'Digital Library',
+    title: "Digital Library",
     items: [
-      { label: 'Browse Books', href: '/library', icon: <BookOpen size={14} /> },
-      { label: 'My Borrowings', href: '/member/borrowings', icon: <Bookmark size={14} /> },
-      { label: 'Reservations', href: '/member/reservations', icon: <CalendarDays size={14} /> },
-      { label: 'Search Catalog', href: '/library', icon: <Search size={14} /> },
+      { label: "Browse Books", href: "/library", icon: <BookOpen size={14} /> },
+      {
+        label: "My Borrowings",
+        href: "/member/borrowings",
+        icon: <Bookmark size={14} />,
+      },
+      {
+        label: "Reservations",
+        href: "/member/reservations",
+        icon: <CalendarDays size={14} />,
+      },
     ],
   },
   {
-    title: 'E-Learning',
+    title: "E-Learning",
     items: [
-      { label: 'Browse Courses', href: '/member/e-learning', icon: <Library size={14} /> },
-      { label: 'My Courses', href: '/member/courses', icon: <CheckSquare size={14} /> },
-      { label: 'Assessments', href: '/member/assessments', icon: <ClipboardList size={14} /> },
-      { label: 'Certificates', href: '/member/certificates', icon: <Award size={14} /> },
+      {
+        label: "Browse Courses",
+        href: "/member/e-learning",
+        icon: <Library size={14} />,
+      },
+      {
+        label: "My Courses",
+        href: "/member/courses",
+        icon: <CheckSquare size={14} />,
+      },
+      {
+        label: "Assessments",
+        href: "/member/assessments",
+        icon: <ClipboardList size={14} />,
+      },
+      {
+        label: "Certificates",
+        href: "/member/certificates",
+        icon: <Award size={14} />,
+      },
     ],
   },
-]
+];
 
 export function MainHeader() {
-  const router = useRouter()
-  const [query, setQuery] = useState('')
+  const router = useRouter();
+  const [query, setQuery] = useState("");
 
   const handleSearch = (e: FormEvent) => {
-    e.preventDefault()
-    router.push(query.trim() ? `/library?q=${encodeURIComponent(query.trim())}` : '/library')
-  }
+    e.preventDefault();
+    router.push(
+      query.trim()
+        ? `/library?q=${encodeURIComponent(query.trim())}`
+        : "/library",
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50">
@@ -109,7 +136,11 @@ export function MainHeader() {
                   aria-label="Search books by title or author"
                   className="flex-1 px-4 py-2 border border-w-300 dark:border-gray-600 rounded-l font-lato text-sm focus:outline-none focus:border-w-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
                 />
-                <button type="submit" aria-label="Search" className="px-5 py-2 bg-w-600 text-white rounded-r hover:bg-w-700 transition flex items-center gap-2 font-lato font-semibold">
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="px-5 py-2 bg-w-600 text-white rounded-r hover:bg-w-700 transition flex items-center gap-2 font-lato font-semibold"
+                >
                   <Search size={16} />
                 </button>
               </div>

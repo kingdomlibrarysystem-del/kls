@@ -1,27 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { ClipboardList, ClipboardCheck, Eye, Pencil, Trash2, PlusCircle } from 'lucide-react'
+import { ClipboardList, ClipboardCheck, Eye, Pencil, Trash2, PlusCircle, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAssessmentCatalog } from '@/app/member/_shared/use-assessments'
-import { useAssessmentAttempts } from '@/app/member/_shared/use-assessment-attempts'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useAttemptsAdmin } from '../review/_components/use-attempts-admin'
+import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { kindConfig, type TakeableAssessment, type AssessmentKind } from './quizzes-config'
 import { AddQuizModal } from './add-quiz-modal'
 import { QuizDetailModal } from './quiz-detail-modal'
 import { EditQuizModal } from './edit-quiz-modal'
 import { DeleteQuizModal } from './delete-quiz-modal'
-
-/** Simulated network delay before the assessment catalog becomes visible. */
-const LOAD_DELAY_MS = 400
-
-function courseTitleFor(courseId: string) {
-  return courseCatalog.find((c) => c.id === courseId)?.title ?? 'Unknown course'
-}
 
 function LoadingSkeleton() {
   return (
@@ -35,27 +28,32 @@ function LoadingSkeleton() {
 
 /**
  * Admin Quizzes & Exams management: lists every quiz/exam across the
- * catalog, backed by the shared `/member/_shared` assessment store so
- * admin edits are immediately visible to the member take-assessment flow.
+ * catalog, backed by the real Assessment collection so admin edits are
+ * immediately visible to the member take-assessment flow.
  */
 export function QuizzesView() {
-  const [loading, setLoading] = useState(true)
   const [kindFilter, setKindFilter] = useState<AssessmentKind | 'all'>('all')
   const [adding, setAdding] = useState(false)
   const [viewing, setViewing] = useState<TakeableAssessment | null>(null)
   const [editing, setEditing] = useState<TakeableAssessment | null>(null)
   const [deleting, setDeleting] = useState<TakeableAssessment | null>(null)
 
-  const catalog = useAssessmentCatalog()
-  const attempts = useAssessmentAttempts()
+  const { data: catalog, loading: catalogLoading, error: catalogError } = useAssessmentCatalog()
+  const { data: attempts, loading: attemptsLoading } = useAttemptsAdmin()
+  const { data: courseCatalog } = useCourseCatalog()
   const pendingReviewCount = attempts.filter((a) => a.reviewStatus === 'PENDING_REVIEW').length
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const loading = catalogLoading || attemptsLoading
+
+  function courseTitleFor(courseId: string) {
+    return courseCatalog.find((c) => c.id === courseId)?.title ?? 'Unknown course'
+  }
 
   if (loading) return <LoadingSkeleton />
+
+  if (catalogError) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load quizzes and exams" description={catalogError} />
+  }
 
   const allAssessments = Object.values(catalog)
 

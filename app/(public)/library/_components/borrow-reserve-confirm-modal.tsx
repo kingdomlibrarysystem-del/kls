@@ -1,18 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle2, AlertCircle, CalendarClock, Package, Users } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { addBorrowing } from '@/app/member/_shared/use-borrowings'
-import { addReservation } from '@/app/member/_shared/use-reservations'
-import type { Reservation } from '@/app/member/reservations/_components/reservations-data'
+import { useAuth } from '@/contexts/auth-context'
 import { defaultSystemSettings } from '@/app/dashboard/settings/_components/settings-schema'
 
 export type BorrowReserveAction = 'borrow' | 'reserve' | null
 
+interface ReservationResult {
+  status: string
+  queuePosition: number
+}
+
 interface BorrowReserveConfirmModalProps {
   action: BorrowReserveAction
+  resourceId: string
   bookTitle: string
   bookAuthor: string
   /** Copies currently available — when known, shown as real pre-commit context. Omitted by callers that don't have it in scope; the modal degrades gracefully without it. */
@@ -20,41 +24,67 @@ interface BorrowReserveConfirmModalProps {
   onClose: () => void
 }
 
-/** Real borrowing-policy default this app already defines (app/dashboard/settings), not a fabricated number — see settings-schema.ts's defaultSystemSettings. */
-function dueDateLabel(): string {
+/** Preview of the due date /api/borrowings will actually compute, from the real /api/settings — falls back to the schema default only until the fetch resolves, never as a substitute for it. */
+function dueDateLabel(periodDays: number): string {
   const due = new Date()
-  due.setDate(due.getDate() + defaultSystemSettings.defaultBorrowPeriodDays)
+  due.setDate(due.getDate() + periodDays)
   return due.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
 /**
- * Confirms a real Borrow/Reserve action for an authenticated visitor —
- * persists into the shared member borrowings/reservations store so the
- * record is immediately visible on /member/borrowings or
+ * Confirms a real Borrow/Reserve action for the signed-in member — posts to
+ * the real /api/borrowings or /api/reservations with the real session
+ * userId, so the record is immediately visible on /member/borrowings or
  * /member/reservations. Only rendered when the caller has already
  * confirmed the visitor is authenticated (see library-browser.tsx and
  * publication-detail-view.tsx, which gate on useAuth() before opening this).
  */
-export function BorrowReserveConfirmModal({ action, bookTitle, bookAuthor, availableQty, onClose }: BorrowReserveConfirmModalProps) {
+export function BorrowReserveConfirmModal({ action, resourceId, bookTitle, bookAuthor, availableQty, onClose }: BorrowReserveConfirmModalProps) {
+  const { user } = useAuth()
   const [error, setError] = useState('')
-  const [result, setResult] = useState<Reservation | null>(null)
+  const [result, setResult] = useState<ReservationResult | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [borrowPeriodDays, setBorrowPeriodDays] = useState(defaultSystemSettings.defaultBorrowPeriodDays)
+
+  useEffect(() => {
+    if (action !== 'borrow') return
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((json) => { if (json.data?.defaultBorrowPeriodDays) setBorrowPeriodDays(json.data.defaultBorrowPeriodDays) })
+      .catch(() => {})
+  }, [action])
 
   if (!action) return null
 
   const verb = action === 'borrow' ? 'Borrow' : 'Reserve'
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (!user) return
     setError('')
+    setSubmitting(true)
     try {
-      if (action === 'borrow') {
-        addBorrowing(bookTitle, bookAuthor)
-      } else {
-        setResult(addReservation(bookTitle, bookAuthor))
+      const endpoint = action === 'borrow' ? '/api/borrowings' : '/api/reservations'
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          resourceId,
+          memberName: `${user.firstName} ${user.lastName}`.trim(),
+          memberEmail: user.email,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message ?? `Could not complete this ${verb.toLowerCase()} request.`)
+      if (action === 'reserve') {
+        setResult({ status: json.data.status, queuePosition: json.data.queuePosition })
       }
       setDone(true)
-    } catch {
-      setError(`Could not complete this ${verb.toLowerCase()} request. Please try again.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Could not complete this ${verb.toLowerCase()} request. Please try again.`)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -75,9 +105,9 @@ export function BorrowReserveConfirmModal({ action, bookTitle, bookAuthor, avail
             </p>
             {action === 'reserve' && result && (
               <p className="font-lato text-xs text-w-700 mb-1">
-                {result.status === 'Ready'
-                  ? 'A copy is available now — ready for pickup.'
-                  : `${result.queue} ${result.queue === 1 ? 'person is' : 'people are'} ahead of you in the queue. You'll be notified when it's your turn.`}
+                {result.queuePosition <= 1
+                  ? 'You are first in line — you will be notified as soon as a copy is ready for pickup.'
+                  : `${result.queuePosition - 1} ${result.queuePosition - 1 === 1 ? 'person is' : 'people are'} ahead of you in the queue. You'll be notified when it's your turn.`}
               </p>
             )}
             <p className="font-lato text-xs text-w-600 mb-4">
@@ -93,7 +123,7 @@ export function BorrowReserveConfirmModal({ action, bookTitle, bookAuthor, avail
             <div className="text-left bg-form-highlight border border-w-300 rounded p-3 mb-4 space-y-1.5">
               {action === 'borrow' ? (
                 <p className="flex items-center gap-2 font-lato text-xs text-w-700">
-                  <CalendarClock size={13} className="text-w-600 shrink-0" /> Due back by <span className="font-semibold text-w-950">{dueDateLabel()}</span>
+                  <CalendarClock size={13} className="text-w-600 shrink-0" /> Due back by <span className="font-semibold text-w-950">{dueDateLabel(borrowPeriodDays)}</span>
                 </p>
               ) : (
                 <p className="flex items-center gap-2 font-lato text-xs text-w-700">
@@ -116,7 +146,7 @@ export function BorrowReserveConfirmModal({ action, bookTitle, bookAuthor, avail
             )}
           </>
         )}
-        <ElegantButton variant="primary" onClick={done ? handleClose : handleConfirm} className="w-full text-sm py-2">
+        <ElegantButton variant="primary" loading={submitting} onClick={done ? handleClose : handleConfirm} className="w-full text-sm py-2">
           {done ? 'Close' : `Confirm ${verb}`}
         </ElegantButton>
       </div>

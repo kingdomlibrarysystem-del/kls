@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, BookOpen, X } from 'lucide-react'
+import { Search, BookOpen, X, AlertTriangle } from 'lucide-react'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { getCategoryById } from '@/lib/kcs-taxonomy'
 import { BorrowReserveConfirmModal } from './borrow-reserve-confirm-modal'
 import { BookCard } from './book-card'
 
@@ -18,7 +21,7 @@ const formats = ['All', ...Object.values(mediaTypeLabels)]
  * actually produces filtered results on arrival, not just a page reload.
  */
 export function LibraryBrowser() {
-  const books = useResources()
+  const { data: books, loading, error } = useResources()
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
   const [search, setSearch] = useState(initialQuery)
@@ -27,17 +30,31 @@ export function LibraryBrowser() {
   const [showFilters, setShowFilters] = useState(!!initialQuery)
   const [pending, setPending] = useState<{ book: Resource; action: 'borrow' | 'reserve' } | null>(null)
 
-  const categories = ['All', ...Array.from(new Set(books.map((b) => b.category)))]
+  // Real category display names resolved from the canonical taxonomy, not a raw free-text field.
+  const categories = ['All', ...Array.from(new Set(books.map((b) => getCategoryById(b.categoryId)?.name.en).filter((n): n is string => !!n)))]
 
   const filtered = books.filter((b) => {
     const q = search.toLowerCase()
+    const categoryName = getCategoryById(b.categoryId)?.name.en
     return (
       b.status !== 'archived' &&
       (b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)) &&
-      (category === 'All' || b.category === category) &&
+      (category === 'All' || categoryName === category) &&
       (format === 'All' || mediaTypeLabels[b.mediaType] === format)
     )
   })
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5" aria-label="Loading books">
+        {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
+      </div>
+    )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the library" description={error} />
+  }
 
   return (
     <>
@@ -108,6 +125,7 @@ export function LibraryBrowser() {
 
       <BorrowReserveConfirmModal
         action={pending?.action ?? null}
+        resourceId={pending?.book.id ?? ''}
         bookTitle={pending?.book.title ?? ''}
         bookAuthor={pending?.book.author ?? ''}
         availableQty={pending?.book.availableQty}

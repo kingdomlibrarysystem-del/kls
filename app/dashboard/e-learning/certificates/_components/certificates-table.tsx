@@ -1,20 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Award, Eye, ShieldOff } from 'lucide-react'
+import { useState } from 'react'
+import { Award, Eye, ShieldOff, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useCertificates, revokeCertificate } from './use-certificates'
-import type { Certificate } from './certificates-data'
+import { useCertificatesAdmin, revokeCertificateAdmin, type CertificateRecord } from './use-certificates-admin'
 import { CertificateDetailModal } from './certificate-detail-modal'
 import { RevokeCertificateModal } from './revoke-certificate-modal'
 import { CertificatesStats } from './certificates-stats'
 
-/** Simulated network delay before mock certificates become visible. */
-const LOAD_DELAY_MS = 400
-
-function buildColumns(onView: (c: Certificate) => void, onRevoke: (c: Certificate) => void): Column<Certificate>[] {
+function buildColumns(onView: (c: CertificateRecord) => void, onRevoke: (c: CertificateRecord) => void): Column<CertificateRecord>[] {
   return [
     { key: 'member', label: 'Member', sortable: true, render: (c) => <span className="font-semibold text-w-950">{c.member}</span> },
     { key: 'course', label: 'Course', sortable: true, render: (c) => <span className="text-w-700">{c.course}</span> },
@@ -47,17 +43,11 @@ function buildColumns(onView: (c: Certificate) => void, onRevoke: (c: Certificat
   ]
 }
 
-/** Table of issued certificates with a simulated initial load, details view, and revoke action. */
+/** Table of issued certificates, backed by the real Certificate collection, with details view and revoke action. */
 export function CertificatesTable() {
-  const [loading, setLoading] = useState(true)
-  const [viewing, setViewing] = useState<Certificate | null>(null)
-  const [revoking, setRevoking] = useState<Certificate | null>(null)
-  const certificates = useCertificates()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const [viewing, setViewing] = useState<CertificateRecord | null>(null)
+  const [revoking, setRevoking] = useState<CertificateRecord | null>(null)
+  const { data: certificates, loading, error } = useCertificatesAdmin()
 
   if (loading) {
     return (
@@ -69,6 +59,10 @@ export function CertificatesTable() {
     )
   }
 
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load certificates" description={error} />
+  }
+
   if (certificates.length === 0) {
     return <EmptyState icon={Award} title="No certificates issued yet" description="Certificates will appear here once members complete courses." />
   }
@@ -76,7 +70,7 @@ export function CertificatesTable() {
   return (
     <>
       <CertificatesStats data={certificates} />
-      <DataTable<Certificate>
+      <DataTable<CertificateRecord>
         data={certificates}
         columns={buildColumns(setViewing, setRevoking)}
         rowKey={(c) => c.id}
@@ -92,8 +86,14 @@ export function CertificatesTable() {
       <RevokeCertificateModal
         certificate={revoking}
         onClose={() => setRevoking(null)}
-        onConfirm={() => {
-          if (revoking) revokeCertificate(revoking.id)
+        onConfirm={async () => {
+          if (revoking) {
+            try {
+              await revokeCertificateAdmin(revoking.id)
+            } catch {
+              /* real error surfaced via the hook's own error state on next load */
+            }
+          }
           setRevoking(null)
         }}
       />

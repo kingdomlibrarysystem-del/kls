@@ -6,15 +6,12 @@ import { Zap, CalendarPlus, Link2, ChevronDown } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useAuth } from '@/contexts/auth-context'
 import { useEnrollments } from '@/app/member/_shared/use-enrollments'
-import { courseCatalog, type CatalogCourse } from '@/app/member/_shared/course-catalog-data'
-import { lecturerRoster } from '@/lib/identity/lecturer-identity'
+import { useCourses, type CatalogCourse } from '@/app/member/_shared/use-courses'
 import { startInstantSession } from '@/lib/sessions/use-session-requests'
 import { InviteLinkModal } from '@/components/session-room/invite-link-modal'
 import { RequestSessionModal } from '@/app/member/courses/_components/request-session-modal'
-
-/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const CURRENT_MEMBER_NAME = 'John Doe'
 
 /**
  * Meet-style 3-way choice for the member side, symmetric to the
@@ -26,7 +23,9 @@ const CURRENT_MEMBER_NAME = 'John Doe'
  */
 export function StartSessionMenu() {
   const router = useRouter()
-  const enrollments = useEnrollments()
+  const { user } = useAuth()
+  const { data: enrollments } = useEnrollments()
+  const { data: courseCatalog } = useCourses()
   const myCourses = enrollments
     .map((e) => courseCatalog.find((c) => c.id === e.courseId))
     .filter((c): c is CatalogCourse => !!c)
@@ -35,6 +34,7 @@ export function StartSessionMenu() {
   const [scheduleCourse, setScheduleCourse] = useState<CatalogCourse | null>(null)
   const [inviteHref, setInviteHref] = useState<string | null>(null)
   const [courseId, setCourseId] = useState(myCourses[0]?.id ?? '')
+  const [instantError, setInstantError] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -47,19 +47,24 @@ export function StartSessionMenu() {
 
   if (myCourses.length === 0) return null
 
-  const startInstant = (thenInvite: boolean) => {
+  const startInstant = async (thenInvite: boolean) => {
+    setInstantError('')
     const course = myCourses.find((c) => c.id === courseId) ?? myCourses[0]
-    const lecturer = lecturerRoster.find((l) => l.id === course.lecturerId)
-    const created = startInstantSession({
-      learnerName: CURRENT_MEMBER_NAME,
-      lecturerName: lecturer?.name ?? course.instructor,
-      courseId: course.id,
-      courseTitle: course.title,
-    })
-    const href = `/member/sessions/${created.id}/room`
-    setInstantOpen(false)
-    if (thenInvite) setInviteHref(href)
-    else router.push(href)
+    if (!user) return
+    if (!course.lecturerId) { setInstantError('This course has no assigned lecturer.'); return }
+    try {
+      const created = await startInstantSession({
+        learnerId: user.id,
+        lecturerId: course.lecturerId,
+        courseId: course.id,
+      })
+      const href = `/member/sessions/${created.id}/room`
+      setInstantOpen(false)
+      if (thenInvite) setInviteHref(href)
+      else router.push(href)
+    } catch (err) {
+      setInstantError(err instanceof Error ? err.message : 'Could not start this session')
+    }
   }
 
   return (
@@ -75,9 +80,9 @@ export function StartSessionMenu() {
 
       {menuOpen && (
         <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 20, width: 220, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-          <MenuItem icon={<Zap size={14} />} label="Start now" onClick={() => { setMenuOpen(false); setInstantOpen(true) }} />
+          <MenuItem icon={<Zap size={14} />} label="Start now" onClick={() => { setMenuOpen(false); setInstantError(''); setInstantOpen(true) }} />
           <MenuItem icon={<CalendarPlus size={14} />} label="Schedule for later" onClick={() => { setMenuOpen(false); setScheduleCourse(myCourses.find((c) => c.id === courseId) ?? myCourses[0]) }} />
-          <MenuItem icon={<Link2 size={14} />} label="Get invite link" onClick={() => { setMenuOpen(false); setInstantOpen(true) }} />
+          <MenuItem icon={<Link2 size={14} />} label="Get invite link" onClick={() => { setMenuOpen(false); setInstantError(''); setInstantOpen(true) }} />
         </div>
       )}
 
@@ -87,6 +92,11 @@ export function StartSessionMenu() {
             Starts a live session with your lecturer right now — no scheduling or approval step, same as Meet&apos;s
             &ldquo;Start an instant meeting.&rdquo;
           </p>
+          {instantError && (
+            <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
+              {instantError}
+            </div>
+          )}
           <div>
             <FieldLabel htmlFor="instant-course" required>Course</FieldLabel>
             <select

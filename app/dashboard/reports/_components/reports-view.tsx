@@ -1,61 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Users as UsersIcon, BookOpen, GraduationCap, FileText, FlaskConical } from 'lucide-react'
+import { Users as UsersIcon, BookOpen, GraduationCap, FileText, FlaskConical, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { mockEnrollments } from '@/app/dashboard/e-learning/enrollments/_components/enrollments-data'
-import { useEnrollments } from '@/app/member/_shared/use-enrollments'
-import { useReviewQueue } from '@/app/dashboard/publishing/review/_components/use-review-queue'
-import { mockProjects } from '@/app/dashboard/research/collaborations/_components/collaborations-data'
-import { useUsers } from '@/app/dashboard/users/_components/use-users'
-import { ACTIVE_LOANS, buildModuleTrends } from './cross-module-data'
-
-/** Simulated network delay before mock stats become visible. */
-const LOAD_DELAY_MS = 400
+import { EmptyState } from '@/components/ui/empty-state'
+import { useCrossModuleReport } from './use-cross-module-report'
+import { buildModuleTrends } from './cross-module-data'
 
 /**
  * Cross-module Reports & Analytics: stat cards for members, active loans,
  * enrollments, publications pending review, and active research projects —
- * every number derived live from each module's own mock data — plus a
- * horizontal bar-list comparing the five modules.
+ * every number a live aggregate query over the real collections those
+ * modules' own migration phases created — plus a horizontal bar-list
+ * comparing the five modules.
  */
 export function ReportsView() {
-  const [loading, setLoading] = useState(true)
-  const liveEnrollments = useEnrollments()
-  const reviewQueue = useReviewQueue()
-  const users = useUsers()
+  const { data: report, loading, error } = useCrossModuleReport()
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the cross-module report" description={error} />
+  }
 
-  // Counts both the 5 static mock members and the real "John Doe" persona's
-  // live enrollment store — see enrollments-view.tsx's useLiveEnrollmentRows
-  // for why the real store's 'ENROLLED' status counts as this page's ACTIVE.
-  const activeEnrollments =
-    mockEnrollments.filter((e) => e.status === 'ACTIVE').length +
-    liveEnrollments.filter((e) => e.status !== 'COMPLETED').length
-  const pendingPublications = reviewQueue.length
-  const activeResearchProjects = mockProjects.filter((p) => p.status === 'ACTIVE').length
-
-  const stats = [
-    { icon: UsersIcon, label: 'Total Members', value: users.length, color: 'text-w-950' },
-    { icon: BookOpen, label: 'Active Loans', value: ACTIVE_LOANS, color: 'text-teal-700' },
-    { icon: GraduationCap, label: 'Active Enrollments', value: activeEnrollments, color: 'text-purple-700' },
-    { icon: FileText, label: 'Publications Pending Review', value: pendingPublications, color: 'text-yellow-700' },
-    { icon: FlaskConical, label: 'Active Research Projects', value: activeResearchProjects, color: 'text-green-700' },
-  ]
-
-  const trends = buildModuleTrends({
-    totalMembers: users.length,
-    activeLoans: ACTIVE_LOANS,
-    activeEnrollments,
-    pendingPublications,
-    activeResearchProjects,
-  })
-
-  if (loading) {
+  if (loading || !report) {
     return (
       <div className="space-y-6" aria-label="Loading reports">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -67,6 +32,16 @@ export function ReportsView() {
       </div>
     )
   }
+
+  const stats = [
+    { icon: UsersIcon, label: 'Total Members', value: report.totalMembers, color: 'text-w-950' },
+    { icon: BookOpen, label: 'Active Loans', value: report.activeLoans, color: 'text-teal-700' },
+    { icon: GraduationCap, label: 'Active Enrollments', value: report.activeEnrollments, color: 'text-purple-700' },
+    { icon: FileText, label: 'Publications Pending Review', value: report.pendingPublications, color: 'text-yellow-700' },
+    { icon: FlaskConical, label: 'Active Research Projects', value: report.activeResearchProjects, color: 'text-green-700' },
+  ]
+
+  const trends = buildModuleTrends(report)
 
   return (
     <div>

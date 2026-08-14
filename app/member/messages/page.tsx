@@ -1,10 +1,12 @@
+'use client'
+
 import { PageTransition } from '@/components/ui/page-transition'
+import { useAuth } from '@/contexts/auth-context'
 import { MessagesView } from '@/lib/messaging/messages-view'
 
-/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const CURRENT_MEMBER_NAME = 'John Doe'
-
 export default function MemberMessagesPage() {
+  const { user, isLoading } = useAuth()
+
   return (
     <PageTransition>
       <div style={{ marginBottom: 16 }}>
@@ -15,7 +17,7 @@ export default function MemberMessagesPage() {
           Course channels with your lecturers and direct messages
         </div>
       </div>
-      <MessagesView personName={CURRENT_MEMBER_NAME} personRole="member" />
+      {!isLoading && user && <MessagesView userId={user.id} />}
     </PageTransition>
   )
 }

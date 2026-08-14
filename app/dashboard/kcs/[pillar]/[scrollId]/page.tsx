@@ -9,7 +9,7 @@ export default async function ScrollDetailPage({ params }: ScrollDetailPageProps
   const { pillar, scrollId } = await params
   return (
     <PageTransition>
-      <ScrollDetailView pillarKey={pillar} scrollCode={decodeURIComponent(scrollId)} />
+      <ScrollDetailView pillarSlug={pillar} scrollSlug={decodeURIComponent(scrollId)} />
     </PageTransition>
   )
 }

@@ -9,46 +9,55 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { enrollInCourse, useEnrollments } from '@/app/member/_shared/use-enrollments'
-import { coursePreviews } from './course-preview-data'
-
-/** Simulated network delay before the mock course preview becomes visible. */
-const LOAD_DELAY_MS = 400
+import { fetchCourseById, type CatalogCourse } from '@/app/member/_shared/use-courses'
 
 interface CoursePreviewViewProps {
   id: string
 }
 
-function formatDuration(totalMinutes: number): string {
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
-}
-
 /**
  * Public course preview: title, description, lesson count, duration, and an
- * Enroll CTA. Signed-in users are routed to the member course page;
- * signed-out visitors are routed to login first.
+ * Enroll CTA. Fetches the real course directly by id from /api/courses/[id]
+ * (no auth required — replaces the orphaned course-preview-data.ts mock,
+ * whose numeric ids never matched real Mongo ObjectIds). Signed-in users
+ * are routed to the member course page; signed-out visitors are routed to
+ * login first.
  */
 export function CoursePreviewView({ id }: CoursePreviewViewProps) {
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
-  const { isAuthenticated } = useAuth()
+  const [enrollError, setEnrollError] = useState('')
+  const [course, setCourse] = useState<CatalogCourse | undefined>(undefined)
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
-  const enrollments = useEnrollments()
+  const { data: enrollments } = useEnrollments()
 
-  const course = coursePreviews[id]
   const alreadyEnrolled = isAuthenticated && enrollments.some((e) => e.courseId === id)
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+    let cancelled = false
+    fetchCourseById(id).then((c) => {
+      if (!cancelled) {
+        setCourse(c)
+        setLoading(false)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
-  const handleEnroll = () => {
-    if (!course) return
+  const handleEnroll = async () => {
+    if (!course || !user) return
     setEnrolling(true)
-    enrollInCourse(course.id, course.lessons)
-    router.push(`/member/courses/${course.id}`)
+    setEnrollError('')
+    try {
+      await enrollInCourse(user.id, course.id)
+      router.push(`/member/courses/${course.id}`)
+    } catch (error) {
+      setEnrollError(error instanceof Error ? error.message : 'Could not enroll in this course')
+      setEnrolling(false)
+    }
   }
 
   if (loading) {
@@ -92,16 +101,22 @@ export function CoursePreviewView({ id }: CoursePreviewViewProps) {
           <ListChecks size={13} /> {course.lessons} lessons
         </span>
         <span className="flex items-center gap-1.5 px-3 py-1.5 bg-w-100 text-w-950 rounded text-xs font-lato">
-          <Clock size={13} /> {formatDuration(course.durationMinutes)}
+          <Clock size={13} /> {course.duration}
         </span>
       </div>
+
+      {enrollError && (
+        <div role="alert" className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+          {enrollError}
+        </div>
+      )}
 
       {isAuthenticated ? (
         <ElegantButton
           variant="primary"
           loading={enrolling}
           aria-label={alreadyEnrolled ? 'Continue Course' : 'Enroll in this course'}
-          onClick={handleEnroll}
+          onClick={alreadyEnrolled ? () => router.push(`/member/courses/${course.id}`) : handleEnroll}
         >
           {alreadyEnrolled ? 'Continue Course' : 'Enroll Now'}
         </ElegantButton>

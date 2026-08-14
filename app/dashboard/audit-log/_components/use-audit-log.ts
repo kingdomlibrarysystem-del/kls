@@ -1,63 +1,46 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import { mockAuditEntries, type AuditAction, type AuditEntry } from './audit-log-data'
+import { useEffect, useState, useCallback } from 'react'
+import type { AuditAction, AuditEntry } from './audit-log-data'
 
-/**
- * Module-level mutable store so real admin actions (user creation, borrow
- * approval, publication review, etc.) actually append a row here — mirrors
- * the exact pattern Batch 7 used to fix `/dashboard/publishing/review`'s
- * persistence bug (`use-review-queue.ts`). Previously `mockAuditEntries`
- * was a plain, read-only array: the page rendered a real DataTable with
- * filters/stats/a chart, but nothing in the app ever wrote to it, so it
- * could never grow no matter what an admin did in session.
- */
-let entries: AuditEntry[] = [...mockAuditEntries]
-const listeners = new Set<() => void>()
+/** Fetches audit log entries from the real /api/audit-log, paginated. */
+export function useAuditLog() {
+  const [data, setData] = useState<AuditEntry[]>([])
+  const [loading, setLoading] = useState(true)
 
-function emitChange() {
-  listeners.forEach((listener) => listener())
-}
+  const refetch = useCallback(async () => {
+    const res = await fetch('/api/audit-log?pageSize=1000')
+    const json = await res.json()
+    setData(json.data ?? [])
+  }, [])
 
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
+  useEffect(() => {
+    refetch().finally(() => setLoading(false))
+  }, [refetch])
 
-function getSnapshot() {
-  return entries
-}
-
-function nextId() {
-  const max = entries.reduce((m, e) => {
-    const n = Number(e.id.replace('aud-', ''))
-    return Number.isFinite(n) && n > m ? n : m
-  }, 0)
-  return `aud-${String(max + 1).padStart(3, '0')}`
+  return { data, loading, refetch }
 }
 
 export interface LogAuditEventInput {
   actor: string
+  actorId?: string
   action: AuditAction
   target: string
+  targetId?: string
+  targetType?: string
   ipAddress?: string
   notes: string
 }
 
-/** Appends a new audit entry, timestamped now, to the front of the log. */
-export function logAuditEvent(input: LogAuditEventInput) {
-  const created: AuditEntry = {
-    id: nextId(),
-    timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '),
-    ipAddress: input.ipAddress ?? '—',
-    ...input,
+/** Records a real audit log entry via POST /api/audit-log. Fire-and-forget at every call site — a logging failure should never block the real action it's describing. */
+export async function logAuditEvent(input: LogAuditEventInput) {
+  try {
+    await fetch('/api/audit-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+  } catch (error) {
+    console.error('Failed to record audit log entry:', error)
   }
-  entries = [created, ...entries]
-  emitChange()
-  return created
-}
-
-/** Live-subscribes to the shared audit log. */
-export function useAuditLog() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => mockAuditEntries)
 }

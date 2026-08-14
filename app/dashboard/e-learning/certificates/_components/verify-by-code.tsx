@@ -4,25 +4,25 @@ import { useState } from 'react'
 import { Search, CheckCircle2, XCircle } from 'lucide-react'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { useCertificates } from './use-certificates'
-import type { Certificate } from './certificates-data'
+import { useCertificatesAdmin, type CertificateRecord } from './use-certificates-admin'
 
 type LookupResult =
   | { status: 'idle' }
-  | { status: 'found'; certificate: Certificate }
-  | { status: 'revoked'; certificate: Certificate }
+  | { status: 'found'; certificate: CertificateRecord }
+  | { status: 'revoked'; certificate: CertificateRecord }
   | { status: 'not-found' }
 
 /**
- * "Verify by code" panel — looks up a verification code against the shared
- * certificates store, no network call. A revoked certificate is reported
- * as invalid rather than as a valid match.
+ * "Verify by code" panel — looks up a verification code against the real
+ * Certificate collection (via the same admin certificates hook the table on
+ * this page already loads, so no extra network call). A revoked certificate
+ * is reported as invalid rather than as a valid match.
  */
 export function VerifyByCode() {
   const [code, setCode] = useState('')
   const [result, setResult] = useState<LookupResult>({ status: 'idle' })
   const [error, setError] = useState('')
-  const certificates = useCertificates()
+  const { data: certificates } = useCertificatesAdmin()
 
   const handleVerify = () => {
     setError('')

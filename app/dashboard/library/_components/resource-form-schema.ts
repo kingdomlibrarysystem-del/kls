@@ -14,7 +14,8 @@ import { z } from 'zod'
 export const resourceSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   author: z.string().min(2, 'Author is required'),
-  category: z.string().min(1, 'Select a category'),
+  /** FK into the canonical KCS taxonomy (`lib/kcs-taxonomy`) — the leaf/scroll category this resource is filed under. */
+  categoryId: z.string().min(1, 'Select a category'),
   isbn: z.string().min(3, 'ISBN is required'),
   totalQty: z.number().int().min(0, 'Must be 0 or more'),
   description: z.string().min(1, 'Description is required'),
@@ -49,7 +50,7 @@ export type ResourceFormData = z.infer<typeof resourceSchema>
 export const defaultResourceFormValues: ResourceFormData = {
   title: '',
   author: '',
-  category: '',
+  categoryId: '',
   isbn: '',
   totalQty: 1,
   description: '',

@@ -1,43 +1,22 @@
+'use client'
+
 import Link from 'next/link'
 import { PlayCircle, Award, BookOpen, Users } from 'lucide-react'
+import { useCourses } from '@/app/member/_shared/use-courses'
 
-const courses = [
-  {
-    category: 'Research Methods',
-    title: 'Academic Writing Mastery',
-    instructor: 'Prof. David Osei',
-    duration: '6 weeks',
-    students: '1.2k',
-    level: 'Intermediate',
-    accent: 'border-w-600',
-  },
-  {
-    category: 'Digital Skills',
-    title: 'Library Science & Information Management',
-    instructor: 'Dr. Grace Nkomo',
-    duration: '4 weeks',
-    students: '890',
-    level: 'Beginner',
-    accent: 'border-w-700',
-  },
-  {
-    category: 'Publishing',
-    title: 'From Manuscript to Published Work',
-    instructor: 'Dr. James Kariuki',
-    duration: '8 weeks',
-    students: '640',
-    level: 'Advanced',
-    accent: 'border-w-800',
-  },
-]
-
-const stats = [
-  { icon: <BookOpen size={20} />, value: '120+', label: 'Courses' },
-  { icon: <Users size={20} />, value: '8k+', label: 'Learners' },
-  { icon: <Award size={20} />, value: '95%', label: 'Completion' },
-]
-
+/** Real published courses from /api/courses, and real course/lesson counts — no fabricated instructor names, student counts, or completion rates. */
 export function ELearningSection() {
+  const { data: courses } = useCourses()
+  const featured = courses.slice(0, 3)
+
+  const stats = [
+    { icon: <BookOpen size={20} />, value: String(courses.length), label: 'Courses' },
+    { icon: <Users size={20} />, value: String(courses.reduce((sum, c) => sum + c.students, 0)), label: 'Enrollments' },
+    { icon: <Award size={20} />, value: String(courses.reduce((sum, c) => sum + c.lessons, 0)), label: 'Lessons' },
+  ]
+
+  if (featured.length === 0) return null
+
   return (
     <div className="py-16 px-4 bg-[#fdf8ef] dark:bg-[#0a0d1a]">
       <div className="max-w-7xl mx-auto">
@@ -70,10 +49,11 @@ export function ELearningSection() {
 
         {/* Course cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {courses.map((course) => (
-            <div
-              key={course.title}
-              className={`bg-white dark:bg-[#111828] rounded-xl shadow-sm border-l-4 ${course.accent} p-6 hover:shadow-md dark:hover:shadow-black/20 transition-shadow`}
+          {featured.map((course, i) => (
+            <Link
+              key={course.id}
+              href={`/courses/${course.id}`}
+              className={`bg-white dark:bg-[#111828] rounded-xl shadow-sm border-l-4 ${['border-w-600', 'border-w-700', 'border-w-800'][i % 3]} p-6 hover:shadow-md dark:hover:shadow-black/20 transition-shadow`}
             >
               <span className="inline-block font-lato text-xs font-semibold text-w-600 dark:text-amber-500/80 uppercase tracking-wider bg-w-100 dark:bg-white/5 px-3 py-1 rounded-full mb-4">
                 {course.category}
@@ -86,17 +66,14 @@ export function ELearningSection() {
               <div className="flex items-center justify-between text-xs font-lato text-w-700 dark:text-gray-400 border-t border-w-200 dark:border-white/10 pt-4">
                 <span className="flex items-center gap-1">
                   <PlayCircle size={13} className="text-w-600 dark:text-amber-500/70" />
-                  {course.duration}
+                  {course.lessons} lessons
                 </span>
                 <span className="flex items-center gap-1">
                   <Users size={13} className="text-w-600 dark:text-amber-500/70" />
                   {course.students} students
                 </span>
-                <span className="px-2 py-0.5 bg-w-100 dark:bg-white/5 rounded font-semibold text-w-800 dark:text-gray-200">
-                  {course.level}
-                </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

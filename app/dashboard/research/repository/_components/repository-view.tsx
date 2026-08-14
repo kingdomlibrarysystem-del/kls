@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { FileText, Eye } from 'lucide-react'
+import { useState } from 'react'
+import { FileText, Eye, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -9,9 +9,6 @@ import { useRepository } from './use-repository'
 import { paperStatusConfig, type ResearchPaper } from './repository-data'
 import { PaperDetailModal } from './paper-detail-modal'
 import { RepositoryStats } from './repository-stats'
-
-/** Simulated network delay before mock papers become visible. */
-const LOAD_DELAY_MS = 400
 
 function buildColumns(onView: (p: ResearchPaper) => void): Column<ResearchPaper>[] {
   return [
@@ -55,15 +52,9 @@ function buildColumns(onView: (p: ResearchPaper) => void): Column<ResearchPaper>
  * `/contributor/research` used to provide over this exact store.
  */
 export function RepositoryView() {
-  const [loading, setLoading] = useState(true)
   const [viewing, setViewing] = useState<ResearchPaper | null>(null)
   const [authorFilter, setAuthorFilter] = useState('all')
-  const papers = useRepository()
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: papers, loading, error } = useRepository()
 
   if (loading) {
     return (
@@ -73,6 +64,10 @@ export function RepositoryView() {
         ))}
       </div>
     )
+  }
+
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the paper repository" description={error} />
   }
 
   if (papers.length === 0) {

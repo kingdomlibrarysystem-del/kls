@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BookX } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { courseCatalog } from '@/app/member/_shared/course-catalog-data'
+import { useAuth } from '@/contexts/auth-context'
+import { useCourses } from '@/app/member/_shared/use-courses'
 import { enrollInCourse, getNextLessonId, useEnrollments } from '@/app/member/_shared/use-enrollments'
+import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 
 interface CourseRedirectViewProps {
   courseId: string
@@ -18,27 +20,44 @@ interface CourseRedirectViewProps {
  * signed-in visitor arriving here straight from the public course preview's
  * "Go to Course" link doesn't need a separate trip to enroll), then forwards
  * to the next-incomplete-lesson URL — the same lesson "Resume"/"Continue
- * Learning" on /member/courses would pick.
+ * Learning" on /member/courses would pick. Enrollment is a real
+ * POST /api/enrollments call against the signed-in session's real userId.
  */
 export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
   const router = useRouter()
-  const enrollments = useEnrollments()
+  const { user } = useAuth()
+  const [error, setError] = useState('')
+  const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments()
+  const { data: courseCatalog, loading: coursesLoading } = useCourses()
+  const { data: lessonsByCourse, loading: lessonsLoading } = useLessonsByCourse()
   const course = courseCatalog.find((c) => c.id === courseId)
+  const loading = enrollmentsLoading || coursesLoading || lessonsLoading
 
   useEffect(() => {
-    if (!course) return
-    const existing = enrollments.find((e) => e.courseId === courseId)
-    const enrollment = existing ?? enrollInCourse(courseId, course.lessons)
-    const nextLessonId = getNextLessonId(enrollment)
-    router.replace(
-      nextLessonId ? `/member/courses/${courseId}/lessons/${nextLessonId}` : '/member/courses'
-    )
-    // Only re-run if the course itself changes — re-running on every
-    // enrollments-store update would loop redirects as lesson progress changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseId])
+    if (loading || !course || !user) return
 
-  if (!course) {
+    async function redirect() {
+      try {
+        const existing = enrollments.find((e) => e.courseId === courseId)
+        let enrollment = existing
+        if (!enrollment) {
+          enrollment = await enrollInCourse(user!.id, courseId)
+          await refetch()
+        }
+        const lessons = lessonsByCourse[courseId]?.lessons
+        const nextLessonId = getNextLessonId(enrollment, lessons)
+        router.replace(nextLessonId ? `/member/courses/${courseId}/lessons/${nextLessonId}` : '/member/courses')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not open this course')
+      }
+    }
+    redirect()
+    // Only re-run if the course itself or loading state changes — re-running
+    // on every enrollments refetch would loop redirects as progress changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, loading])
+
+  if (!loading && !course) {
     return (
       <EmptyState
         icon={BookX}
@@ -49,8 +68,19 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
     )
   }
 
+  if (error) {
+    return (
+      <EmptyState
+        icon={BookX}
+        title="Could not open this course"
+        description={error}
+        style={{ color: 'var(--text-secondary)' }}
+      />
+    )
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label={`Opening ${course.title}`}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label={`Opening ${course?.title ?? 'course'}`}>
       <Skeleton style={{ height: 24, width: '40%', borderRadius: 6 }} />
       <Skeleton style={{ height: 160, borderRadius: 8 }} />
     </div>

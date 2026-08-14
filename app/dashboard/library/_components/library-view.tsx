@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { PlusCircle } from 'lucide-react'
+import { useState } from 'react'
+import { PlusCircle, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 import { type Resource } from './resources-data'
 import { useResources, addResource, updateResource, archiveResource } from './use-resources'
 import { ResourcesStats } from './resources-stats'
@@ -13,48 +15,43 @@ import { ResourceDetailModal } from './resource-detail-modal'
 import { ResourceFormModal } from './resource-form-modal'
 import type { ResourceFormData } from './resource-form-schema'
 
-/** Simulated network delay before mock resources become visible. */
-const LOAD_DELAY_MS = 400
-
 /**
  * Book Inventory: full CRUD over the shared resources store — Create (via
- * modal, appended to the store), Details (existing modal, now wired to
- * Edit), Edit (pre-filled modal writing back to the store), soft-Delete
- * (Archive, already functional and left unchanged). The public library
- * browse/detail pages read this same store, so changes here are
- * immediately visible there.
+ * modal, posted to the real Resource API), Details (existing modal, now
+ * wired to Edit), Edit (pre-filled modal writing back via PATCH),
+ * soft-Delete (Archive, a PATCH of `status`, already functional and left
+ * unchanged in spirit). The public library browse/detail pages read this
+ * same store, so changes here are immediately visible there.
  */
 export function LibraryView() {
-  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Resource | null>(null)
   const [statusFilter, setStatusFilter] = useState<Resource['status'] | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [toast, setToast] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Resource | null>(null)
-  const data = useResources()
+  const { data, loading: resourcesLoading, error: resourcesError } = useResources()
+  const { loading: categoriesLoading, error: categoriesError } = useCategories()
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const loading = resourcesLoading || categoriesLoading
+  const error = resourcesError ?? categoriesError
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
-  const handleArchive = (r: Resource) => {
+  const handleArchive = async (r: Resource) => {
     try {
-      archiveResource(r.id)
+      await archiveResource(r.id)
       setSelected(null)
       showToast(`"${r.title}" archived.`)
-    } catch {
-      showToast('Could not archive this resource — please try again.')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not archive this resource — please try again.')
     }
   }
 
   const openCreate = () => { setEditing(null); setFormOpen(true) }
   const openEdit = (r: Resource) => { setEditing(r); setSelected(null); setFormOpen(true) }
 
-  const handleSave = (formData: ResourceFormData, editingId: string | null) => {
+  const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     try {
       const { coverImage, documentUrl, documentName, audioUrl, audioName, videoUrl, videoName, ...rest } = formData
       const fileFields = {
@@ -63,11 +60,10 @@ export function LibraryView() {
         videoUrl: videoUrl || undefined,
       }
       if (editingId) {
-        updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
+        await updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
         showToast(`Updated "${formData.title}".`)
       } else {
-        const newResource: Resource = {
-          id: crypto.randomUUID(),
+        await addResource({
           ...rest,
           type: 'Scroll',
           format: 'Physical',
@@ -76,14 +72,13 @@ export function LibraryView() {
           status: 'available',
           coverImages: [coverImage],
           ...fileFields,
-        }
-        addResource(newResource)
+        })
         showToast(`Added "${formData.title}".`)
       }
       setFormOpen(false)
       setEditing(null)
-    } catch {
-      showToast('Could not save this resource — please try again.')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not save this resource — please try again.')
     }
   }
 
@@ -98,10 +93,14 @@ export function LibraryView() {
     )
   }
 
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load the book inventory" description={error} />
+  }
+
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
-        <PageHeader title="Book Inventory" subtitle="Kingdom Classification System — manage scrolls across all 8 KCS sections" />
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <PageHeader className="mb-0" title="Book Inventory" subtitle="Kingdom Classification System — manage scrolls across all 8 KCS sections" />
         <ElegantButton variant="primary" onClick={openCreate} className="flex items-center gap-1.5 shrink-0">
           <PlusCircle size={15} /> Add Resource
         </ElegantButton>

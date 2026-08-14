@@ -3,7 +3,10 @@
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
-import { mockLoginHistory, type LoginEvent } from './security-mock-data'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/auth-context'
+import { useLoginHistory } from '@/app/member/_shared/use-login-history'
+import type { LoginEvent } from './security-mock-data'
 
 const columns: Column<LoginEvent>[] = [
   { key: 'date', label: 'Date', sortable: true, render: (e) => <span style={{ color: 'var(--text-secondary)' }}>{e.date}</span> },
@@ -19,15 +22,22 @@ const columns: Column<LoginEvent>[] = [
   },
 ]
 
-/** DataTable of login events: date, IP, device, success/fail. */
+/** DataTable of real login events (date, IP, device, success/fail) from /api/login-history. */
 export function LoginHistorySection() {
+  const { user } = useAuth()
+  const { data: loginHistory, loading, error } = useLoginHistory(user?.id)
+
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Login History</div>
-      {mockLoginHistory.length === 0 ? (
+      {loading ? (
+        <Skeleton className="h-32 w-full rounded-lg" />
+      ) : error ? (
+        <EmptyState icon={CheckCircle2} title="Could not load login history" description={error} style={{ color: 'var(--text-secondary)' }} />
+      ) : loginHistory.length === 0 ? (
         <EmptyState icon={CheckCircle2} title="No login history yet" description="Your login events will appear here." style={{ color: 'var(--text-secondary)' }} />
       ) : (
-        <DataTable<LoginEvent> data={mockLoginHistory} columns={columns} rowKey={(e) => e.id} emptyMessage="No login events." />
+        <DataTable<LoginEvent> data={loginHistory} columns={columns} rowKey={(e) => e.id} emptyMessage="No login events." />
       )}
     </div>
   )

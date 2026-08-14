@@ -4,6 +4,7 @@ import { Pencil, Archive, BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMar
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { getCategoryName } from '@/lib/kcs-taxonomy'
 import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from './resources-data'
 
 interface ResourceDetailModalProps {
@@ -63,7 +64,7 @@ export function ResourceDetailModal({ resource, onClose, onEdit, onArchive }: Re
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <DetailRow icon={<BookOpen size={13} />} label="Type" value={`${resource.type} · ${resource.format}`} />
-              <DetailRow icon={<Layers size={13} />} label="Category" value={resource.category} />
+              <DetailRow icon={<Layers size={13} />} label="Category" value={getCategoryName(resource.categoryId)} />
               <DetailRow icon={<Globe size={13} />} label="Language" value={resource.language} />
               <DetailRow icon={<Calendar size={13} />} label="Year" value={String(resource.year)} />
               <DetailRow icon={<BookOpen size={13} />} label="Pages" value={`${resource.pages} pages`} />

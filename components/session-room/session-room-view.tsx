@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertTriangle, ChevronLeft, CalendarClock, Circle } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useSessionRequests, completeSession } from '@/lib/sessions/use-session-requests'
+import { fetchSessionRequestById, completeSession, type SessionRequest } from '@/lib/sessions/use-session-requests'
 import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import { VideoTileGrid } from './video-tile-grid'
 import { ControlBar } from './control-bar'
@@ -60,8 +60,8 @@ const ADDED_PARTICIPANT_STATE: ParticipantDeviceState = { cameraOn: true, micOn:
  */
 export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const router = useRouter()
-  const requests = useSessionRequests()
-  const request = requests.find((r) => r.id === sessionId)
+  const [request, setRequest] = useState<SessionRequest | undefined>(undefined)
+  const [loading, setLoading] = useState(true)
   const media = useMediaStream()
   const recording = useSessionRecording()
   const [handRaised, setHandRaised] = useState(false)
@@ -70,12 +70,16 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const [addedNames, setAddedNames] = useState<string[]>([])
   const [addOpen, setAddOpen] = useState(false)
 
+  useEffect(() => {
+    fetchSessionRequestById(sessionId).then(setRequest).finally(() => setLoading(false))
+  }, [sessionId])
+
   const backHref = viewer === 'learner' ? '/member/sessions' : '/dashboard/e-learning/sessions'
   const activeStream = media.presenting ? media.screenStream : media.stream
   const youNameForTranscript = viewer === 'learner' ? request?.learnerName : 'Admin (Observer)'
   const transcript = useLiveTranscript(youNameForTranscript ?? 'You')
 
-  if (!request) {
+  if (!loading && !request) {
     return (
       <EmptyState
         icon={CalendarClock}
@@ -85,6 +89,8 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
       />
     )
   }
+
+  if (!request) return null
 
   const youName = viewer === 'learner' ? request.learnerName : 'Admin (Observer)'
   const otherName = viewer === 'admin' ? request.learnerName : request.lecturerName

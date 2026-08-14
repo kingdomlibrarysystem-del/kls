@@ -11,34 +11,40 @@ import {
   Lock,
   Users,
   Download,
-  ShoppingBag,
   Clock,
   Bot,
   Rocket,
 } from "lucide-react";
-
-const globalStats = [
-  { icon: <Users size={24} />, value: "50,000+",  label: "Active Members"    },
-  { icon: <Download size={24} />, value: "100,000+", label: "Items Borrowed"    },
-  { icon: <ShoppingBag size={24} />, value: "5,000+",  label: "Resources Sold"    },
-  { icon: <Globe size={24} />, value: "195+",     label: "Countries Reached" },
-  { icon: <Clock size={24} />, value: "24/7",     label: "Library Access"    },
-];
+import { useUsers } from "@/app/dashboard/users/_components/use-users";
+import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
 
 const features = [
-  { icon: <Brain size={20} />, label: "AI Knowledge Engine",  sub: "Smart recommendations"  },
-  { icon: <Map size={20} />, label: "Knowledge Map",        sub: "Visualize connections"   },
-  { icon: <Mic size={20} />, label: "Voice Search",         sub: "Search with your voice"  },
-  { icon: <Glasses size={20} />, label: "AR/VR Library",         sub: "Immersive Experience"    },
-  { icon: <Globe size={20} />, label: "Multi-Language AI",     sub: "Instant Translation"     },
-  { icon: <Bell size={20} />, label: "Smart Notifications",  sub: "Personalized Alerts"     },
-  { icon: <Gamepad2 size={20} />, label: "Gamified Learning",     sub: "Earn, Learn, Grow"       },
-  { icon: <Lock size={20} />, label: "Blockchain Security",  sub: "Library in Your Pocket"  },
+  { icon: <Brain size={20} />, label: "AI Knowledge Engine", sub: "Smart recommendations" },
+  { icon: <Map size={20} />, label: "Knowledge Map", sub: "Visualize connections" },
+  { icon: <Mic size={20} />, label: "Voice Search", sub: "Search with your voice" },
+  { icon: <Glasses size={20} />, label: "AR/VR Library", sub: "Immersive Experience" },
+  { icon: <Globe size={20} />, label: "Multi-Language AI", sub: "Instant Translation" },
+  { icon: <Bell size={20} />, label: "Smart Notifications", sub: "Personalized Alerts" },
+  { icon: <Gamepad2 size={20} />, label: "Gamified Learning", sub: "Earn, Learn, Grow" },
+  { icon: <Lock size={20} />, label: "Blockchain Security", sub: "Library in Your Pocket" },
 ];
 
+/** Real member count (/api/users) and real items-borrowed count (/api/borrowings) — "Resources Sold" and "Countries Reached" were removed entirely (no Sales/Transaction model, no geo data anywhere in the app). */
 export function StatsBar() {
+  const { users } = useUsers();
+  const { data: borrowings } = useBorrowingsAdmin();
+
+  const globalStats = [
+    { icon: <Users size={24} />, value: users.length.toLocaleString(), label: "Active Members" },
+    { icon: <Download size={24} />, value: borrowings.length.toLocaleString(), label: "Items Borrowed" },
+    { icon: <Clock size={24} />, value: "24/7", label: "Library Access" },
+  ];
+
   return (
-    <div style={{ background: "var(--stats-gradient)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 16px", display: "flex", justifyContent: "space-around" }}>
+    <div
+      className="flex flex-wrap justify-center sm:justify-around gap-4"
+      style={{ background: "var(--stats-gradient)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 16px" }}
+    >
       {globalStats.map((s) => (
         <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ display: "flex", alignItems: "center" }}>{s.icon}</span>
@@ -56,13 +62,13 @@ export function FooterSection() {
   const [aiInput, setAiInput] = useState("");
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-0">
       {/* Innovative features */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px 0 0 8px", borderRight: "none", padding: "10px 12px" }}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8, letterSpacing: 0.3 }}>
           <Rocket size={14} /> WHAT'S NEXT – INNOVATIVE FEATURES
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {features.map((f) => (
             <div key={f.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "var(--bg-subtle)", borderRadius: 6, padding: "8px 4px", border: "1px solid var(--border-light)", textAlign: "center" }}>
               <span style={{ display: "flex", alignItems: "center" }}>{f.icon}</span>
@@ -74,9 +80,9 @@ export function FooterSection() {
       </div>
 
       {/* AI + Community */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 8px 0 0", borderLeft: "none", borderBottom: "none", padding: "10px 12px" }}>
-          <div style={{ display: "flex", gap: 12, alignItems: "start" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
+          <div className="flex flex-col sm:flex-row" style={{ gap: 12, alignItems: "start" }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>
                 <Bot size={14} /> AI Kingdom Assistant
@@ -89,7 +95,7 @@ export function FooterSection() {
                 <button className="btn btn-gold btn-sm" style={{ padding: "4px 8px" }}>›</button>
               </div>
             </div>
-            <div style={{ width: 160, background: "var(--inspiration-bg)", border: "1px solid var(--border-gold)", borderRadius: 7, padding: "10px", textAlign: "center" }}>
+            <div className="w-full sm:w-40" style={{ background: "var(--inspiration-bg)", border: "1px solid var(--border-gold)", borderRadius: 7, padding: "10px", textAlign: "center", flexShrink: 0 }}>
               <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 700, marginBottom: 4, letterSpacing: 1 }}>DAILY INSPIRATION</div>
               <div style={{ fontSize: 9, color: "var(--text-secondary)", lineHeight: 1.5, fontStyle: "italic", marginBottom: 6 }}>
                 "For the earth will be filled with the knowledge of the glory of the Lord as the waters cover the sea."
@@ -99,12 +105,12 @@ export function FooterSection() {
           </div>
         </div>
 
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "0 0 8px 0", borderLeft: "none", borderTop: "none", padding: "10px 12px" }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
           <div style={{ textAlign: "center", marginBottom: 8 }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "var(--gold)" }}>KINGDOM COMMUNITY HUB</div>
             <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Connect. Collaborate. Grow Together.</div>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+          <div className="flex flex-wrap justify-center" style={{ gap: 16 }}>
             {["Forums","Study Groups","Live Events","Share Resources","Leaderboard"].map((l) => (
               <button key={l} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontSize: 10, fontWeight: 600, padding: "2px 0" }}>{l}</button>
             ))}

@@ -8,21 +8,31 @@ import { FormSection } from '@/components/ui/form-section'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { paperSchema, parseKeywords, mockProjectOptions, type PaperFormData } from './paper-form-schema'
+import { paperSchema, parseKeywords, type PaperFormData } from './paper-form-schema'
 import { addPaperToRepository } from '../../repository/_components/use-repository'
+import { useResearchProjects } from '../../_shared/use-research-projects'
 
-/** Author attributed to papers submitted from this form — the same recurring contributor persona used across research/publishing mock data. */
+/**
+ * Author attributed to papers submitted from this form — the same
+ * recurring contributor persona used across research/publishing mock
+ * data. This is an admin tool submitting on a known contributor's
+ * behalf (not a "who is currently logged in" question), so resolving
+ * this name to a real contributorId does not hit the same identity
+ * blocker as a live member-facing write.
+ */
 const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
 
 /**
  * Submit Paper form. On submit, splits the comma-separated keywords into a
- * tag list and appends the new paper (status SUBMITTED) to the shared
- * Paper Repository store so it's immediately visible there.
+ * tag list and posts the new paper (status SUBMITTED) to the real
+ * ResearchPaper collection, so it's immediately visible in the Paper
+ * Repository.
  */
 export function PaperFormView() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submittedKeywords, setSubmittedKeywords] = useState<string[] | null>(null)
+  const { data: projects } = useResearchProjects()
 
   const {
     register,
@@ -39,14 +49,15 @@ export function PaperFormView() {
     setSubmitError('')
     setSubmittedKeywords(null)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
       const keywords = parseKeywords(data.keywords)
       if (keywords.length === 0) throw new Error('Enter at least one valid keyword')
-      const project = mockProjectOptions.find((p) => p.id === data.projectId)
-      addPaperToRepository({
+      const authorId = projects.flatMap((p) => p.contributors).find((c) => c.name === SUBMITTING_AUTHOR)?.id
+      if (!authorId) throw new Error(`Could not resolve ${SUBMITTING_AUTHOR} to a real contributor record`)
+      await addPaperToRepository({
         title: data.title,
-        author: SUBMITTING_AUTHOR,
-        project: project?.title ?? 'Unlinked Project',
+        abstract: data.abstract,
+        authorId,
+        projectId: data.projectId,
         keywords,
       })
       setSubmittedKeywords(keywords)
@@ -62,7 +73,7 @@ export function PaperFormView() {
   return (
     <div className="max-w-2xl">
       <FormSection title="Paper Details">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {submittedKeywords && (
             <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
               <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
@@ -115,7 +126,7 @@ export function PaperFormView() {
                 {...register('projectId')}
               >
                 <option value="">Select project…</option>
-                {mockProjectOptions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
               {errors.projectId && <p className="text-red-600 text-xs mt-1 font-lato">{errors.projectId.message}</p>}
             </div>

@@ -10,16 +10,18 @@ const QUICK_REACTIONS = ['👍', '❤️', '🙏', '😂']
 interface MessageBubbleProps {
   message: Message
   isYou: boolean
-  personName: string
+  userId: string
+  onReacted: () => void
 }
 
 /** One message: sender/timestamp, body, and real toggleable emoji reactions. */
-export function MessageBubble({ message, isYou, personName }: MessageBubbleProps) {
+export function MessageBubble({ message, isYou, userId, onReacted }: MessageBubbleProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  const handleReact = (emoji: string) => {
-    toggleReaction(message.id, emoji, personName)
+  const handleReact = async (emoji: string) => {
     setPickerOpen(false)
+    await toggleReaction(message.id, emoji, userId)
+    onReacted()
   }
 
   return (
@@ -44,15 +46,15 @@ export function MessageBubble({ message, isYou, personName }: MessageBubbleProps
           <button
             key={r.emoji}
             onClick={() => handleReact(r.emoji)}
-            aria-pressed={r.reactedBy.includes(personName)}
-            aria-label={`React with ${r.emoji}, ${r.reactedBy.length} reacted`}
+            aria-pressed={r.reactedByIds.includes(userId)}
+            aria-label={`React with ${r.emoji}, ${r.reactedByIds.length} reacted`}
             style={{
               display: 'flex', alignItems: 'center', gap: 3, padding: '1px 6px', borderRadius: 10, fontSize: 11, cursor: 'pointer',
-              border: `1px solid ${r.reactedBy.includes(personName) ? 'var(--gold)' : 'var(--border)'}`,
-              background: r.reactedBy.includes(personName) ? 'rgba(212,168,67,0.15)' : 'var(--bg-card)',
+              border: `1px solid ${r.reactedByIds.includes(userId) ? 'var(--gold)' : 'var(--border)'}`,
+              background: r.reactedByIds.includes(userId) ? 'rgba(212,168,67,0.15)' : 'var(--bg-card)',
             }}
           >
-            {r.emoji} <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.reactedBy.length}</span>
+            {r.emoji} <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.reactedByIds.length}</span>
           </button>
         ))}
 

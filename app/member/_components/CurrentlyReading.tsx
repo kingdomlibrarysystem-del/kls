@@ -1,20 +1,21 @@
 "use client";
 
 import { BookOpen, ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
 import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_shared/use-reading-progress";
 
 /**
  * Dashboard-home widget for in-progress reading, mirroring
- * ELearningProgress.tsx's live-wired pattern (real per-title progress
- * from the shared store, not a static mock array like BorrowedBooks.tsx
- * still uses) — every title and percentage here is real, derived from
- * the same useReadingProgress()/useResources() stores the reader and
+ * ELearningProgress.tsx's live-wired pattern — every title and
+ * percentage here is real, derived from the same
+ * useReadingProgress()/useResources() stores the reader and
  * /member/library's own Continue Reading section already read.
  */
 export default function CurrentlyReading() {
-  const resources = useResources();
-  const progress = useReadingProgress();
+  const { user } = useAuth();
+  const { data: resources } = useResources();
+  const progress = useReadingProgress(user?.id);
 
   const rows = progress
     .filter((p) => p.status === "READING")

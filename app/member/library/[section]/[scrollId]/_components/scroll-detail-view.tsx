@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ScrollText, Heart, Package, BookX, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ScrollText, Heart, Package, BookX, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RelatedResourceCard } from '@/components/ui/related-resource-card'
@@ -11,10 +11,8 @@ import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_c
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
-import { allBooks, kcsSections } from '../../../_components/library-data'
-
-/** Simulated network delay before the mock scroll + related resources become visible. */
-const LOAD_DELAY_MS = 400
+import { getCategoryById, getChildCategories } from '@/lib/kcs-taxonomy'
+import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 
 interface ScrollDetailViewProps {
   scrollId: string
@@ -26,24 +24,22 @@ interface ScrollDetailViewProps {
  * detail page (RelatedResourceCard, findResourcesForScroll,
  * BorrowReserveConfirmModal), not a duplicated implementation. Adds the
  * real favorites toggle already established for this module.
+ *
+ * `scrollId` is looked up directly against the canonical taxonomy (it is
+ * that scroll's own stable id) rather than via the old `library-data.tsx`
+ * flattened list, which has been folded into `lib/kcs-taxonomy` and removed.
  */
 export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
-  const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<BorrowReserveAction>(null)
-  const [actionTarget, setActionTarget] = useState<{ title: string; author: string } | null>(null)
-  const { isAuthenticated } = useAuth()
-  const resources = useResources()
-  const favorites = useFavorites()
+  const [actionTarget, setActionTarget] = useState<{ id: string; title: string; author: string } | null>(null)
+  const { isAuthenticated, user } = useAuth()
+  const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
+  const { loading: categoriesLoading, error: categoriesError } = useCategories()
+  const favorites = useFavorites(user?.id)
   const readableContent = useReadableContent()
 
-  const scroll = allBooks.find((b) => b.id === scrollId)
-  const section = scroll ? kcsSections.find((s) => s.label === scroll.section) : undefined
-  const liked = scroll ? favorites.some((f) => f.id === scroll.id) : false
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const loading = resourcesLoading || categoriesLoading
+  const error = categoriesError ?? resourcesError
 
   if (loading) {
     return (
@@ -54,13 +50,21 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
     )
   }
 
-  if (!scroll || !section) {
+  if (error) {
+    return <EmptyState icon={AlertTriangle} title="Couldn't load this scroll" description={error} style={{ color: 'var(--text-secondary)' }} />
+  }
+
+  const scroll = getCategoryById(scrollId)
+  const section = scroll?.parentId ? getCategoryById(scroll.parentId) : undefined
+  const liked = scroll ? favorites.some((f) => f.id === scroll.id) : false
+
+  if (!scroll || !section || !getChildCategories(section.id).some((c) => c.id === scroll.id)) {
     return <EmptyState icon={BookX} title="Scroll not found" description="This scroll doesn't exist in the Kingdom Library." style={{ color: 'var(--text-secondary)' }} />
   }
 
-  const matches = findResourcesForScroll(scroll.title, resources)
+  const matches = findResourcesForScroll(scroll.id, resources)
 
-  const startAction = (verb: BorrowReserveAction, resource: { title: string; author: string }) => {
+  const startAction = (verb: BorrowReserveAction, resource: { id: string; title: string; author: string }) => {
     setAction(verb)
     setActionTarget(resource)
   }
@@ -76,12 +80,12 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
           <ScrollText size={22} color="var(--gold)" />
         </div>
         <div style={{ flex: 1 }}>
-          <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{scroll.title}</h1>
-          <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.code} · {section.label}</p>
+          <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{scroll.name.en}</h1>
+          <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.slug} · {section.name.en}</p>
         </div>
         <button
-          onClick={() => toggleFavorite(scroll.id, 'RESOURCE', scroll.title, `Scroll · ${scroll.section}`)}
-          aria-label={liked ? `Remove ${scroll.title} from favorites` : `Add ${scroll.title} to favorites`}
+          onClick={() => toggleFavorite(scroll.id, 'RESOURCE', scroll.name.en, `Scroll · ${section.name.en}`)}
+          aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
           style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
           <Heart size={14} color={liked ? 'var(--red-light)' : 'var(--text-muted)'} fill={liked ? 'var(--red-light)' : 'none'} />
@@ -147,7 +151,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
       )}
 
       {actionTarget && (
-        <BorrowReserveConfirmModal action={action} bookTitle={actionTarget.title} bookAuthor={actionTarget.author} onClose={() => { setAction(null); setActionTarget(null) }} />
+        <BorrowReserveConfirmModal action={action} resourceId={actionTarget.id} bookTitle={actionTarget.title} bookAuthor={actionTarget.author} onClose={() => { setAction(null); setActionTarget(null) }} />
       )}
     </div>
   )

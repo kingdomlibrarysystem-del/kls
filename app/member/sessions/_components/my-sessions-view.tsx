@@ -1,28 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { CalendarClock } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useSessionRequests } from '@/lib/sessions/use-session-requests'
 import { SessionCard } from '@/lib/sessions/session-card'
 
-/** This mock has a single live member persona — see use-enrollments.ts's CURRENT_MEMBER_NAME. */
-const CURRENT_MEMBER_NAME = 'John Doe'
-
-/** Simulated network delay before mock session requests become visible. */
-const LOAD_DELAY_MS = 300
-
-/** This learner's own session requests, read from the real shared store — a request made from /member/courses appears here immediately. */
+/** This learner's own session requests, fetched from the real /api/session-requests filtered by the real session userId. */
 export function MySessionsView() {
-  const [loading, setLoading] = useState(true)
-  const requests = useSessionRequests()
-  const mine = requests.filter((r) => r.learnerName === CURRENT_MEMBER_NAME)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  const { data: requests, loading } = useSessionRequests()
 
   if (loading) {
     return (
@@ -34,7 +20,7 @@ export function MySessionsView() {
     )
   }
 
-  if (mine.length === 0) {
+  if (requests.length === 0) {
     return (
       <EmptyState
         icon={CalendarClock}
@@ -47,7 +33,7 @@ export function MySessionsView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {mine.map((r) => (
+      {requests.map((r) => (
         <SessionCard key={r.id} request={r} viewer="learner" />
       ))}
     </div>

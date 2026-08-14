@@ -9,7 +9,7 @@ interface CourseAnalyticsDetailModalProps {
 
 const statusConfig = {
   COMPLETED: { label: 'Completed', cls: 'bg-w-100 text-w-700 border-w-300' },
-  ACTIVE: { label: 'Active', cls: 'bg-green-50 text-green-800 border-green-200' },
+  ENROLLED: { label: 'Active', cls: 'bg-green-50 text-green-800 border-green-200' },
   DROPPED: { label: 'Dropped', cls: 'bg-red-50 text-red-800 border-red-200' },
 }
 

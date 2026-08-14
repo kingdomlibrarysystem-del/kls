@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/contexts/auth-context";
-import { SWITCHABLE_ROLES, roleViewLabel, roleViewRoute } from "@/lib/role-switcher";
 import {
   Home,
   BookOpen,
@@ -42,39 +40,79 @@ const navSections: NavSection[] = [
     title: "Library",
     icon: <BookOpen size={14} />,
     items: [
-      { icon: <BookOpen size={12} />, label: "Browse Books", href: "/member/library" },
-      { icon: <Bookmark size={12} />, label: "My Borrowings", href: "/member/borrowings" },
-      { icon: <CalendarDays size={12} />, label: "Reservations", href: "/member/reservations" },
-      { icon: <Search size={12} />, label: "Search Catalog", href: "/member/library" },
+      {
+        icon: <BookOpen size={12} />,
+        label: "Browse Books",
+        href: "/member/library",
+      },
+      {
+        icon: <Bookmark size={12} />,
+        label: "My Borrowings",
+        href: "/member/borrowings",
+      },
+      {
+        icon: <CalendarDays size={12} />,
+        label: "Reservations",
+        href: "/member/reservations",
+      },
     ],
   },
   {
     title: "E-Learning",
     icon: <GraduationCap size={14} />,
     items: [
-      { icon: <GraduationCap size={12} />, label: "Browse Courses", href: "/member/e-learning" },
-      { icon: <CheckSquare size={12} />, label: "My Courses", href: "/member/courses" },
-      { icon: <ClipboardList size={12} />, label: "Assessments", href: "/member/assessments" },
-      { icon: <Award size={12} />, label: "Certificates", href: "/member/certificates" },
-      { icon: <CalendarClock size={12} />, label: "My Sessions", href: "/member/sessions" },
+      {
+        icon: <GraduationCap size={12} />,
+        label: "Browse Courses",
+        href: "/member/e-learning",
+      },
+      {
+        icon: <CheckSquare size={12} />,
+        label: "My Courses",
+        href: "/member/courses",
+      },
+      {
+        icon: <ClipboardList size={12} />,
+        label: "Assessments",
+        href: "/member/assessments",
+      },
+      {
+        icon: <Award size={12} />,
+        label: "Certificates",
+        href: "/member/certificates",
+      },
+      {
+        icon: <CalendarClock size={12} />,
+        label: "My Sessions",
+        href: "/member/sessions",
+      },
     ],
   },
 ];
 
 const singleItems: NavItem[] = [
-  { icon: <MessageSquare size={14} />, label: "Messages", href: "/member/messages" },
+  {
+    icon: <MessageSquare size={14} />,
+    label: "Messages",
+    href: "/member/messages",
+  },
   { icon: <Heart size={14} />, label: "Favorites", href: "/member/favorites" },
-  { icon: <Trophy size={14} />, label: "Leaderboard", href: "/member/leaderboard" },
+  {
+    icon: <Trophy size={14} />,
+    label: "Leaderboard",
+    href: "/member/leaderboard",
+  },
   { icon: <User size={14} />, label: "My Profile", href: "/member/profile" },
 ];
 
 export default function MemberSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    "Library": true,
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >({
+    Library: true,
     "E-Learning": false,
   });
-  const { user, switchRole } = useAuth();
   const currentRoute = usePathname();
 
   const toggleSection = (title: string) => {
@@ -128,13 +166,35 @@ export default function MemberSidebar() {
         </div>
         {!collapsed && (
           <div>
-            <div className="cinzel" style={{ fontSize: 10, fontWeight: 700, color: "var(--gold)", lineHeight: 1.2 }}>
+            <div
+              className="cinzel"
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--gold)",
+                lineHeight: 1.2,
+              }}
+            >
               KINGDOM
             </div>
-            <div className="cinzel" style={{ fontSize: 10, fontWeight: 700, color: "var(--gold)", lineHeight: 1.2 }}>
+            <div
+              className="cinzel"
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--gold)",
+                lineHeight: 1.2,
+              }}
+            >
               LIBRARY
             </div>
-            <div style={{ fontSize: 8, color: "var(--text-muted)", letterSpacing: 1 }}>
+            <div
+              style={{
+                fontSize: 8,
+                color: "var(--text-muted)",
+                letterSpacing: 1,
+              }}
+            >
               MEMBER PORTAL
             </div>
           </div>
@@ -152,9 +212,15 @@ export default function MemberSidebar() {
             padding: "7px 12px",
             textDecoration: "none",
             fontSize: 12,
-            background: isActive("/member") ? "rgba(212,168,67,0.12)" : "transparent",
-            borderLeft: isActive("/member") ? "2px solid var(--gold)" : "2px solid transparent",
-            color: isActive("/member") ? "var(--gold)" : "var(--text-secondary)",
+            background: isActive("/member")
+              ? "rgba(212,168,67,0.12)"
+              : "transparent",
+            borderLeft: isActive("/member")
+              ? "2px solid var(--gold)"
+              : "2px solid transparent",
+            color: isActive("/member")
+              ? "var(--gold)"
+              : "var(--text-secondary)",
             transition: "all 0.15s",
             marginBottom: 4,
           }}
@@ -164,56 +230,84 @@ export default function MemberSidebar() {
         </Link>
 
         {/* Nav sections */}
-        {!collapsed && navSections.map((section) => (
-          <div key={section.title}>
-            <div
-              onClick={() => toggleSection(section.title)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "7px 12px",
-                cursor: "pointer",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "var(--text-muted)",
-                letterSpacing: 1,
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-            >
-              {section.icon}
-              <span style={{ flex: 1 }}>{section.title}</span>
-              {expandedSections[section.title] ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
-            </div>
-            {expandedSections[section.title] && section.items.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
+        {!collapsed &&
+          navSections.map((section) => (
+            <div key={section.title}>
+              <div
+                onClick={() => toggleSection(section.title)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
-                  padding: "5px 12px 5px 32px",
-                  textDecoration: "none",
+                  padding: "7px 12px",
+                  cursor: "pointer",
                   fontSize: 11,
-                  color: isActive(item.href) ? "var(--gold)" : "var(--text-secondary)",
-                  background: isActive(item.href) ? "rgba(212,168,67,0.08)" : "transparent",
-                  transition: "all 0.15s",
+                  fontWeight: 700,
+                  color: "var(--text-muted)",
+                  letterSpacing: 1,
+                  transition: "color 0.15s",
                 }}
-                onMouseEnter={(e) => { if (!isActive(item.href)) e.currentTarget.style.color = "var(--text-primary)"; }}
-                onMouseLeave={(e) => { if (!isActive(item.href)) e.currentTarget.style.color = "var(--text-secondary)"; }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = "var(--gold)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = "var(--text-muted)")
+                }
               >
-                {item.icon}
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        ))}
+                {section.icon}
+                <span style={{ flex: 1 }}>{section.title}</span>
+                {expandedSections[section.title] ? (
+                  <ChevronDown size={12} />
+                ) : (
+                  <ChevronLeft size={12} />
+                )}
+              </div>
+              {expandedSections[section.title] &&
+                section.items.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "5px 12px 5px 32px",
+                      textDecoration: "none",
+                      fontSize: 11,
+                      color: isActive(item.href)
+                        ? "var(--gold)"
+                        : "var(--text-secondary)",
+                      background: isActive(item.href)
+                        ? "rgba(212,168,67,0.08)"
+                        : "transparent",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive(item.href))
+                        e.currentTarget.style.color = "var(--text-primary)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive(item.href))
+                        e.currentTarget.style.color = "var(--text-secondary)";
+                    }}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+            </div>
+          ))}
 
         {/* Single items */}
-        {!collapsed && <div style={{ height: 1, background: "var(--border)", margin: "6px 12px" }} />}
+        {!collapsed && (
+          <div
+            style={{
+              height: 1,
+              background: "var(--border)",
+              margin: "6px 12px",
+            }}
+          />
+        )}
         {singleItems.map((item) => (
           <Link
             key={item.label}
@@ -225,50 +319,30 @@ export default function MemberSidebar() {
               padding: "7px 12px",
               textDecoration: "none",
               fontSize: 12,
-              color: isActive(item.href) ? "var(--gold)" : "var(--text-secondary)",
-              background: isActive(item.href) ? "rgba(212,168,67,0.12)" : "transparent",
-              borderLeft: isActive(item.href) ? "2px solid var(--gold)" : "2px solid transparent",
+              color: isActive(item.href)
+                ? "var(--gold)"
+                : "var(--text-secondary)",
+              background: isActive(item.href)
+                ? "rgba(212,168,67,0.12)"
+                : "transparent",
+              borderLeft: isActive(item.href)
+                ? "2px solid var(--gold)"
+                : "2px solid transparent",
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { if (!isActive(item.href)) e.currentTarget.style.color = "var(--text-primary)"; }}
-            onMouseLeave={(e) => { if (!isActive(item.href)) e.currentTarget.style.color = "var(--text-secondary)"; }}
+            onMouseEnter={(e) => {
+              if (!isActive(item.href))
+                e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive(item.href))
+                e.currentTarget.style.color = "var(--text-secondary)";
+            }}
           >
             {item.icon}
             {!collapsed && <span>{item.label}</span>}
           </Link>
         ))}
-
-        {/* Role simulation */}
-        {!collapsed && (
-          <>
-            <div style={{ height: 1, background: "var(--border)", margin: "6px 12px" }} />
-            <div style={{ padding: "6px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1 }}>
-              SWITCH VIEW
-            </div>
-            {SWITCHABLE_ROLES.map((r) => (
-              <div
-                key={r}
-                onClick={() => { switchRole(r); window.location.href = roleViewRoute[r]; }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "5px 12px",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  color: user?.role === r ? "var(--gold)" : "var(--text-secondary)",
-                  transition: "color 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-                onMouseLeave={(e) => {
-                  if (user?.role !== r) e.currentTarget.style.color = "var(--text-secondary)";
-                }}
-              >
-                {roleViewLabel[r]}
-              </div>
-            ))}
-          </>
-        )}
       </div>
     </aside>
   );
