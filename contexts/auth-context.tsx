@@ -20,8 +20,12 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  /** Returns `matched: false` when the credentials were rejected (wrong password or unknown email) — the caller decides how to surface that. */
-  login: (email: string, password: string) => Promise<{ matched: boolean }>;
+  /** This device's session id — used to mark "this device" in the Sessions & Devices list. */
+  currentSessionId: string | undefined;
+  /** Returns `matched: false` when the credentials were rejected (wrong password, unknown email, or a missing/incorrect TOTP code) — the caller decides how to surface that. */
+  login: (email: string, password: string, totpCode?: string) => Promise<{ matched: boolean }>;
+  /** Checks /api/auth/2fa/login-check — call before login() to know whether to render a TOTP code field. */
+  checkRequiresTotp: (email: string) => Promise<boolean>;
   logout: () => void;
   /** Merges a partial edit (e.g. name/email from a profile form) into the current user via a real PATCH, then refreshes the session. */
   updateUser: (updates: Partial<Pick<User, "firstName" | "lastName" | "email">>) => void;
@@ -59,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     : null;
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await signIn("credentials", { redirect: false, email, password });
+  const login = useCallback(async (email: string, password: string, totpCode?: string) => {
+    const result = await signIn("credentials", { redirect: false, email, password, totpCode });
     const matched = !!result?.ok && !result.error;
     logAuditEvent({
       actor: email,
@@ -69,6 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       notes: matched ? "Standard login, credentials verified." : `Login attempt for "${email}" failed — invalid credentials.`,
     });
     return { matched };
+  }, []);
+
+  const checkRequiresTotp = useCallback(async (email: string) => {
+    const res = await fetch("/api/auth/2fa/login-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json().catch(() => null);
+    return !!json?.data?.requiresTotp;
   }, []);
 
   const logout = useCallback(() => {
@@ -123,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, updateUser, register, forgotPassword, verifyEmail }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, currentSessionId: session?.sessionId, login, checkRequiresTotp, logout, updateUser, register, forgotPassword, verifyEmail }}>
       {children}
     </AuthContext.Provider>
   );

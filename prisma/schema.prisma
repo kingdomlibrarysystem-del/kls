@@ -104,6 +104,8 @@ model User {
   appointments                   Appointment[]
   healthRecords                   HealthRecord[]
   immunizations                    Immunization[]
+  userSessions                     UserSession[]
+  twoFactorSecret                  TwoFactorSecret?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -1110,4 +1112,49 @@ model Immunization {
   createdAt        DateTime  @default(now())
 
   @@index([userId])
+}
+
+/// Real per-device session record, enabling revocable "Sessions & Devices"
+/// under NextAuth v4's JWT-only constraint for Credentials-based auth (v4
+/// throws UnsupportedStrategy if session.strategy is "database" with only
+/// a Credentials provider — confirmed against NextAuth v4 source, see
+/// lib/auth-options.ts's jwt callback). `jti` is embedded in the signed
+/// JWT at login and checked against this table's `revokedAt` on every
+/// session read in the `jwt` callback — a revocable-JWT / server-side
+/// allowlist pattern, not a real invalidation of the JWT itself (the JWT
+/// stays cryptographically valid until `maxAge` expiry; enforcement is
+/// this app rejecting a session whose `jti` row is revoked). This is NOT
+/// the pre-existing `Session` model above, which is the unused NextAuth
+/// adapter table for database-strategy/OAuth flows.
+model UserSession {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  jti        String    @unique
+  userId     String    @db.ObjectId
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent  String
+  ip         String
+  lastActive DateTime  @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Real TOTP secret for 2FA, per APP_DOC Task 1.5 (admin/manager/staff
+/// only). `secret` is the raw base32 TOTP seed — acceptable to store in
+/// plaintext (industry-standard practice for TOTP, unlike passwords,
+/// since it must be read back to generate/verify codes; encrypting it
+/// at rest is a future hardening step, not required for a functional
+/// TOTP flow). `enabled` flips true only after the user confirms a real
+/// generated code during setup, not merely after a secret is issued —
+/// see /api/auth/2fa/verify.
+model TwoFactorSecret {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @unique @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret         String
+  enabled        Boolean  @default(false)
+  recoveryCodes  String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
