@@ -90,8 +90,10 @@ export const POST = withErrorHandling('/api/reading-progress', 'POST', async (re
 const markChapterReadSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
   resourceId: z.string().min(1, 'resourceId is required'),
-  chapterId: z.string().min(1, 'chapterId is required'),
-})
+  chapterId: z.string().min(1).optional(),
+  /** Explicit "Mark Complete" action from the last chapter — finishes the book even if earlier chapters were skipped, rather than only marking the currently-viewed chapter. */
+  markAllComplete: z.boolean().optional(),
+}).refine((v) => v.markAllComplete || v.chapterId, { message: 'chapterId is required unless markAllComplete is set' })
 
 /**
  * Marks a chapter viewed (idempotent) and updates lastChapterId/lastReadAt
@@ -99,21 +101,32 @@ const markChapterReadSchema = z.object({
  * called on every chapter navigation, not only an explicit "mark
  * complete" action, since simply reading a chapter is the natural
  * completion signal for prose. Auto-flips status to COMPLETED once every
- * chapter has been viewed.
+ * chapter has been viewed. `markAllComplete: true` is the deliberate
+ * "Mark Complete" button on the last chapter — marks every chapter as
+ * read at once, including any skipped along the way.
  */
 export const PATCH = withErrorHandling('/api/reading-progress', 'PATCH', async (request: NextRequest) => {
   const parsed = markChapterReadSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-  const { userId, resourceId, chapterId } = parsed.data
+  const { userId, resourceId, chapterId, markAllComplete } = parsed.data
 
   const existing = await prisma.readingProgress.findUnique({ where: { userId_resourceId: { userId, resourceId } } })
   if (!existing) throw new ApiError('Reading progress not found — call POST to start reading first', 404)
 
-  const completedChapterIds = existing.completedChapterIds.includes(chapterId)
+  if (markAllComplete) {
+    const chapters = await prisma.chapter.findMany({ where: { resourceId }, select: { id: true } })
+    const updated = await prisma.readingProgress.update({
+      where: { userId_resourceId: { userId, resourceId } },
+      data: { completedChapterIds: chapters.map((c) => c.id), status: 'COMPLETED', lastReadAt: new Date() },
+    })
+    return NextResponse.json({ data: serializeProgress(updated), message: 'Book marked complete', code: 'success', status: 200 })
+  }
+
+  const completedChapterIds = existing.completedChapterIds.includes(chapterId!)
     ? existing.completedChapterIds
-    : [...existing.completedChapterIds, chapterId]
+    : [...existing.completedChapterIds, chapterId!]
   const status = completedChapterIds.length >= existing.totalChapters ? 'COMPLETED' : 'READING'
 
   const updated = await prisma.readingProgress.update({

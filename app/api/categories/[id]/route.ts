@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -62,65 +64,59 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   return NextResponse.json({ data: serializeCategory(category), message: 'Category fetched successfully', code: 'success', status: 200 })
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+const updateCategorySchema = z.object({
+  slug: z.string().trim().min(1).optional(),
+  name: z.object({
+    en: z.string().trim().min(1).optional(),
+    fr: z.string().trim().optional(),
+    rw: z.string().trim().optional(),
+  }).optional(),
+  parentId: z.string().nullable().optional(),
+})
+
+export const PATCH = withErrorHandling('/api/categories/[id]', 'PATCH', async (request: NextRequest, { params }: RouteParams) => {
   const { id } = await params
-
-  try {
-    const body = await request.json()
-    const existing = await prisma.category.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Category not found', code: 'error', status: 404 }, { status: 404 })
-    }
-
-    if (body.slug && body.slug !== existing.slug) {
-      const slugTaken = await prisma.category.findUnique({ where: { slug: body.slug } })
-      if (slugTaken) {
-        return NextResponse.json({ data: null, message: `A category with slug "${body.slug}" already exists`, code: 'error', status: 409 }, { status: 409 })
-      }
-    }
-
-    const category = await prisma.category.update({
-      where: { id },
-      data: {
-        ...(body.slug !== undefined && { slug: body.slug }),
-        ...(body.name?.en !== undefined && { nameEn: body.name.en }),
-        ...(body.name?.fr !== undefined && { nameFr: body.name.fr }),
-        ...(body.name?.rw !== undefined && { nameRw: body.name.rw }),
-        ...(body.parentId !== undefined && { parentId: body.parentId }),
-      },
-    })
-
-    return NextResponse.json({ data: serializeCategory(category), message: 'Category updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update category', code: 'error', status: 500 }, { status: 500 })
+  const parsed = updateCategorySchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const existing = await prisma.category.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Category not found', 404)
+
+  if (body.slug && body.slug !== existing.slug) {
+    const slugTaken = await prisma.category.findUnique({ where: { slug: body.slug } })
+    if (slugTaken) throw new ApiError(`A category with slug "${body.slug}" already exists`, 409)
+  }
+
+  const category = await prisma.category.update({
+    where: { id },
+    data: {
+      ...(body.slug !== undefined && { slug: body.slug }),
+      ...(body.name?.en !== undefined && { nameEn: body.name.en }),
+      ...(body.name?.fr !== undefined && { nameFr: body.name.fr }),
+      ...(body.name?.rw !== undefined && { nameRw: body.name.rw }),
+      ...(body.parentId !== undefined && { parentId: body.parentId }),
+    },
+  })
+
+  return NextResponse.json({ data: serializeCategory(category), message: 'Category updated successfully', code: 'success', status: 200 })
+})
+
+export const DELETE = withErrorHandling('/api/categories/[id]', 'DELETE', async (_request: NextRequest, { params }: RouteParams) => {
   const { id } = await params
 
   const existing = await prisma.category.findUnique({ where: { id } })
-  if (!existing) {
-    return NextResponse.json({ data: null, message: 'Category not found', code: 'error', status: 404 }, { status: 404 })
-  }
+  if (!existing) throw new ApiError('Category not found', 404)
 
   const count = await resourceCountFor(id)
-  if (count > 0) {
-    return NextResponse.json(
-      { data: null, message: `Cannot delete — ${count} resource(s) still assigned to this category`, code: 'error', status: 409 },
-      { status: 409 }
-    )
-  }
+  if (count > 0) throw new ApiError(`Cannot delete — ${count} resource(s) still assigned to this category`, 409)
 
   const childCount = await prisma.category.count({ where: { parentId: id } })
-  if (childCount > 0) {
-    return NextResponse.json(
-      { data: null, message: `Cannot delete — ${childCount} sub-categor${childCount === 1 ? 'y' : 'ies'} still exist under this category`, code: 'error', status: 409 },
-      { status: 409 }
-    )
-  }
+  if (childCount > 0) throw new ApiError(`Cannot delete — ${childCount} sub-categor${childCount === 1 ? 'y' : 'ies'} still exist under this category`, 409)
 
   await prisma.category.delete({ where: { id } })
 
   return NextResponse.json({ data: null, message: 'Category deleted successfully', code: 'success', status: 200 })
-}
+})

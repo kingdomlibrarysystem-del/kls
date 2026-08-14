@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; order: number }) {
   return {
@@ -22,30 +24,31 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ data: serializeLesson(lesson), message: 'Lesson fetched successfully', code: 'success', status: 200 })
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.lesson.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Lesson not found', code: 'error', status: 404 }, { status: 404 })
-    }
-    const data: Record<string, unknown> = { ...body }
-    delete data.id
-    delete data.courseId
-    const updated = await prisma.lesson.update({ where: { id }, data })
-    return NextResponse.json({ data: serializeLesson(updated), message: 'Lesson updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update lesson', code: 'error', status: 500 }, { status: 500 })
-  }
-}
+const updateLessonSchema = z.object({
+  title: z.string().trim().min(1).optional(),
+  contentType: z.enum(['TEXT', 'VIDEO', 'FILE']).optional(),
+  durationMinutes: z.number().int().nonnegative().optional(),
+  content: z.string().optional(),
+  order: z.number().int().optional(),
+})
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling('/api/lessons/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = updateLessonSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  }
+  const existing = await prisma.lesson.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Lesson not found', 404)
+
+  const updated = await prisma.lesson.update({ where: { id }, data: parsed.data })
+  return NextResponse.json({ data: serializeLesson(updated), message: 'Lesson updated successfully', code: 'success', status: 200 })
+})
+
+export const DELETE = withErrorHandling('/api/lessons/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const existing = await prisma.lesson.findUnique({ where: { id } })
-  if (!existing) {
-    return NextResponse.json({ data: null, message: 'Lesson not found', code: 'error', status: 404 }, { status: 404 })
-  }
+  if (!existing) throw new ApiError('Lesson not found', 404)
   await prisma.lesson.delete({ where: { id } })
   return NextResponse.json({ data: null, message: 'Lesson deleted successfully', code: 'success', status: 200 })
-}
+})

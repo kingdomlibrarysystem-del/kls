@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -42,30 +44,30 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createInvitationSchema = z.object({
+  email: z.string().trim().email('A valid email is required'),
+  roleId: z.string().min(1, 'roleId is required'),
+  invitedByUserId: z.string().optional(),
+})
 
-    if (!body.email || !body.roleId) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: email, roleId', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const role = await prisma.role.findUnique({ where: { id: body.roleId } })
-    if (!role) {
-      return NextResponse.json({ data: null, message: 'The specified role does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const invitation = await prisma.invitation.create({
-      data: {
-        email: body.email,
-        roleId: body.roleId,
-        invitedByUserId: body.invitedByUserId ?? null,
-      },
-      include: { role: { select: { id: true, name: true } } },
-    })
-
-    return NextResponse.json({ data: invitation, message: 'Invitation sent successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create invitation', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/invitations', 'POST', async (request: NextRequest) => {
+  const parsed = createInvitationSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const role = await prisma.role.findUnique({ where: { id: body.roleId } })
+  if (!role) throw new ApiError('The specified role does not exist', 400)
+
+  const invitation = await prisma.invitation.create({
+    data: {
+      email: body.email,
+      roleId: body.roleId,
+      invitedByUserId: body.invitedByUserId ?? null,
+    },
+    include: { role: { select: { id: true, name: true } } },
+  })
+
+  return NextResponse.json({ data: invitation, message: 'Invitation sent successfully', code: 'success', status: 201 }, { status: 201 })
+})

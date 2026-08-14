@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -50,29 +52,29 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createRoleSchema = z.object({
+  name: z.string().trim().min(1, 'name is required'),
+  description: z.string().trim().optional(),
+  permissions: z.array(z.string()).optional(),
+})
 
-    if (!body.name) {
-      return NextResponse.json({ data: null, message: 'Missing required field: name', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const existing = await prisma.role.findUnique({ where: { name: body.name } })
-    if (existing) {
-      return NextResponse.json({ data: null, message: `A role named "${body.name}" already exists`, code: 'error', status: 409 }, { status: 409 })
-    }
-
-    const role = await prisma.role.create({
-      data: {
-        name: body.name,
-        description: body.description ?? null,
-        permissions: Array.isArray(body.permissions) ? body.permissions : [],
-      },
-    })
-
-    return NextResponse.json({ data: { ...role, userCount: 0 }, message: 'Role created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create role', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/roles', 'POST', async (request: NextRequest) => {
+  const parsed = createRoleSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const existing = await prisma.role.findUnique({ where: { name: body.name } })
+  if (existing) throw new ApiError(`A role named "${body.name}" already exists`, 409)
+
+  const role = await prisma.role.create({
+    data: {
+      name: body.name,
+      description: body.description ?? null,
+      permissions: body.permissions ?? [],
+    },
+  })
+
+  return NextResponse.json({ data: { ...role, userCount: 0 }, message: 'Role created successfully', code: 'success', status: 201 }, { status: 201 })
+})

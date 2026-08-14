@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
-import { useReadingProgress, startReading, markChapterRead, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
+import { useReadingProgress, startReading, markChapterRead, markBookComplete, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { useHighlights, addHighlight, getChapterHighlights } from '@/app/member/_shared/use-highlights'
 import type { Highlight, HighlightColor } from '@/app/member/_shared/highlight-data'
 import { HighlightedParagraph } from './highlighted-paragraph'
@@ -169,16 +169,24 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
         </button>
         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{chapter.title}</span>
         {isLastChapter ? (
-          <span
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8,
-              background: isCompleted ? 'var(--green-dim)' : 'var(--bg-section)',
-              color: isCompleted ? 'var(--green-light)' : 'var(--text-muted)',
-              fontSize: 12, fontWeight: 600,
-            }}
-          >
-            <CheckCircle2 size={14} /> {isCompleted ? 'Book Completed' : `${existingProgress ? getReadingProgressPercent(existingProgress) : 0}% complete`}
-          </span>
+          isCompleted ? (
+            <span
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8,
+                background: 'var(--green-dim)', color: 'var(--green-light)', fontSize: 12, fontWeight: 600,
+              }}
+            >
+              <CheckCircle2 size={14} /> Book Completed
+            </span>
+          ) : (
+            <button
+              onClick={() => markBookComplete(resourceId, chapters.map((c) => c.id))}
+              className="btn btn-gold btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <CheckCircle2 size={13} /> Mark Complete
+            </button>
+          )
         ) : (
           <button
             onClick={() => goToChapter(Math.min(chapters.length - 1, chapterIndex + 1))}
@@ -193,7 +201,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
       {unreadChapters.length > 0 && (
         <div className="card" style={{ padding: 14 }}>
           <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            This is the last chapter, but the book isn&apos;t marked complete yet — {unreadChapters.length === 1 ? 'a chapter was' : `${unreadChapters.length} chapters were`} skipped along the way. Read the remaining chapter{unreadChapters.length === 1 ? '' : 's'} to finish the book:
+            {existingProgress ? getReadingProgressPercent(existingProgress) : 0}% read — {unreadChapters.length === 1 ? 'a chapter was' : `${unreadChapters.length} chapters were`} skipped along the way. Read the remaining chapter{unreadChapters.length === 1 ? '' : 's'}, or use Mark Complete above to finish anyway:
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {unreadChapters.map((c) => (

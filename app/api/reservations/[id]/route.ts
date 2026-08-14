@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeReservation(r: {
   id: string
@@ -53,88 +55,94 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  * same resource, exactly matching the mock's own re-sort-by-queuePosition
  * logic in handleCancel.
  */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.reservation.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Reservation not found', code: 'error', status: 404 }, { status: 404 })
-    }
+const patchReservationSchema = z.union([
+  z.object({ action: z.literal('notify') }),
+  z.object({ action: z.literal('convertToBorrow') }),
+  z.object({ action: z.literal('cancel') }),
+  z.object({ action: z.literal('expire') }),
+  z.object({ action: z.undefined() }).passthrough(),
+])
 
-    if (body.action === 'notify') {
-      if (existing.status !== 'PENDING') {
-        return NextResponse.json({ data: null, message: 'Only a pending reservation can be notified', code: 'error', status: 409 }, { status: 409 })
-      }
-      const notifiedAt = new Date()
-      const claimDeadline = new Date(notifiedAt.getTime() + 48 * 3600000)
-      const updated = await prisma.reservation.update({
-        where: { id },
-        data: { status: 'NOTIFIED', notifiedAt, claimDeadline },
-        include: RESOURCE_INCLUDE,
-      })
-      return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'convertToBorrow') {
-      if (existing.status !== 'NOTIFIED') {
-        return NextResponse.json({ data: null, message: 'Only a notified reservation can be converted to a borrow', code: 'error', status: 409 }, { status: 409 })
-      }
-      const updated = await prisma.reservation.update({
-        where: { id },
-        data: { status: 'CLAIMED' },
-        include: RESOURCE_INCLUDE,
-      })
-      return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'cancel') {
-      const updated = await prisma.$transaction(async (tx) => {
-        const cancelled = await tx.reservation.update({
-          where: { id },
-          data: { status: 'CANCELLED', claimDeadline: null },
-          include: RESOURCE_INCLUDE,
-        })
-        const remaining = await tx.reservation.findMany({
-          where: { resourceId: existing.resourceId, status: 'PENDING', id: { not: id } },
-          orderBy: { queuePosition: 'asc' },
-        })
-        await Promise.all(remaining.map((r, idx) => tx.reservation.update({ where: { id: r.id }, data: { queuePosition: idx + 1 } })))
-        return cancelled
-      })
-      return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'expire') {
-      if (existing.status !== 'NOTIFIED') {
-        return NextResponse.json({ data: null, message: 'Only a notified reservation can expire', code: 'error', status: 409 }, { status: 409 })
-      }
-      const updated = await prisma.reservation.update({
-        where: { id },
-        data: { status: 'EXPIRED' },
-        include: RESOURCE_INCLUDE,
-      })
-      return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
-    }
-
-    const data: Record<string, unknown> = { ...body }
-    delete data.action
-    delete data.id
-    delete data.userId
-    delete data.resourceId
-    const updated = await prisma.reservation.update({ where: { id }, data, include: RESOURCE_INCLUDE })
-    return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update reservation', code: 'error', status: 500 }, { status: 500 })
+/**
+ * Status-transition guard, porting the admin mock's notify/convert-to-
+ * borrow/cancel/expire business rules
+ * (app/dashboard/reservations/page.tsx's handleNotify/handleConvertToBorrow/
+ * handleCancel/handleExpire) into the server. `cancel` additionally
+ * re-numbers queuePosition for every remaining PENDING reservation on the
+ * same resource, exactly matching the mock's own re-sort-by-queuePosition
+ * logic in handleCancel.
+ */
+export const PATCH = withErrorHandling('/api/reservations/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = patchReservationSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const existing = await prisma.reservation.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Reservation not found', 404)
+
+  if (body.action === 'notify') {
+    if (existing.status !== 'PENDING') throw new ApiError('Only a pending reservation can be notified', 409)
+    const notifiedAt = new Date()
+    const claimDeadline = new Date(notifiedAt.getTime() + 48 * 3600000)
+    const updated = await prisma.reservation.update({
+      where: { id },
+      data: { status: 'NOTIFIED', notifiedAt, claimDeadline },
+      include: RESOURCE_INCLUDE,
+    })
+    return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'convertToBorrow') {
+    if (existing.status !== 'NOTIFIED') throw new ApiError('Only a notified reservation can be converted to a borrow', 409)
+    const updated = await prisma.reservation.update({
+      where: { id },
+      data: { status: 'CLAIMED' },
+      include: RESOURCE_INCLUDE,
+    })
+    return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'cancel') {
+    const updated = await prisma.$transaction(async (tx) => {
+      const cancelled = await tx.reservation.update({
+        where: { id },
+        data: { status: 'CANCELLED', claimDeadline: null },
+        include: RESOURCE_INCLUDE,
+      })
+      const remaining = await tx.reservation.findMany({
+        where: { resourceId: existing.resourceId, status: 'PENDING', id: { not: id } },
+        orderBy: { queuePosition: 'asc' },
+      })
+      await Promise.all(remaining.map((r, idx) => tx.reservation.update({ where: { id: r.id }, data: { queuePosition: idx + 1 } })))
+      return cancelled
+    })
+    return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'expire') {
+    if (existing.status !== 'NOTIFIED') throw new ApiError('Only a notified reservation can expire', 409)
+    const updated = await prisma.reservation.update({
+      where: { id },
+      data: { status: 'EXPIRED' },
+      include: RESOURCE_INCLUDE,
+    })
+    return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
+  }
+
+  const data: Record<string, unknown> = { ...body }
+  delete data.action
+  const updated = await prisma.reservation.update({ where: { id }, data, include: RESOURCE_INCLUDE })
+  return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
+})
+
+export const DELETE = withErrorHandling('/api/reservations/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const existing = await prisma.reservation.findUnique({ where: { id } })
-  if (!existing) {
-    return NextResponse.json({ data: null, message: 'Reservation not found', code: 'error', status: 404 }, { status: 404 })
-  }
+  if (!existing) throw new ApiError('Reservation not found', 404)
+
   await prisma.reservation.delete({ where: { id } })
   return NextResponse.json({ data: null, message: 'Reservation deleted successfully', code: 'success', status: 200 })
-}
+})

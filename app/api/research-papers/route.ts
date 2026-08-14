@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real ResearchPaper API, replacing
@@ -75,36 +77,39 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    if (!body.title || !body.abstract || !body.authorId || !body.projectId || !Array.isArray(body.keywords) || body.keywords.length === 0) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: title, abstract, authorId, projectId, keywords', code: 'error', status: 400 }, { status: 400 })
-    }
-    const [author, project] = await Promise.all([
-      prisma.user.findUnique({ where: { id: body.authorId } }),
-      prisma.researchProject.findUnique({ where: { id: body.projectId } }),
-    ])
-    if (!author) {
-      return NextResponse.json({ data: null, message: 'The specified author does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    if (!project) {
-      return NextResponse.json({ data: null, message: 'The specified project does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    const paper = await prisma.researchPaper.create({
-      data: {
-        title: body.title,
-        abstract: body.abstract,
-        authorId: body.authorId,
-        authorName: author.name ?? `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim(),
-        projectId: body.projectId,
-        keywords: body.keywords,
-        status: 'SUBMITTED',
-      },
-      include: INCLUDE,
-    })
-    return NextResponse.json({ data: serializePaper(paper), message: 'Research paper submitted successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to submit research paper', code: 'error', status: 500 }, { status: 500 })
+const createPaperSchema = z.object({
+  title: z.string().trim().min(1, 'title is required'),
+  abstract: z.string().trim().min(1, 'abstract is required'),
+  authorId: z.string().min(1, 'authorId is required'),
+  projectId: z.string().min(1, 'projectId is required'),
+  keywords: z.array(z.string()).min(1, 'At least one keyword is required'),
+})
+
+export const POST = withErrorHandling('/api/research-papers', 'POST', async (request: NextRequest) => {
+  const parsed = createPaperSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const [author, project] = await Promise.all([
+    prisma.user.findUnique({ where: { id: body.authorId } }),
+    prisma.researchProject.findUnique({ where: { id: body.projectId } }),
+  ])
+  if (!author) throw new ApiError('The specified author does not exist', 400)
+  if (!project) throw new ApiError('The specified project does not exist', 400)
+
+  const paper = await prisma.researchPaper.create({
+    data: {
+      title: body.title,
+      abstract: body.abstract,
+      authorId: body.authorId,
+      authorName: author.name ?? `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim(),
+      projectId: body.projectId,
+      keywords: body.keywords,
+      status: 'SUBMITTED',
+    },
+    include: INCLUDE,
+  })
+  return NextResponse.json({ data: serializePaper(paper), message: 'Research paper submitted successfully', code: 'success', status: 201 }, { status: 201 })
+})

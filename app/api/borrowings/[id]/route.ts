@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeBorrow(b: {
   id: string
@@ -53,59 +55,58 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  * handleReturn/handleWaiveFine) into the server, rather than trusting the
  * client to only ever send valid transitions.
  */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.borrow.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Borrowing not found', code: 'error', status: 404 }, { status: 404 })
-    }
+const patchBorrowSchema = z.union([
+  z.object({ action: z.literal('approve') }),
+  z.object({ action: z.literal('reject') }),
+  z.object({ action: z.literal('return') }),
+  z.object({ action: z.literal('waiveFine') }),
+  z.object({ action: z.undefined() }).passthrough(),
+])
 
-    const data: Record<string, unknown> = {}
-
-    if (body.action === 'approve') {
-      if (existing.status !== 'PENDING') {
-        return NextResponse.json({ data: null, message: 'Only a pending borrowing can be approved', code: 'error', status: 409 }, { status: 409 })
-      }
-      data.status = 'ACTIVE'
-    } else if (body.action === 'reject') {
-      if (existing.status !== 'PENDING') {
-        return NextResponse.json({ data: null, message: 'Only a pending borrowing can be rejected', code: 'error', status: 409 }, { status: 409 })
-      }
-      data.status = 'REJECTED'
-    } else if (body.action === 'return') {
-      if (existing.status !== 'ACTIVE' && existing.status !== 'OVERDUE') {
-        return NextResponse.json({ data: null, message: 'Only an active or overdue borrowing can be returned', code: 'error', status: 409 }, { status: 409 })
-      }
-      const now = new Date()
-      data.status = 'RETURNED'
-      data.returnDate = now
-      data.fineAmount = existing.status === 'OVERDUE'
-        ? Math.max(0, Math.floor((now.getTime() - existing.dueDate.getTime()) / 86400000)) * 200
-        : null
-    } else if (body.action === 'waiveFine') {
-      data.finePaid = true
-    } else {
-      Object.assign(data, body)
-      delete data.id
-      delete data.userId
-      delete data.resourceId
-    }
-
-    const updated = await prisma.borrow.update({ where: { id }, data, include: RESOURCE_INCLUDE })
-    return NextResponse.json({ data: serializeBorrow(updated), message: 'Borrowing updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update borrowing', code: 'error', status: 500 }, { status: 500 })
+export const PATCH = withErrorHandling('/api/borrowings/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = patchBorrowSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const existing = await prisma.borrow.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Borrowing not found', 404)
+
+  const data: Record<string, unknown> = {}
+
+  if (body.action === 'approve') {
+    if (existing.status !== 'PENDING') throw new ApiError('Only a pending borrowing can be approved', 409)
+    data.status = 'ACTIVE'
+  } else if (body.action === 'reject') {
+    if (existing.status !== 'PENDING') throw new ApiError('Only a pending borrowing can be rejected', 409)
+    data.status = 'REJECTED'
+  } else if (body.action === 'return') {
+    if (existing.status !== 'ACTIVE' && existing.status !== 'OVERDUE') throw new ApiError('Only an active or overdue borrowing can be returned', 409)
+    const now = new Date()
+    data.status = 'RETURNED'
+    data.returnDate = now
+    data.fineAmount = existing.status === 'OVERDUE'
+      ? Math.max(0, Math.floor((now.getTime() - existing.dueDate.getTime()) / 86400000)) * 200
+      : null
+  } else if (body.action === 'waiveFine') {
+    data.finePaid = true
+  } else {
+    const rest = { ...body } as Record<string, unknown>
+    delete rest.action
+    Object.assign(data, rest)
+  }
+
+  const updated = await prisma.borrow.update({ where: { id }, data, include: RESOURCE_INCLUDE })
+  return NextResponse.json({ data: serializeBorrow(updated), message: 'Borrowing updated successfully', code: 'success', status: 200 })
+})
+
+export const DELETE = withErrorHandling('/api/borrowings/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const existing = await prisma.borrow.findUnique({ where: { id } })
-  if (!existing) {
-    return NextResponse.json({ data: null, message: 'Borrowing not found', code: 'error', status: 404 }, { status: 404 })
-  }
+  if (!existing) throw new ApiError('Borrowing not found', 404)
+
   await prisma.borrow.delete({ where: { id } })
   return NextResponse.json({ data: null, message: 'Borrowing deleted successfully', code: 'success', status: 200 })
-}
+})

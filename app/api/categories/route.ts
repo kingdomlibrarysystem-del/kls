@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real Category API — the KCS taxonomy (8 root pillars + ~75 child
@@ -93,38 +95,42 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createCategorySchema = z.object({
+  slug: z.string().trim().min(1, 'slug is required'),
+  name: z.object({
+    en: z.string().trim().min(1, 'name.en is required'),
+    fr: z.string().trim().optional(),
+    rw: z.string().trim().optional(),
+  }),
+  parentId: z.string().optional(),
+})
 
-    if (!body.slug || !body.name?.en) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: slug, name.en', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const existing = await prisma.category.findUnique({ where: { slug: body.slug } })
-    if (existing) {
-      return NextResponse.json({ data: null, message: `A category with slug "${body.slug}" already exists`, code: 'error', status: 409 }, { status: 409 })
-    }
-
-    if (body.parentId) {
-      const parent = await prisma.category.findUnique({ where: { id: body.parentId } })
-      if (!parent) {
-        return NextResponse.json({ data: null, message: 'The specified parent category does not exist', code: 'error', status: 400 }, { status: 400 })
-      }
-    }
-
-    const category = await prisma.category.create({
-      data: {
-        slug: body.slug,
-        nameEn: body.name.en,
-        nameFr: body.name.fr ?? body.name.en,
-        nameRw: body.name.rw ?? body.name.en,
-        parentId: body.parentId ?? null,
-      },
-    })
-
-    return NextResponse.json({ data: serializeCategory(category), message: 'Category created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create category', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/categories', 'POST', async (request: NextRequest) => {
+  const parsed = createCategorySchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const existing = await prisma.category.findUnique({ where: { slug: body.slug } })
+  if (existing) {
+    throw new ApiError(`A category with slug "${body.slug}" already exists`, 409)
+  }
+
+  if (body.parentId) {
+    const parent = await prisma.category.findUnique({ where: { id: body.parentId } })
+    if (!parent) throw new ApiError('The specified parent category does not exist', 400)
+  }
+
+  const category = await prisma.category.create({
+    data: {
+      slug: body.slug,
+      nameEn: body.name.en,
+      nameFr: body.name.fr ?? body.name.en,
+      nameRw: body.name.rw ?? body.name.en,
+      parentId: body.parentId ?? null,
+    },
+  })
+
+  return NextResponse.json({ data: serializeCategory(category), message: 'Category created successfully', code: 'success', status: 201 }, { status: 201 })
+})

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeMessage(m: {
   id: string
@@ -23,45 +25,39 @@ function serializeMessage(m: {
   }
 }
 
+const patchMessageSchema = z.union([
+  z.object({ action: z.literal('markRead'), userId: z.string().min(1, 'userId is required') }),
+  z.object({ action: z.literal('toggleReaction'), userId: z.string().min(1, 'userId is required'), emoji: z.string().min(1, 'emoji is required') }),
+])
+
 /** action: 'markRead' | 'toggleReaction' — porting markChannelRead/toggleReaction's per-message semantics. */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.message.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Message not found', code: 'error', status: 404 }, { status: 404 })
-    }
-
-    if (body.action === 'markRead') {
-      if (!body.userId) {
-        return NextResponse.json({ data: null, message: 'Missing required field: userId', code: 'error', status: 400 }, { status: 400 })
-      }
-      const readByIds = existing.readByIds.includes(body.userId) ? existing.readByIds : [...existing.readByIds, body.userId]
-      const updated = await prisma.message.update({ where: { id }, data: { readByIds } })
-      return NextResponse.json({ data: serializeMessage(updated), message: 'Message marked read', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'toggleReaction') {
-      if (!body.userId || !body.emoji) {
-        return NextResponse.json({ data: null, message: 'Missing required fields: userId, emoji', code: 'error', status: 400 }, { status: 400 })
-      }
-      const reactions = existing.reactions.map((r) => ({ ...r }))
-      const idx = reactions.findIndex((r) => r.emoji === body.emoji)
-      if (idx === -1) {
-        reactions.push({ emoji: body.emoji, reactedByIds: [body.userId] })
-      } else if (reactions[idx].reactedByIds.includes(body.userId)) {
-        reactions[idx].reactedByIds = reactions[idx].reactedByIds.filter((uid) => uid !== body.userId)
-      } else {
-        reactions[idx].reactedByIds.push(body.userId)
-      }
-      const finalReactions = reactions.filter((r) => r.reactedByIds.length > 0)
-      const updated = await prisma.message.update({ where: { id }, data: { reactions: finalReactions } })
-      return NextResponse.json({ data: serializeMessage(updated), message: 'Reaction updated', code: 'success', status: 200 })
-    }
-
-    return NextResponse.json({ data: null, message: 'Unknown action', code: 'error', status: 400 }, { status: 400 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update message', code: 'error', status: 500 }, { status: 500 })
+export const PATCH = withErrorHandling('/api/messages/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = patchMessageSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const existing = await prisma.message.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Message not found', 404)
+
+  if (body.action === 'markRead') {
+    const readByIds = existing.readByIds.includes(body.userId) ? existing.readByIds : [...existing.readByIds, body.userId]
+    const updated = await prisma.message.update({ where: { id }, data: { readByIds } })
+    return NextResponse.json({ data: serializeMessage(updated), message: 'Message marked read', code: 'success', status: 200 })
+  }
+
+  const reactions = existing.reactions.map((r) => ({ ...r }))
+  const idx = reactions.findIndex((r) => r.emoji === body.emoji)
+  if (idx === -1) {
+    reactions.push({ emoji: body.emoji, reactedByIds: [body.userId] })
+  } else if (reactions[idx].reactedByIds.includes(body.userId)) {
+    reactions[idx].reactedByIds = reactions[idx].reactedByIds.filter((uid) => uid !== body.userId)
+  } else {
+    reactions[idx].reactedByIds.push(body.userId)
+  }
+  const finalReactions = reactions.filter((r) => r.reactedByIds.length > 0)
+  const updated = await prisma.message.update({ where: { id }, data: { reactions: finalReactions } })
+  return NextResponse.json({ data: serializeMessage(updated), message: 'Reaction updated', code: 'success', status: 200 })
+})

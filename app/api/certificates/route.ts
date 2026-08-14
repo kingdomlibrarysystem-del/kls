@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /** Real Certificate API, replacing app/dashboard/e-learning/certificates/_components/certificates-data.ts. */
 function serializeCertificate(c: {
@@ -65,34 +67,36 @@ export async function GET(request: NextRequest) {
   })
 }
 
+const createCertificateSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+  courseTitle: z.string().trim().min(1, 'courseTitle is required'),
+  courseId: z.string().optional(),
+})
+
 /** Guarded: only one certificate per user per course (deduplicates issuance, matching the mock's own stated intent for the optional courseId field). */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    if (!body.userId || !body.courseTitle) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: userId, courseTitle', code: 'error', status: 400 }, { status: 400 })
-    }
-    const user = await prisma.user.findUnique({ where: { id: body.userId } })
-    if (!user) {
-      return NextResponse.json({ data: null, message: 'The specified user does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    if (body.courseId) {
-      const already = await prisma.certificate.findFirst({ where: { userId: body.userId, courseId: body.courseId } })
-      if (already) {
-        return NextResponse.json({ data: null, message: 'A certificate for this user and course already exists', code: 'error', status: 409 }, { status: 409 })
-      }
-    }
-    const certificate = await prisma.certificate.create({
-      data: {
-        userId: body.userId,
-        memberName: user.name ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-        courseId: body.courseId ?? null,
-        courseTitle: body.courseTitle,
-        verificationCode: generateVerificationCode(),
-      },
-    })
-    return NextResponse.json({ data: serializeCertificate(certificate), message: 'Certificate issued successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to issue certificate', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/certificates', 'POST', async (request: NextRequest) => {
+  const parsed = createCertificateSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const user = await prisma.user.findUnique({ where: { id: body.userId } })
+  if (!user) throw new ApiError('The specified user does not exist', 400)
+
+  if (body.courseId) {
+    const already = await prisma.certificate.findFirst({ where: { userId: body.userId, courseId: body.courseId } })
+    if (already) throw new ApiError('A certificate for this user and course already exists', 409)
+  }
+
+  const certificate = await prisma.certificate.create({
+    data: {
+      userId: body.userId,
+      memberName: user.name ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+      courseId: body.courseId ?? null,
+      courseTitle: body.courseTitle,
+      verificationCode: generateVerificationCode(),
+    },
+  })
+  return NextResponse.json({ data: serializeCertificate(certificate), message: 'Certificate issued successfully', code: 'success', status: 201 }, { status: 201 })
+})

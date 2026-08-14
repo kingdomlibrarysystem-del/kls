@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real Resource API — the digital library catalog, replacing the old
@@ -118,48 +120,66 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createResourceSchema = z.object({
+  title: z.string().trim().min(1, 'title is required'),
+  author: z.string().trim().min(1, 'author is required'),
+  categoryId: z.string().min(1, 'categoryId is required'),
+  publisher: z.string().optional(),
+  type: z.string().optional(),
+  format: z.string().optional(),
+  language: z.string().optional(),
+  year: z.number().int().optional(),
+  pages: z.number().int().nonnegative().optional(),
+  isbn: z.string().optional(),
+  price: z.number().nonnegative().optional(),
+  totalQty: z.number().int().nonnegative().optional(),
+  availableQty: z.number().int().nonnegative().optional(),
+  coverImages: z.array(z.string()).optional(),
+  bindingType: z.string().optional(),
+  mediaType: z.string().optional(),
+  description: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  documentUrl: z.string().optional(),
+  audioUrl: z.string().optional(),
+  videoUrl: z.string().optional(),
+})
 
-    if (!body.title || !body.author || !body.categoryId) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: title, author, categoryId', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const category = await prisma.category.findUnique({ where: { id: body.categoryId } })
-    if (!category) {
-      return NextResponse.json({ data: null, message: 'The specified category does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const resource = await prisma.resource.create({
-      data: {
-        title: body.title,
-        author: body.author,
-        publisher: body.publisher ?? '',
-        categoryId: body.categoryId,
-        type: body.type ?? 'Book',
-        format: body.format ?? 'Physical',
-        language: body.language ?? 'EN',
-        year: body.year ?? new Date().getFullYear(),
-        pages: body.pages ?? 0,
-        isbn: body.isbn ?? '',
-        price: body.price ?? 0,
-        totalQty: body.totalQty ?? 1,
-        availableQty: body.availableQty ?? body.totalQty ?? 1,
-        status: 'AVAILABLE',
-        coverImages: body.coverImages ?? [],
-        bindingType: body.bindingType ?? 'SOFT',
-        mediaType: body.mediaType ?? 'TEXT',
-        description: body.description ?? '',
-        tags: body.tags ?? [],
-        documentUrl: body.documentUrl ?? null,
-        audioUrl: body.audioUrl ?? null,
-        videoUrl: body.videoUrl ?? null,
-      },
-    })
-
-    return NextResponse.json({ data: serializeResource(resource), message: 'Resource created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create resource', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/resources', 'POST', async (request: NextRequest) => {
+  const parsed = createResourceSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const category = await prisma.category.findUnique({ where: { id: body.categoryId } })
+  if (!category) throw new ApiError('The specified category does not exist', 400)
+
+  const resource = await prisma.resource.create({
+    data: {
+      title: body.title,
+      author: body.author,
+      publisher: body.publisher ?? '',
+      categoryId: body.categoryId,
+      type: body.type ?? 'Book',
+      format: body.format ?? 'Physical',
+      language: body.language ?? 'EN',
+      year: body.year ?? new Date().getFullYear(),
+      pages: body.pages ?? 0,
+      isbn: body.isbn ?? '',
+      price: body.price ?? 0,
+      totalQty: body.totalQty ?? 1,
+      availableQty: body.availableQty ?? body.totalQty ?? 1,
+      status: 'AVAILABLE',
+      coverImages: body.coverImages ?? [],
+      bindingType: (body.bindingType as 'SOFT' | 'HARD') ?? 'SOFT',
+      mediaType: (body.mediaType as 'VIDEO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION') ?? 'TEXT',
+      description: body.description ?? '',
+      tags: body.tags ?? [],
+      documentUrl: body.documentUrl ?? null,
+      audioUrl: body.audioUrl ?? null,
+      videoUrl: body.videoUrl ?? null,
+    },
+  })
+
+  return NextResponse.json({ data: serializeResource(resource), message: 'Resource created successfully', code: 'success', status: 201 }, { status: 201 })
+})

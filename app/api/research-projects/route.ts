@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real ResearchProject API, replacing
@@ -64,31 +66,36 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    if (!body.title || !body.description) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: title, description', code: 'error', status: 400 }, { status: 400 })
-    }
-    const contributorIds: string[] = body.contributorIds ?? []
-    if (contributorIds.length > 0) {
-      const found = await prisma.user.findMany({ where: { id: { in: contributorIds } } })
-      if (found.length !== contributorIds.length) {
-        return NextResponse.json({ data: null, message: 'One or more specified contributors do not exist', code: 'error', status: 400 }, { status: 400 })
-      }
-    }
-    const project = await prisma.researchProject.create({
-      data: {
-        title: body.title,
-        description: body.description,
-        status: body.status ?? 'ACTIVE',
-        startDate: body.startDate ? new Date(body.startDate) : new Date(),
-        members: { create: contributorIds.map((userId) => ({ userId })) },
-      },
-      include: INCLUDE,
-    })
-    return NextResponse.json({ data: serializeProject(project), message: 'Research project created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create research project', code: 'error', status: 500 }, { status: 500 })
+const createProjectSchema = z.object({
+  title: z.string().trim().min(1, 'title is required'),
+  description: z.string().trim().min(1, 'description is required'),
+  status: z.string().optional(),
+  startDate: z.string().optional(),
+  contributorIds: z.array(z.string()).optional(),
+})
+
+export const POST = withErrorHandling('/api/research-projects', 'POST', async (request: NextRequest) => {
+  const parsed = createProjectSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+  const contributorIds = body.contributorIds ?? []
+
+  if (contributorIds.length > 0) {
+    const found = await prisma.user.findMany({ where: { id: { in: contributorIds } } })
+    if (found.length !== contributorIds.length) throw new ApiError('One or more specified contributors do not exist', 400)
+  }
+
+  const project = await prisma.researchProject.create({
+    data: {
+      title: body.title,
+      description: body.description,
+      status: (body.status as 'ACTIVE' | 'COMPLETED' | 'SUSPENDED') ?? 'ACTIVE',
+      startDate: body.startDate ? new Date(body.startDate) : new Date(),
+      members: { create: contributorIds.map((userId) => ({ userId })) },
+    },
+    include: INCLUDE,
+  })
+  return NextResponse.json({ data: serializeProject(project), message: 'Research project created successfully', code: 'success', status: 201 }, { status: 201 })
+})
