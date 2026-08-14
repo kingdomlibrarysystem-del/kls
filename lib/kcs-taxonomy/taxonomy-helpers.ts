@@ -106,3 +106,17 @@ export function getParentName(category: Category): string | null {
   if (!category.parentId) return null
   return getCategoryById(category.parentId)?.name.en ?? null
 }
+
+/**
+ * Real Unsplash imagery for a scroll card. Only the 8 root pillars have
+ * their own `heroImage` seeded (a distinct, fitting image per individual
+ * scroll — 75 of them — isn't something to fabricate); each scroll falls
+ * back to its parent pillar's real photo, which is still genuine
+ * imagery contextually tied to that scroll's section rather than a
+ * decorative placeholder.
+ */
+export function getScrollImage(category: Category): string | undefined {
+  if (category.heroImage) return category.heroImage
+  if (!category.parentId) return undefined
+  return getCategoryById(category.parentId)?.heroImage
+}

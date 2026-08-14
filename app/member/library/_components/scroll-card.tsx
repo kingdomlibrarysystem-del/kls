@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { ScrollText, Heart, ChevronRight, BookOpenCheck } from 'lucide-react'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
-import { getParentName, type Category } from '@/lib/kcs-taxonomy'
+import { getParentName, getScrollImage, type Category } from '@/lib/kcs-taxonomy'
 
 interface ScrollProps {
   /** A leaf/scroll-level Category row from the canonical KCS taxonomy. */
@@ -43,6 +44,7 @@ export function ScrollCard({ scroll }: ScrollProps) {
   const readableResourceId = useReadableResourceId(scroll.id)
   const readingPercent = useReadingPercent(readableResourceId)
   const sectionName = getParentName(scroll) ?? ''
+  const image = getScrollImage(scroll)
 
   return (
     <div
@@ -53,14 +55,25 @@ export function ScrollCard({ scroll }: ScrollProps) {
       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)' }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
     >
-      <div style={{ height: 80, background: 'linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <ScrollText size={28} color="var(--gold)" />
+      <div style={{ height: 80, background: 'linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+        {image ? (
+          <RemoteImage
+            src={image}
+            alt={scroll.name.en}
+            fill
+            sizes="(max-width: 768px) 50vw, 20vw"
+            className="object-cover"
+            fallback={<ScrollText size={28} color="var(--gold)" />}
+          />
+        ) : (
+          <ScrollText size={28} color="var(--gold)" />
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); toggleFavorite(scroll.id, 'RESOURCE', scroll.name.en, `Scroll · ${sectionName}`) }}
           aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
           style={{
-            position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.2)', border: 'none', borderRadius: '50%',
-            width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.35)', border: 'none', borderRadius: '50%',
+            width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1,
           }}
         >
           <Heart size={10} color={liked ? 'var(--red-light)' : '#fff'} fill={liked ? 'var(--red-light)' : 'none'} />
