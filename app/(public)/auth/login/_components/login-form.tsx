@@ -28,7 +28,10 @@ type LoginFormData = z.infer<typeof loginSchema>
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const { login } = useAuth()
+  const [requiresTotp, setRequiresTotp] = useState(false)
+  const [totpCode, setTotpCode] = useState('')
+  const [pendingCredentials, setPendingCredentials] = useState<LoginFormData | null>(null)
+  const { login, checkRequiresTotp } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/member'
@@ -41,15 +44,19 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = async (data: LoginFormData) => {
+  const attemptLogin = async (data: LoginFormData, totp?: string) => {
     setIsSubmitting(true)
     setSubmitError('')
 
     try {
-      const { matched } = await login(data.email, data.password)
+      const { matched } = await login(data.email, data.password, totp)
       setIsSubmitting(false)
       if (!matched) {
-        setSubmitError('Incorrect email or password. Please try again.')
+        setSubmitError(
+          requiresTotp
+            ? 'That authenticator code is incorrect or has expired. Try the current code from your app.'
+            : 'Incorrect email or password. Please try again.'
+        )
         return
       }
       router.push(redirectTo)
@@ -57,6 +64,70 @@ export function LoginForm() {
       setSubmitError(error instanceof Error ? error.message : 'Login failed')
       setIsSubmitting(false)
     }
+  }
+
+  const onSubmit = async (data: LoginFormData) => {
+    setIsSubmitting(true)
+    setSubmitError('')
+    const needsTotp = await checkRequiresTotp(data.email)
+    setIsSubmitting(false)
+
+    if (needsTotp) {
+      setRequiresTotp(true)
+      setPendingCredentials(data)
+      return
+    }
+
+    await attemptLogin(data)
+  }
+
+  const onSubmitTotp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pendingCredentials) await attemptLogin(pendingCredentials, totpCode)
+  }
+
+  if (requiresTotp) {
+    return (
+      <FormContainer maxWidth="md">
+        <form onSubmit={onSubmitTotp} className="space-y-6">
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {submitError}
+            </div>
+          )}
+
+          <div>
+            <FieldLabel htmlFor="totpCode" required>
+              Authenticator Code
+            </FieldLabel>
+            <FormInput
+              id="totpCode"
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              placeholder="123456 (or a recovery code)"
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+            />
+            <p className="mt-2 text-sm text-w-600">
+              Enter the 6-digit code from your authenticator app, or one of your recovery codes.
+            </p>
+          </div>
+
+          <ElegantButton type="submit" fullWidth loading={isSubmitting} variant="primary" disabled={!totpCode.trim()}>
+            Verify &amp; Sign In
+          </ElegantButton>
+
+          <button
+            type="button"
+            onClick={() => { setRequiresTotp(false); setPendingCredentials(null); setTotpCode(''); setSubmitError('') }}
+            className="w-full text-center font-lato text-sm text-w-700 underline"
+          >
+            Back to sign in
+          </button>
+        </form>
+      </FormContainer>
+    )
   }
 
   return (
