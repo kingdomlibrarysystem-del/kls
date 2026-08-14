@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { PlayCircle, Clock, Star, Search, CheckCircle2, GraduationCap } from "lucide-react";
 import { RemoteImage } from "@/components/ui/remote-image";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,9 +8,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { useCourses } from "../_shared/use-courses";
 import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
 
+/** Courses shown per page — keeps a large catalog from rendering unbounded. */
+const PAGE_SIZE = 9;
+
 export default function ELearningPage() {
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
+  const [page, setPage] = useState(1);
   const [enrollError, setEnrollError] = useState("");
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const { user } = useAuth();
@@ -23,6 +28,10 @@ export default function ELearningPage() {
     const matchCat = activeCat === "All" || c.category === activeCat;
     return matchSearch && matchCat;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const handleEnroll = async (courseId: string) => {
     if (!user) return;
@@ -70,7 +79,7 @@ export default function ELearningPage() {
         <input
           placeholder="Search courses..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           aria-label="Search courses"
           style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
         />
@@ -81,7 +90,7 @@ export default function ELearningPage() {
         {categories.map((cat) => (
           <button
             key={cat}
-            onClick={() => setActiveCat(cat)}
+            onClick={() => { setActiveCat(cat); setPage(1); }}
             aria-pressed={activeCat === cat}
             style={{
               padding: "5px 12px", borderRadius: 20, border: "1px solid var(--border)", cursor: "pointer",
@@ -98,7 +107,7 @@ export default function ELearningPage() {
 
       {/* Course grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ display: "grid", gap: 12 }}>
-        {filtered.map((course) => {
+        {paged.map((course) => {
           const enrolled = enrollments.some((e) => e.courseId === course.id);
           return (
             <div key={course.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", transition: "transform 0.2s", cursor: "pointer" }}
@@ -107,14 +116,18 @@ export default function ELearningPage() {
             >
               {/* Header */}
               <div style={{ height: 100, position: "relative", background: "linear-gradient(135deg, var(--teal-light-transparent, rgba(45,212,191,0.1)), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <RemoteImage
-                  src={course.image}
-                  alt={course.title}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  style={{ objectFit: "cover" }}
-                  fallback={<GraduationCap size={32} color="var(--teal-light)" />}
-                />
+                {course.image ? (
+                  <RemoteImage
+                    src={course.image}
+                    alt={course.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    style={{ objectFit: "cover" }}
+                    fallback={<GraduationCap size={32} color="var(--teal-light)" />}
+                  />
+                ) : (
+                  <GraduationCap size={32} color="var(--teal-light)" />
+                )}
               </div>
               {/* Body */}
               <div style={{ padding: "10px 12px 12px" }}>
@@ -131,27 +144,64 @@ export default function ELearningPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <PlayCircle size={14} color="var(--teal-light)" />
                   <span style={{ fontSize: 9, color: "var(--text-muted)", flex: 1 }}>{course.lessons} lessons</span>
-                  <button
-                    onClick={() => handleEnroll(course.id)}
-                    disabled={enrolled || enrolling === course.id}
-                    aria-label={enrolled ? `Already enrolled in ${course.title}` : `Enroll in ${course.title}`}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, border: "none",
-                      background: enrolled ? "var(--bg-section)" : "var(--teal-light)",
-                      color: enrolled ? "var(--text-muted)" : "#fff",
-                      fontSize: 10, fontWeight: 600, cursor: enrolled ? "default" : "pointer",
-                      opacity: enrolling === course.id ? 0.7 : 1,
-                    }}
-                  >
-                    {enrolled && <CheckCircle2 size={11} />}
-                    {enrolled ? "Enrolled" : enrolling === course.id ? "Enrolling…" : "Enroll"}
-                  </button>
+                  {enrolled ? (
+                    <Link
+                      href={`/member/courses/${course.id}`}
+                      aria-label={`View ${course.title}`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, border: "none",
+                        background: "var(--teal-light)", color: "#fff", fontSize: 10, fontWeight: 600, textDecoration: "none",
+                      }}
+                    >
+                      <CheckCircle2 size={11} /> View Course
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => handleEnroll(course.id)}
+                      disabled={enrolling === course.id}
+                      aria-label={`Enroll in ${course.title}`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, border: "none",
+                        background: "var(--teal-light)", color: "#fff",
+                        fontSize: 10, fontWeight: 600, cursor: "pointer",
+                        opacity: enrolling === course.id ? 0.7 : 1,
+                      }}
+                    >
+                      {enrolling === course.id ? "Enrolling…" : "Enroll"}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {filtered.length === 0 && (
+        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 11 }}>
+          No courses match your search.
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 11, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.4 : 1 }}
+          >
+            Previous
+          </button>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Page {currentPage} of {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 11, cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.4 : 1 }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
