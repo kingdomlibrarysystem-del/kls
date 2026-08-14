@@ -1,11 +1,12 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { addLesson } from '@/app/member/_shared/use-lessons'
 import { lessonSchema, contentTypeLabels, type LessonFormData } from './lesson-form-schema'
@@ -20,12 +21,13 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
   const { data: courseCatalog } = useCourseCatalog()
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
-    defaultValues: { courseId: courseCatalog[0]?.id ?? '', contentType: 'VIDEO', durationMinutes: 10 },
+    defaultValues: { courseId: courseCatalog[0]?.id ?? '', contentType: 'VIDEO', durationMinutes: 10, content: '', contentMarkdown: '' },
   })
 
   const onSubmit = async (data: LessonFormData) => {
@@ -37,6 +39,7 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
         contentType: data.contentType,
         durationMinutes: data.durationMinutes,
         content: data.content,
+        contentMarkdown: data.contentMarkdown,
       })
       reset()
       onClose()
@@ -77,17 +80,27 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
         </div>
 
         <div>
-          <FieldLabel htmlFor="add-lesson-content" required>Content</FieldLabel>
+          <FieldLabel htmlFor="add-lesson-content" required>Summary</FieldLabel>
           <textarea
             id="add-lesson-content"
-            rows={4}
-            placeholder="Lesson body text, video description, or file name..."
+            rows={2}
+            placeholder="Short summary shown in listings..."
             className={`w-full px-4 py-3 font-lato text-sm border rounded transition-colors focus:outline-none ${
               errors.content ? 'border-red-500 bg-red-50' : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
             }`}
             {...register('content')}
           />
           {errors.content && <p className="text-red-600 text-xs mt-1 font-lato">{errors.content.message}</p>}
+        </div>
+
+        <div>
+          <FieldLabel htmlFor="add-lesson-markdown" required>Lesson Content</FieldLabel>
+          <Controller
+            name="contentMarkdown"
+            control={control}
+            render={({ field }) => <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} />}
+          />
+          {errors.contentMarkdown && <p className="text-red-600 text-xs mt-1 font-lato">{errors.contentMarkdown.message}</p>}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">

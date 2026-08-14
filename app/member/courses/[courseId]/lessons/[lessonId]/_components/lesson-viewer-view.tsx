@@ -72,6 +72,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   }
 
   const displayLessons = course.lessons.map((l) => ({ ...l, completed: completedIds.has(l.id) }))
+  const nextLesson = lessonIndex >= 0 && lessonIndex < course.lessons.length - 1 ? course.lessons[lessonIndex + 1] : undefined
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 items-start">
@@ -82,6 +83,8 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         markError={markError}
         onMarkComplete={handleMarkComplete}
         courseCompleteAssessmentTitle={linkedAssessment?.title}
+        nextLesson={nextLesson}
+        courseId={courseId}
       />
     </div>
   )
