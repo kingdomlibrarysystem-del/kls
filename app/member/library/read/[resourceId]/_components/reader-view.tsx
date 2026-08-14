@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
@@ -93,6 +93,11 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const chapter = chapters[chapterIndex]
   const hasPrev = chapterIndex > 0
   const hasNext = chapterIndex < chapters.length - 1
+  const isLastChapter = !hasNext
+  const isCompleted = existingProgress?.status === 'COMPLETED'
+  const unreadChapters = isLastChapter && !isCompleted
+    ? chapters.filter((c) => !existingProgress?.completedChapterIds.includes(c.id) && c.id !== chapter.id)
+    : []
 
   const paragraphs = chapter.body.split('\n\n')
   let runningOffset = 0
@@ -163,15 +168,46 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
           <ChevronLeftNav size={13} /> Previous
         </button>
         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{chapter.title}</span>
-        <button
-          onClick={() => goToChapter(Math.min(chapters.length - 1, chapterIndex + 1))}
-          disabled={!hasNext}
-          className="btn btn-gold btn-sm"
-          style={{ opacity: hasNext ? 1 : 0.4, cursor: hasNext ? 'pointer' : 'not-allowed' }}
-        >
-          Next <ChevronRight size={13} />
-        </button>
+        {isLastChapter ? (
+          <span
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8,
+              background: isCompleted ? 'var(--green-dim)' : 'var(--bg-section)',
+              color: isCompleted ? 'var(--green-light)' : 'var(--text-muted)',
+              fontSize: 12, fontWeight: 600,
+            }}
+          >
+            <CheckCircle2 size={14} /> {isCompleted ? 'Book Completed' : `${existingProgress ? getReadingProgressPercent(existingProgress) : 0}% complete`}
+          </span>
+        ) : (
+          <button
+            onClick={() => goToChapter(Math.min(chapters.length - 1, chapterIndex + 1))}
+            disabled={!hasNext}
+            className="btn btn-gold btn-sm"
+          >
+            Next <ChevronRight size={13} />
+          </button>
+        )}
       </div>
+
+      {unreadChapters.length > 0 && (
+        <div className="card" style={{ padding: 14 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            This is the last chapter, but the book isn&apos;t marked complete yet — {unreadChapters.length === 1 ? 'a chapter was' : `${unreadChapters.length} chapters were`} skipped along the way. Read the remaining chapter{unreadChapters.length === 1 ? '' : 's'} to finish the book:
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {unreadChapters.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => goToChapter(chapters.findIndex((x) => x.id === c.id))}
+                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {c.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <HighlightsNotesList resourceId={resourceId} chapters={chapters} onJump={goToChapter} />
 

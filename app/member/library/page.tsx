@@ -7,8 +7,12 @@ import { getRootCategories, getChildCategories } from "@/lib/kcs-taxonomy";
 import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
 import { sectionIcons } from "./_components/section-icons";
 import { ScrollCard, ScrollListItem } from "./_components/scroll-card";
+import { ScrollPagination } from "./_components/scroll-pagination";
 import { WriteScrollModal } from "./_components/write-scroll-modal";
 import { ContinueReadingSection } from "./_components/continue-reading-section";
+
+/** Scrolls shown per section per page — keeps a 19-scroll section (History) from rendering an unbounded grid. */
+const PAGE_SIZE = 12;
 
 export default function MemberLibraryPage() {
   const [search, setSearch] = useState("");
@@ -17,6 +21,7 @@ export default function MemberLibraryPage() {
   const [showAbout, setShowAbout] = useState(false);
   const [writeOpen, setWriteOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [pageBySection, setPageBySection] = useState<Record<string, number>>({});
   const { loading, error } = useCategories();
 
   if (loading) {
@@ -98,7 +103,7 @@ export default function MemberLibraryPage() {
         <input
           placeholder="Search scrolls by title or section..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPageBySection({}); }}
           aria-label="Search scrolls by title or section"
           style={{
             width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)",
@@ -110,7 +115,7 @@ export default function MemberLibraryPage() {
 
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
         <button
-          onClick={() => setActiveSection("All")}
+          onClick={() => { setActiveSection("All"); setPageBySection({}); }}
           style={{
             padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer",
             fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
@@ -123,7 +128,7 @@ export default function MemberLibraryPage() {
         {rootSections.map((s) => (
           <button
             key={s.id}
-            onClick={() => setActiveSection(s.name.en)}
+            onClick={() => { setActiveSection(s.name.en); setPageBySection({}); }}
             style={{
               display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6,
               border: "1px solid var(--border)", cursor: "pointer", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
@@ -146,35 +151,47 @@ export default function MemberLibraryPage() {
         </div>
       )}
 
-      {filteredSections.map((section) => (
-        <div key={section.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-          <div style={{
-            padding: "10px 14px", borderBottom: "1px solid var(--border)",
-            display: "flex", alignItems: "center", gap: 8,
-            background: "linear-gradient(90deg, rgba(212,168,67,0.05), transparent)",
-          }}>
-            <span style={{ display: "flex", color: "var(--gold)" }}>{sectionIcons[section.id]}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                {section.name.en}
-                <span style={{ fontSize: 9, color: "var(--gold)", fontWeight: 600, fontFamily: "monospace" }}>{section.code}</span>
-              </div>
-              <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{section.description}</div>
-            </div>
-            <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
-          </div>
+      {filteredSections.map((section) => {
+        const totalPages = Math.max(1, Math.ceil(section.scrolls.length / PAGE_SIZE));
+        const page = Math.min(pageBySection[section.id] ?? 1, totalPages);
+        const pagedScrolls = section.scrolls.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-          <div style={{ display: view === "grid" ? "grid" : "flex", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 4, padding: 6, flexDirection: view === "list" ? "column" : undefined }}>
-            {section.scrolls.map((scroll) => (
-              view === "grid" ? (
-                <ScrollCard key={scroll.id} scroll={scroll} />
-              ) : (
-                <ScrollListItem key={scroll.id} scroll={scroll} />
-              )
-            ))}
+        return (
+          <div key={section.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+            <div style={{
+              padding: "10px 14px", borderBottom: "1px solid var(--border)",
+              display: "flex", alignItems: "center", gap: 8,
+              background: "linear-gradient(90deg, rgba(212,168,67,0.05), transparent)",
+            }}>
+              <span style={{ display: "flex", color: "var(--gold)" }}>{sectionIcons[section.id]}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                  {section.name.en}
+                  <span style={{ fontSize: 9, color: "var(--gold)", fontWeight: 600, fontFamily: "monospace" }}>{section.code}</span>
+                </div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{section.description}</div>
+              </div>
+              <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
+            </div>
+
+            <div style={{ display: view === "grid" ? "grid" : "flex", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 4, padding: 6, flexDirection: view === "list" ? "column" : undefined }}>
+              {pagedScrolls.map((scroll) => (
+                view === "grid" ? (
+                  <ScrollCard key={scroll.id} scroll={scroll} />
+                ) : (
+                  <ScrollListItem key={scroll.id} scroll={scroll} />
+                )
+              ))}
+            </div>
+
+            <ScrollPagination
+              page={page}
+              totalPages={totalPages}
+              onPage={(n) => setPageBySection((prev) => ({ ...prev, [section.id]: n }))}
+            />
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.08), var(--bg-card))", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "14px 16px", textAlign: "center" }}>
         <Feather size={24} color="var(--gold)" style={{ marginBottom: 8 }} />

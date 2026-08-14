@@ -5,5 +5,5 @@
  */
 export type { Category, CategoryStatus, CategoryFormState } from './types'
 export { EMPTY_CATEGORY_FORM } from './types'
-export { categories, getCategoryById, getRootCategories, getChildCategories, resourceCountFor, getCategoryName, getParentName } from './taxonomy-helpers'
+export { categories, getCategoryById, getRootCategories, getChildCategories, resourceCountFor, getCategoryName, getParentName, getScrollImage } from './taxonomy-helpers'
 export { toSlug } from './slug'
