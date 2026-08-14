@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real Course API, consolidating the three previously-unreconciled mock
@@ -101,39 +103,46 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createCourseSchema = z.object({
+  title: z.string().trim().min(1, 'title is required'),
+  description: z.string().trim().min(1, 'description is required'),
+  category: z.string().trim().min(1, 'category is required'),
+  language: z.string().optional(),
+  status: z.string().optional(),
+  author: z.string().optional(),
+  lecturerId: z.string().optional(),
+  image: z.string().optional(),
+  duration: z.string().optional(),
+  rating: z.string().optional(),
+})
 
-    if (!body.title || !body.description || !body.category) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: title, description, category', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    if (body.lecturerId) {
-      const lecturer = await prisma.user.findUnique({ where: { id: body.lecturerId } })
-      if (!lecturer) {
-        return NextResponse.json({ data: null, message: 'The specified lecturer does not exist', code: 'error', status: 400 }, { status: 400 })
-      }
-    }
-
-    const course = await prisma.course.create({
-      data: {
-        title: body.title,
-        description: body.description,
-        category: body.category,
-        language: (body.language ?? 'en').toUpperCase(),
-        status: body.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
-        author: body.author ?? 'Kingdom Library System',
-        lecturerId: body.lecturerId || null,
-        image: body.image ?? null,
-        duration: body.duration ?? null,
-        rating: body.rating ?? null,
-      },
-      include: LECTURER_SELECT,
-    })
-
-    return NextResponse.json({ data: serializeCourse(course), message: 'Course created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create course', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/courses', 'POST', async (request: NextRequest) => {
+  const parsed = createCourseSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  if (body.lecturerId) {
+    const lecturer = await prisma.user.findUnique({ where: { id: body.lecturerId } })
+    if (!lecturer) throw new ApiError('The specified lecturer does not exist', 400)
+  }
+
+  const course = await prisma.course.create({
+    data: {
+      title: body.title,
+      description: body.description,
+      category: body.category,
+      language: (body.language ?? 'en').toUpperCase() as 'EN' | 'FR' | 'RW',
+      status: body.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
+      author: body.author ?? 'Kingdom Library System',
+      lecturerId: body.lecturerId || null,
+      image: body.image ?? null,
+      duration: body.duration ?? null,
+      rating: body.rating ?? null,
+    },
+    include: LECTURER_SELECT,
+  })
+
+  return NextResponse.json({ data: serializeCourse(course), message: 'Course created successfully', code: 'success', status: 201 }, { status: 201 })
+})

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeNotification(n: {
   id: string
@@ -25,20 +27,17 @@ function serializeNotification(n: {
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.notification.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Notification not found', code: 'error', status: 404 }, { status: 404 })
-    }
-    if (body.action === 'markRead') {
-      const updated = await prisma.notification.update({ where: { id }, data: { read: true } })
-      return NextResponse.json({ data: serializeNotification(updated), message: 'Notification marked read', code: 'success', status: 200 })
-    }
-    return NextResponse.json({ data: null, message: 'Unknown action', code: 'error', status: 400 }, { status: 400 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update notification', code: 'error', status: 500 }, { status: 500 })
+const patchNotificationSchema = z.object({ action: z.literal('markRead') })
+
+export const PATCH = withErrorHandling('/api/notifications/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = patchNotificationSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const existing = await prisma.notification.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Notification not found', 404)
+
+  const updated = await prisma.notification.update({ where: { id }, data: { read: true } })
+  return NextResponse.json({ data: serializeNotification(updated), message: 'Notification marked read', code: 'success', status: 200 })
+})

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeEnrollment(e: {
   id: string
@@ -48,53 +50,51 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  * no duplicate entries) and auto-flips status to COMPLETED once every
  * lesson is done, matching the mock's own completion semantics.
  */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.enrollment.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Enrollment not found', code: 'error', status: 404 }, { status: 404 })
-    }
+const patchEnrollmentSchema = z.union([
+  z.object({ action: z.literal('completeLesson'), lessonId: z.string().min(1, 'lessonId is required') }),
+  z.object({ action: z.literal('markAssessmentPassed') }),
+  z.object({ action: z.undefined(), status: z.string().optional() }).passthrough(),
+])
 
-    if (body.action === 'completeLesson') {
-      if (!body.lessonId) {
-        return NextResponse.json({ data: null, message: 'Missing required field: lessonId', code: 'error', status: 400 }, { status: 400 })
-      }
-      const completedLessonIds = existing.completedLessonIds.includes(body.lessonId)
-        ? existing.completedLessonIds
-        : [...existing.completedLessonIds, body.lessonId]
-      const status = completedLessonIds.length >= existing.totalLessons ? 'COMPLETED' : 'ENROLLED'
-      const updated = await prisma.enrollment.update({ where: { id }, data: { completedLessonIds, status }, include: INCLUDE })
-      await issueCertificateIfEligible(updated.userId, updated.courseId)
-      return NextResponse.json({ data: serializeEnrollment(updated), message: 'Lesson marked complete', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'markAssessmentPassed') {
-      const updated = await prisma.enrollment.update({ where: { id }, data: { assessmentPassed: true }, include: INCLUDE })
-      await issueCertificateIfEligible(updated.userId, updated.courseId)
-      return NextResponse.json({ data: serializeEnrollment(updated), message: 'Enrollment updated successfully', code: 'success', status: 200 })
-    }
-
-    const data: Record<string, unknown> = { ...body }
-    delete data.action
-    delete data.id
-    delete data.userId
-    delete data.courseId
-    if (typeof data.status === 'string') data.status = data.status.toUpperCase()
-    const updated = await prisma.enrollment.update({ where: { id }, data, include: INCLUDE })
-    return NextResponse.json({ data: serializeEnrollment(updated), message: 'Enrollment updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update enrollment', code: 'error', status: 500 }, { status: 500 })
+export const PATCH = withErrorHandling('/api/enrollments/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = patchEnrollmentSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const existing = await prisma.enrollment.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Enrollment not found', 404)
+
+  if (body.action === 'completeLesson') {
+    const completedLessonIds = existing.completedLessonIds.includes(body.lessonId)
+      ? existing.completedLessonIds
+      : [...existing.completedLessonIds, body.lessonId]
+    const status = completedLessonIds.length >= existing.totalLessons ? 'COMPLETED' : 'ENROLLED'
+    const updated = await prisma.enrollment.update({ where: { id }, data: { completedLessonIds, status }, include: INCLUDE })
+    await issueCertificateIfEligible(updated.userId, updated.courseId)
+    return NextResponse.json({ data: serializeEnrollment(updated), message: 'Lesson marked complete', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'markAssessmentPassed') {
+    const updated = await prisma.enrollment.update({ where: { id }, data: { assessmentPassed: true }, include: INCLUDE })
+    await issueCertificateIfEligible(updated.userId, updated.courseId)
+    return NextResponse.json({ data: serializeEnrollment(updated), message: 'Enrollment updated successfully', code: 'success', status: 200 })
+  }
+
+  const data: Record<string, unknown> = { ...body }
+  delete data.action
+  if (typeof data.status === 'string') data.status = data.status.toUpperCase()
+  const updated = await prisma.enrollment.update({ where: { id }, data, include: INCLUDE })
+  return NextResponse.json({ data: serializeEnrollment(updated), message: 'Enrollment updated successfully', code: 'success', status: 200 })
+})
+
+export const DELETE = withErrorHandling('/api/enrollments/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const existing = await prisma.enrollment.findUnique({ where: { id } })
-  if (!existing) {
-    return NextResponse.json({ data: null, message: 'Enrollment not found', code: 'error', status: 404 }, { status: 404 })
-  }
+  if (!existing) throw new ApiError('Enrollment not found', 404)
+
   await prisma.enrollment.delete({ where: { id } })
   return NextResponse.json({ data: null, message: 'Enrollment deleted successfully', code: 'success', status: 200 })
-}
+})

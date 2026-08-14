@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Append-only audit trail — GET (list) and POST (append) only, no
@@ -51,29 +53,36 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createAuditLogSchema = z.object({
+  actor: z.string().trim().min(1, 'actor is required'),
+  action: z.string().trim().min(1, 'action is required'),
+  target: z.string().trim().min(1, 'target is required'),
+  actorId: z.string().optional(),
+  targetId: z.string().optional(),
+  targetType: z.string().optional(),
+  ipAddress: z.string().optional(),
+  notes: z.string().optional(),
+})
 
-    if (!body.actor || !body.action || !body.target) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: actor, action, target', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const entry = await prisma.auditLog.create({
-      data: {
-        actor: body.actor,
-        actorId: body.actorId ?? null,
-        action: body.action,
-        target: body.target,
-        targetId: body.targetId ?? null,
-        targetType: body.targetType ?? null,
-        ipAddress: body.ipAddress ?? null,
-        notes: body.notes ?? null,
-      },
-    })
-
-    return NextResponse.json({ data: entry, message: 'Audit log entry recorded successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to record audit log entry', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/audit-log', 'POST', async (request: NextRequest) => {
+  const parsed = createAuditLogSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const entry = await prisma.auditLog.create({
+    data: {
+      actor: body.actor,
+      actorId: body.actorId ?? null,
+      action: body.action,
+      target: body.target,
+      targetId: body.targetId ?? null,
+      targetType: body.targetType ?? null,
+      ipAddress: body.ipAddress ?? null,
+      notes: body.notes ?? null,
+    },
+  })
+
+  return NextResponse.json({ data: entry, message: 'Audit log entry recorded successfully', code: 'success', status: 201 }, { status: 201 })
+})

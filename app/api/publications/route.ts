@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real Publication API, replacing the already-unified mock store at
@@ -104,35 +106,39 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+const createPublicationSchema = z.object({
+  title: z.string().trim().min(1, 'title is required'),
+  contributorId: z.string().min(1, 'contributorId is required'),
+  category: z.string().trim().min(1, 'category is required'),
+  language: z.string().optional(),
+  coverImage: z.string().optional(),
+  description: z.string().optional(),
+  status: z.string().optional(),
+})
 
-    if (!body.title || !body.contributorId || !body.category) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: title, contributorId, category', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const contributor = await prisma.user.findUnique({ where: { id: body.contributorId } })
-    if (!contributor) {
-      return NextResponse.json({ data: null, message: 'The specified contributor does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-
-    const publication = await prisma.publication.create({
-      data: {
-        title: body.title,
-        contributorId: body.contributorId,
-        contributorName: contributor.name ?? `${contributor.firstName ?? ''} ${contributor.lastName ?? ''}`.trim(),
-        category: body.category,
-        language: (body.language ?? 'en').toUpperCase(),
-        coverImage: body.coverImage ?? null,
-        description: body.description ?? '',
-        status: body.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT',
-      },
-      include: REVENUE_INCLUDE,
-    })
-
-    return NextResponse.json({ data: serializePublication(publication), message: 'Publication created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create publication', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/publications', 'POST', async (request: NextRequest) => {
+  const parsed = createPublicationSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const contributor = await prisma.user.findUnique({ where: { id: body.contributorId } })
+  if (!contributor) throw new ApiError('The specified contributor does not exist', 400)
+
+  const publication = await prisma.publication.create({
+    data: {
+      title: body.title,
+      contributorId: body.contributorId,
+      contributorName: contributor.name ?? `${contributor.firstName ?? ''} ${contributor.lastName ?? ''}`.trim(),
+      category: body.category,
+      language: (body.language ?? 'en').toUpperCase() as 'EN' | 'FR' | 'RW',
+      coverImage: body.coverImage ?? null,
+      description: body.description ?? '',
+      status: body.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT',
+    },
+    include: REVENUE_INCLUDE,
+  })
+
+  return NextResponse.json({ data: serializePublication(publication), message: 'Publication created successfully', code: 'success', status: 201 }, { status: 201 })
+})

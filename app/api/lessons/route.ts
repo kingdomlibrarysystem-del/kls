@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> — already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; order: number }) {
@@ -38,29 +40,34 @@ export async function GET(request: NextRequest) {
   })
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    if (!body.courseId || !body.title || !body.contentType) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: courseId, title, contentType', code: 'error', status: 400 }, { status: 400 })
-    }
-    const course = await prisma.course.findUnique({ where: { id: body.courseId } })
-    if (!course) {
-      return NextResponse.json({ data: null, message: 'The specified course does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    const maxOrder = await prisma.lesson.aggregate({ where: { courseId: body.courseId }, _max: { order: true } })
-    const lesson = await prisma.lesson.create({
-      data: {
-        courseId: body.courseId,
-        title: body.title,
-        contentType: body.contentType,
-        durationMinutes: body.durationMinutes ?? 0,
-        content: body.content ?? '',
-        order: (maxOrder._max.order ?? 0) + 1,
-      },
-    })
-    return NextResponse.json({ data: serializeLesson(lesson), message: 'Lesson created successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to create lesson', code: 'error', status: 500 }, { status: 500 })
+const createLessonSchema = z.object({
+  courseId: z.string().min(1, 'courseId is required'),
+  title: z.string().trim().min(1, 'title is required'),
+  contentType: z.enum(['TEXT', 'VIDEO', 'FILE']),
+  durationMinutes: z.number().int().nonnegative().optional(),
+  content: z.string().optional(),
+})
+
+export const POST = withErrorHandling('/api/lessons', 'POST', async (request: NextRequest) => {
+  const parsed = createLessonSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const course = await prisma.course.findUnique({ where: { id: body.courseId } })
+  if (!course) throw new ApiError('The specified course does not exist', 400)
+
+  const maxOrder = await prisma.lesson.aggregate({ where: { courseId: body.courseId }, _max: { order: true } })
+  const lesson = await prisma.lesson.create({
+    data: {
+      courseId: body.courseId,
+      title: body.title,
+      contentType: body.contentType,
+      durationMinutes: body.durationMinutes ?? 0,
+      content: body.content ?? '',
+      order: (maxOrder._max.order ?? 0) + 1,
+    },
+  })
+  return NextResponse.json({ data: serializeLesson(lesson), message: 'Lesson created successfully', code: 'success', status: 201 }, { status: 201 })
+})

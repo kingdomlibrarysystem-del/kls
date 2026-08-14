@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 const ROLE_INCLUDE = { role: { select: { name: true } } } as const
 
@@ -36,62 +38,60 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json({ data: serializeUser(user), message: 'User fetched successfully', code: 'success', status: 200 })
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
+const updateUserSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  email: z.string().trim().email().optional(),
+  status: z.enum(['active', 'inactive', 'suspended', 'ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
+  role: z.string().trim().min(1).optional(),
+})
 
-    const existing = await prisma.user.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'User not found', code: 'error', status: 404 }, { status: 404 })
-    }
+export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = updateUserSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  }
+  const body = parsed.data
 
-    if (body.email && body.email !== existing.email) {
-      const emailTaken = await prisma.user.findUnique({ where: { email: body.email } })
-      if (emailTaken) {
-        return NextResponse.json({ data: null, message: 'A user with this email already exists', code: 'error', status: 409 }, { status: 409 })
-      }
-    }
+  const existing = await prisma.user.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('User not found', 404)
 
-    let roleId: string | undefined
-    if (body.role) {
-      const role = await prisma.role.upsert({
-        where: { name: body.role },
-        update: {},
-        create: { name: body.role, permissions: [] },
-      })
-      roleId = role.id
-    }
+  if (body.email && body.email !== existing.email) {
+    const emailTaken = await prisma.user.findUnique({ where: { email: body.email } })
+    if (emailTaken) throw new ApiError('A user with this email already exists', 409)
+  }
 
-    const [firstName, ...rest] = body.name ? String(body.name).trim().split(/\s+/) : [undefined]
-
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        ...(body.name && { name: body.name, firstName, lastName: rest.join(' ') }),
-        ...(body.email && { email: body.email }),
-        ...(body.status && { status: body.status.toUpperCase() }),
-        ...(roleId && { roleId }),
-      },
-      include: ROLE_INCLUDE,
+  let roleId: string | undefined
+  if (body.role) {
+    const role = await prisma.role.upsert({
+      where: { name: body.role },
+      update: {},
+      create: { name: body.role, permissions: [] },
     })
-
-    return NextResponse.json({ data: serializeUser(user), message: 'User updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update user', code: 'error', status: 500 }, { status: 500 })
+    roleId = role.id
   }
-}
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const existing = await prisma.user.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'User not found', code: 'error', status: 404 }, { status: 404 })
-    }
-    await prisma.user.delete({ where: { id } })
-    return NextResponse.json({ data: null, message: 'User deleted successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to delete user', code: 'error', status: 500 }, { status: 500 })
-  }
-}
+  const [firstName, ...rest] = body.name ? body.name.trim().split(/\s+/) : [undefined]
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      ...(body.name && { name: body.name, firstName, lastName: rest.join(' ') }),
+      ...(body.email && { email: body.email }),
+      ...(body.status && { status: body.status.toUpperCase() as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' }),
+      ...(roleId && { roleId }),
+    },
+    include: ROLE_INCLUDE,
+  })
+
+  return NextResponse.json({ data: serializeUser(user), message: 'User updated successfully', code: 'success', status: 200 })
+})
+
+export const DELETE = withErrorHandling('/api/users/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const existing = await prisma.user.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('User not found', 404)
+
+  await prisma.user.delete({ where: { id } })
+  return NextResponse.json({ data: null, message: 'User deleted successfully', code: 'success', status: 200 })
+})

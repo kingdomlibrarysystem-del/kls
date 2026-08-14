@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /**
  * Real Enrollment API, replacing app/member/_shared/enrollment-data.ts
@@ -71,39 +73,38 @@ export async function GET(request: NextRequest) {
   })
 }
 
+const createEnrollmentSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+  courseId: z.string().min(1, 'courseId is required'),
+})
+
 /** Enrolling twice in the same course is blocked by the real @@unique([userId, courseId]) constraint. */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    if (!body.userId || !body.courseId) {
-      return NextResponse.json({ data: null, message: 'Missing required fields: userId, courseId', code: 'error', status: 400 }, { status: 400 })
-    }
-    const [user, course] = await Promise.all([
-      prisma.user.findUnique({ where: { id: body.userId } }),
-      prisma.course.findUnique({ where: { id: body.courseId }, include: { _count: { select: { lessons: true } } } }),
-    ])
-    if (!user) {
-      return NextResponse.json({ data: null, message: 'The specified user does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    if (!course) {
-      return NextResponse.json({ data: null, message: 'The specified course does not exist', code: 'error', status: 400 }, { status: 400 })
-    }
-    const already = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: body.courseId } } })
-    if (already) {
-      return NextResponse.json({ data: null, message: 'This user is already enrolled in this course', code: 'error', status: 409 }, { status: 409 })
-    }
-    const enrollment = await prisma.enrollment.create({
-      data: {
-        userId: body.userId,
-        courseId: body.courseId,
-        totalLessons: course._count.lessons,
-        completedLessonIds: [],
-        status: 'ENROLLED',
-      },
-      include: INCLUDE,
-    })
-    return NextResponse.json({ data: serializeEnrollment(enrollment), message: 'Enrolled successfully', code: 'success', status: 201 }, { status: 201 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to enroll', code: 'error', status: 500 }, { status: 500 })
+export const POST = withErrorHandling('/api/enrollments', 'POST', async (request: NextRequest) => {
+  const parsed = createEnrollmentSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const [user, course] = await Promise.all([
+    prisma.user.findUnique({ where: { id: body.userId } }),
+    prisma.course.findUnique({ where: { id: body.courseId }, include: { _count: { select: { lessons: true } } } }),
+  ])
+  if (!user) throw new ApiError('The specified user does not exist', 400)
+  if (!course) throw new ApiError('The specified course does not exist', 400)
+
+  const already = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: body.courseId } } })
+  if (already) throw new ApiError('This user is already enrolled in this course', 409)
+
+  const enrollment = await prisma.enrollment.create({
+    data: {
+      userId: body.userId,
+      courseId: body.courseId,
+      totalLessons: course._count.lessons,
+      completedLessonIds: [],
+      status: 'ENROLLED',
+    },
+    include: INCLUDE,
+  })
+  return NextResponse.json({ data: serializeEnrollment(enrollment), message: 'Enrolled successfully', code: 'success', status: 201 }, { status: 201 })
+})

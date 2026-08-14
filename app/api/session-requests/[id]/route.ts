@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 function serializeSessionRequest(s: {
   id: string
@@ -42,50 +44,46 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ data: serializeSessionRequest(sessionRequest), message: 'Session request fetched successfully', code: 'success', status: 200 })
 }
 
+const patchSessionRequestSchema = z.union([
+  z.object({ action: z.literal('approve'), scheduledAt: z.string().datetime().optional(), notes: z.string().optional() }),
+  z.object({ action: z.literal('reject'), notes: z.string().optional() }),
+  z.object({ action: z.literal('complete') }),
+  z.object({ action: z.undefined() }).passthrough(),
+])
+
 /** Status-transition guard porting the mock's approveSession/rejectSession/completeSession. */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const existing = await prisma.sessionRequest.findUnique({ where: { id } })
-    if (!existing) {
-      return NextResponse.json({ data: null, message: 'Session request not found', code: 'error', status: 404 }, { status: 404 })
-    }
-
-    if (body.action === 'approve') {
-      if (existing.status !== 'PENDING') {
-        return NextResponse.json({ data: null, message: 'Only a pending session request can be approved', code: 'error', status: 409 }, { status: 409 })
-      }
-      const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : existing.proposedTime
-      const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'APPROVED', scheduledAt, notes: body.notes ?? existing.notes } })
-      return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request approved', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'reject') {
-      if (existing.status !== 'PENDING') {
-        return NextResponse.json({ data: null, message: 'Only a pending session request can be rejected', code: 'error', status: 409 }, { status: 409 })
-      }
-      const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'REJECTED', notes: body.notes ?? existing.notes } })
-      return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request rejected', code: 'success', status: 200 })
-    }
-
-    if (body.action === 'complete') {
-      if (existing.status !== 'APPROVED') {
-        return NextResponse.json({ data: null, message: 'Only an approved session can be completed', code: 'error', status: 409 }, { status: 409 })
-      }
-      const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'COMPLETED' } })
-      return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session marked complete', code: 'success', status: 200 })
-    }
-
-    const data: Record<string, unknown> = { ...body }
-    delete data.action
-    delete data.id
-    delete data.learnerId
-    delete data.lecturerId
-    delete data.courseId
-    const updated = await prisma.sessionRequest.update({ where: { id }, data })
-    return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request updated successfully', code: 'success', status: 200 })
-  } catch {
-    return NextResponse.json({ data: null, message: 'Failed to update session request', code: 'error', status: 500 }, { status: 500 })
+export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params
+  const parsed = patchSessionRequestSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
-}
+  const body = parsed.data
+
+  const existing = await prisma.sessionRequest.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Session request not found', 404)
+
+  if (body.action === 'approve') {
+    if (existing.status !== 'PENDING') throw new ApiError('Only a pending session request can be approved', 409)
+    const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : existing.proposedTime
+    const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'APPROVED', scheduledAt, notes: body.notes ?? existing.notes } })
+    return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request approved', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'reject') {
+    if (existing.status !== 'PENDING') throw new ApiError('Only a pending session request can be rejected', 409)
+    const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'REJECTED', notes: body.notes ?? existing.notes } })
+    return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request rejected', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'complete') {
+    if (existing.status !== 'APPROVED') throw new ApiError('Only an approved session can be completed', 409)
+    const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'COMPLETED' } })
+    return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session marked complete', code: 'success', status: 200 })
+  }
+
+  const data: Record<string, unknown> = { ...body }
+  delete data.action
+  const updated = await prisma.sessionRequest.update({ where: { id }, data })
+  return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request updated successfully', code: 'success', status: 200 })
+})
