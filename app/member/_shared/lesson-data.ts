@@ -7,6 +7,8 @@ export interface Lesson {
   contentType: LessonContentType
   durationMinutes: number
   content: string
+  /** Real markdown-authored lesson body — every lesson in the catalog has this populated; falls back to the contentType-based `content` field when absent (e.g. a lesson created before the markdown editor existed). */
+  contentMarkdown?: string
   completed: boolean
 }
 

@@ -4,7 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> — already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
-function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; order: number }) {
+function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
   return {
     id: l.id,
     courseId: l.courseId,
@@ -12,6 +12,7 @@ function serializeLesson(l: { id: string; courseId: string; title: string; conte
     contentType: l.contentType,
     durationMinutes: l.durationMinutes,
     content: l.content,
+    contentMarkdown: l.contentMarkdown ?? undefined,
     order: l.order,
   }
 }
@@ -46,6 +47,8 @@ const createLessonSchema = z.object({
   contentType: z.enum(['TEXT', 'VIDEO', 'FILE']),
   durationMinutes: z.number().int().nonnegative().optional(),
   content: z.string().optional(),
+  /** Real markdown-authored lesson body — see Lesson.contentMarkdown's schema comment. */
+  contentMarkdown: z.string().optional(),
 })
 
 export const POST = withErrorHandling('/api/lessons', 'POST', async (request: NextRequest) => {
@@ -66,6 +69,7 @@ export const POST = withErrorHandling('/api/lessons', 'POST', async (request: Ne
       contentType: body.contentType,
       durationMinutes: body.durationMinutes ?? 0,
       content: body.content ?? '',
+      contentMarkdown: body.contentMarkdown ?? null,
       order: (maxOrder._max.order ?? 0) + 1,
     },
   })

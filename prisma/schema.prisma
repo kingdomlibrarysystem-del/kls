@@ -565,6 +565,15 @@ model Lesson {
   contentType     LessonContentType
   durationMinutes Int
   content         String
+  /// Real markdown-authored lesson body — a lesson can freely mix
+  /// headings, paragraphs, images, embedded video (as a markdown link/
+  /// image the renderer turns into a real <iframe>), and code blocks in
+  /// one document, replacing the old one-contentType-per-lesson model.
+  /// Nullable + `contentType`/`content` kept alongside it (not dropped)
+  /// so any future admin-authored lesson without markdown yet still
+  /// renders via the old fields — every lesson currently in the catalog
+  /// has been migrated to populate this field for real, though.
+  contentMarkdown String?
   order           Int                @default(0)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

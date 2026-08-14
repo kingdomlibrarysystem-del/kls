@@ -1,4 +1,5 @@
 import { Modal } from '@/components/ui/modal'
+import { MarkdownContent } from '@/components/ui/markdown-content'
 import { contentTypeConfig, type LessonRow } from './lessons-config'
 
 interface LessonDetailModalProps {
@@ -23,9 +24,15 @@ export function LessonDetailModal({ lesson, onClose }: LessonDetailModalProps) {
             <span className="text-xs text-w-600">Order #{lesson.order} • {lesson.durationMinutes} min</span>
           </div>
           <div className="bg-w-100 border border-w-300 rounded p-3">
-            <p className="text-xs font-semibold text-w-950 mb-1">Content</p>
+            <p className="text-xs font-semibold text-w-950 mb-1">Summary</p>
             <p className="text-sm text-w-700 whitespace-pre-wrap">{lesson.content}</p>
           </div>
+          {lesson.contentMarkdown && (
+            <div className="bg-w-100 border border-w-300 rounded p-3 max-h-80 overflow-y-auto">
+              <p className="text-xs font-semibold text-w-950 mb-2">Lesson Content Preview</p>
+              <MarkdownContent markdown={lesson.contentMarkdown} />
+            </div>
+          )}
         </div>
       )}
     </Modal>

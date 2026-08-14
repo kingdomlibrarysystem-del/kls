@@ -17,4 +17,5 @@ export interface LessonRow {
   contentType: LessonContentType
   durationMinutes: number
   content: string
+  contentMarkdown?: string
 }

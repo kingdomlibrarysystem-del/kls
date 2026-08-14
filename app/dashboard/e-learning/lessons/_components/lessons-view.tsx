@@ -56,6 +56,7 @@ export function LessonsView() {
       contentType: lesson.contentType,
       durationMinutes: lesson.durationMinutes,
       content: lesson.content,
+      contentMarkdown: lesson.contentMarkdown,
     }))
   )
 

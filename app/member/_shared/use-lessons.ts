@@ -56,11 +56,15 @@ function loadLessons(): Promise<void> {
         contentType: l.contentType,
         durationMinutes: l.durationMinutes,
         content: l.content,
+        contentMarkdown: l.contentMarkdown,
         completed: false,
       })
     }
     for (const course of Object.values(grouped)) {
-      course.lessons.sort((a, b) => a.id.localeCompare(b.id))
+      // Sorted by the API's own `order` field (already ascending from the
+      // /api/lessons query), not re-sorted by id — a prior id-based sort
+      // here would silently scramble lesson sequence whenever MongoDB
+      // ObjectIds weren't created in the same order as `order` values.
     }
     cache = grouped
     hasFetched = true
@@ -109,6 +113,8 @@ export interface AddLessonInput {
   contentType: LessonContentType
   durationMinutes: number
   content: string
+  /** Real markdown-authored lesson body. */
+  contentMarkdown?: string
 }
 
 export async function addLesson(courseId: string, _courseTitle: string, input: AddLessonInput): Promise<Lesson> {
@@ -120,7 +126,7 @@ export async function addLesson(courseId: string, _courseTitle: string, input: A
   const json = await res.json()
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to create lesson')
   await refetchLessons()
-  return { id: json.data.id, title: json.data.title, contentType: json.data.contentType, durationMinutes: json.data.durationMinutes, content: json.data.content, completed: false }
+  return { id: json.data.id, title: json.data.title, contentType: json.data.contentType, durationMinutes: json.data.durationMinutes, content: json.data.content, contentMarkdown: json.data.contentMarkdown, completed: false }
 }
 
 export async function updateLesson(_courseId: string, lessonId: string, updates: Partial<AddLessonInput>): Promise<void> {

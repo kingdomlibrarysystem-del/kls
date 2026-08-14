@@ -3,7 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 
-function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; order: number }) {
+function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
   return {
     id: l.id,
     courseId: l.courseId,
@@ -11,6 +11,7 @@ function serializeLesson(l: { id: string; courseId: string; title: string; conte
     contentType: l.contentType,
     durationMinutes: l.durationMinutes,
     content: l.content,
+    contentMarkdown: l.contentMarkdown ?? undefined,
     order: l.order,
   }
 }
@@ -29,6 +30,7 @@ const updateLessonSchema = z.object({
   contentType: z.enum(['TEXT', 'VIDEO', 'FILE']).optional(),
   durationMinutes: z.number().int().nonnegative().optional(),
   content: z.string().optional(),
+  contentMarkdown: z.string().nullable().optional(),
   order: z.number().int().optional(),
 })
 
