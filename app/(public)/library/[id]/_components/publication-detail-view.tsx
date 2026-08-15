@@ -14,6 +14,7 @@ import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_compone
 import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
+import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 
 interface PublicationDetailViewProps {
   id: string
@@ -29,6 +30,7 @@ interface PublicationDetailViewProps {
  */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
+  const [buyAction, setBuyAction] = useState<BuyAction>(null)
   const { isAuthenticated } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { data: publications, loading: publicationsLoading, error: publicationsError } = usePublications()
@@ -144,22 +146,34 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           )}
 
           {isAuthenticated && resource ? (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <ElegantButton
-                variant={isReadable ? 'outline' : 'primary'}
-                disabled={!available}
-                onClick={() => setAction('borrow')}
-                className="flex-1 sm:flex-none"
-              >
-                Borrow
-              </ElegantButton>
-              <ElegantButton
-                variant="outline"
-                onClick={() => setAction('reserve')}
-                className="flex-1 sm:flex-none"
-              >
-                Reserve
-              </ElegantButton>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <ElegantButton
+                  variant={isReadable ? 'outline' : 'primary'}
+                  disabled={!available}
+                  onClick={() => setAction('borrow')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Borrow
+                </ElegantButton>
+                <ElegantButton
+                  variant="outline"
+                  onClick={() => setAction('reserve')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Reserve
+                </ElegantButton>
+              </div>
+              {price > 0 && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <ElegantButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
+                    Buy — {price.toLocaleString()} RWF
+                  </ElegantButton>
+                  <ElegantButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
+                    Rent
+                  </ElegantButton>
+                </div>
+              )}
             </div>
           ) : isAuthenticated ? null : (
             <div>
@@ -184,6 +198,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
       </div>
 
       <BorrowReserveConfirmModal action={action} resourceId={resource?.id ?? ''} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
+      <BuyConfirmModal action={buyAction} resourceId={resource?.id ?? ''} bookTitle={title} priceRwf={price} onClose={() => setBuyAction(null)} />
     </div>
   )
 }

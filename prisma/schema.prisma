@@ -106,6 +106,7 @@ model User {
   immunizations                    Immunization[]
   userSessions                     UserSession[]
   twoFactorSecret                  TwoFactorSecret?
+  orders                           Order[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -317,6 +318,7 @@ model Resource {
   publications Publication[]
   chapters     Chapter[]
   readingProgress ReadingProgress[]
+  orders       Order[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -325,6 +327,65 @@ enum ResourceStatus {
   AVAILABLE
   OUT_OF_STOCK
   ARCHIVED
+}
+
+/// Real purchase/rental order, replacing
+/// app/dashboard/library/sales/_components/sales-data.ts's fully mocked
+/// Transaction[] (free-text buyerName/buyerEmail/resourceTitle, no FKs,
+/// no real payment behind it, admin-only read view). A member checking
+/// out from Sales & Store creates one Order in PENDING, then a real
+/// PayPack cashin request (Rwanda MTN/Airtel mobile money — the
+/// provider this app already has real, configured credentials for, per
+/// PAYPACK_APPLICATION_ID/SECRET/WEBHOOK_SECRET in .env, unlike Stripe
+/// which has none). PayPack's cashin call returns a `ref` immediately
+/// but the transaction is NOT yet settled at that point — status only
+/// flips to PAID once PayPack's `transaction:processed` webhook confirms
+/// `status: "successful"` (or a manual status-poll fallback finds the
+/// same), never on the client-side "request sent" assumption alone.
+/// Provider fields are prefixed `paypack*` rather than left provider-
+/// agnostic — this app has exactly one real, working payment rail
+/// (Rwanda mobile money), and Stripe (USD/card, no RWF settlement) was
+/// evaluated and set aside as a poor fit for a Rwanda-priced platform;
+/// see PROGRESS.md for the decision record if a second provider is ever
+/// added later.
+model Order {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String      @db.ObjectId
+  user              User        @relation(fields: [userId], references: [id])
+  buyerName         String
+  buyerEmail        String
+  buyerPhone        String
+  resourceId        String      @db.ObjectId
+  resource          Resource    @relation(fields: [resourceId], references: [id])
+  resourceTitle     String
+  resourceFormat    String
+  type              OrderType
+  amountRwf         Float
+  status            OrderStatus @default(PENDING)
+  /// PayPack's own transaction reference (a UUID), returned immediately
+  /// by the cashin call — the key used to match an incoming webhook or
+  /// status-poll response back to this Order.
+  paypackRef        String?     @unique
+  paypackStatus     String?
+  paypackProvider   String?
+  paidAt            DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([resourceId])
+}
+
+enum OrderType {
+  SALE
+  RENTAL
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
 }
 
 enum BindingType {
