@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { Eye, Pencil, Archive } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { getCategoryById } from '@/lib/kcs-taxonomy'
 import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from './resources-data'
 
@@ -10,13 +11,12 @@ interface ResourcesTableProps {
   typeFilter: string
   onStatusFilterChange: (value: Resource['status'] | 'all') => void
   onTypeFilterChange: (value: string) => void
-  onView: (resource: Resource) => void
   onEdit: (resource: Resource) => void
   onArchive: (resource: Resource) => void
 }
 
 /** DataTable of library resources with View/Edit/Archive row actions and status/type filters. */
-export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterChange, onTypeFilterChange, onView, onEdit, onArchive }: ResourcesTableProps) {
+export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterChange, onTypeFilterChange, onEdit, onArchive }: ResourcesTableProps) {
   const tableData = data.filter((r) => {
     const matchStatus = statusFilter === 'all' || r.status === statusFilter
     const matchType = typeFilter === 'all' || r.type.toLowerCase() === typeFilter
@@ -81,9 +81,16 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => onView(r)} aria-label={`View ${r.title}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-            <Eye size={12} /> View
-          </button>
+          <UniversalButton
+            href={`/dashboard/library/${r.id}`}
+            variant="outline"
+            size="sm"
+            aria-label={`View ${r.title}`}
+            icon={<Eye size={12} />}
+            className="!px-2.5 !py-1 bg-w-100 text-w-950 border-w-300 hover:bg-w-200"
+          >
+            View
+          </UniversalButton>
           <button onClick={() => onEdit(r)} aria-label={`Edit ${r.title}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
             <Pencil size={12} /> Edit
           </button>

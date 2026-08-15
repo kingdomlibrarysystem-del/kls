@@ -7,12 +7,12 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useAssessmentCatalog } from '@/app/member/_shared/use-assessments'
 import { useAttemptsAdmin } from '../review/_components/use-attempts-admin'
 import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { kindConfig, type TakeableAssessment, type AssessmentKind } from './quizzes-config'
 import { AddQuizModal } from './add-quiz-modal'
-import { QuizDetailModal } from './quiz-detail-modal'
 import { EditQuizModal } from './edit-quiz-modal'
 import { DeleteQuizModal } from './delete-quiz-modal'
 
@@ -34,7 +34,6 @@ function LoadingSkeleton() {
 export function QuizzesView() {
   const [kindFilter, setKindFilter] = useState<AssessmentKind | 'all'>('all')
   const [adding, setAdding] = useState(false)
-  const [viewing, setViewing] = useState<TakeableAssessment | null>(null)
   const [editing, setEditing] = useState<TakeableAssessment | null>(null)
   const [deleting, setDeleting] = useState<TakeableAssessment | null>(null)
 
@@ -90,9 +89,14 @@ export function QuizzesView() {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (a) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => setViewing(a)} aria-label={`View ${a.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
-            <Eye size={14} />
-          </button>
+          <UniversalButton
+            href={`/dashboard/e-learning/quizzes/${a.id}`}
+            variant="ghost"
+            size="icon"
+            aria-label={`View ${a.title}`}
+            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            icon={<Eye size={14} />}
+          />
           <button onClick={() => setEditing(a)} aria-label={`Edit ${a.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
@@ -146,7 +150,6 @@ export function QuizzesView() {
       />
 
       <AddQuizModal open={adding} onClose={() => setAdding(false)} />
-      <QuizDetailModal assessment={viewing} onClose={() => setViewing(null)} />
       <EditQuizModal assessment={editing} onClose={() => setEditing(null)} />
       <DeleteQuizModal assessment={deleting} onClose={() => setDeleting(null)} />
     </div>

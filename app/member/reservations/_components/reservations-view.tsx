@@ -1,17 +1,14 @@
 'use client'
 
-import { useState } from 'react'
 import { CalendarDays, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import type { Reservation } from '@/app/dashboard/reservations/_components/reservations-data'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useReservations } from '../../_shared/use-reservations'
-import { ReservationDetailModal } from './reservation-detail-modal'
 
-/** This member's reservations: active/waiting list plus claimed history, each row opening a details modal. Claiming a notified reservation happens in person via staff — see /api/reservations' convertToBorrow action — so this view is read-only. */
+/** This member's reservations: active/waiting list plus claimed history, each row linking to a details page. Claiming a notified reservation happens in person via staff — see /api/reservations' convertToBorrow action — so this view is read-only. */
 export function ReservationsView() {
   const { data: reservations, loading } = useReservations()
-  const [viewing, setViewing] = useState<Reservation | null>(null)
   const active = reservations.filter((r) => r.status === 'pending' || r.status === 'notified')
   const done = reservations.filter((r) => r.status === 'claimed' || r.status === 'expired' || r.status === 'cancelled')
 
@@ -52,12 +49,13 @@ export function ReservationsView() {
           <EmptyState icon={CalendarDays} title="No active reservations" description="Books you reserve will appear here while you wait for a copy." style={{ color: 'var(--text-secondary)' }} />
         ) : (
           active.map((r) => (
-            <button
+            <UniversalButton
               key={r.id}
-              onClick={() => setViewing(r)}
+              href={`/member/reservations/${r.id}`}
+              variant="dim-outline"
               aria-label={`View details for ${r.resourceTitle}`}
-              className="w-full text-left"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="w-full text-left justify-start"
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', borderRadius: 0, border: 'none', background: 'none', color: 'inherit' }}
             >
               <div style={{ width: 36, height: 36, borderRadius: 8, background: r.status === 'notified' ? 'var(--green-dim)' : 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {r.status === 'notified' ? <CheckCircle2 size={16} color="var(--green-light)" /> : <Clock size={16} color="var(--gold)" />}
@@ -71,7 +69,7 @@ export function ReservationsView() {
                   {r.status === 'notified' ? 'Ready — Claim in person' : `Position ${r.queuePosition}`}
                 </div>
               </div>
-            </button>
+            </UniversalButton>
           ))
         )}
       </div>
@@ -82,12 +80,13 @@ export function ReservationsView() {
             <CheckCircle2 size={14} color="var(--gold)" /> Past Reservations
           </div>
           {done.map((r) => (
-            <button
+            <UniversalButton
               key={r.id}
-              onClick={() => setViewing(r)}
+              href={`/member/reservations/${r.id}`}
+              variant="dim-outline"
               aria-label={`View details for ${r.resourceTitle}`}
-              className="w-full text-left"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="w-full text-left justify-start"
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderRadius: 0, border: 'none', background: 'none', color: 'inherit' }}
             >
               <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <BookOpen size={16} color="var(--text-muted)" />
@@ -97,12 +96,10 @@ export function ReservationsView() {
                 <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.resourceAuthor}</div>
               </div>
               <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.status.charAt(0).toUpperCase() + r.status.slice(1)}</div>
-            </button>
+            </UniversalButton>
           ))}
         </div>
       )}
-
-      <ReservationDetailModal reservation={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

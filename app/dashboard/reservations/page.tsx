@@ -10,14 +10,12 @@ import type { Reservation, ReservationStatus } from './_components/reservations-
 import { useReservationsAdmin, notifyReservation, convertReservationToBorrow, cancelReservation, expireReservation } from './_components/use-reservations-admin'
 import { ReservationsStats } from './_components/reservations-stats'
 import { ReservationsTable } from './_components/reservations-table'
-import { ReservationDetailModal } from './_components/reservation-detail-modal'
 
 /** Reservations Management: approval workflow (not a create-a-record page) plus a details view per row. */
 export default function AdminReservationsPage() {
   const { data, loading, error } = useReservationsAdmin()
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'all'>('all')
   const [toast, setToast] = useState('')
-  const [viewing, setViewing] = useState<Reservation | null>(null)
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
@@ -92,14 +90,11 @@ export default function AdminReservationsPage() {
         data={data}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
-        onView={setViewing}
         onNotify={handleNotify}
         onConvertToBorrow={handleConvertToBorrow}
         onCancel={handleCancel}
         onExpire={handleExpire}
       />
-
-      <ReservationDetailModal reservation={viewing} onClose={() => setViewing(null)} />
     </PageTransition>
   )
 }

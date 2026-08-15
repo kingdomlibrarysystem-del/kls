@@ -1,13 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Heart, BookOpen, GraduationCap, X } from 'lucide-react'
+import { Heart, BookOpen, GraduationCap, Eye, X } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, removeFavorite } from '@/app/member/_shared/use-favorites'
 import type { FavoriteItem } from './favorites-data'
-import { FavoriteDetailModal } from './favorite-detail-modal'
+
+/** Favorites carry no favorite-specific data of their own (no notes/date) —
+ *  they're just a pointer to a resource or course, so "view" goes straight
+ *  to that item's own real detail page rather than a duplicate view. */
+function detailHref(item: FavoriteItem) {
+  return item.type === 'COURSE' ? '/member/e-learning' : `/library/${item.id}`
+}
 
 /** Simulated network delay before the shared favorites store's initial snapshot is shown. */
 const LOAD_DELAY_MS = 400
@@ -21,7 +28,6 @@ export function FavoritesView() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [removeError, setRemoveError] = useState('')
-  const [viewing, setViewing] = useState<FavoriteItem | null>(null)
   const favorites = useFavorites(user?.id)
 
   useEffect(() => {
@@ -70,19 +76,22 @@ export function FavoritesView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {favorites.map((item) => (
           <div key={item.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              onClick={() => setViewing(item)}
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
+              {item.type === 'COURSE' ? <GraduationCap size={16} /> : <BookOpen size={16} />}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{item.title}</p>
+              <p style={{ fontSize: 9, color: 'var(--text-muted)' }}>{item.subtitle}</p>
+            </div>
+            <UniversalButton
+              href={detailHref(item)}
+              variant="gold-outline"
+              size="sm"
+              icon={<Eye size={12} />}
               aria-label={`View details for ${item.title}`}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
-                {item.type === 'COURSE' ? <GraduationCap size={16} /> : <BookOpen size={16} />}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{item.title}</p>
-                <p style={{ fontSize: 9, color: 'var(--text-muted)' }}>{item.subtitle}</p>
-              </div>
-            </button>
+              View
+            </UniversalButton>
             <button
               onClick={() => handleRemove(item.id)}
               aria-label={`Remove ${item.title} from favorites`}
@@ -93,8 +102,6 @@ export function FavoritesView() {
           </div>
         ))}
       </div>
-
-      <FavoriteDetailModal favorite={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

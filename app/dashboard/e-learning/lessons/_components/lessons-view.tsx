@@ -6,11 +6,11 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useLessonsByCourse, reorderLesson } from '@/app/member/_shared/use-lessons'
 import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { contentTypeConfig, type LessonRow } from './lessons-config'
 import { AddLessonModal } from './add-lesson-modal'
-import { LessonDetailModal } from './lesson-detail-modal'
 import { EditLessonModal } from './edit-lesson-modal'
 import { DeleteLessonModal } from './delete-lesson-modal'
 
@@ -33,7 +33,6 @@ function LoadingSkeleton() {
 export function LessonsView() {
   const [courseFilter, setCourseFilter] = useState<string | 'all'>('all')
   const [adding, setAdding] = useState(false)
-  const [viewing, setViewing] = useState<LessonRow | null>(null)
   const [editing, setEditing] = useState<LessonRow | null>(null)
   const [deleting, setDeleting] = useState<LessonRow | null>(null)
 
@@ -99,9 +98,14 @@ export function LessonsView() {
           <button onClick={() => reorderLesson(r.courseId, r.lessonId, 'down')} disabled={r.order === courseLessonCount(r.courseId)} aria-label={`Move ${r.title} down`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none">
             <ArrowDown size={13} />
           </button>
-          <button onClick={() => setViewing(r)} aria-label={`View ${r.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
-            <Eye size={14} />
-          </button>
+          <UniversalButton
+            href={`/dashboard/e-learning/lessons/${r.lessonId}`}
+            variant="ghost"
+            size="icon"
+            aria-label={`View ${r.title}`}
+            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            icon={<Eye size={14} />}
+          />
           <button onClick={() => setEditing(r)} aria-label={`Edit ${r.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
@@ -146,7 +150,6 @@ export function LessonsView() {
       />
 
       <AddLessonModal open={adding} onClose={() => setAdding(false)} />
-      <LessonDetailModal lesson={viewing} onClose={() => setViewing(null)} />
       <EditLessonModal lesson={editing} onClose={() => setEditing(null)} />
       <DeleteLessonModal lesson={deleting} onClose={() => setDeleting(null)} />
     </div>

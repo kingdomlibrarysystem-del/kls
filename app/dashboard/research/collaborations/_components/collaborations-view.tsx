@@ -5,9 +5,7 @@ import { Users, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useResearchProjects } from '../../_shared/use-research-projects'
-import type { ResearchProjectSummary } from './collaborations-data'
 import { ProjectCollaborationCard } from './project-collaboration-card'
-import { ProjectDetailModal } from './project-detail-modal'
 import { CollaborationsStats } from './collaborations-stats'
 
 /**
@@ -18,7 +16,6 @@ import { CollaborationsStats } from './collaborations-stats'
  * `/contributor/research` used to provide over this data.
  */
 export function CollaborationsView() {
-  const [viewing, setViewing] = useState<ResearchProjectSummary | null>(null)
   const [contributorFilter, setContributorFilter] = useState('all')
   const { data: projects, loading, error } = useResearchProjects()
 
@@ -62,11 +59,10 @@ export function CollaborationsView() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((project) => (
-            <ProjectCollaborationCard key={project.id} project={project} onViewDetails={setViewing} />
+            <ProjectCollaborationCard key={project.id} project={project} />
           ))}
         </div>
       )}
-      <ProjectDetailModal project={viewing} onClose={() => setViewing(null)} />
     </>
   )
 }

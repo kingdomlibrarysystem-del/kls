@@ -1,13 +1,13 @@
 import { Trophy, TrendingDown, ArrowUpRight } from 'lucide-react'
+import { UniversalButton } from '@/components/ui/universal-button'
 import type { CourseAnalytics } from './progress-data'
 
 interface CourseAnalyticsCardProps {
   course: CourseAnalytics
-  onViewDetails: (course: CourseAnalytics) => void
 }
 
 /** One course's analytics: enrolled count, average completion, top performers, and dropoff callouts. */
-export function CourseAnalyticsCard({ course, onViewDetails }: CourseAnalyticsCardProps) {
+export function CourseAnalyticsCard({ course }: CourseAnalyticsCardProps) {
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
@@ -53,13 +53,16 @@ export function CourseAnalyticsCard({ course, onViewDetails }: CourseAnalyticsCa
         </ul>
       </div>
 
-      <button
-        onClick={() => onViewDetails(course)}
+      <UniversalButton
+        href={`/dashboard/e-learning/progress/${course.id}`}
         aria-label={`View full analytics for ${course.title}`}
-        className="flex items-center gap-1 mt-4 font-lato text-xs font-semibold text-w-700 hover:text-w-950 transition-colors"
+        variant="ghost"
+        size="sm"
+        className="mt-4 !px-0 !py-0 text-w-700 hover:text-w-950"
+        icon={<ArrowUpRight size={12} />}
       >
-        View Full Details <ArrowUpRight size={12} />
-      </button>
+        View Full Details
+      </UniversalButton>
     </div>
   )
 }

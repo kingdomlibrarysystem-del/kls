@@ -1,10 +1,9 @@
 "use client";
-import { useState } from "react";
 import { Award, Download, Eye, Star } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCertificates, type Certificate } from "@/app/member/_shared/use-certificates";
-import { CertificateViewModal } from "./_components/certificate-view-modal";
+import { UniversalButton } from "@/components/ui/universal-button";
+import { useCertificates } from "@/app/member/_shared/use-certificates";
 
 /**
  * Real certificates earned by this member, fetched from /api/certificates
@@ -13,7 +12,6 @@ import { CertificateViewModal } from "./_components/certificate-view-modal";
  * assessment loop (see app/api/_shared/issue-certificate-if-eligible.ts).
  */
 export default function CertificatesPage() {
-  const [viewing, setViewing] = useState<Certificate | null>(null);
   const { data: certificates, loading } = useCertificates();
 
   if (loading) {
@@ -78,28 +76,32 @@ export default function CertificatesPage() {
                 <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 6 }}>Issued: {cert.issuedAt}</div>
                 <div style={{ fontSize: 8, color: "var(--text-muted)", marginBottom: 10, fontFamily: "monospace" }}>{cert.verificationCode}</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button
-                    onClick={() => setViewing(cert)}
+                  <UniversalButton
+                    href={`/member/certificates/${cert.id}`}
+                    variant="gold-outline"
+                    size="sm"
+                    fullWidth
+                    icon={<Eye size={12} />}
                     aria-label={`View certificate for ${cert.course}`}
-                    style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--gold)", background: "transparent", color: "var(--gold)", fontSize: 10, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
                   >
-                    <Eye size={12} /> View
-                  </button>
-                  <button
-                    onClick={() => setViewing(cert)}
+                    View
+                  </UniversalButton>
+                  <UniversalButton
+                    href={`/member/certificates/${cert.id}`}
+                    variant="gold"
+                    size="sm"
+                    fullWidth
+                    icon={<Download size={12} />}
                     aria-label={`Download certificate for ${cert.course}`}
-                    style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 10, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
                   >
-                    <Download size={12} /> Download
-                  </button>
+                    Download
+                  </UniversalButton>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
-
-      <CertificateViewModal certificate={viewing} onClose={() => setViewing(null)} />
     </div>
   );
 }

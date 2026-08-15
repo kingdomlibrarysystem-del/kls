@@ -1,5 +1,6 @@
 import { Eye, Bell, ArrowRightCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { statusConfig, type Reservation, type ReservationStatus } from './reservations-data'
 import { QueueBadge, ClaimCountdown } from './reservation-helpers'
 
@@ -7,7 +8,6 @@ interface ReservationsTableProps {
   data: Reservation[]
   statusFilter: ReservationStatus | 'all'
   onStatusFilterChange: (value: ReservationStatus | 'all') => void
-  onView: (reservation: Reservation) => void
   onNotify: (reservation: Reservation) => void
   onConvertToBorrow: (reservation: Reservation) => void
   onCancel: (reservation: Reservation) => void
@@ -15,7 +15,7 @@ interface ReservationsTableProps {
 }
 
 /** DataTable of reservations with View + the existing notify/convert/cancel/expire actions. */
-export function ReservationsTable({ data, statusFilter, onStatusFilterChange, onView, onNotify, onConvertToBorrow, onCancel, onExpire }: ReservationsTableProps) {
+export function ReservationsTable({ data, statusFilter, onStatusFilterChange, onNotify, onConvertToBorrow, onCancel, onExpire }: ReservationsTableProps) {
   const tableData = statusFilter === 'all' ? data : data.filter((r) => r.status === statusFilter)
 
   const columns: Column<Reservation>[] = [
@@ -82,9 +82,15 @@ export function ReservationsTable({ data, statusFilter, onStatusFilterChange, on
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
-          <button onClick={() => onView(r)} aria-label={`View reservation for ${r.memberName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-            <Eye size={12} /> View
-          </button>
+          <UniversalButton
+            href={`/dashboard/reservations/${r.id}`}
+            aria-label={`View reservation for ${r.memberName}`}
+            variant="outline"
+            size="sm"
+            icon={<Eye size={12} />}
+          >
+            View
+          </UniversalButton>
           {r.status === 'pending' && r.queuePosition === 1 && (r.totalCopies - r.borrowedCopies) > 0 && (
             <button onClick={() => onNotify(r)} className="flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded text-xs font-lato hover:bg-yellow-100 transition-colors">
               <Bell size={12} /> Notify
