@@ -68,7 +68,7 @@ export const adminMainNav: NavItem[] = [
   {
     icon: <GraduationCap size={14} />, label: "E-Learning",
     subItems: [
-      { icon: <BookOpen size={12} />,     label: "Courses",         href: "/dashboard/e-learning" },
+      { icon: <BookOpen size={12} />,     label: "Overview",        href: "/dashboard/e-learning" },
       { icon: <BookCopy size={12} />,     label: "Course Catalog",  href: "/dashboard/e-learning/catalog" },
       { icon: <ScrollText size={12} />,   label: "Add Course",      href: "/dashboard/e-learning/add" },
       { icon: <Video size={12} />,        label: "Lessons",         href: "/dashboard/e-learning/lessons" },
