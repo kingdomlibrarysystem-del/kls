@@ -6,11 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { getSession } from 'next-auth/react'
 import { FormContainer } from '@/components/ui/form-container'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
+import { roleNameToUserRole } from '@/lib/roles'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,9 +23,11 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 /**
  * Login form. On success, redirects to `?redirect=` if present (e.g. a
- * public library page the visitor was sent here from), or /member by
- * default — so a Borrow/Reserve attempt made while signed out can land
- * back on the same book after signing in.
+ * public library page the visitor was sent here from). Otherwise the
+ * destination depends on role: admin/manager/staff land on /dashboard,
+ * everyone else on /member — read from a fresh getSession() call right
+ * after signIn() resolves, since useSession()'s own session value isn't
+ * guaranteed to reflect the new login synchronously yet.
  */
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -34,7 +38,7 @@ export function LoginForm() {
   const { login, checkRequiresTotp } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/member'
+  const explicitRedirect = searchParams.get('redirect')
 
   const {
     register,
@@ -59,7 +63,15 @@ export function LoginForm() {
         )
         return
       }
-      router.push(redirectTo)
+
+      if (explicitRedirect) {
+        router.push(explicitRedirect)
+        return
+      }
+
+      const freshSession = await getSession()
+      const role = roleNameToUserRole(freshSession?.user?.roleName ?? '')
+      router.push(role === 'admin' || role === 'manager' || role === 'staff' ? '/dashboard' : '/member')
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Login failed')
       setIsSubmitting(false)

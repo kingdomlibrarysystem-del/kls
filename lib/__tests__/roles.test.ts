@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { roleNameToUserRole } from '../auth-context'
+import { roleNameToUserRole } from '../roles'
 
 describe('roleNameToUserRole', () => {
   it('maps admin/administrator to "admin"', () => {
