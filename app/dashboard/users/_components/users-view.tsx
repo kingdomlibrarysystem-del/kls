@@ -13,6 +13,7 @@ import { useUsers, type NewUserInput } from './use-users'
 import { UserFormModal } from './user-form-modal'
 import { UserDetailModal } from './user-detail-modal'
 import { DeleteUserModal } from './delete-user-modal'
+import { NewUserCredentialsModal } from './new-user-credentials-modal'
 import { UsersStats } from './users-stats'
 
 /** User Management: full CRUD over the real /api/users backend. */
@@ -23,6 +24,7 @@ export function UsersView() {
   const [editing, setEditing] = useState<PlatformUser | null>(null)
   const [viewing, setViewing] = useState<PlatformUser | null>(null)
   const [deleting, setDeleting] = useState<PlatformUser | null>(null)
+  const [newCredentials, setNewCredentials] = useState<{ name: string; email: string; temporaryPassword: string } | null>(null)
   const { user: currentUser } = useAuth()
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin User'
 
@@ -46,14 +48,14 @@ export function UsersView() {
         }
         showToast(`Updated "${data.name}".`)
       } else {
-        await addUser(data)
+        const created = await addUser(data)
         logAuditEvent({
           actor: actorName,
           action: 'USER_CREATED',
           target: `${data.name} (${data.role})`,
           notes: 'Account created directly by admin, not self-registered.',
         })
-        showToast(`Added "${data.name}".`)
+        setNewCredentials({ name: created.name, email: created.email, temporaryPassword: created.temporaryPassword })
       }
       setFormOpen(false)
       setEditing(null)
@@ -140,6 +142,10 @@ export function UsersView() {
       <UserFormModal open={formOpen} editing={editing} onClose={() => { setFormOpen(false); setEditing(null) }} onSave={handleSave} />
       <UserDetailModal user={viewing} onClose={() => setViewing(null)} />
       <DeleteUserModal user={deleting} onClose={() => setDeleting(null)} onConfirm={handleDelete} />
+      <NewUserCredentialsModal
+        credentials={newCredentials}
+        onClose={() => { setNewCredentials(null); setFormOpen(false); setEditing(null) }}
+      />
     </div>
   )
 }
