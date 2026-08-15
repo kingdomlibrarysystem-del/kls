@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import type { NextRequest } from 'next/server'
-import { roleNameToUserRole } from '@/contexts/auth-context'
+import { roleNameToUserRole } from '@/lib/roles'
 
 /**
  * Route protection — previously nonexistent: every /dashboard/* and

@@ -3,8 +3,10 @@
 import { createContext, useContext, useCallback, type ReactNode } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { logAuditEvent } from "@/app/dashboard/audit-log/_components/use-audit-log";
+import { roleNameToUserRole, type UserRole } from "@/lib/roles";
 
-export type UserRole = "admin" | "manager" | "staff" | "member";
+export type { UserRole };
+export { roleNameToUserRole };
 
 export interface User {
   id: string;
@@ -35,15 +37,6 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   /** Confirms a real email-verification token via /api/auth/verify-email. */
   verifyEmail: (email: string, token: string) => Promise<void>;
-}
-
-/** Maps a dynamic Role.name (admin-defined, free text) onto the fixed UserRole union the UI's RBAC checks use. Defaults to "member" for anything unrecognized. */
-export function roleNameToUserRole(roleName: string): UserRole {
-  const normalized = roleName.trim().toLowerCase();
-  if (normalized === "admin" || normalized === "administrator") return "admin";
-  if (normalized === "manager") return "manager";
-  if (normalized === "staff") return "staff";
-  return "member";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
