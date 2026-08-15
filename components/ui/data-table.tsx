@@ -165,7 +165,11 @@ export function DataTable<T>({
 
   const goPage = (n: number) => setPage(Math.min(Math.max(1, n), totalPages))
 
-  // Recompute scroll-fade affordance whenever the visible rows or viewport size change.
+  // Recompute scroll-fade affordance whenever the visible rows or viewport size
+  // change. Depends on paged.length, not `paged` itself — `paged` is a fresh
+  // array from filtered.slice() on every render, so using it directly here
+  // reran this effect every render (setScrollState -> re-render -> new
+  // `paged` reference -> effect reruns again), an infinite update loop.
   useEffect(() => {
     updateScrollState()
     const el = scrollRef.current
@@ -178,7 +182,7 @@ export function DataTable<T>({
       window.removeEventListener('resize', onResize)
       observer.disconnect()
     }
-  }, [paged, updateScrollState])
+  }, [paged.length, updateScrollState])
 
   return (
     <div>

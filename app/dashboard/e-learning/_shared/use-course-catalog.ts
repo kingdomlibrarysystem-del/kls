@@ -30,14 +30,14 @@ function loadCatalog(): Promise<void> {
     })
     .then((json) => {
       if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch courses')
-      cache = json.data.map((c: { id: string; title: string; description: string; category: string; language: string; status: string; author: string; lecturerId?: string; createdAt: string }) => ({
+      cache = json.data.map((c: { id: string; title: string; description: string; category: string; language: string; status: string; author: string; lecturerId?: string; createdAt: string; students?: number }) => ({
         id: c.id,
         title: c.title,
         description: c.description,
         category: c.category,
         language: c.language,
         status: c.status,
-        enrolledCount: 0,
+        enrolledCount: c.students ?? 0,
         createdAt: c.createdAt,
         author: c.author,
         lecturerId: c.lecturerId,
