@@ -1,17 +1,14 @@
 'use client'
 
-import { useState } from 'react'
 import { BookOpen, RotateCcw, AlertTriangle, Calendar, ChevronRight, Clock, CheckCircle2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import type { Borrowing } from '@/app/dashboard/library/borrowings/_components/borrowings-data'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useBorrowings } from '../../_shared/use-borrowings'
-import { BorrowingDetailModal } from './borrowing-detail-modal'
 
-/** This member's borrowings: active/overdue list plus return history, each row opening a details modal. */
+/** This member's borrowings: active/overdue list plus return history, each row linking to its details page. */
 export function BorrowingsView() {
   const { data: borrowings, loading } = useBorrowings()
-  const [viewing, setViewing] = useState<Borrowing | null>(null)
   const active = borrowings.filter((b) => b.status === 'active' || b.status === 'overdue' || b.status === 'pending')
   const returned = borrowings.filter((b) => b.status === 'returned')
 
@@ -54,12 +51,13 @@ export function BorrowingsView() {
           active.map((b) => {
             const isOverdue = b.status === 'overdue'
             return (
-              <button
+              <UniversalButton
                 key={b.id}
-                onClick={() => setViewing(b)}
+                href={`/member/borrowings/${b.id}`}
+                variant="dim-outline"
                 aria-label={`View details for ${b.resourceTitle}`}
                 className="w-full text-left"
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer', justifyContent: 'flex-start' }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
                   <BookOpen size={18} />
@@ -75,7 +73,7 @@ export function BorrowingsView() {
                   </div>
                 </div>
                 <ChevronRight size={14} color="var(--text-muted)" />
-              </button>
+              </UniversalButton>
             )
           })
         )}
@@ -87,12 +85,13 @@ export function BorrowingsView() {
             <Clock size={14} color="var(--text-muted)" /> Return History
           </div>
           {returned.map((b) => (
-            <button
+            <UniversalButton
               key={b.id}
-              onClick={() => setViewing(b)}
+              href={`/member/borrowings/${b.id}`}
+              variant="dim-outline"
               aria-label={`View details for ${b.resourceTitle}`}
               className="w-full text-left"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer', justifyContent: 'flex-start' }}
             >
               <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexShrink: 0 }}>
                 <BookOpen size={18} />
@@ -105,12 +104,10 @@ export function BorrowingsView() {
                 <div style={{ fontSize: 9, color: 'var(--green-light)' }}>Returned</div>
                 <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{b.returnDate}</div>
               </div>
-            </button>
+            </UniversalButton>
           ))}
         </div>
       )}
-
-      <BorrowingDetailModal borrowing={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

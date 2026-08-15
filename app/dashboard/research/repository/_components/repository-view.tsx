@@ -5,12 +5,12 @@ import { FileText, Eye, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useRepository } from './use-repository'
 import { paperStatusConfig, type ResearchPaper } from './repository-data'
-import { PaperDetailModal } from './paper-detail-modal'
 import { RepositoryStats } from './repository-stats'
 
-function buildColumns(onView: (p: ResearchPaper) => void): Column<ResearchPaper>[] {
+function buildColumns(): Column<ResearchPaper>[] {
   return [
     { key: 'title', label: 'Title', sortable: true, render: (p) => <span className="font-semibold text-w-950 max-w-55 truncate block">{p.title}</span> },
     { key: 'author', label: 'Author', sortable: true, render: (p) => <span className="text-w-700">{p.author}</span> },
@@ -37,9 +37,16 @@ function buildColumns(onView: (p: ResearchPaper) => void): Column<ResearchPaper>
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (p) => (
-        <button onClick={() => onView(p)} aria-label={`View ${p.title}`} className="flex items-center gap-1 ml-auto px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-          <Eye size={12} /> View
-        </button>
+        <UniversalButton
+          href={`/dashboard/research/repository/${p.id}`}
+          aria-label={`View ${p.title}`}
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          icon={<Eye size={12} />}
+        >
+          View
+        </UniversalButton>
       ),
     },
   ]
@@ -52,7 +59,6 @@ function buildColumns(onView: (p: ResearchPaper) => void): Column<ResearchPaper>
  * `/contributor/research` used to provide over this exact store.
  */
 export function RepositoryView() {
-  const [viewing, setViewing] = useState<ResearchPaper | null>(null)
   const [authorFilter, setAuthorFilter] = useState('all')
   const { data: papers, loading, error } = useRepository()
 
@@ -94,7 +100,7 @@ export function RepositoryView() {
       <RepositoryStats />
       <DataTable<ResearchPaper>
         data={tableData}
-        columns={buildColumns(setViewing)}
+        columns={buildColumns()}
         rowKey={(p) => p.id}
         searchPlaceholder="Search title or keyword..."
         searchFilter={(p, q) =>
@@ -105,7 +111,6 @@ export function RepositoryView() {
         filters={authorSelect}
         emptyMessage="No papers match your search."
       />
-      <PaperDetailModal paper={viewing} onClose={() => setViewing(null)} />
     </>
   )
 }

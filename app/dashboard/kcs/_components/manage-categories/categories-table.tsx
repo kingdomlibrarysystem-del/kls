@@ -1,18 +1,18 @@
 import { FolderOpen, Eye, Pencil, Trash2, ChevronRight } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { getParentName, resourceCountFor, type Category } from '@/lib/kcs-taxonomy'
 import type { Resource } from '@/app/dashboard/library/_components/resources-data'
 
 interface CategoriesTableProps {
   categories: Category[]
   resources: Resource[]
-  onView: (category: Category) => void
   onEdit: (category: Category) => void
   onDelete: (category: Category) => void
 }
 
 /** DataTable of categories with View/Edit/Delete row actions, extracted from the original page.tsx (View added). Resource counts are computed live from `resources`, not a stored field. */
-export function CategoriesTable({ categories, resources, onView, onEdit, onDelete }: CategoriesTableProps) {
+export function CategoriesTable({ categories, resources, onEdit, onDelete }: CategoriesTableProps) {
   const columns: Column<Category>[] = [
     {
       key: 'name', label: 'Category', sortable: true,
@@ -63,9 +63,16 @@ export function CategoriesTable({ categories, resources, onView, onEdit, onDelet
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => onView(c)} aria-label={`View ${c.name.en}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 dark:bg-white/5 text-w-950 dark:text-white/70 border border-w-300 dark:border-white/10 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
-            <Eye size={11} /> View
-          </button>
+          <UniversalButton
+            href={`/dashboard/kcs/categories/${c.id}`}
+            aria-label={`View ${c.name.en}`}
+            variant="ghost"
+            size="sm"
+            icon={<Eye size={11} />}
+            className="bg-w-100 dark:bg-white/5 text-w-950 dark:text-white/70 border border-w-300 dark:border-white/10 hover:bg-w-200 dark:hover:bg-white/10"
+          >
+            View
+          </UniversalButton>
           <button onClick={() => onEdit(c)} aria-label={`Edit ${c.name.en}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 dark:bg-white/5 text-w-950 dark:text-white/70 border border-w-300 dark:border-white/10 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
             <Pencil size={11} /> Edit
           </button>

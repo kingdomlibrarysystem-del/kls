@@ -8,7 +8,6 @@ import { useCategories, addCategory, updateCategory, removeCategory } from '@/li
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { CategoryFormPanel } from './manage-categories/category-form-panel'
 import { CategoriesTable } from './manage-categories/categories-table'
-import { CategoryDetailModal } from './manage-categories/category-detail-modal'
 import { DeleteCategoryModal } from './manage-categories/delete-category-modal'
 import { CategoriesStats } from './manage-categories/categories-stats'
 
@@ -38,7 +37,6 @@ export function ManageCategoriesSection() {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [editTarget, setEditTarget] = useState<Category | null>(null)
-  const [viewTarget, setViewTarget] = useState<Category | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -160,7 +158,7 @@ export function ManageCategoriesSection() {
               <div className="flex items-center justify-between mb-3">
                 <p className="font-lato text-xs text-w-600 dark:text-white/50 uppercase tracking-wider font-semibold">{categories.length} categories total</p>
               </div>
-              <CategoriesTable categories={categories} resources={resources} onView={setViewTarget} onEdit={handleEdit} onDelete={setDeleteTarget} />
+              <CategoriesTable categories={categories} resources={resources} onEdit={handleEdit} onDelete={setDeleteTarget} />
             </div>
 
             <CategoryFormPanel
@@ -176,7 +174,6 @@ export function ManageCategoriesSection() {
             />
           </div>
 
-          <CategoryDetailModal category={viewTarget} resources={resources} onClose={() => setViewTarget(null)} />
           <DeleteCategoryModal category={deleteTarget} resourceCount={deleteTarget ? resourceCountFor(deleteTarget.id, resources) : 0} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
         </>
       )}

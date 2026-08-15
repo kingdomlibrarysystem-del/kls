@@ -1,17 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import { ShoppingBag, Clock, CheckCircle2, XCircle, ChevronRight, Coins } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useOrders } from '../../_shared/use-orders'
-import { typeConfig, statusConfig, type MemberOrder } from './orders-data'
-import { OrderDetailModal } from './order-detail-modal'
+import { typeConfig, statusConfig } from './orders-data'
 
-/** This member's orders: pending payments plus completed/failed history, each row opening a details modal. */
+/** This member's orders: pending payments plus completed/failed history, each row linking to its details page. */
 export function OrdersView() {
   const { data: orders, loading } = useOrders()
-  const [viewing, setViewing] = useState<MemberOrder | null>(null)
   const pending = orders.filter((o) => o.status === 'pending')
   const settled = orders.filter((o) => o.status !== 'pending')
   const paidTotal = orders.filter((o) => o.status === 'paid').reduce((sum, o) => sum + o.amount, 0)
@@ -53,12 +51,13 @@ export function OrdersView() {
           <EmptyState icon={ShoppingBag} title="No pending orders" description="Payment requests you send from the library will appear here until confirmed." style={{ color: 'var(--text-secondary)' }} />
         ) : (
           pending.map((o) => (
-            <button
+            <UniversalButton
               key={o.id}
-              onClick={() => setViewing(o)}
+              href={`/member/orders/${o.id}`}
+              variant="gold-outline"
               aria-label={`View details for order ${o.resourceTitle}`}
               className="w-full text-left"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', border: 'none', borderRadius: 0 }}
             >
               <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
                 <ShoppingBag size={18} />
@@ -72,7 +71,7 @@ export function OrdersView() {
                 <div style={{ fontSize: 8, color: 'var(--text-muted)', marginTop: 1 }}>{o.amount.toLocaleString()} RWF</div>
               </div>
               <ChevronRight size={14} color="var(--text-muted)" />
-            </button>
+            </UniversalButton>
           ))
         )}
       </div>
@@ -83,12 +82,13 @@ export function OrdersView() {
             <CheckCircle2 size={14} color="var(--text-muted)" /> Order History
           </div>
           {settled.map((o) => (
-            <button
+            <UniversalButton
               key={o.id}
-              onClick={() => setViewing(o)}
+              href={`/member/orders/${o.id}`}
+              variant="dim-outline"
               aria-label={`View details for order ${o.resourceTitle}`}
               className="w-full text-left"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderBottom: '1px solid var(--border-light)', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderBottom: '1px solid var(--border-light)', border: 'none', borderRadius: 0 }}
             >
               <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexShrink: 0 }}>
                 {o.status === 'paid' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
@@ -101,12 +101,10 @@ export function OrdersView() {
                 <div style={{ fontSize: 9, color: statusConfig[o.status].color }}>{statusConfig[o.status].label}</div>
                 <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{o.amount.toLocaleString()} RWF</div>
               </div>
-            </button>
+            </UniversalButton>
           ))}
         </div>
       )}
-
-      <OrderDetailModal order={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

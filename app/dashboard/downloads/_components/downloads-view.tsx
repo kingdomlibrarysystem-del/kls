@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { Download, FileText, BarChart3, Eye, Lock } from 'lucide-react'
-import { useCertificatesAdmin, type CertificateRecord } from '@/app/dashboard/e-learning/certificates/_components/use-certificates-admin'
-import { CertificateViewModal } from '@/app/member/certificates/_components/certificate-view-modal'
+import { UniversalButton } from '@/components/ui/universal-button'
+import { useCertificatesAdmin } from '@/app/dashboard/e-learning/certificates/_components/use-certificates-admin'
 
 interface StaticDownloadItem {
   id: string
@@ -32,15 +31,14 @@ const staticTypeIcon: Record<StaticDownloadItem['type'], React.ReactNode> = {
 }
 
 /**
- * Download Center: real issued certificates (View opens the same
- * print-to-PDF flow CertificateViewModal already provides on the member
- * side) plus Report/Statement rows, which stay disabled with an honest
- * disclaimer since no download-as-file pattern exists yet for tabular
- * report data anywhere in this app.
+ * Download Center: real issued certificates (View links to the same
+ * certificate detail page /member/certificates/:id, with its own
+ * print-to-PDF flow) plus Report/Statement rows, which stay disabled
+ * with an honest disclaimer since no download-as-file pattern exists
+ * yet for tabular report data anywhere in this app.
  */
 export function DownloadsView() {
   const { data: certificates } = useCertificatesAdmin()
-  const [viewing, setViewing] = useState<CertificateRecord | null>(null)
 
   return (
     <div>
@@ -54,15 +52,16 @@ export function DownloadsView() {
                 {cert.member} · Certificate · {cert.issuedAt}{cert.revoked && ' · Revoked'}
               </p>
             </div>
-            <button
-              onClick={() => setViewing(cert)}
+            <UniversalButton
+              href={`/member/certificates/${cert.id}`}
+              variant="primary"
+              size="sm"
+              icon={<Eye size={12} />}
               aria-label={`View certificate for ${cert.member}, ${cert.course}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-w-600 text-white rounded text-xs font-lato hover:bg-w-700 transition-colors"
             >
-              <Eye size={12} />
               <Download size={12} />
               View / Download
-            </button>
+            </UniversalButton>
           </div>
         ))}
         {certificates.length === 0 && (
@@ -101,8 +100,6 @@ export function DownloadsView() {
           <li>GET /api/downloads/statements/:id/file — generate/stream a revenue statement as a downloadable file</li>
         </ul>
       </div>
-
-      <CertificateViewModal certificate={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

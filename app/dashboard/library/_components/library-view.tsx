@@ -11,7 +11,6 @@ import { type Resource } from './resources-data'
 import { useResources, addResource, updateResource, archiveResource } from './use-resources'
 import { ResourcesStats } from './resources-stats'
 import { ResourcesTable } from './resources-table'
-import { ResourceDetailModal } from './resource-detail-modal'
 import { ResourceFormModal } from './resource-form-modal'
 import type { ResourceFormData } from './resource-form-schema'
 
@@ -24,7 +23,6 @@ import type { ResourceFormData } from './resource-form-schema'
  * same store, so changes here are immediately visible there.
  */
 export function LibraryView() {
-  const [selected, setSelected] = useState<Resource | null>(null)
   const [statusFilter, setStatusFilter] = useState<Resource['status'] | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [toast, setToast] = useState('')
@@ -41,7 +39,6 @@ export function LibraryView() {
   const handleArchive = async (r: Resource) => {
     try {
       await archiveResource(r.id)
-      setSelected(null)
       showToast(`"${r.title}" archived.`)
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Could not archive this resource — please try again.')
@@ -49,7 +46,7 @@ export function LibraryView() {
   }
 
   const openCreate = () => { setEditing(null); setFormOpen(true) }
-  const openEdit = (r: Resource) => { setEditing(r); setSelected(null); setFormOpen(true) }
+  const openEdit = (r: Resource) => { setEditing(r); setFormOpen(true) }
 
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     try {
@@ -116,12 +113,10 @@ export function LibraryView() {
         typeFilter={typeFilter}
         onStatusFilterChange={setStatusFilter}
         onTypeFilterChange={setTypeFilter}
-        onView={setSelected}
         onEdit={openEdit}
         onArchive={handleArchive}
       />
 
-      <ResourceDetailModal resource={selected} onClose={() => setSelected(null)} onEdit={openEdit} onArchive={handleArchive} />
       <ResourceFormModal open={formOpen} editing={editing} onClose={() => { setFormOpen(false); setEditing(null) }} onSave={handleSave} />
     </div>
   )

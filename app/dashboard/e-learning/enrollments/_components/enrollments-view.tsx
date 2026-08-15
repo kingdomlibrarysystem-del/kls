@@ -5,9 +5,9 @@ import { GraduationCap, Eye, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useEnrollmentsAdmin } from './use-enrollments-admin'
 import { enrollmentStatusConfig, type EnrollmentStatus } from './enrollments-data'
-import { EnrollmentDetailModal } from './enrollment-detail-modal'
 import { EnrollmentsStats } from './enrollments-stats'
 
 /** Row shape actually rendered by the table. */
@@ -35,7 +35,7 @@ function LoadingSkeleton() {
   )
 }
 
-function buildColumns(onView: (e: DisplayEnrollment) => void): Column<DisplayEnrollment>[] {
+function buildColumns(): Column<DisplayEnrollment>[] {
   return [
     { key: 'member', label: 'Member', sortable: true, render: (e) => <span className="font-semibold text-w-950">{e.member}</span> },
     { key: 'courseTitle', label: 'Course', sortable: true, render: (e) => <span className="text-w-700 max-w-55 truncate block">{e.courseTitle}</span> },
@@ -62,9 +62,16 @@ function buildColumns(onView: (e: DisplayEnrollment) => void): Column<DisplayEnr
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (e) => (
-        <button onClick={() => onView(e)} aria-label={`View enrollment for ${e.member}`} className="flex items-center gap-1 ml-auto px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-          <Eye size={12} /> View
-        </button>
+        <UniversalButton
+          href={`/dashboard/e-learning/enrollments/${e.id}`}
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          icon={<Eye size={12} />}
+          aria-label={`View enrollment for ${e.member}`}
+        >
+          View
+        </UniversalButton>
       ),
     },
   ]
@@ -73,7 +80,6 @@ function buildColumns(onView: (e: DisplayEnrollment) => void): Column<DisplayEnr
 /** Enrollments table across all members, backed by the real Enrollment collection. */
 export function EnrollmentsView() {
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | 'all'>('all')
-  const [viewing, setViewing] = useState<DisplayEnrollment | null>(null)
 
   const { data: enrollments, loading, error } = useEnrollmentsAdmin()
   const allRows: DisplayEnrollment[] = enrollments.map((e) => ({
@@ -126,14 +132,13 @@ export function EnrollmentsView() {
       <EnrollmentsStats data={allRows} />
       <DataTable<DisplayEnrollment>
         data={tableData}
-        columns={buildColumns(setViewing)}
+        columns={buildColumns()}
         rowKey={(e) => e.id}
         searchPlaceholder="Search member or course..."
         searchFilter={(e, q) => e.member.toLowerCase().includes(q) || e.courseTitle.toLowerCase().includes(q)}
         filters={statusSelect}
         emptyMessage="No enrollments match your search."
       />
-      <EnrollmentDetailModal enrollment={viewing} onClose={() => setViewing(null)} />
     </>
   )
 }

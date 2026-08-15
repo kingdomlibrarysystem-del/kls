@@ -8,16 +8,14 @@ import type { Role } from './_components/roles-data'
 import { useRoles } from './_components/use-roles'
 import { RoleCards } from './_components/role-cards'
 import { RolesStats } from './_components/roles-stats'
-import { RoleDetailModal } from './_components/role-detail-modal'
 import { RoleEditModal } from './_components/role-edit-modal'
 import { RoleCreateModal, type NewRoleForm } from './_components/role-create-modal'
 
 const EMPTY_NEW_ROLE: NewRoleForm = { name: '', description: '', permissions: [] }
 
-/** Role & Permission Management: full CRUD plus a details view over the real /api/roles backend. */
+/** Role & Permission Management: full CRUD plus a details page (app/dashboard/roles/[id]) over the real /api/roles backend. */
 export default function RolesPage() {
   const { roles, loading, addRole, updateRole, removeRole } = useRoles()
-  const [viewing, setViewing] = useState<Role | null>(null)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [newRole, setNewRole] = useState<NewRoleForm>(EMPTY_NEW_ROLE)
@@ -93,12 +91,11 @@ export default function RolesPage() {
         ) : (
           <>
             <RolesStats roles={roles} />
-            <RoleCards roles={roles} onView={setViewing} onEdit={handleEdit} onDelete={handleDelete} />
+            <RoleCards roles={roles} onEdit={handleEdit} onDelete={handleDelete} />
           </>
         )}
       </div>
 
-      <RoleDetailModal role={viewing} onClose={() => setViewing(null)} />
       <RoleEditModal role={editingRole} onTogglePerm={handleTogglePerm} onClose={() => setEditingRole(null)} onSave={handleSave} />
       <RoleCreateModal open={showCreate} form={newRole} onChange={setNewRole} onClose={() => setShowCreate(false)} onCreate={handleCreate} />
     </PageTransition>

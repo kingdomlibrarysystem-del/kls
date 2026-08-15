@@ -8,15 +8,14 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CategoryBarChart } from '@/components/ui/category-bar-chart'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { typeConfig, statusConfig, type Transaction, type TransactionType } from './_components/sales-data'
 import { useOrdersAdmin } from './_components/use-orders-admin'
-import { TransactionDetailModal } from './_components/transaction-detail-modal'
 
 /** Sales & Rentals: real Order transactions (PayPack mobile-money purchases/rentals), read-only log plus a details view per row. */
 export default function SalesRentalsPage() {
   const { data, loading, error } = useOrdersAdmin()
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all')
-  const [viewing, setViewing] = useState<Transaction | null>(null)
 
   if (loading) {
     return (
@@ -85,9 +84,16 @@ export default function SalesRentalsPage() {
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (t) => (
-        <button onClick={() => setViewing(t)} aria-label={`View transaction ${t.id}`} className="flex items-center gap-1 ml-auto px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-          <Eye size={12} /> View
-        </button>
+        <UniversalButton
+          href={`/dashboard/library/sales/${t.id}`}
+          aria-label={`View transaction ${t.id}`}
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          icon={<Eye size={12} />}
+        >
+          View
+        </UniversalButton>
       ),
     },
   ]
@@ -132,8 +138,6 @@ export default function SalesRentalsPage() {
           emptyMessage="No transactions match your filters."
         />
       )}
-
-      <TransactionDetailModal transaction={viewing} onClose={() => setViewing(null)} />
     </PageTransition>
   )
 }

@@ -5,12 +5,12 @@ import { Award, Eye, ShieldOff, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useCertificatesAdmin, revokeCertificateAdmin, type CertificateRecord } from './use-certificates-admin'
-import { CertificateDetailModal } from './certificate-detail-modal'
 import { RevokeCertificateModal } from './revoke-certificate-modal'
 import { CertificatesStats } from './certificates-stats'
 
-function buildColumns(onView: (c: CertificateRecord) => void, onRevoke: (c: CertificateRecord) => void): Column<CertificateRecord>[] {
+function buildColumns(onRevoke: (c: CertificateRecord) => void): Column<CertificateRecord>[] {
   return [
     { key: 'member', label: 'Member', sortable: true, render: (c) => <span className="font-semibold text-w-950">{c.member}</span> },
     { key: 'course', label: 'Course', sortable: true, render: (c) => <span className="text-w-700">{c.course}</span> },
@@ -29,9 +29,14 @@ function buildColumns(onView: (c: CertificateRecord) => void, onRevoke: (c: Cert
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => onView(c)} aria-label={`View certificate for ${c.member}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
-            <Eye size={14} />
-          </button>
+          <UniversalButton
+            href={`/dashboard/e-learning/certificates/${c.id}`}
+            variant="ghost"
+            size="icon"
+            aria-label={`View certificate for ${c.member}`}
+            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            icon={<Eye size={14} />}
+          />
           {!c.revoked && (
             <button onClick={() => onRevoke(c)} aria-label={`Revoke certificate for ${c.member}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
               <ShieldOff size={14} />
@@ -45,7 +50,6 @@ function buildColumns(onView: (c: CertificateRecord) => void, onRevoke: (c: Cert
 
 /** Table of issued certificates, backed by the real Certificate collection, with details view and revoke action. */
 export function CertificatesTable() {
-  const [viewing, setViewing] = useState<CertificateRecord | null>(null)
   const [revoking, setRevoking] = useState<CertificateRecord | null>(null)
   const { data: certificates, loading, error } = useCertificatesAdmin()
 
@@ -72,7 +76,7 @@ export function CertificatesTable() {
       <CertificatesStats data={certificates} />
       <DataTable<CertificateRecord>
         data={certificates}
-        columns={buildColumns(setViewing, setRevoking)}
+        columns={buildColumns(setRevoking)}
         rowKey={(c) => c.id}
         searchPlaceholder="Search member, course, or code..."
         searchFilter={(c, q) =>
@@ -82,7 +86,6 @@ export function CertificatesTable() {
         }
         emptyMessage="No certificates match your search."
       />
-      <CertificateDetailModal certificate={viewing} onClose={() => setViewing(null)} />
       <RevokeCertificateModal
         certificate={revoking}
         onClose={() => setRevoking(null)}

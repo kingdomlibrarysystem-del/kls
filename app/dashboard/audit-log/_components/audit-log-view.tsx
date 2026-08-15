@@ -5,12 +5,12 @@ import { ScrollText, Eye } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { auditActionLabels, type AuditEntry, type AuditAction } from './audit-log-data'
 import { useAuditLog } from './use-audit-log'
-import { AuditEntryDetailModal } from './audit-entry-detail-modal'
 import { AuditLogStats } from './audit-log-stats'
 
-function buildColumns(onView: (e: AuditEntry) => void): Column<AuditEntry>[] {
+function buildColumns(): Column<AuditEntry>[] {
   return [
     { key: 'actor', label: 'Actor', sortable: true, render: (e) => <span className="font-semibold text-w-950">{e.actor}</span> },
     {
@@ -22,9 +22,16 @@ function buildColumns(onView: (e: AuditEntry) => void): Column<AuditEntry>[] {
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (e) => (
-        <button onClick={() => onView(e)} aria-label={`View audit entry for ${e.actor}`} className="flex items-center gap-1 ml-auto px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-          <Eye size={12} /> View
-        </button>
+        <UniversalButton
+          href={`/dashboard/audit-log/${e.id}`}
+          aria-label={`View audit entry for ${e.actor}`}
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          icon={<Eye size={12} />}
+        >
+          View
+        </UniversalButton>
       ),
     },
   ]
@@ -33,7 +40,6 @@ function buildColumns(onView: (e: AuditEntry) => void): Column<AuditEntry>[] {
 /** DataTable of audit-log entries (actor, action, target, timestamp), searchable and filterable by action. */
 export function AuditLogView() {
   const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all')
-  const [viewing, setViewing] = useState<AuditEntry | null>(null)
   const { data: entries, loading } = useAuditLog()
 
   if (loading) {
@@ -57,7 +63,7 @@ export function AuditLogView() {
       <AuditLogStats />
       <DataTable<AuditEntry>
         data={tableData}
-        columns={buildColumns(setViewing)}
+        columns={buildColumns()}
         rowKey={(e) => e.id}
         searchPlaceholder="Search actor or target..."
         searchFilter={(e, q) => e.actor.toLowerCase().includes(q) || e.target.toLowerCase().includes(q)}
@@ -76,7 +82,6 @@ export function AuditLogView() {
         }
         emptyMessage="No audit entries match your filters."
       />
-      <AuditEntryDetailModal entry={viewing} onClose={() => setViewing(null)} />
     </>
   )
 }

@@ -5,8 +5,8 @@ import { RefreshCcw, MailX, Eye, XCircle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { invitationStatusConfig, type Invitation } from './invitations-data'
-import { InvitationDetailModal } from './invitation-detail-modal'
 import { CancelInvitationModal } from './cancel-invitation-modal'
 
 interface InvitationsTableProps {
@@ -18,7 +18,6 @@ interface InvitationsTableProps {
 
 function buildColumns(
   onResend: (i: Invitation) => void,
-  onView: (i: Invitation) => void,
   onCancel: (i: Invitation) => void
 ): Column<Invitation>[] {
   return [
@@ -37,9 +36,15 @@ function buildColumns(
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (i) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => onView(i)} aria-label={`View invitation for ${i.email}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
+          <UniversalButton
+            href={`/dashboard/invitations/${i.id}`}
+            variant="ghost"
+            size="icon"
+            aria-label={`View invitation for ${i.email}`}
+            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+          >
             <Eye size={14} />
-          </button>
+          </UniversalButton>
           {i.status !== 'ACCEPTED' && (
             <>
               <button
@@ -63,7 +68,6 @@ function buildColumns(
 /** DataTable of pending/accepted/expired invitations with View, Resend (non-accepted), and Cancel (non-accepted) actions. */
 export function InvitationsTable({ invitations, loading, onResendInvitation, onRemoveInvitation }: InvitationsTableProps) {
   const [toast, setToast] = useState('')
-  const [viewing, setViewing] = useState<Invitation | null>(null)
   const [cancelling, setCancelling] = useState<Invitation | null>(null)
 
   const handleResend = async (invitation: Invitation) => {
@@ -99,14 +103,13 @@ export function InvitationsTable({ invitations, loading, onResendInvitation, onR
       )}
       <DataTable<Invitation>
         data={invitations}
-        columns={buildColumns(handleResend, setViewing, setCancelling)}
+        columns={buildColumns(handleResend, setCancelling)}
         rowKey={(i) => i.id}
         searchPlaceholder="Search email or role..."
         searchFilter={(i, q) => i.email.toLowerCase().includes(q) || i.role.name.toLowerCase().includes(q)}
         emptyMessage="No invitations match your search."
       />
 
-      <InvitationDetailModal invitation={viewing} onClose={() => setViewing(null)} />
       <CancelInvitationModal
         invitation={cancelling}
         onClose={() => setCancelling(null)}

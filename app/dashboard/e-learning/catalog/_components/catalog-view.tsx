@@ -7,9 +7,9 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useCourseCatalog, archiveCourseInCatalog } from '../../_shared/use-course-catalog'
 import { languageLabels } from '../../add/_components/course-form-schema'
-import { CourseDetailModal } from './course-detail-modal'
 import { EditCourseModal } from './edit-course-modal'
 import { ArchiveCourseModal } from './archive-course-modal'
 import { statusConfig, type CourseCatalogEntry, type CourseStatus } from './catalog-config'
@@ -33,7 +33,6 @@ function LoadingSkeleton() {
 export function CatalogView() {
   const [statusFilter, setStatusFilter] = useState<CourseStatus | 'all'>('all')
   const [authorFilter, setAuthorFilter] = useState('all')
-  const [viewing, setViewing] = useState<CourseCatalogEntry | null>(null)
   const [editing, setEditing] = useState<CourseCatalogEntry | null>(null)
   const [archiving, setArchiving] = useState<CourseCatalogEntry | null>(null)
 
@@ -86,9 +85,14 @@ export function CatalogView() {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => setViewing(c)} aria-label={`View ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
-            <Eye size={14} />
-          </button>
+          <UniversalButton
+            href={`/dashboard/e-learning/catalog/${c.id}`}
+            variant="ghost"
+            size="icon"
+            aria-label={`View ${c.title}`}
+            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            icon={<Eye size={14} />}
+          />
           <button onClick={() => setEditing(c)} aria-label={`Edit ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
@@ -146,7 +150,6 @@ export function CatalogView() {
         emptyMessage="No courses match your filters."
       />
 
-      <CourseDetailModal course={viewing} onClose={() => setViewing(null)} />
       <EditCourseModal course={editing} onClose={() => setEditing(null)} />
       <ArchiveCourseModal
         course={archiving}
