@@ -54,7 +54,7 @@ export function ParticipantTile({ name, isYou, state, presenting, videoStream }:
   return (
     <div
       style={{
-        position: 'relative', aspectRatio: '16/10', borderRadius: 10, overflow: 'hidden',
+        position: 'relative', minHeight: 140, height: '100%', borderRadius: 10, overflow: 'hidden',
         background: presenting ? 'linear-gradient(135deg, var(--gold-dim), var(--bg-card))' : 'linear-gradient(135deg, var(--bg-section), var(--bg-card))',
         border: presenting ? '2px solid var(--teal-light)' : isYou ? '2px solid var(--gold)' : '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',

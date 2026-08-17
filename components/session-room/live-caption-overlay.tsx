@@ -13,7 +13,7 @@ export function LiveCaptionOverlay({ active, caption, unsupported }: LiveCaption
   return (
     <div
       style={{
-        position: 'absolute', left: 12, right: 12, bottom: 12, zIndex: 5,
+        position: 'absolute', left: 12, right: 12, bottom: 108, zIndex: 5,
         background: 'rgba(0,0,0,0.75)', color: '#fff', borderRadius: 8,
         padding: '8px 14px', fontSize: 12, textAlign: 'center', pointerEvents: 'none',
       }}

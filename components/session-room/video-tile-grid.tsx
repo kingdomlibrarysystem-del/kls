@@ -68,8 +68,8 @@ export function VideoTileGrid({
 
   if (youPresenting) {
     return (
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <div className="flex-1 min-w-0">{youTile}</div>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 h-full p-3">
+        <div className="flex-1 min-w-0 min-h-0">{youTile}</div>
         <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-x-visible sm:w-32 shrink-0">
           {otherTiles.map((tile) => (
             <div key={tile.key} className="w-24 sm:w-full shrink-0">
@@ -82,7 +82,7 @@ export function VideoTileGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 h-full p-3 auto-rows-fr">
       {youTile}
       {otherTiles}
     </div>
