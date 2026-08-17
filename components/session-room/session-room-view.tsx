@@ -135,7 +135,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
 
       <div className={`grid grid-cols-1 gap-3 ${sidePanelHidden ? '' : 'lg:grid-cols-[1fr_260px]'}`}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', minHeight: 460, borderRadius: 14, overflow: 'hidden', background: 'var(--bg-dashboard)' }}>
             <VideoTileGrid
               youName={youName}
               youState={you}
@@ -156,29 +156,40 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
                 <Circle size={8} fill="var(--red)" color="var(--red)" /> REC {formatTimer(recording.seconds)}
               </div>
             )}
+
+            {/* Floating control chrome, docked to the bottom of the video canvas (Meet-style) instead of sitting in-flow below it. */}
+            <div
+              style={{
+                position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 5,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                padding: '10px 12px 14px',
+                background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.28) 55%, transparent 100%)',
+              }}
+            >
+              <ReactionBar sessionId={sessionId} senderName={youName} />
+              <ControlBar
+                cameraOn={media.cameraOn}
+                micOn={media.micOn}
+                handRaised={handRaised}
+                presenting={media.presenting}
+                recording={recording.recording}
+                captionsOn={transcript.active}
+                hideSelf={hideSelf}
+                sidePanelHidden={sidePanelHidden}
+                onToggleCamera={media.toggleCamera}
+                onToggleMic={media.toggleMic}
+                onToggleHand={() => setHandRaised((h) => !h)}
+                onTogglePresenting={media.togglePresenting}
+                onToggleRecording={toggleRecording}
+                onToggleCaptions={toggleCaptions}
+                onToggleHideSelf={() => setHideSelf((h) => !h)}
+                onToggleSidePanel={() => setSidePanelHidden((h) => !h)}
+                onAddParticipant={() => setAddOpen(true)}
+                onLeave={handleLeave}
+                leaveLabel={viewer === 'admin' ? 'End Session' : 'Leave'}
+              />
+            </div>
           </div>
-          <ReactionBar sessionId={sessionId} senderName={youName} />
-          <ControlBar
-            cameraOn={media.cameraOn}
-            micOn={media.micOn}
-            handRaised={handRaised}
-            presenting={media.presenting}
-            recording={recording.recording}
-            captionsOn={transcript.active}
-            hideSelf={hideSelf}
-            sidePanelHidden={sidePanelHidden}
-            onToggleCamera={media.toggleCamera}
-            onToggleMic={media.toggleMic}
-            onToggleHand={() => setHandRaised((h) => !h)}
-            onTogglePresenting={media.togglePresenting}
-            onToggleRecording={toggleRecording}
-            onToggleCaptions={toggleCaptions}
-            onToggleHideSelf={() => setHideSelf((h) => !h)}
-            onToggleSidePanel={() => setSidePanelHidden((h) => !h)}
-            onAddParticipant={() => setAddOpen(true)}
-            onLeave={handleLeave}
-            leaveLabel={viewer === 'admin' ? 'End Session' : 'Leave'}
-          />
         </div>
 
         {!sidePanelHidden && (

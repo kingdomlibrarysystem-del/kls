@@ -35,16 +35,22 @@ interface CircleButtonProps {
   highlighted?: boolean
 }
 
-/** One round control button — on/off/highlighted coloring plus a real hover state, shared across all toggle controls in this bar. */
+/**
+ * One round control button. This bar always floats over the dark video
+ * canvas (see session-room-view.tsx), regardless of the app's own light/
+ * dark theme, so colors here are fixed rather than theme-variable —
+ * `var(--text-primary)` would render near-black in light mode and vanish
+ * against the dark gradient underneath.
+ */
 function CircleButton({ on, onClick, icon, label, highlightColor, highlighted }: CircleButtonProps) {
-  const background = highlighted ? highlightColor : on ? 'var(--bg-section)' : 'var(--red-dim)'
-  const color = highlighted ? '#fff' : on ? 'var(--text-primary)' : 'var(--red-light)'
+  const background = highlighted ? highlightColor : on ? 'rgba(255,255,255,0.16)' : 'var(--red-dim)'
+  const color = highlighted ? '#fff' : on ? '#fff' : 'var(--red-light)'
   return (
     <button
       onClick={onClick}
       aria-pressed={highlighted ?? !on}
       aria-label={label}
-      className="hover:brightness-95 active:scale-95"
+      className="hover:brightness-110 active:scale-95"
       style={{
         width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -62,7 +68,7 @@ export function ControlBar({
   onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording, onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel,
 }: ControlBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3" style={{ padding: '12px 0' }}>
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3" style={{ padding: '6px 0' }}>
       <CircleButton on={micOn} onClick={onToggleMic} icon={micOn ? <Mic size={18} /> : <MicOff size={18} />} label={micOn ? 'Mute microphone' : 'Unmute microphone'} />
       <CircleButton on={cameraOn} onClick={onToggleCamera} icon={cameraOn ? <Video size={18} /> : <VideoOff size={18} />} label={cameraOn ? 'Turn off camera' : 'Turn on camera'} />
       <CircleButton on highlighted={handRaised} highlightColor="var(--gold)" onClick={onToggleHand} icon={<Hand size={18} />} label={handRaised ? 'Lower hand' : 'Raise hand'} />
