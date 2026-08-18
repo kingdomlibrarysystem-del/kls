@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real ResearchPaper API, replacing
@@ -40,6 +41,9 @@ const VALID_STATUSES = ['DRAFT', 'SUBMITTED', 'PUBLISHED']
 const INCLUDE = { project: { select: { title: true } } } as const
 
 export async function GET(request: NextRequest) {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '50')
@@ -86,6 +90,9 @@ const createPaperSchema = z.object({
 })
 
 export const POST = withErrorHandling('/api/research-papers', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createPaperSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)

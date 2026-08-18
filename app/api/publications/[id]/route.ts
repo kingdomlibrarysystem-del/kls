@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 function serializePublication(p: {
   id: string
@@ -55,6 +56,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!publication) {
     return NextResponse.json({ data: null, message: 'Publication not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(publication.contributorId)
+  if (auth.response) return auth.response
   return NextResponse.json({ data: serializePublication(publication), message: 'Publication fetched successfully', code: 'success', status: 200 })
 }
 
@@ -96,6 +99,11 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
 
   const existing = await prisma.publication.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Publication not found', 404)
+
+  // withdraw is the contributor pulling back their own draft/submitted
+  // work; approve/reject/toggleFeatured/raw field edits are all staff review actions.
+  const auth = await (body.action === 'withdraw' ? requireOwnerOrStaff(existing.contributorId) : requireStaff())
+  if (auth.response) return auth.response
 
   if (body.action === 'approve') {
     if (existing.status !== 'SUBMITTED' && existing.status !== 'UNDER_REVIEW') {
@@ -180,6 +188,9 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
 })
 
 export const DELETE = withErrorHandling('/api/publications/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.publication.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Publication not found', 404)
