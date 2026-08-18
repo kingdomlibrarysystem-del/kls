@@ -107,6 +107,7 @@ model User {
   userSessions                     UserSession[]
   twoFactorSecret                  TwoFactorSecret?
   orders                           Order[]
+  cart                             Cart?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -326,6 +327,7 @@ model Resource {
   chapters     Chapter[]
   readingProgress ReadingProgress[]
   orders       Order[]
+  cartItems    CartItem[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -351,10 +353,13 @@ enum ResourceStatus {
 /// same), never on the client-side "request sent" assumption alone.
 /// Provider fields are prefixed `paypack*` rather than left provider-
 /// agnostic — this app has exactly one real, working payment rail
-/// (Rwanda mobile money), and Stripe (USD/card, no RWF settlement) was
-/// evaluated and set aside as a poor fit for a Rwanda-priced platform;
-/// see PROGRESS.md for the decision record if a second provider is ever
-/// added later.
+/// (Rwanda mobile money) for its single-item Buy/Rent buttons, and
+/// Stripe (USD/card, no RWF settlement) was evaluated and set aside as a
+/// poor fit for that flow. `stripeSessionId` was added later,
+/// specifically and only for the real multi-item Cart's checkout (see
+/// Cart/CartItem below) — a real Stripe test-mode Checkout Session per
+/// cart item, exactly one of paypackRef/stripeSessionId ever populated
+/// per Order depending on which flow created it, not a provider swap.
 model Order {
   id                String      @id @default(auto()) @map("_id") @db.ObjectId
   userId            String      @db.ObjectId
@@ -371,10 +376,26 @@ model Order {
   status            OrderStatus @default(PENDING)
   /// PayPack's own transaction reference (a UUID), returned immediately
   /// by the cashin call — the key used to match an incoming webhook or
-  /// status-poll response back to this Order.
-  paypackRef        String?     @unique
+  /// status-poll response back to this Order. Deliberately NOT declared
+  /// `@unique` here — Prisma's MongoDB connector has no schema-level way
+  /// to express a *sparse* unique index, and every new Order is created
+  /// with this field unset (it's only set later, once PayPack's cashin
+  /// call returns a ref); a plain unique index on MongoDB treats every
+  /// null/absent value as colliding with every other one, which meant
+  /// the SECOND Order ever created (with this field still unset) would
+  /// throw a 500 — confirmed by direct reproduction against the real
+  /// database. A real sparse unique index is created out-of-band via
+  /// scripts/create-order-sparse-indexes.mjs instead (run once after any
+  /// `prisma db push` touching this model), which still enforces real
+  /// uniqueness once a value IS set, just exempts null/absent.
+  paypackRef        String?
   paypackStatus     String?
   paypackProvider   String?
+  /// Real Stripe Checkout Session id (cs_test_... in test mode) — set
+  /// only for an Order created from Cart checkout, matched back to this
+  /// row by the Stripe webhook's checkout.session.completed event. Same
+  /// sparse-index reasoning as paypackRef above — not `@unique` here.
+  stripeSessionId   String?
   paidAt            DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
@@ -393,6 +414,46 @@ enum OrderStatus {
   PAID
   FAILED
   CANCELLED
+}
+
+/// Real shopping cart — one per member, replacing the previous
+/// one-resource-per-checkout-modal-invocation flow (BuyConfirmModal)
+/// with genuine "add several books, review, then check out once."
+/// Deliberately userId-only (no guest-cart concept): every existing
+/// Borrow/Reserve/Buy/Rent action already requires a signed-in member,
+/// so a cart with no owner would be a new kind of gap, not a
+/// simplification. Checkout (see app/api/cart/checkout/route.ts) creates
+/// one real Order per CartItem via Stripe test-mode Checkout — PayPack
+/// stays exactly as-is for the existing single-item Buy/Rent buttons;
+/// this is an additive second payment path for the cart specifically,
+/// not a replacement (see Order's own docstring for why PayPack, not
+/// Stripe, is this platform's real mobile-money rail).
+model Cart {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @db.ObjectId @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  cartId     String    @db.ObjectId
+  cart       Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  resourceId String    @db.ObjectId
+  resource   Resource  @relation(fields: [resourceId], references: [id])
+  type       OrderType
+  /// Kept even though every real add-to-cart flow only ever sets 1 — a
+  /// book isn't naturally multi-quantity the way a physical retail SKU
+  /// is, but modeling it honestly as "always exactly 1, no field at all"
+  /// would make a future "buy 2 copies to gift" case a schema migration
+  /// instead of a UI change.
+  quantity   Int       @default(1)
+  addedAt    DateTime  @default(now())
+
+  @@index([cartId])
+  @@unique([cartId, resourceId, type])
 }
 
 enum BindingType {

@@ -21,13 +21,14 @@ const CHAPTERS = [
   { id: 'c3', title: 'Chapter 3', body: 'third', order: 2, resourceId: '' },
 ]
 
-// Order.paypackRef is String? @unique — on Mongo, multiple rows with a null
-// value there still collide on the unique index, so every test order needs
-// its own distinct fake ref.
-let paypackRefCounter = 0
-function nextPaypackRef() {
-  paypackRefCounter += 1
-  return `${RUN_ID}-${paypackRefCounter}`
+// Order.paypackRef and Order.stripeSessionId are both String? @unique — on
+// Mongo, multiple rows with a null/absent value there still collide on the
+// unique index (unlike SQL's NULL-exempt-from-uniqueness), so every test
+// order needs its own distinct fake value for both.
+let orderRefCounter = 0
+function nextOrderRefs() {
+  orderRefCounter += 1
+  return { paypackRef: `${RUN_ID}-pp-${orderRefCounter}`, stripeSessionId: `${RUN_ID}-st-${orderRefCounter}` }
 }
 
 beforeAll(async () => {
@@ -64,7 +65,7 @@ describe('isEntitled', () => {
       data: {
         userId: testUserId, buyerName: 'Vitest', buyerEmail: TEST_EMAIL, buyerPhone: '0780000000',
         resourceId: testResourceId, resourceTitle: 'Test', resourceFormat: 'TEXT', type: 'SALE',
-        amountRwf: 5000, status: 'PAID', paypackRef: nextPaypackRef(),
+        amountRwf: 5000, status: 'PAID', ...nextOrderRefs(),
       },
     })
     testOrderId = order.id
@@ -76,7 +77,7 @@ describe('isEntitled', () => {
       data: {
         userId: testUserId, buyerName: 'Vitest', buyerEmail: TEST_EMAIL, buyerPhone: '0780000000',
         resourceId: testResourceId, resourceTitle: 'Test', resourceFormat: 'TEXT', type: 'SALE',
-        amountRwf: 5000, status: 'PENDING', paypackRef: nextPaypackRef(),
+        amountRwf: 5000, status: 'PENDING', ...nextOrderRefs(),
       },
     })
     await prisma.order.delete({ where: { id: testOrderId } })
@@ -114,7 +115,7 @@ describe('gateChapters', () => {
       data: {
         userId: testUserId, buyerName: 'Vitest', buyerEmail: TEST_EMAIL, buyerPhone: '0780000000',
         resourceId: testResourceId, resourceTitle: 'Test', resourceFormat: 'TEXT', type: 'SALE',
-        amountRwf: 5000, status: 'PAID', paypackRef: nextPaypackRef(),
+        amountRwf: 5000, status: 'PAID', ...nextOrderRefs(),
       },
     })
     testOrderId = order.id
