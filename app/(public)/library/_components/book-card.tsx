@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, BookMarked, Film, Package, BookOpenCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, BookMarked, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { bindingTypeLabels, mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
 
 /**
@@ -22,13 +23,30 @@ import { getCategoryName } from '@/lib/kcs-taxonomy'
  */
 export function BookCard({ book, onAction }: { book: Resource; onAction: (book: Resource, action: 'borrow' | 'reserve') => void }) {
   const [showSummary, setShowSummary] = useState(false)
-  const { isAuthenticated } = useAuth()
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [cartError, setCartError] = useState('')
+  const { user, isAuthenticated } = useAuth()
   const readableContent = useReadableContent()
+  useCart(user?.id)
   const isReadable = !!readableContent[book.id]
   const outOfStock = book.availableQty === 0
   const detailHref = `/library/${book.id}`
   const loginHref = `/auth/login?redirect=${encodeURIComponent(detailHref)}`
   const readHref = `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${book.id}`)}`
+  const inCart = isInCart(book.id, 'SALE')
+
+  const handleAddToCart = async () => {
+    if (!user) return
+    setAddingToCart(true)
+    setCartError('')
+    try {
+      await addToCart(user.id, book.id, 'SALE')
+    } catch (err) {
+      setCartError(err instanceof Error ? err.message : 'Could not add to cart')
+    } finally {
+      setAddingToCart(false)
+    }
+  }
 
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
@@ -88,6 +106,26 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
               </>
             )}
           </div>
+          {book.price > 0 && (
+            isAuthenticated ? (
+              <UniversalButton
+                variant="outline"
+                size="sm"
+                fullWidth
+                disabled={inCart}
+                loading={addingToCart}
+                icon={inCart ? <Check size={13} /> : <ShoppingCart size={13} />}
+                onClick={handleAddToCart}
+              >
+                {inCart ? 'In Cart' : 'Add to Cart'}
+              </UniversalButton>
+            ) : (
+              <UniversalButton href={loginHref} variant="outline" size="sm" fullWidth icon={<ShoppingCart size={13} />}>
+                Sign In to Add to Cart
+              </UniversalButton>
+            )
+          )}
+          {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
         </div>
       </div>
     </div>

@@ -21,6 +21,7 @@ import {
   CalendarClock,
   MessageSquare,
   ShoppingBag,
+  ShoppingCart,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -55,6 +56,11 @@ const navSections: NavSection[] = [
         icon: <CalendarDays size={12} />,
         label: "Reservations",
         href: "/member/reservations",
+      },
+      {
+        icon: <ShoppingCart size={12} />,
+        label: "My Cart",
+        href: "/member/cart",
       },
       {
         icon: <ShoppingBag size={12} />,
