@@ -145,7 +145,9 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
               className="mb-3"
               icon={<BookOpenCheck size={15} />}
             >
-              {isAuthenticated ? 'Read Online' : 'Sign In to Read'}
+              {price > 0
+                ? (isAuthenticated ? 'Preview' : 'Sign In to Preview')
+                : (isAuthenticated ? 'Read Online' : 'Sign In to Read')}
             </UniversalButton>
           )}
 

@@ -67,11 +67,11 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
           {isReadable && (
             isAuthenticated ? (
               <UniversalButton href={`/member/library/read/${book.id}`} variant="primary" size="sm" fullWidth icon={<BookOpenCheck size={13} />}>
-                Read Online
+                {book.price > 0 ? 'Preview' : 'Read Online'}
               </UniversalButton>
             ) : (
               <UniversalButton href={readHref} variant="primary" size="sm" fullWidth icon={<BookOpenCheck size={13} />}>
-                Sign In to Read
+                {book.price > 0 ? 'Sign In to Preview' : 'Sign In to Read'}
               </UniversalButton>
             )
           )}

@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronLeft as ChevronLeftNav, BookX, AlertTriangle, CheckCircle2, Lock } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
+import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
@@ -52,6 +54,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const highlightEntries = useHighlights(user?.id)
   const { pending, captureSelection, clearSelection } = useChapterSelection()
   const [noteHighlight, setNoteHighlight] = useState<Highlight | null>(null)
+  const [buyAction, setBuyAction] = useState<BuyAction>(null)
 
   useEffect(() => {
     if (initialized.current || chapters.length === 0) return
@@ -96,10 +99,10 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   const isLastChapter = !hasNext
   const isCompleted = existingProgress?.status === 'COMPLETED'
   const unreadChapters = isLastChapter && !isCompleted
-    ? chapters.filter((c) => !existingProgress?.completedChapterIds.includes(c.id) && c.id !== chapter.id)
+    ? chapters.filter((c) => !c.locked && !existingProgress?.completedChapterIds.includes(c.id) && c.id !== chapter.id)
     : []
 
-  const paragraphs = chapter.body.split('\n\n')
+  const paragraphs = chapter.body?.split('\n\n') ?? []
   let runningOffset = 0
   const paragraphsWithOffsets = paragraphs.map((text) => {
     const paragraphStart = runningOffset
@@ -141,15 +144,32 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
 
       <div className="card" style={{ padding: 24 }}>
         <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', marginBottom: 14 }}>{chapter.title}</h2>
-        <div
-          ref={bodyRef}
-          onMouseUp={() => captureSelection(bodyRef.current)}
-          style={{ display: 'flex', flexDirection: 'column', gap: 14, userSelect: 'text' }}
-        >
-          {paragraphsWithOffsets.map(({ text, paragraphStart }, i) => (
-            <HighlightedParagraph key={i} text={text} paragraphStart={paragraphStart} highlights={chapterHighlights} onHighlightClick={setNoteHighlight} />
-          ))}
-        </div>
+        {chapter.locked ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '32px 0', textAlign: 'center' }}>
+            <Lock size={28} color="var(--text-muted)" />
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 360 }}>
+              You&apos;ve reached the end of the free preview. Buy or rent &ldquo;{resource.title}&rdquo; to keep reading.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <UniversalButton variant="gold" size="sm" onClick={() => setBuyAction('SALE')}>
+                Buy — {resource.price.toLocaleString()} RWF
+              </UniversalButton>
+              <UniversalButton variant="gold-outline" size="sm" onClick={() => setBuyAction('RENTAL')}>
+                Rent
+              </UniversalButton>
+            </div>
+          </div>
+        ) : (
+          <div
+            ref={bodyRef}
+            onMouseUp={() => captureSelection(bodyRef.current)}
+            style={{ display: 'flex', flexDirection: 'column', gap: 14, userSelect: 'text' }}
+          >
+            {paragraphsWithOffsets.map(({ text, paragraphStart }, i) => (
+              <HighlightedParagraph key={i} text={text} paragraphStart={paragraphStart} highlights={chapterHighlights} onHighlightClick={setNoteHighlight} />
+            ))}
+          </div>
+        )}
       </div>
 
       {noteHighlight ? (
@@ -222,6 +242,8 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
       {pending && (
         <HighlightPicker position={pending.position} onPick={handlePickColor} onClose={clearSelection} />
       )}
+
+      <BuyConfirmModal action={buyAction} resourceId={resourceId} bookTitle={resource.title} priceRwf={resource.price} onClose={() => setBuyAction(null)} />
     </div>
   )
 }

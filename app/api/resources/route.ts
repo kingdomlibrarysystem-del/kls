@@ -27,6 +27,7 @@ function serializeResource(r: {
   pages: number
   isbn: string
   price: number
+  freePreviewChapterCount: number
   totalQty: number
   availableQty: number
   status: string
@@ -56,6 +57,7 @@ function serializeResource(r: {
     pages: r.pages,
     isbn: r.isbn,
     price: r.price,
+    freePreviewChapterCount: r.freePreviewChapterCount,
     totalQty: r.totalQty,
     availableQty: r.availableQty,
     status: r.status.toLowerCase(),
@@ -132,6 +134,7 @@ const createResourceSchema = z.object({
   pages: z.number().int().nonnegative().optional(),
   isbn: z.string().optional(),
   price: z.number().nonnegative().optional(),
+  freePreviewChapterCount: z.number().int().nonnegative().optional(),
   totalQty: z.number().int().nonnegative().optional(),
   availableQty: z.number().int().nonnegative().optional(),
   coverImages: z.array(z.string()).optional(),
@@ -167,6 +170,7 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       pages: body.pages ?? 0,
       isbn: body.isbn ?? '',
       price: body.price ?? 0,
+      freePreviewChapterCount: body.freePreviewChapterCount ?? 0,
       totalQty: body.totalQty ?? 1,
       availableQty: body.availableQty ?? body.totalQty ?? 1,
       status: 'AVAILABLE',
