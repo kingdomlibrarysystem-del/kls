@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 function serializeHighlight(h: {
   id: string
@@ -35,6 +36,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!existing) {
       return NextResponse.json({ data: null, message: 'Highlight not found', code: 'error', status: 404 }, { status: 404 })
     }
+    const auth = await requireOwnerOrStaff(existing.userId)
+    if (auth.response) return auth.response
     const updated = await prisma.highlight.update({ where: { id }, data: { color: body.color.toUpperCase() } })
     return NextResponse.json({ data: serializeHighlight(updated), message: 'Highlight updated successfully', code: 'success', status: 200 })
   } catch {
@@ -48,6 +51,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   if (!existing) {
     return NextResponse.json({ data: null, message: 'Highlight not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(existing.userId)
+  if (auth.response) return auth.response
   await prisma.highlight.delete({ where: { id } })
   return NextResponse.json({ data: null, message: 'Highlight deleted successfully', code: 'success', status: 200 })
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 const createBorrowSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -66,6 +67,11 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId')
   const status = searchParams.get('status')
 
+  // With a userId, this is "my borrowings" (member) — ownership check. With
+  // none, it's the admin dashboard's full list across every member — staff only.
+  const auth = await (userId ? requireOwnerOrStaff(userId) : requireStaff())
+  if (auth.response) return auth.response
+
   const where = {
     ...(userId && { userId }),
     ...(status && status !== 'all' && VALID_STATUSES.includes(status) && {
@@ -114,6 +120,9 @@ export const POST = withErrorHandling('/api/borrowings', 'POST', async (request:
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const [user, resource] = await Promise.all([
     prisma.user.findUnique({ where: { id: body.userId } }),

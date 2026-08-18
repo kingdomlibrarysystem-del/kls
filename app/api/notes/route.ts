@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Note API, replacing app/member/_shared/note-data.ts's
@@ -36,6 +37,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: null, message: 'userId is required', code: 'error', status: 400 }, { status: 400 })
   }
 
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
+
   const notes = await prisma.note.findMany({
     where: { userId, ...(resourceId && { resourceId }), ...(chapterId && { chapterId }) },
     orderBy: { createdAt: 'desc' },
@@ -64,6 +68,9 @@ export const POST = withErrorHandling('/api/notes', 'POST', async (request: Next
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const user = await prisma.user.findUnique({ where: { id: body.userId } })
   if (!user) throw new ApiError('The specified user does not exist', 400)

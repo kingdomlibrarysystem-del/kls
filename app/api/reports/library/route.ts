@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Library Reports API, replacing
@@ -13,6 +14,9 @@ import prisma from '@/prisma/client'
  * modeled correctly for its own module.
  */
 export async function GET() {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const [overdueBorrows, allBorrows, finedBorrows] = await Promise.all([
     prisma.borrow.findMany({
       where: { status: 'OVERDUE' },

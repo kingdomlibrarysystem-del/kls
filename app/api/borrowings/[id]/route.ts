@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 function serializeBorrow(b: {
   id: string
@@ -45,6 +46,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!borrow) {
     return NextResponse.json({ data: null, message: 'Borrowing not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(borrow.userId)
+  if (auth.response) return auth.response
   return NextResponse.json({ data: serializeBorrow(borrow), message: 'Borrowing fetched successfully', code: 'success', status: 200 })
 }
 
@@ -64,6 +67,9 @@ const patchBorrowSchema = z.union([
 ])
 
 export const PATCH = withErrorHandling('/api/borrowings/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = patchBorrowSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -103,6 +109,9 @@ export const PATCH = withErrorHandling('/api/borrowings/[id]', 'PATCH', async (r
 })
 
 export const DELETE = withErrorHandling('/api/borrowings/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.borrow.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Borrowing not found', 404)
