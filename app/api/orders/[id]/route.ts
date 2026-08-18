@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { findTransaction } from '@/lib/paypack'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Status-refresh endpoint — a member polls this after requesting a
@@ -14,6 +15,9 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
   const { id } = await params
   const order = await prisma.order.findUnique({ where: { id } })
   if (!order) throw new ApiError('Order not found', 404)
+
+  const auth = await requireOwnerOrStaff(order.userId)
+  if (auth.response) return auth.response
 
   if (order.status === 'PENDING' && order.paypackRef) {
     try {
