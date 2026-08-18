@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { authenticator } from 'otplib'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth } from '@/lib/auth/require-role'
 
 const verifySchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -30,6 +31,12 @@ export const POST = withErrorHandling('/api/auth/2fa/verify', 'POST', async (req
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const { userId, code } = parsed.data
+
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+  if (auth.session.userId !== userId) {
+    return NextResponse.json({ data: null, message: 'You can only confirm two-factor setup for your own account.', code: 'error', status: 403 }, { status: 403 })
+  }
 
   const record = await prisma.twoFactorSecret.findUnique({ where: { userId } })
   if (!record) throw new ApiError('No pending two-factor setup found — call /api/auth/2fa/setup first', 400)

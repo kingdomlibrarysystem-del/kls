@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import prisma from '@/prisma/client'
 import { POST as createBorrow } from '../borrowings/route'
@@ -10,7 +10,18 @@ import { POST as createReservation } from '../reservations/route'
  * section for why). Every row this suite creates is tagged with a
  * unique test-run email and deleted in afterAll, so it never pollutes
  * real data and is safe to re-run.
+ *
+ * getServerSession() calls next/headers's headers(), which requires a real
+ * Next.js request scope that doesn't exist when a route handler is called
+ * directly like this — so next-auth is mocked here. This suite creates
+ * several distinct test users (including 3 more mid-test for the
+ * concurrency check), so rather than pin the mock to one fixed userId, it
+ * returns a staff session — matching how requireOwnerOrStaff already lets
+ * staff act on behalf of any user.
  */
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(async () => ({ user: { id: 'vitest-staff', roleName: 'Admin' } })),
+}))
 const RUN_ID = `vitest-${Date.now()}-${Math.random().toString(36).slice(2)}`
 const TEST_EMAIL = `${RUN_ID}@vitest.local`
 let testUserId: string

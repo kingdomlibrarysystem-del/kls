@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v2 as cloudinary } from 'cloudinary'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -20,6 +21,9 @@ const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/g
  * upload preset for this specific flow).
  */
 export const POST = withErrorHandling('/api/uploads', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const formData = await request.formData()
   const file = formData.get('file')
 

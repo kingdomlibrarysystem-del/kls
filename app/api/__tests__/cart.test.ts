@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import prisma from '@/prisma/client'
 import { GET as getCart, POST as addToCart } from '../cart/route'
@@ -7,11 +7,21 @@ import { DELETE as removeFromCart } from '../cart/[itemId]/route'
 /**
  * Real integration test against the actual configured database — same
  * no-separate-test-DB convention as borrow-reserve-concurrency.test.ts.
+ *
+ * getServerSession() calls next/headers's headers(), which requires a real
+ * Next.js request scope that doesn't exist when a route handler is called
+ * directly like this (outside the App Router runtime) — so next-auth is
+ * mocked to return this test's own user as the signed-in session, matching
+ * the real session shape lib/auth-options.ts produces.
  */
 const RUN_ID = `vitest-${Date.now()}-${Math.random().toString(36).slice(2)}`
 const TEST_EMAIL = `${RUN_ID}@vitest.local`
 let testUserId: string
 let testResourceId: string
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(async () => ({ user: { id: testUserId, roleName: 'Member' } })),
+}))
 
 function postRequest(url: string, body: unknown) {
   return new NextRequest(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
