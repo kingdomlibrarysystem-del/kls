@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
   }
 
   const { ref, status } = payload.data
-  const order = await prisma.order.findUnique({ where: { paypackRef: ref } })
+  // findFirst, not findUnique — paypackRef is no longer a @unique field in
+  // schema.prisma (a real sparse unique index enforces it at the DB level
+  // instead; see Order.paypackRef's docstring), so Prisma's generated
+  // WhereUniqueInput no longer accepts it alone.
+  const order = await prisma.order.findFirst({ where: { paypackRef: ref } })
   if (!order) {
     return NextResponse.json({ data: null, message: 'No matching order for this transaction', code: 'success', status: 200 })
   }
