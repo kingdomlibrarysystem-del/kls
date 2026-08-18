@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAdmin, requireAuth } from '@/lib/auth/require-role'
 
 /**
  * Append-only audit trail — GET (list) and POST (append) only, no
@@ -9,6 +10,9 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
  * audit log entry is never edited or removed once written.
  */
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin()
+  if (auth.response) return auth.response
+
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '10')
@@ -71,10 +75,19 @@ export const POST = withErrorHandling('/api/audit-log', 'POST', async (request: 
   }
   const body = parsed.data
 
+  // Most callers are staff dashboard actions, but this route is also hit
+  // pre-authentication (e.g. a "forgot password" audit entry, logged before
+  // the requester has a session at all) — so a missing session is allowed,
+  // but WHEN one exists, actorId is always the real session id, never the
+  // client-supplied value, closing the identity-spoofing gap without
+  // breaking the legitimate no-session case.
+  const auth = await requireAuth()
+  const actorId = auth.session ? auth.session.userId : (body.actorId ?? null)
+
   const entry = await prisma.auditLog.create({
     data: {
       actor: body.actor,
-      actorId: body.actorId ?? null,
+      actorId,
       action: body.action,
       target: body.target,
       targetId: body.targetId ?? null,

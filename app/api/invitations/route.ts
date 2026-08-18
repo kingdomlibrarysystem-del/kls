@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 export async function GET(request: NextRequest) {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '10')
@@ -47,10 +51,12 @@ export async function GET(request: NextRequest) {
 const createInvitationSchema = z.object({
   email: z.string().trim().email('A valid email is required'),
   roleId: z.string().min(1, 'roleId is required'),
-  invitedByUserId: z.string().optional(),
 })
 
 export const POST = withErrorHandling('/api/invitations', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createInvitationSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
@@ -64,7 +70,7 @@ export const POST = withErrorHandling('/api/invitations', 'POST', async (request
     data: {
       email: body.email,
       roleId: body.roleId,
-      invitedByUserId: body.invitedByUserId ?? null,
+      invitedByUserId: auth.session.userId,
     },
     include: { role: { select: { id: true, name: true } } },
   })

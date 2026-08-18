@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff, requireAdmin } from '@/lib/auth/require-role'
 
 const ROLE_INCLUDE = { role: { select: { name: true } } } as const
 
@@ -31,6 +32,9 @@ function serializeUser(u: {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const auth = await requireOwnerOrStaff(id)
+  if (auth.response) return auth.response
+
   const user = await prisma.user.findUnique({ where: { id }, include: ROLE_INCLUDE })
   if (!user) {
     return NextResponse.json({ data: null, message: 'User not found', code: 'error', status: 404 }, { status: 404 })
@@ -52,6 +56,13 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  // Changing name/email/status is routine staff account-management work;
+  // reassigning WHICH role a user holds is a privilege-escalation surface
+  // (a manager/staff account could otherwise promote themselves or anyone
+  // else to Admin), so that specific field requires a real admin session.
+  const auth = await (body.role ? requireAdmin() : requireStaff())
+  if (auth.response) return auth.response
 
   const existing = await prisma.user.findUnique({ where: { id } })
   if (!existing) throw new ApiError('User not found', 404)
@@ -89,6 +100,9 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
 
 export const DELETE = withErrorHandling('/api/users/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
+  const auth = await requireAdmin()
+  if (auth.response) return auth.response
+
   const existing = await prisma.user.findUnique({ where: { id } })
   if (!existing) throw new ApiError('User not found', 404)
 

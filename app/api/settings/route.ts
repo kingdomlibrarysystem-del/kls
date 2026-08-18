@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAdmin } from '@/lib/auth/require-role'
 
 /**
  * Single-row settings — there is only ever one Settings document. GET
  * upserts a default row on first read so this never 404s; PATCH updates
  * that same row. No id is ever passed by the client — it always means
- * "the one settings row."
+ * "the one settings row." GET stays public/unauthenticated: it's read by
+ * the member-facing borrow/reserve confirm modal to show real borrow-
+ * period policy before checkout, not just the admin settings page — the
+ * values (borrow period, renewal caps) aren't sensitive. PATCH (actually
+ * changing policy) is admin-only.
  */
 const settingsSchema = z.object({
   defaultBorrowPeriodDays: z.number().int().min(1).max(90),
@@ -28,6 +33,9 @@ export const GET = withErrorHandling('/api/settings', 'GET', async () => {
 })
 
 export const PATCH = withErrorHandling('/api/settings', 'PATCH', async (request: NextRequest) => {
+  const auth = await requireAdmin()
+  if (auth.response) return auth.response
+
   const parsed = settingsSchema.partial().safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
