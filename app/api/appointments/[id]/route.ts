@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 function serializeAppointment(a: {
   id: string
@@ -29,6 +30,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!existing) {
       return NextResponse.json({ data: null, message: 'Appointment not found', code: 'error', status: 404 }, { status: 404 })
     }
+    const auth = await requireOwnerOrStaff(existing.userId)
+    if (auth.response) return auth.response
     const updated = await prisma.appointment.update({ where: { id }, data: { status: 'CANCELLED' } })
     return NextResponse.json({ data: serializeAppointment(updated), message: 'Appointment cancelled successfully', code: 'success', status: 200 })
   } catch {

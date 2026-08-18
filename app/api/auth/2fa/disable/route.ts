@@ -3,6 +3,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth } from '@/lib/auth/require-role'
 
 const disableSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -16,6 +17,12 @@ export const POST = withErrorHandling('/api/auth/2fa/disable', 'POST', async (re
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const { userId, currentPassword } = parsed.data
+
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+  if (auth.session.userId !== userId) {
+    return NextResponse.json({ data: null, message: 'You can only disable two-factor authentication for your own account.', code: 'error', status: 403 }, { status: 403 })
+  }
 
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user || !user.password) throw new ApiError('Account not found or has no password set', 400)

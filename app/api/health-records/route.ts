@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Health Record API, replacing health-data.ts's initialHealthRecords.
@@ -31,6 +32,9 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ data: null, message: 'userId is required', code: 'error', status: 400 }, { status: 400 })
   }
+
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
 
   const records = await prisma.healthRecord.findMany({
     where: { userId },
