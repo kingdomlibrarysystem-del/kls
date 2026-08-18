@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real shopping cart API — one Cart per userId (see Cart's schema
@@ -45,6 +46,9 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId')
   if (!userId) throw new ApiError('userId is required', 400)
 
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
+
   const cart = await getOrCreateCart(userId)
   const items = cart.items.map(serializeCartItem)
   const totalRwf = items.reduce((sum, i) => sum + i.unitPriceRwf * i.quantity, 0)
@@ -67,6 +71,9 @@ export const POST = withErrorHandling('/api/cart', 'POST', async (request: NextR
   const parsed = addToCartSchema.safeParse(await request.json())
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
   if (!resource) throw new ApiError('Resource not found', 404)

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real purchase/rental order API, replacing
@@ -65,6 +66,9 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId')
   const status = searchParams.get('status')
 
+  const auth = await (userId ? requireOwnerOrStaff(userId) : requireStaff())
+  if (auth.response) return auth.response
+
   const where = {
     ...(userId && { userId }),
     ...(status && status !== 'all' && { status: status.toUpperCase() as 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' }),
@@ -97,6 +101,9 @@ export const POST = withErrorHandling('/api/orders', 'POST', async (request: Nex
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   if (!isValidPaypackPhone(body.buyerPhone)) {
     throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
