@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
 
   const invitation = await prisma.invitation.findUnique({
@@ -28,6 +32,9 @@ const updateInvitationSchema = z.object({
 })
 
 export const PATCH = withErrorHandling('/api/invitations/[id]', 'PATCH', async (request: NextRequest, { params }: RouteParams) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = updateInvitationSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -51,6 +58,9 @@ export const PATCH = withErrorHandling('/api/invitations/[id]', 'PATCH', async (
 })
 
 export const DELETE = withErrorHandling('/api/invitations/[id]', 'DELETE', async (_request: NextRequest, { params }: RouteParams) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
 
   const existing = await prisma.invitation.findUnique({ where: { id } })
