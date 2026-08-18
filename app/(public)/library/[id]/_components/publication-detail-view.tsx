@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle, ShoppingCart, Check } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
@@ -13,6 +13,7 @@ import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_com
 import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
 import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 
@@ -31,10 +32,13 @@ interface PublicationDetailViewProps {
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
   const [buyAction, setBuyAction] = useState<BuyAction>(null)
-  const { isAuthenticated } = useAuth()
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [cartError, setCartError] = useState('')
+  const { user, isAuthenticated } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { data: publications, loading: publicationsLoading, error: publicationsError } = usePublications()
   const readableContent = useReadableContent()
+  useCart(user?.id)
 
   const loading = resourcesLoading || publicationsLoading
   const error = resourcesError ?? publicationsError
@@ -100,6 +104,20 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const quantity = resource ? resource.availableQty : catalogBook!.quantity
   const available = resource ? resource.availableQty > 0 && resource.status !== 'archived' : !!catalogBook?.available
   const language = catalogBook ? languageBadgeLabels[catalogBook.language] : resource!.language
+  const inCart = resource ? isInCart(resource.id, 'SALE') : false
+
+  const handleAddToCart = async () => {
+    if (!user || !resource) return
+    setAddingToCart(true)
+    setCartError('')
+    try {
+      await addToCart(user.id, resource.id, 'SALE')
+    } catch (err) {
+      setCartError(err instanceof Error ? err.message : 'Could not add to cart')
+    } finally {
+      setAddingToCart(false)
+    }
+  }
 
   return (
     <div>
@@ -171,14 +189,27 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
                 </UniversalButton>
               </div>
               {price > 0 && (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <UniversalButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
-                    Buy — {price.toLocaleString()} RWF
+                <>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <UniversalButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
+                      Buy — {price.toLocaleString()} RWF
+                    </UniversalButton>
+                    <UniversalButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
+                      Rent
+                    </UniversalButton>
+                  </div>
+                  <UniversalButton
+                    variant="outline"
+                    disabled={inCart}
+                    loading={addingToCart}
+                    icon={inCart ? <Check size={15} /> : <ShoppingCart size={15} />}
+                    onClick={handleAddToCart}
+                    className="flex-1 sm:flex-none"
+                  >
+                    {inCart ? 'In Cart' : 'Add to Cart'}
                   </UniversalButton>
-                  <UniversalButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
-                    Rent
-                  </UniversalButton>
-                </div>
+                  {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
+                </>
               )}
             </div>
           ) : isAuthenticated ? null : (
