@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search, BookOpen, X, AlertTriangle } from 'lucide-react'
-import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
@@ -46,8 +46,8 @@ export function LibraryBrowser() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5" aria-label="Loading books">
-        {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)}
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" aria-label="Loading books">
+        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-96 w-full rounded-lg" />)}
       </div>
     )
   }
@@ -110,16 +110,16 @@ export function LibraryBrowser() {
       </div>
 
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filtered.map((book) => <BookCard key={book.id} book={book} onAction={(b, action) => setPending({ book: b, action })} />)}
         </div>
       ) : (
         <div className="text-center py-16">
           <BookOpen size={40} className="mx-auto text-w-400 mb-4" />
           <p className="font-lato text-w-700 mb-4">No resources match your search.</p>
-          <ElegantButton variant="secondary" onClick={() => { setSearch(''); setCategory('All'); setFormat('All') }}>
+          <UniversalButton variant="secondary" onClick={() => { setSearch(''); setCategory('All'); setFormat('All') }}>
             Clear Filters
-          </ElegantButton>
+          </UniversalButton>
         </div>
       )}
 

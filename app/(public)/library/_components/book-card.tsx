@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDown, ChevronUp, BookMarked, Film, Package, BookOpenCheck } from 'lucide-react'
-import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { bindingTypeLabels, mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
@@ -33,8 +33,8 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
       <Link href={detailHref} aria-label={`View details for ${book.title}`}>
-        <div className="relative w-full h-52 bg-w-200">
-          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" />
+        <div className="relative w-full h-72 bg-w-200">
+          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
         </div>
       </Link>
       <div className="p-4 flex flex-col gap-2 flex-1">
@@ -66,29 +66,25 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
         <div className="flex flex-col gap-2 mt-auto pt-3">
           {isReadable && (
             isAuthenticated ? (
-              <Link href={`/member/library/read/${book.id}`} className="w-full">
-                <ElegantButton variant="primary" className="w-full text-xs py-2 flex items-center justify-center gap-1.5"><BookOpenCheck size={13} /> Read Online</ElegantButton>
-              </Link>
+              <UniversalButton href={`/member/library/read/${book.id}`} variant="primary" size="sm" fullWidth icon={<BookOpenCheck size={13} />}>
+                Read Online
+              </UniversalButton>
             ) : (
-              <Link href={readHref} className="w-full">
-                <ElegantButton variant="primary" className="w-full text-xs py-2 flex items-center justify-center gap-1.5"><BookOpenCheck size={13} /> Sign In to Read</ElegantButton>
-              </Link>
+              <UniversalButton href={readHref} variant="primary" size="sm" fullWidth icon={<BookOpenCheck size={13} />}>
+                Sign In to Read
+              </UniversalButton>
             )
           )}
           <div className="flex gap-2">
             {isAuthenticated ? (
               <>
-                <ElegantButton variant={isReadable ? 'outline' : 'primary'} disabled={outOfStock} className="flex-1 text-xs py-2" onClick={() => onAction(book, 'borrow')}>Borrow</ElegantButton>
-                <ElegantButton variant="outline" className="flex-1 text-xs py-2" onClick={() => onAction(book, 'reserve')}>Reserve</ElegantButton>
+                <UniversalButton variant={isReadable ? 'outline' : 'primary'} size="sm" disabled={outOfStock} className="flex-1" onClick={() => onAction(book, 'borrow')}>Borrow</UniversalButton>
+                <UniversalButton variant="outline" size="sm" className="flex-1" onClick={() => onAction(book, 'reserve')}>Reserve</UniversalButton>
               </>
             ) : (
               <>
-                <Link href={loginHref} className="flex-1">
-                  <ElegantButton variant={isReadable ? 'outline' : 'primary'} className="w-full text-xs py-2">Borrow</ElegantButton>
-                </Link>
-                <Link href={loginHref} className="flex-1">
-                  <ElegantButton variant="outline" className="w-full text-xs py-2">Reserve</ElegantButton>
-                </Link>
+                <UniversalButton href={loginHref} variant={isReadable ? 'outline' : 'primary'} size="sm" className="flex-1">Borrow</UniversalButton>
+                <UniversalButton href={loginHref} variant="outline" size="sm" className="flex-1">Reserve</UniversalButton>
               </>
             )}
           </div>
