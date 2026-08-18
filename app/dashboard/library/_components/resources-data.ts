@@ -19,6 +19,8 @@ export interface Resource {
   pages: number
   isbn: string
   price: number
+  /** How many of this resource's chapters are readable for free before the reader shows a real paywall (see /api/chapters). Ignored while price is 0. */
+  freePreviewChapterCount: number
   /** Renamed conceptually to "quantity" per the canonical shape; totalQty/availableQty split is kept since it's strictly more useful than one combined count. */
   totalQty: number
   availableQty: number

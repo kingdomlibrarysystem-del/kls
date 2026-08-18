@@ -9,7 +9,11 @@
 export interface Chapter {
   id: string
   title: string
-  body: string
+  order: number
+  /** Undefined when this chapter is locked behind a real entitlement check (see /api/chapters) — a priced resource past its free-preview count, with no PAID Order/active Borrow/claimed Reservation for the requesting user. */
+  body?: string
+  /** True when body was omitted because the requesting user isn't entitled to this chapter yet. */
+  locked?: boolean
 }
 
 export interface ReadableContent {

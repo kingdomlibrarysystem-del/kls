@@ -33,11 +33,11 @@ export function ChapterSearch({ chapters, onJump }: ChapterSearchProps) {
 
   const matches: SearchMatch[] = query.trim().length < 2 ? [] : chapters
     .map((chapter, chapterIndex) => ({ chapter, chapterIndex }))
-    .filter(({ chapter }) => chapter.body.toLowerCase().includes(query.toLowerCase()) || chapter.title.toLowerCase().includes(query.toLowerCase()))
+    .filter(({ chapter }) => !chapter.locked && (chapter.body?.toLowerCase().includes(query.toLowerCase()) || chapter.title.toLowerCase().includes(query.toLowerCase())))
     .map(({ chapter, chapterIndex }) => ({
       chapterIndex,
       chapterTitle: chapter.title,
-      snippet: buildSnippet(chapter.body, query) || chapter.title,
+      snippet: (chapter.body && buildSnippet(chapter.body, query)) || chapter.title,
     }))
 
   return (

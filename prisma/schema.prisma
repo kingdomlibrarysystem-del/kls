@@ -307,6 +307,13 @@ model Resource {
   documentUrl  String?
   audioUrl     String?
   videoUrl     String?
+  /// How many of this resource's Chapter rows (ordered by Chapter.order)
+  /// are readable for free before a paywall kicks in — only meaningful
+  /// when price > 0; ignored for a free resource, which stays fully
+  /// readable as before. Enforced server-side in GET /api/chapters via a
+  /// real entitlement check (PAID Order, active Borrow, or claimed
+  /// Reservation for the requesting user), not just hidden client-side.
+  freePreviewChapterCount Int @default(0)
   borrows      Borrow[]
   reservations Reservation[]
   /// Not truly one-to-many in practice — exactly one Publication ever

@@ -23,6 +23,8 @@ export const resourceSchema = z.object({
   language: z.string().min(1, 'Language is required'),
   pages: z.number().int().min(1, 'Must be at least 1 page'),
   price: z.number().min(0, 'Must be 0 or more'),
+  /** How many of this resource's chapters (once seeded) are readable free before the reader shows a real "Buy to Continue" paywall — see /api/chapters. Ignored while price is 0. */
+  freePreviewChapterCount: z.number().int().min(0, 'Must be 0 or more'),
   bindingType: z.enum(['SOFT', 'HARD']),
   mediaType: z.enum(['VIDEO', 'DOCUMENT', 'TEXT', 'COMBINATION']),
   /** Comma-separated in the UI, parsed to string[] on submit — see tag-input.tsx. */
@@ -58,6 +60,7 @@ export const defaultResourceFormValues: ResourceFormData = {
   language: '',
   pages: 1,
   price: 0,
+  freePreviewChapterCount: 0,
   bindingType: 'SOFT',
   mediaType: 'TEXT',
   tags: [],

@@ -66,6 +66,14 @@ export function ResourceFormDetails({ register, control, errors, coverImageValue
         </div>
       </div>
 
+      <div>
+        <FieldLabel htmlFor="freePreviewChapterCount">Free Preview Chapters</FieldLabel>
+        <FormInput id="freePreviewChapterCount" type="number" min={0} error={errors.freePreviewChapterCount?.message} {...register('freePreviewChapterCount', { valueAsNumber: true })} />
+        <p className="font-lato text-xs text-w-600 mt-1">
+          Readable for free before the reader shows a "Buy to Continue" paywall. Ignored while price is 0 — a free resource stays fully readable.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <FieldLabel htmlFor="bindingType" required>Binding</FieldLabel>
