@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 function serializeCourse(c: {
   id: string
@@ -66,6 +67,9 @@ const updateCourseSchema = z.object({
 })
 
 export const PATCH = withErrorHandling('/api/courses/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = updateCourseSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -90,6 +94,9 @@ export const PATCH = withErrorHandling('/api/courses/[id]', 'PATCH', async (requ
 
 /** Guarded delete: blocks removing a course that still has real enrollments, mirroring the "don't silently orphan learner progress" guard already established for Category deletes in Phase 2. */
 export const DELETE = withErrorHandling('/api/courses/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.course.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Course not found', 404)

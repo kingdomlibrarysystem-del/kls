@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Notification API, replacing
@@ -36,6 +37,9 @@ function serializeNotification(n: {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { searchParams } = new URL(request.url)
   const recipientRole = searchParams.get('recipientRole')
   const recipientId = searchParams.get('recipientId')
@@ -67,6 +71,9 @@ const createNotificationSchema = z.object({
 })
 
 export const POST = withErrorHandling('/api/notifications', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createNotificationSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)

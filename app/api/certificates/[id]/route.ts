@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 function serializeCertificate(c: {
   id: string
@@ -31,6 +32,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!certificate) {
     return NextResponse.json({ data: null, message: 'Certificate not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(certificate.userId)
+  if (auth.response) return auth.response
   return NextResponse.json({ data: serializeCertificate(certificate), message: 'Certificate fetched successfully', code: 'success', status: 200 })
 }
 
@@ -38,6 +41,9 @@ const patchCertificateSchema = z.object({ action: z.enum(['revoke', 'restore']) 
 
 /** action: 'revoke' | 'restore' toggles revoked status as an explicit, guarded transition rather than a blanket field update. */
 export const PATCH = withErrorHandling('/api/certificates/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = patchCertificateSchema.safeParse(await request.json())
   if (!parsed.success) {
