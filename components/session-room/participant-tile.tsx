@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { VideoOff, Mic, MicOff, Hand, ScreenShare } from 'lucide-react'
+import { VideoOff, Mic, MicOff, Hand, ScreenShare, Clock } from 'lucide-react'
 
 export interface ParticipantDeviceState {
   cameraOn: boolean
@@ -31,6 +31,16 @@ interface ParticipantTileProps {
    * been removing elsewhere.
    */
   videoStream?: MediaStream | null
+  /**
+   * True when this participant was invited (learner/lecturer on the
+   * SessionRequest, or a name added via AddParticipantModal) but has no
+   * live SessionPresence row — i.e. they haven't actually opened the
+   * room. Previously this tile always showed a fake always-connected
+   * camera-on state regardless of whether anyone was really there; now
+   * an uninvited-but-not-joined tile shows a real "Waiting to join…"
+   * placeholder instead.
+   */
+  notJoined?: boolean
 }
 
 /**
@@ -41,7 +51,7 @@ interface ParticipantTileProps {
  * room's one honest, explained limitation: no other participant can ever
  * show real video here (see videoStream's docstring).
  */
-export function ParticipantTile({ name, isYou, state, presenting, videoStream }: ParticipantTileProps) {
+export function ParticipantTile({ name, isYou, state, presenting, videoStream, notJoined }: ParticipantTileProps) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -73,7 +83,12 @@ export function ParticipantTile({ name, isYou, state, presenting, videoStream }:
         </div>
       )}
 
-      {showRealVideo ? (
+      {notJoined ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+          <Clock size={22} />
+          <span style={{ fontSize: 10 }}>Waiting to join…</span>
+        </div>
+      ) : showRealVideo ? (
         <video
           ref={videoRef}
           autoPlay
@@ -93,7 +108,7 @@ export function ParticipantTile({ name, isYou, state, presenting, videoStream }:
         </div>
       )}
 
-      {state.handRaised && (
+      {!notJoined && state.handRaised && (
         <div
           style={{
             position: 'absolute', top: 8, right: 8, width: 26, height: 26, borderRadius: '50%',
@@ -113,10 +128,12 @@ export function ParticipantTile({ name, isYou, state, presenting, videoStream }:
         }}
       >
         <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{name}{isYou ? ' (You)' : ''}</span>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {state.micOn ? <Mic size={13} color="#fff" /> : <MicOff size={13} color="var(--red-light)" />}
-          {!state.cameraOn && <VideoOff size={13} color="var(--red-light)" />}
-        </div>
+        {!notJoined && (
+          <div style={{ display: 'flex', gap: 4 }}>
+            {state.micOn ? <Mic size={13} color="#fff" /> : <MicOff size={13} color="var(--red-light)" />}
+            {!state.cameraOn && <VideoOff size={13} color="var(--red-light)" />}
+          </div>
+        )}
       </div>
     </div>
   )

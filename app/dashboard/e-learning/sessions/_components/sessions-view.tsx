@@ -16,7 +16,12 @@ type ModalAction = 'approve' | 'reject' | null
 function buildColumns(onOpenModal: (r: SessionRequest, action: 'approve' | 'reject') => void): Column<SessionRequest>[] {
   return [
     { key: 'learnerName', label: 'Learner', sortable: true, render: (r) => <span className="font-semibold text-w-950">{r.learnerName}</span> },
-    { key: 'lecturerName', label: 'Lecturer', sortable: true, render: (r) => <span className="text-w-700">{r.lecturerName}</span> },
+    {
+      key: 'lecturerName', label: 'Lecturer', sortable: true,
+      render: (r) => r.lecturerName
+        ? <span className="text-w-700">{r.lecturerName}</span>
+        : <span className="text-w-500 italic">Unassigned</span>,
+    },
     { key: 'courseTitle', label: 'Course', sortable: true, render: (r) => <span className="text-w-700 max-w-55 truncate block">{r.courseTitle}</span> },
     { key: 'requestedAt', label: 'Requested', sortable: true, render: (r) => <span className="text-w-700">{r.requestedAt}</span> },
     {
@@ -84,10 +89,10 @@ export function SessionsView() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
   const closeModal = () => { setModalTarget(null); setModalAction(null) }
 
-  const handleApprove = async (scheduledAt: string, notes: string) => {
+  const handleApprove = async (scheduledAt: string, notes: string, lecturerId?: string) => {
     if (!modalTarget) return
     try {
-      await approveSessionAdmin(modalTarget.id, scheduledAt, notes || undefined)
+      await approveSessionAdmin(modalTarget.id, scheduledAt, notes || undefined, lecturerId)
       showToast(`Approved session with ${modalTarget.learnerName}`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Could not approve this session')
@@ -147,7 +152,7 @@ export function SessionsView() {
           columns={buildColumns((r, action) => { setModalTarget(r); setModalAction(action) })}
           rowKey={(r) => r.id}
           searchPlaceholder="Search learner, lecturer, or course..."
-          searchFilter={(r, q) => r.learnerName.toLowerCase().includes(q) || r.lecturerName.toLowerCase().includes(q) || r.courseTitle.toLowerCase().includes(q)}
+          searchFilter={(r, q) => r.learnerName.toLowerCase().includes(q) || (r.lecturerName?.toLowerCase().includes(q) ?? false) || r.courseTitle.toLowerCase().includes(q)}
           filters={statusSelect}
           emptyMessage="No requests match your search."
         />

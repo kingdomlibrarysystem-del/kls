@@ -28,7 +28,8 @@ export function useSessionRequests() {
 
 export interface RequestSessionInput {
   learnerId: string
-  lecturerId: string
+  /** Omit to submit an unassigned SCHEDULED request — any lecturer can claim it by approving. */
+  lecturerId?: string
   courseId: string
   proposedTime: string
   notes?: string

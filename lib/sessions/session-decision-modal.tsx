@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { SessionRequest } from './session-requests-data'
 
 type ModalAction = 'approve' | 'reject'
@@ -13,7 +14,7 @@ interface SessionDecisionModalProps {
   request: SessionRequest | null
   action: ModalAction | null
   onClose: () => void
-  onApprove: (scheduledAt: string, notes: string) => void
+  onApprove: (scheduledAt: string, notes: string, lecturerId?: string) => void
   onReject: (notes: string) => void
 }
 
@@ -31,12 +32,14 @@ interface SessionDecisionModalProps {
 export function SessionDecisionModal({ request, action, onClose, onApprove, onReject }: SessionDecisionModalProps) {
   const [scheduledAt, setScheduledAt] = useState('')
   const [notes, setNotes] = useState('')
+  const [lecturerId, setLecturerId] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (request && action) {
       setScheduledAt(request.proposedTime.slice(0, 16))
       setNotes('')
+      setLecturerId(lecturerRoster[0]?.id ?? '')
       setError('')
     }
   }, [request, action])
@@ -44,12 +47,14 @@ export function SessionDecisionModal({ request, action, onClose, onApprove, onRe
   if (!request || !action) return null
 
   const isApprove = action === 'approve'
+  const needsLecturer = isApprove && !request.lecturerId
 
   const handleConfirm = () => {
     try {
       if (isApprove) {
         if (!scheduledAt) throw new Error('Choose a scheduled date and time')
-        onApprove(new Date(scheduledAt).toISOString(), notes)
+        if (needsLecturer && !lecturerId) throw new Error('Choose a lecturer to assign this session to')
+        onApprove(new Date(scheduledAt).toISOString(), notes, needsLecturer ? lecturerId : undefined)
       } else {
         if (!notes.trim()) throw new Error('Rejecting a session request requires a reason in the notes field')
         onReject(notes)
@@ -82,6 +87,21 @@ export function SessionDecisionModal({ request, action, onClose, onApprove, onRe
             onChange={(e) => setScheduledAt(e.target.value)}
             className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
           />
+        </div>
+      )}
+
+      {needsLecturer && (
+        <div className="mb-3">
+          <FieldLabel htmlFor="session-lecturer" required>Assign Lecturer</FieldLabel>
+          <p className="font-lato text-xs text-w-600 mb-1.5">This request was submitted with no lecturer in mind — approving it claims it for the lecturer chosen here.</p>
+          <select
+            id="session-lecturer"
+            value={lecturerId}
+            onChange={(e) => setLecturerId(e.target.value)}
+            className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+          >
+            {lecturerRoster.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
         </div>
       )}
 

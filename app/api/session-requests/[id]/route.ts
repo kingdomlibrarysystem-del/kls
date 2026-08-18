@@ -7,8 +7,8 @@ function serializeSessionRequest(s: {
   id: string
   learnerId: string
   learnerName: string
-  lecturerId: string
-  lecturerName: string
+  lecturerId: string | null
+  lecturerName: string | null
   courseId: string
   courseTitle: string
   requestedAt: Date
@@ -22,8 +22,8 @@ function serializeSessionRequest(s: {
     id: s.id,
     learnerId: s.learnerId,
     learnerName: s.learnerName,
-    lecturerId: s.lecturerId,
-    lecturerName: s.lecturerName,
+    lecturerId: s.lecturerId ?? undefined,
+    lecturerName: s.lecturerName ?? undefined,
     courseId: s.courseId,
     courseTitle: s.courseTitle,
     requestedAt: s.requestedAt.toISOString().split('T')[0],
@@ -45,7 +45,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 const patchSessionRequestSchema = z.union([
-  z.object({ action: z.literal('approve'), scheduledAt: z.string().datetime().optional(), notes: z.string().optional() }),
+  z.object({
+    action: z.literal('approve'),
+    scheduledAt: z.string().datetime().optional(),
+    notes: z.string().optional(),
+    /// Only meaningful (and only ever applied) when the request has no
+    /// lecturerId yet — this is how an unassigned SCHEDULED request gets
+    /// a real lecturer attached: the approver claims it. Ignored if the
+    /// request already has a lecturer.
+    lecturerId: z.string().min(1).optional(),
+  }),
   z.object({ action: z.literal('reject'), notes: z.string().optional() }),
   z.object({ action: z.literal('complete') }),
   z.object({ action: z.undefined() }).passthrough(),
@@ -66,7 +75,20 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
   if (body.action === 'approve') {
     if (existing.status !== 'PENDING') throw new ApiError('Only a pending session request can be approved', 409)
     const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : existing.proposedTime
-    const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'APPROVED', scheduledAt, notes: body.notes ?? existing.notes } })
+
+    let lecturerFields: { lecturerId?: string; lecturerName?: string } = {}
+    if (!existing.lecturerId && body.lecturerId) {
+      const lecturer = await prisma.user.findUnique({ where: { id: body.lecturerId } })
+      if (!lecturer) throw new ApiError('The specified lecturer does not exist', 400)
+      lecturerFields = { lecturerId: lecturer.id, lecturerName: lecturer.name ?? `${lecturer.firstName ?? ''} ${lecturer.lastName ?? ''}`.trim() }
+    } else if (!existing.lecturerId && !body.lecturerId) {
+      throw new ApiError('This request has no lecturer assigned yet — provide a lecturerId to approve it', 400)
+    }
+
+    const updated = await prisma.sessionRequest.update({
+      where: { id },
+      data: { status: 'APPROVED', scheduledAt, notes: body.notes ?? existing.notes, ...lecturerFields },
+    })
     return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request approved', code: 'success', status: 200 })
   }
 

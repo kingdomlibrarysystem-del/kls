@@ -44,7 +44,17 @@ export interface AddNotificationInput {
   title: string
   message: string
   href: string
-  recipientRole: UserRole
+  /**
+   * Usually a UserRole for a role-wide broadcast (e.g. 'admin'), but also
+   * accepts 'lecturer' — a role-shaped audience that isn't one of the
+   * four real UserRole values, used for per-lecturer session-request
+   * notifications (see request-session-modal.tsx). The API only ever
+   * treats this as a free string filter, so widening it here doesn't
+   * require any backend change.
+   */
+  recipientRole: UserRole | 'lecturer'
+  /** Targets one specific real User in addition to the role — used for the per-lecturer fan-out above. */
+  recipientId?: string
 }
 
 export async function addNotification(input: AddNotificationInput): Promise<Notification> {

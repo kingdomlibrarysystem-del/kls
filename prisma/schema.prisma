@@ -793,9 +793,17 @@ model SessionRequest {
   learnerId     String        @db.ObjectId
   learner       User          @relation("SessionRequestLearner", fields: [learnerId], references: [id])
   learnerName   String
-  lecturerId    String        @db.ObjectId
-  lecturer      User          @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
-  lecturerName  String
+  /// Nullable as of the "lecturer assignment optional" feature — a
+  /// SCHEDULED request can be submitted with no lecturer in mind
+  /// (Course.lecturerId was already optional; these two fields just
+  /// hadn't caught up). Approving an unassigned request is how it gets a
+  /// real lecturer attached (see the `approve` PATCH action), at which
+  /// point both fields are backfilled. INSTANT sessions still require a
+  /// lecturer at creation time (someone has to actually be present right
+  /// now), so this stays non-null for every INSTANT row in practice.
+  lecturerId    String?       @db.ObjectId
+  lecturer      User?         @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
+  lecturerName  String?
   courseId      String        @db.ObjectId
   course        Course        @relation(fields: [courseId], references: [id])
   courseTitle   String
@@ -807,6 +815,7 @@ model SessionRequest {
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  presence      SessionPresence[]
 }
 
 enum SessionRequestStatus {
@@ -819,6 +828,35 @@ enum SessionRequestStatus {
 enum SessionRequestMode {
   SCHEDULED
   INSTANT
+}
+
+/// Real per-room presence roster — who has actually opened this
+/// session's room and is still there right now, distinct from who was
+/// merely invited (learnerId/lecturerId on SessionRequest, or a name
+/// added via AddParticipantModal). `leftAt` is set on an explicit Leave
+/// or a stale heartbeat (see the presence route's docstring for the
+/// staleness window), never deleted outright, so a room's real join
+/// history survives a refresh. `displayName` is a point-in-time snapshot
+/// (same pattern as SessionRequest.learnerName) since a presence row can
+/// belong to either the learner, the lecturer, or an admin observer.
+model SessionPresence {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  sessionRequestId String         @db.ObjectId
+  sessionRequest   SessionRequest @relation(fields: [sessionRequestId], references: [id], onDelete: Cascade)
+  userId           String?        @db.ObjectId
+  displayName      String
+  role             SessionPresenceRole
+  joinedAt         DateTime       @default(now())
+  lastSeenAt       DateTime       @default(now())
+  leftAt           DateTime?
+
+  @@index([sessionRequestId])
+}
+
+enum SessionPresenceRole {
+  LEARNER
+  LECTURER
+  ADMIN
 }
 
 /// Real research project, replacing
