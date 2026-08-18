@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
@@ -59,8 +59,8 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8" aria-label="Loading publication">
-        <Skeleton className="h-96 w-full rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] gap-10" aria-label="Loading publication">
+        <Skeleton className="h-120 w-full rounded-lg" />
         <div className="space-y-3">
           <Skeleton className="h-8 w-2/3 rounded" />
           <Skeleton className="h-4 w-1/3 rounded" />
@@ -103,9 +103,9 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
-        <div className="relative w-full h-96 bg-w-200 rounded-lg overflow-hidden">
-          <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 280px" />
+      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] gap-10">
+        <div className="relative w-full h-120 bg-w-200 rounded-lg overflow-hidden">
+          <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 340px" />
         </div>
 
         <div>
@@ -138,56 +138,68 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           )}
 
           {isReadable && (
-            <Link href={isAuthenticated ? `/member/library/read/${id}` : `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${id}`)}`} className="block mb-3">
-              <ElegantButton variant="primary" className="w-full flex items-center justify-center gap-2">
-                <BookOpenCheck size={15} /> {isAuthenticated ? 'Read Online' : 'Sign In to Read'}
-              </ElegantButton>
-            </Link>
+            <UniversalButton
+              href={isAuthenticated ? `/member/library/read/${id}` : `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${id}`)}`}
+              variant="primary"
+              fullWidth
+              className="mb-3"
+              icon={<BookOpenCheck size={15} />}
+            >
+              {isAuthenticated ? 'Read Online' : 'Sign In to Read'}
+            </UniversalButton>
           )}
 
           {isAuthenticated && resource ? (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row gap-3">
-                <ElegantButton
+                <UniversalButton
                   variant={isReadable ? 'outline' : 'primary'}
                   disabled={!available}
                   onClick={() => setAction('borrow')}
                   className="flex-1 sm:flex-none"
                 >
                   Borrow
-                </ElegantButton>
-                <ElegantButton
+                </UniversalButton>
+                <UniversalButton
                   variant="outline"
                   onClick={() => setAction('reserve')}
                   className="flex-1 sm:flex-none"
                 >
                   Reserve
-                </ElegantButton>
+                </UniversalButton>
               </div>
               {price > 0 && (
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <ElegantButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
+                  <UniversalButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
                     Buy — {price.toLocaleString()} RWF
-                  </ElegantButton>
-                  <ElegantButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
+                  </UniversalButton>
+                  <UniversalButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
                     Rent
-                  </ElegantButton>
+                  </UniversalButton>
                 </div>
               )}
             </div>
           ) : isAuthenticated ? null : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
-                  <ElegantButton variant={isReadable ? 'outline' : 'primary'} className="w-full flex items-center justify-center gap-2">
-                    <LogIn size={15} /> Sign In to Borrow
-                  </ElegantButton>
-                </Link>
-                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
-                  <ElegantButton variant="outline" className="w-full flex items-center justify-center gap-2">
-                    <LogIn size={15} /> Sign In to Reserve
-                  </ElegantButton>
-                </Link>
+                <UniversalButton
+                  href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`}
+                  variant={isReadable ? 'outline' : 'primary'}
+                  fullWidth
+                  className="flex-1 sm:flex-none"
+                  icon={<LogIn size={15} />}
+                >
+                  Sign In to Borrow
+                </UniversalButton>
+                <UniversalButton
+                  href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`}
+                  variant="outline"
+                  fullWidth
+                  className="flex-1 sm:flex-none"
+                  icon={<LogIn size={15} />}
+                >
+                  Sign In to Reserve
+                </UniversalButton>
               </div>
               <p className="font-lato text-xs text-w-600 mt-2">
                 Sign in to borrow or reserve this book — you&apos;ll land back here once you&apos;re signed in.
