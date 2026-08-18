@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Favorite API, replacing app/member/_shared/favorites-data.ts's
@@ -40,6 +41,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: null, message: 'userId is required', code: 'error', status: 400 }, { status: 400 })
   }
 
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
+
   const favorites = await prisma.favorite.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -59,6 +63,9 @@ export const POST = withErrorHandling('/api/favorites', 'POST', async (request: 
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const user = await prisma.user.findUnique({ where: { id: body.userId } })
   if (!user) throw new ApiError('The specified user does not exist', 400)
@@ -86,6 +93,9 @@ export const DELETE = withErrorHandling('/api/favorites', 'DELETE', async (reque
   if (!userId || !itemId) {
     throw new ApiError('userId and itemId are required', 400)
   }
+
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
 
   await prisma.favorite.deleteMany({ where: { userId, itemId } })
 

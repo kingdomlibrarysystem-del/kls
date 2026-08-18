@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 const createReservationSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -64,6 +65,9 @@ export async function GET(request: NextRequest) {
   const resourceId = searchParams.get('resourceId')
   const status = searchParams.get('status')
 
+  const auth = await (userId ? requireOwnerOrStaff(userId) : requireStaff())
+  if (auth.response) return auth.response
+
   const where = {
     ...(userId && { userId }),
     ...(resourceId && { resourceId }),
@@ -122,6 +126,9 @@ export const POST = withErrorHandling('/api/reservations', 'POST', async (reques
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const [user, resource] = await Promise.all([
     prisma.user.findUnique({ where: { id: body.userId } }),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -75,6 +76,9 @@ const updateCategorySchema = z.object({
 })
 
 export const PATCH = withErrorHandling('/api/categories/[id]', 'PATCH', async (request: NextRequest, { params }: RouteParams) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = updateCategorySchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -105,6 +109,9 @@ export const PATCH = withErrorHandling('/api/categories/[id]', 'PATCH', async (r
 })
 
 export const DELETE = withErrorHandling('/api/categories/[id]', 'DELETE', async (_request: NextRequest, { params }: RouteParams) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
 
   const existing = await prisma.category.findUnique({ where: { id } })
