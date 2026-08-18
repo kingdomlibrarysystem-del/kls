@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 function serializeNotification(n: {
   id: string
@@ -30,6 +31,9 @@ function serializeNotification(n: {
 const patchNotificationSchema = z.object({ action: z.literal('markRead') })
 
 export const PATCH = withErrorHandling('/api/notifications/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = patchNotificationSchema.safeParse(await request.json())
   if (!parsed.success) {

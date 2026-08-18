@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 function serializeAttempt(a: {
   id: string
@@ -36,6 +37,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!attempt) {
     return NextResponse.json({ data: null, message: 'Assessment attempt not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(attempt.userId)
+  if (auth.response) return auth.response
   return NextResponse.json({ data: serializeAttempt(attempt), message: 'Assessment attempt fetched successfully', code: 'success', status: 200 })
 }
 
@@ -52,6 +55,9 @@ const patchAttemptSchema = z.union([
  * total marks (guarded: only a PENDING_REVIEW attempt can be graded).
  */
 export const PATCH = withErrorHandling('/api/assessment-attempts/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = patchAttemptSchema.safeParse(await request.json())
   if (!parsed.success) {

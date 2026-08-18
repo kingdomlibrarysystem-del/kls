@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Enrollment API, replacing app/member/_shared/enrollment-data.ts
@@ -51,6 +52,9 @@ export async function GET(request: NextRequest) {
   const courseId = searchParams.get('courseId')
   const status = searchParams.get('status')
 
+  const auth = await (userId ? requireOwnerOrStaff(userId) : requireStaff())
+  if (auth.response) return auth.response
+
   const where = {
     ...(userId && { userId }),
     ...(courseId && { courseId }),
@@ -85,6 +89,9 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const [user, course] = await Promise.all([
     prisma.user.findUnique({ where: { id: body.userId } }),

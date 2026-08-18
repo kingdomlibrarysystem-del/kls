@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth, requireStaff } from '@/lib/auth/require-role'
 
 function serializeSessionRequest(s: {
   id: string
@@ -41,6 +42,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!sessionRequest) {
     return NextResponse.json({ data: null, message: 'Session request not found', code: 'error', status: 404 }, { status: 404 })
   }
+
+  // Reachable by the learner, the assigned lecturer, or staff — the
+  // session room itself fetches this to check the join window, so both
+  // real participants need access, not just an owner-or-staff single check.
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+  const { userId, role } = auth.session
+  const isStaff = role === 'admin' || role === 'manager' || role === 'staff'
+  const isParticipant = userId === sessionRequest.learnerId || userId === sessionRequest.lecturerId
+  if (!isStaff && !isParticipant) {
+    return NextResponse.json({ data: null, message: "You don't have permission to do this.", code: 'error', status: 403 }, { status: 403 })
+  }
+
   return NextResponse.json({ data: serializeSessionRequest(sessionRequest), message: 'Session request fetched successfully', code: 'success', status: 200 })
 }
 
@@ -62,6 +76,9 @@ const patchSessionRequestSchema = z.union([
 
 /** Status-transition guard porting the mock's approveSession/rejectSession/completeSession. */
 export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = patchSessionRequestSchema.safeParse(await request.json())
   if (!parsed.success) {

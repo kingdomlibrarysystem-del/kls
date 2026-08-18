@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth, requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Assessment API, replacing app/member/_shared/assessment-data.ts's
@@ -44,6 +45,9 @@ function serializeAssessment(a: {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '100')
@@ -90,6 +94,9 @@ const createAssessmentSchema = z.object({
 })
 
 export const POST = withErrorHandling('/api/assessments', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createAssessmentSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)

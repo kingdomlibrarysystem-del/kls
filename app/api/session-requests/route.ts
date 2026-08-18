@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 const createSessionRequestSchema = z.object({
   learnerId: z.string().min(1, 'learnerId is required'),
@@ -64,6 +65,12 @@ export async function GET(request: NextRequest) {
   const lecturerId = searchParams.get('lecturerId')
   const status = searchParams.get('status')
 
+  // learnerId is "my session requests" (member) — ownership check. There's
+  // no separate lecturer portal (lecturers work through the shared admin
+  // dashboard), so a lecturerId-only filter or no filter at all is staff.
+  const auth = await (learnerId ? requireOwnerOrStaff(learnerId) : requireStaff())
+  if (auth.response) return auth.response
+
   const where = {
     ...(learnerId && { learnerId }),
     ...(lecturerId && { lecturerId }),
@@ -101,6 +108,9 @@ export const POST = withErrorHandling('/api/session-requests', 'POST', async (re
   }
   const body = parsed.data
   const isInstant = body.mode === 'INSTANT'
+
+  const auth = await requireOwnerOrStaff(body.learnerId)
+  if (auth.response) return auth.response
 
   if (isInstant && !body.lecturerId) {
     throw new ApiError('lecturerId is required to start an instant session', 400)

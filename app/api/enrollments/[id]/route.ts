@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 function serializeEnrollment(e: {
   id: string
@@ -41,6 +42,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!enrollment) {
     return NextResponse.json({ data: null, message: 'Enrollment not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(enrollment.userId)
+  if (auth.response) return auth.response
   return NextResponse.json({ data: serializeEnrollment(enrollment), message: 'Enrollment fetched successfully', code: 'success', status: 200 })
 }
 
@@ -67,6 +70,14 @@ export const PATCH = withErrorHandling('/api/enrollments/[id]', 'PATCH', async (
   const existing = await prisma.enrollment.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Enrollment not found', 404)
 
+  // completeLesson/markAssessmentPassed are the member's own progress
+  // actions (fired from the lesson viewer/quiz take-flow); any other
+  // field-level PATCH is an admin edit to someone else's enrollment record.
+  const auth = await (body.action === 'completeLesson' || body.action === 'markAssessmentPassed'
+    ? requireOwnerOrStaff(existing.userId)
+    : requireStaff())
+  if (auth.response) return auth.response
+
   if (body.action === 'completeLesson') {
     const completedLessonIds = existing.completedLessonIds.includes(body.lessonId)
       ? existing.completedLessonIds
@@ -91,6 +102,9 @@ export const PATCH = withErrorHandling('/api/enrollments/[id]', 'PATCH', async (
 })
 
 export const DELETE = withErrorHandling('/api/enrollments/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.enrollment.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Enrollment not found', 404)

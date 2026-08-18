@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth } from '@/lib/auth/require-role'
 
 /**
  * A presence row is considered "still in the room" if its last heartbeat
@@ -41,6 +42,9 @@ function serializePresence(p: {
 
 /** GET — real roster of who is currently present in this room (used by the participant panel to distinguish invited-but-never-joined from actually-here). */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const rows = await prisma.sessionPresence.findMany({ where: { sessionRequestId: id }, orderBy: { joinedAt: 'asc' } })
   return NextResponse.json({ data: rows.map(serializePresence), message: 'Presence fetched successfully', code: 'success', status: 200 })
@@ -54,10 +58,18 @@ const joinSchema = z.object({
 
 /** POST — a real join event: creates (or revives, if this same user already had a row) a presence record for the room. */
 export const POST = withErrorHandling('/api/session-requests/[id]/presence', 'POST', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = joinSchema.safeParse(await request.json())
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   const body = parsed.data
+
+  // A caller can only ever report presence as themselves, never impersonate another userId.
+  if (body.userId && body.userId !== auth.session.userId) {
+    return NextResponse.json({ data: null, message: "You can only join as yourself.", code: 'error', status: 403 }, { status: 403 })
+  }
 
   const sessionRequest = await prisma.sessionRequest.findUnique({ where: { id } })
   if (!sessionRequest) throw new ApiError('Session request not found', 404)
@@ -79,6 +91,9 @@ const heartbeatSchema = z.object({ presenceId: z.string().min(1, 'presenceId is 
 
 /** PATCH — heartbeat ping while the room stays open, so a live presence row doesn't age into "stale." */
 export const PATCH = withErrorHandling('/api/session-requests/[id]/presence', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = heartbeatSchema.safeParse(await request.json())
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
@@ -99,6 +114,9 @@ const leaveSchema = z.object({ presenceId: z.string().min(1, 'presenceId is requ
  * history stays real and inspectable.
  */
 export const DELETE = withErrorHandling('/api/session-requests/[id]/presence', 'DELETE', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const { searchParams } = new URL(request.url)
   const parsed = leaveSchema.safeParse({ presenceId: searchParams.get('presenceId') })
