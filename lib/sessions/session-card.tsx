@@ -1,8 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { CalendarClock, User, GraduationCap, Zap } from 'lucide-react'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { sessionStatusConfig, type SessionRequest } from './session-requests-data'
+import { getJoinWindowState, JOIN_WINDOW_EARLY_MIN } from './join-window'
 
 interface SessionCardProps {
   request: SessionRequest
@@ -18,18 +19,20 @@ interface SessionCardProps {
 }
 
 /**
- * One session-request card, used by /member/sessions. Per the open-access
- * "Slack huddle" policy, entering a session's room is never gated by
- * status or a countdown to `scheduledAt` — any request,
- * PENDING/APPROVED/REJECTED/COMPLETED, gets a real link into its room.
- * `scheduledAt` (when present) is shown purely as information about when
- * the session was proposed/held, not a precondition for entry.
+ * One session-request card, used by /member/sessions. Entry is no longer
+ * unconditionally open: a SCHEDULED request with a real scheduledAt is
+ * now gated by a real join window (see join-window.ts) — join disabled
+ * more than JOIN_WINDOW_EARLY_MIN minutes before, or after the late
+ * grace period. PENDING requests (never approved, so no scheduledAt
+ * yet) and INSTANT sessions remain always-joinable, since there's
+ * nothing meaningful to gate against.
  */
 export function SessionCard({ request, viewer }: SessionCardProps) {
-  const otherPartyLabel = viewer === 'learner' ? request.lecturerName : request.learnerName
+  const otherPartyLabel = viewer === 'learner' ? (request.lecturerName ?? 'No lecturer assigned yet') : request.learnerName
   const roomHref = `/member/sessions/${request.id}/room`
   const isInstant = request.mode === 'INSTANT'
   const enterLabel = request.status === 'COMPLETED' ? 'Rejoin Session' : viewer === 'learner' ? 'Join Session' : 'Start Session'
+  const joinWindow = getJoinWindowState(request)
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -85,13 +88,23 @@ export function SessionCard({ request, viewer }: SessionCardProps) {
         </div>
       )}
 
-      <Link
-        href={roomHref}
-        aria-label={enterLabel}
-        style={{ alignSelf: 'flex-start', padding: '6px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 700, textDecoration: 'none' }}
-      >
-        {enterLabel}
-      </Link>
+      {!joinWindow.canJoin && (
+        <p style={{ fontSize: 11, color: 'var(--gold)' }}>
+          {joinWindow.reason === 'too-early'
+            ? `Opens ${JOIN_WINDOW_EARLY_MIN} min before the scheduled time (${joinWindow.opensAt.toLocaleTimeString()}).`
+            : "This session's join window has passed."}
+        </p>
+      )}
+
+      {joinWindow.canJoin ? (
+        <UniversalButton href={roomHref} aria-label={enterLabel} variant="gold" size="sm" style={{ alignSelf: 'flex-start' }}>
+          {enterLabel}
+        </UniversalButton>
+      ) : (
+        <UniversalButton disabled aria-label={enterLabel} variant="gold" size="sm" style={{ alignSelf: 'flex-start' }}>
+          {enterLabel}
+        </UniversalButton>
+      )}
     </div>
   )
 }

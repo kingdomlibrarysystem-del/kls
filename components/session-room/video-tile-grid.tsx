@@ -19,6 +19,8 @@ interface VideoTileGridProps {
   otherName: string;
   /** The other participant's device state is fixed (mock — no real second client to reflect toggles from), always shown camera-on/mic-on/hand-down. */
   otherState: ParticipantDeviceState;
+  /** True when the other party has no live SessionPresence row — shows a real "Waiting to join…" placeholder instead of a fake always-connected state. */
+  otherNotJoined?: boolean;
   /** Personas added via AddParticipantModal — real additional tiles, not a fixed 2-up layout. */
   extraParticipants?: ExtraParticipant[];
 }
@@ -38,6 +40,7 @@ export function VideoTileGrid({
   hideSelf,
   otherName,
   otherState,
+  otherNotJoined,
   extraParticipants = [],
 }: VideoTileGridProps) {
   const youTile = !hideSelf && (
@@ -55,6 +58,7 @@ export function VideoTileGrid({
       name={otherName}
       isYou={false}
       state={otherState}
+      notJoined={otherNotJoined}
     />,
     ...extraParticipants.map((p) => (
       <ParticipantTile

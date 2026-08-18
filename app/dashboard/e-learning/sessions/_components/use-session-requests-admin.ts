@@ -81,8 +81,8 @@ async function patchSessionRequest(id: string, body: Record<string, unknown>): P
   return json.data
 }
 
-export function approveSessionAdmin(id: string, scheduledAt: string, notes?: string) {
-  return patchSessionRequest(id, { action: 'approve', scheduledAt, notes })
+export function approveSessionAdmin(id: string, scheduledAt: string, notes?: string, lecturerId?: string) {
+  return patchSessionRequest(id, { action: 'approve', scheduledAt, notes, lecturerId })
 }
 export function rejectSessionAdmin(id: string, notes: string) {
   return patchSessionRequest(id, { action: 'reject', notes })
