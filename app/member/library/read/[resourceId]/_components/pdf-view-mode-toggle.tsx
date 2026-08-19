@@ -25,8 +25,8 @@ export function PdfViewModeToggle({ mode, onChange }: PdfViewModeToggleProps) {
           aria-checked={mode === opt.mode}
           onClick={() => onChange(opt.mode)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 6, border: 'none',
-            cursor: 'pointer', fontSize: 11, fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 6, border: 'none',
+            cursor: 'pointer', fontSize: 13, fontWeight: 600,
             background: mode === opt.mode ? 'var(--gold)' : 'transparent',
             color: mode === opt.mode ? '#1a1a2e' : 'var(--text-secondary)',
             transition: 'all 0.15s',
