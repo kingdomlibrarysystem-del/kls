@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useAuth } from '@/contexts/auth-context'
-import { useNotifications } from '@/app/dashboard/notifications/_components/use-notifications'
+import { useMemberNotifications } from '@/app/member/_shared/use-member-notifications'
 
 interface AppTopbarProps {
   /** Portal name shown at the left, e.g. "Member Portal". */
@@ -22,16 +22,16 @@ interface AppTopbarProps {
  * `app/dashboard/_components/topbar.tsx` (Dialect B) without dashboard's
  * admin-only quick-link row.
  *
- * The unread badge reads the real shared `useNotifications()` store,
- * filtered to the signed-in user's own role — instead of a hardcoded prop
- * (previously each layout passed its own fabricated `notificationCount`
- * with no connection to the actual list) and instead of the unscoped
- * global count (which would mean one role's notification inflated every
- * other portal's badge too).
+ * The unread badge reads this signed-in member's own real notifications
+ * (via recipientId, see use-member-notifications.ts) — instead of a
+ * hardcoded prop (previously each layout passed its own fabricated
+ * `notificationCount` with no connection to the actual list) and instead
+ * of the admin dashboard's role-broadcast-only store, which has no
+ * concept of "this specific person's" notifications.
  */
 export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
   const { user } = useAuth()
-  const { data: notifications } = useNotifications(user?.role)
+  const { data: notifications } = useMemberNotifications(user?.id)
   const notificationCount = notifications.filter((n) => !n.read).length
 
   return (
@@ -58,7 +58,7 @@ export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
         <LanguageSwitcher minimal />
 
         <Link
-          href="/dashboard/notifications"
+          href="/member/notifications"
           aria-label={notificationCount > 0 ? `Notifications, ${notificationCount} unread` : 'Notifications'}
           style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
         >
