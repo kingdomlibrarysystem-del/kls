@@ -23,27 +23,27 @@ export function ChapterNavFooter({ chapterTitle, hasPrev, hasNext, isLastChapter
         className="btn btn-outline-dim btn-sm"
         style={{ opacity: hasPrev ? 1 : 0.4, cursor: hasPrev ? 'pointer' : 'not-allowed' }}
       >
-        <ChevronLeft size={13} /> Previous
+        <ChevronLeft size={15} /> Previous
       </button>
-      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{chapterTitle}</span>
+      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{chapterTitle}</span>
       {isLastChapter ? (
         isCompleted ? (
           <span
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8,
-              background: 'var(--green-dim)', color: 'var(--green-light)', fontSize: 12, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8,
+              background: 'var(--green-dim)', color: 'var(--green-light)', fontSize: 14, fontWeight: 600,
             }}
           >
-            <CheckCircle2 size={14} /> Book Completed
+            <CheckCircle2 size={16} /> Book Completed
           </span>
         ) : (
           <button onClick={onMarkComplete} className="btn btn-gold btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CheckCircle2 size={13} /> Mark Complete
+            <CheckCircle2 size={15} /> Mark Complete
           </button>
         )
       ) : (
         <button onClick={onNext} disabled={!hasNext} className="btn btn-gold btn-sm">
-          Next <ChevronRight size={13} />
+          Next <ChevronRight size={15} />
         </button>
       )}
     </div>

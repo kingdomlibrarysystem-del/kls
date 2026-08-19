@@ -15,7 +15,7 @@ export function LockedChapterPaywall({ bookTitle, priceRwf, onBuyAction }: Locke
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '32px 0', textAlign: 'center' }}>
       <Lock size={28} color="var(--text-muted)" />
-      <p style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 360 }}>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 360 }}>
         You&apos;ve reached the end of the free preview. Buy or rent &ldquo;{bookTitle}&rdquo; to keep reading.
       </p>
       <div style={{ display: 'flex', gap: 8 }}>

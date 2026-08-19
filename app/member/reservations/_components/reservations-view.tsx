@@ -27,23 +27,23 @@ export function ReservationsView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         {[
-          { icon: <CalendarDays size={16} />, label: 'Active Reservations', value: active.length.toString(), color: 'var(--gold)' },
-          { icon: <CheckCircle2 size={16} />, label: 'Ready for Pickup', value: active.filter((r) => r.status === 'notified').length.toString(), color: 'var(--green-light)' },
-          { icon: <Clock size={16} />, label: 'Claimed', value: done.filter((r) => r.status === 'claimed').length.toString(), color: 'var(--gold)' },
+          { icon: <CalendarDays size={18} />, label: 'Active Reservations', value: active.length.toString(), color: 'var(--gold)' },
+          { icon: <CheckCircle2 size={18} />, label: 'Ready for Pickup', value: active.filter((r) => r.status === 'notified').length.toString(), color: 'var(--green-light)' },
+          { icon: <Clock size={18} />, label: 'Claimed', value: done.filter((r) => r.status === 'claimed').length.toString(), color: 'var(--gold)' },
         ].map((s) => (
           <div key={s.label} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
+            <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
             </div>
           </div>
         ))}
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <CalendarDays size={14} color="var(--gold)" /> Active Reservations
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <CalendarDays size={16} color="var(--gold)" /> Active Reservations
         </div>
         {active.length === 0 ? (
           <EmptyState icon={CalendarDays} title="No active reservations" description="Books you reserve will appear here while you wait for a copy." style={{ color: 'var(--text-secondary)' }} />
@@ -57,15 +57,15 @@ export function ReservationsView() {
               className="w-full text-left justify-start"
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', borderRadius: 0, border: 'none', background: 'none', color: 'inherit' }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: r.status === 'notified' ? 'var(--green-dim)' : 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {r.status === 'notified' ? <CheckCircle2 size={16} color="var(--green-light)" /> : <Clock size={16} color="var(--gold)" />}
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: r.status === 'notified' ? 'var(--green-dim)' : 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {r.status === 'notified' ? <CheckCircle2 size={18} color="var(--green-light)" /> : <Clock size={18} color="var(--gold)" />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{r.resourceTitle}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.resourceAuthor} • Reserved {r.reservationDate}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.resourceTitle}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.resourceAuthor} • Reserved {r.reservationDate}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 9, color: r.status === 'notified' ? 'var(--green-light)' : 'var(--gold)', fontWeight: 600 }}>
+                <div style={{ fontSize: 11, color: r.status === 'notified' ? 'var(--green-light)' : 'var(--gold)', fontWeight: 600 }}>
                   {r.status === 'notified' ? 'Ready — Claim in person' : `Position ${r.queuePosition}`}
                 </div>
               </div>
@@ -76,8 +76,8 @@ export function ReservationsView() {
 
       {done.length > 0 && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CheckCircle2 size={14} color="var(--gold)" /> Past Reservations
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={16} color="var(--gold)" /> Past Reservations
           </div>
           {done.map((r) => (
             <UniversalButton
@@ -88,14 +88,14 @@ export function ReservationsView() {
               className="w-full text-left justify-start"
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderRadius: 0, border: 'none', background: 'none', color: 'inherit' }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <BookOpen size={16} color="var(--text-muted)" />
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <BookOpen size={18} color="var(--text-muted)" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{r.resourceTitle}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.resourceAuthor}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.resourceTitle}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.resourceAuthor}</div>
               </div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{r.status.charAt(0).toUpperCase() + r.status.slice(1)}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.status.charAt(0).toUpperCase() + r.status.slice(1)}</div>
             </UniversalButton>
           ))}
         </div>

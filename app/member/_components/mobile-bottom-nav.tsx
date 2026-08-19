@@ -11,11 +11,11 @@ interface BottomNavItem {
 }
 
 const items: BottomNavItem[] = [
-  { icon: <Home size={18} />, label: "Dashboard", href: "/member" },
-  { icon: <BookOpen size={18} />, label: "Library", href: "/member/library" },
-  { icon: <GraduationCap size={18} />, label: "Learning", href: "/member/e-learning" },
-  { icon: <Award size={18} />, label: "Certificates", href: "/member/certificates" },
-  { icon: <User size={18} />, label: "Profile", href: "/member/profile" },
+  { icon: <Home size={20} />, label: "Dashboard", href: "/member" },
+  { icon: <BookOpen size={20} />, label: "Library", href: "/member/library" },
+  { icon: <GraduationCap size={20} />, label: "Learning", href: "/member/e-learning" },
+  { icon: <Award size={20} />, label: "Certificates", href: "/member/certificates" },
+  { icon: <User size={20} />, label: "Profile", href: "/member/profile" },
 ];
 
 /**
@@ -56,9 +56,9 @@ export default function MemberMobileBottomNav() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 2,
-              padding: "8px 4px",
-              fontSize: 9,
+              gap: 3,
+              padding: "9px 4px",
+              fontSize: 10,
               textDecoration: "none",
               color: active ? "var(--gold)" : "var(--text-secondary)",
               transition: "color 0.15s",

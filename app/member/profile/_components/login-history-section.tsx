@@ -10,13 +10,13 @@ import type { LoginEvent } from './security-mock-data'
 
 const columns: Column<LoginEvent>[] = [
   { key: 'date', label: 'Date', sortable: true, render: (e) => <span style={{ color: 'var(--text-secondary)' }}>{e.date}</span> },
-  { key: 'ip', label: 'IP Address', sortable: true, render: (e) => <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{e.ip}</span> },
+  { key: 'ip', label: 'IP Address', sortable: true, render: (e) => <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-muted)' }}>{e.ip}</span> },
   { key: 'device', label: 'Device', sortable: true, render: (e) => <span style={{ color: 'var(--text-secondary)' }}>{e.device}</span> },
   {
     key: 'success', label: 'Result', sortable: true,
     render: (e) => (
-      <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 600, color: e.success ? 'var(--green)' : 'var(--red)' }}>
-        {e.success ? <CheckCircle2 size={13} /> : <XCircle size={13} />} {e.success ? 'Success' : 'Failed'}
+      <span className="flex items-center gap-1" style={{ fontSize: 13, fontWeight: 600, color: e.success ? 'var(--green)' : 'var(--red)' }}>
+        {e.success ? <CheckCircle2 size={15} /> : <XCircle size={15} />} {e.success ? 'Success' : 'Failed'}
       </span>
     ),
   },
@@ -29,7 +29,7 @@ export function LoginHistorySection() {
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Login History</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Login History</div>
       {loading ? (
         <Skeleton className="h-32 w-full rounded-lg" />
       ) : error ? (

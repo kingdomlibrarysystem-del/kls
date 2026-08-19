@@ -11,12 +11,12 @@ export default function BorrowedBooks() {
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <BookOpen size={16} color="var(--gold)" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Currently Borrowed</span>
-        <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-muted)" }}>{active.length} items</span>
+        <BookOpen size={18} color="var(--gold)" />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Currently Borrowed</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>{active.length} items</span>
       </div>
       {active.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 11 }}>
+        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
           No books borrowed yet.{" "}
           <a href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>Browse the library</a>
         </div>
@@ -25,25 +25,25 @@ export default function BorrowedBooks() {
           const isOverdue = b.status === "overdue";
           return (
             <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ width: 32, height: 32, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <BookOpen size={14} color="var(--gold)" />
+              <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <BookOpen size={16} color="var(--gold)" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{b.resourceTitle}</div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{b.resourceType}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{b.resourceTitle}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{b.resourceType}</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 9, color: isOverdue ? "var(--red-light)" : "var(--green-light)", fontWeight: 600 }}>
+                <div style={{ fontSize: 11, color: isOverdue ? "var(--red-light)" : "var(--green-light)", fontWeight: 600 }}>
                   {b.status === "pending" ? "Pending" : isOverdue ? "Overdue" : "Active"}
                 </div>
-                <div style={{ fontSize: 8, color: "var(--text-muted)" }}>Due {b.dueDate}</div>
+                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Due {b.dueDate}</div>
               </div>
             </div>
           );
         })
       )}
-      <a href="/member/borrowings" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 10, color: "var(--gold)", textDecoration: "none" }}>
-        View all borrowings <ChevronRight size={12} />
+      <a href="/member/borrowings" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
+        View all borrowings <ChevronRight size={14} />
       </a>
     </div>
   );

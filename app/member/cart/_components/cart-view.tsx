@@ -58,8 +58,8 @@ export function CartView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
-          <AlertTriangle size={13} /> {error}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
+          <AlertTriangle size={15} /> {error}
         </div>
       )}
 
@@ -74,16 +74,16 @@ export function CartView() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.resourceCover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <ShoppingCart size={18} />
+                <ShoppingCart size={20} />
               )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{item.resourceTitle}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Tag size={10} /> {typeLabel[item.type]} · by {item.resourceAuthor}
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.resourceTitle}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Tag size={12} /> {typeLabel[item.type]} · by {item.resourceAuthor}
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
               {(item.unitPriceRwf * item.quantity).toLocaleString()} RWF
             </div>
             <button
@@ -100,14 +100,14 @@ export function CartView() {
 
       <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{cart.totalRwf.toLocaleString()} RWF</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Total</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{cart.totalRwf.toLocaleString()} RWF</div>
         </div>
         <UniversalButton variant="gold" disabled title="Checkout is not yet connected to a real payment provider in this environment">
           Proceed to Checkout
         </UniversalButton>
       </div>
-      <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
         Checkout isn&apos;t live yet in this environment — it will charge via Stripe (test mode) once configured.
       </p>
     </div>

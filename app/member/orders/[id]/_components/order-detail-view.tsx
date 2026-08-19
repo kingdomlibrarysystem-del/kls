@@ -15,8 +15,8 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ color: 'var(--gold)', marginTop: 2 }}>{icon}</span>
-      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 70, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
+      <span style={{ fontSize: 13, color: 'var(--text-muted)', width: 70, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
     </div>
   )
 }
@@ -69,7 +69,7 @@ export function OrderDetailView({ id }: OrderDetailViewProps) {
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>
-          <UniversalButton href="/member/orders" variant="gold-outline" icon={<ArrowLeft size={14} />}>
+          <UniversalButton href="/member/orders" variant="gold-outline" icon={<ArrowLeft size={16} />}>
             Back to My Orders
           </UniversalButton>
         </div>
@@ -79,26 +79,26 @@ export function OrderDetailView({ id }: OrderDetailViewProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <UniversalButton href="/member/orders" variant="dim-outline" size="sm" icon={<ArrowLeft size={14} />}>
+      <UniversalButton href="/member/orders" variant="dim-outline" size="sm" icon={<ArrowLeft size={16} />}>
         Back to My Orders
       </UniversalButton>
 
       <div className="card space-y-4" style={{ maxWidth: 560 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
+          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
             {order.resourceTitle}
           </h1>
-          <span style={{ fontSize: 11, fontWeight: 700, color: statusConfig[order.status].color, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: statusConfig[order.status].color, flexShrink: 0 }}>
             {statusConfig[order.status].label}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-          <DetailRow icon={<Tag size={13} />} label="Type" value={typeConfig[order.type].label} />
-          <DetailRow icon={<Coins size={13} />} label="Amount" value={`${order.amount.toLocaleString()} RWF`} />
-          <DetailRow icon={<Calendar size={13} />} label="Ordered" value={order.createdAt} />
-          {order.paidAt && <DetailRow icon={<CheckCircle2 size={13} />} label="Paid" value={order.paidAt.split('T')[0]} />}
-          <DetailRow icon={<Hash size={13} />} label="Order ID" value={order.id} />
+          <DetailRow icon={<Tag size={15} />} label="Type" value={typeConfig[order.type].label} />
+          <DetailRow icon={<Coins size={15} />} label="Amount" value={`${order.amount.toLocaleString()} RWF`} />
+          <DetailRow icon={<Calendar size={15} />} label="Ordered" value={order.createdAt} />
+          {order.paidAt && <DetailRow icon={<CheckCircle2 size={15} />} label="Paid" value={order.paidAt.split('T')[0]} />}
+          <DetailRow icon={<Hash size={15} />} label="Order ID" value={order.id} />
         </div>
       </div>
     </div>

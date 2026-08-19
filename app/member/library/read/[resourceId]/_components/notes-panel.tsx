@@ -38,12 +38,12 @@ export function NotesPanel({ resourceId, chapterId, highlight, onClose }: NotesP
   return (
     <div className="card" style={{ padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <StickyNote size={13} color="var(--gold)" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+        <StickyNote size={15} color="var(--gold)" />
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
           {highlight ? `Note on "${highlight.text.slice(0, 40)}${highlight.text.length > 40 ? '…' : ''}"` : 'Chapter Notes'}
         </span>
         {onClose && (
-          <button onClick={onClose} aria-label="Close notes" style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11 }}>
+          <button onClick={onClose} aria-label="Close notes" style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13 }}>
             Close
           </button>
         )}
@@ -53,9 +53,9 @@ export function NotesPanel({ resourceId, chapterId, highlight, onClose }: NotesP
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
           {notes.map((note) => (
             <div key={note.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--bg-section)', borderRadius: 6, padding: 8 }}>
-              <p style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1, lineHeight: 1.5 }}>{note.text}</p>
+              <p style={{ fontSize: 14, color: 'var(--text-primary)', flex: 1, lineHeight: 1.5 }}>{note.text}</p>
               <button onClick={() => removeNote(note.id)} aria-label="Delete note" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-light)', flexShrink: 0 }}>
-                <Trash2 size={12} />
+                <Trash2 size={14} />
               </button>
             </div>
           ))}
@@ -68,15 +68,15 @@ export function NotesPanel({ resourceId, chapterId, highlight, onClose }: NotesP
           onChange={(e) => setDraft(e.target.value)}
           placeholder={highlight ? 'Add a note on this highlight…' : 'Add a note on this chapter…'}
           rows={2}
-          style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, resize: 'vertical', outline: 'none' }}
+          style={{ flex: 1, padding: '7px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 14, resize: 'vertical', outline: 'none' }}
         />
         <button
           onClick={handleAdd}
           disabled={!draft.trim()}
           aria-label="Add note"
-          style={{ padding: '0 12px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', cursor: draft.trim() ? 'pointer' : 'not-allowed', opacity: draft.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center' }}
+          style={{ padding: '0 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', cursor: draft.trim() ? 'pointer' : 'not-allowed', opacity: draft.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center' }}
         >
-          <Plus size={14} />
+          <Plus size={16} />
         </button>
       </div>
     </div>

@@ -73,27 +73,27 @@ export function StartSessionMenu() {
         onClick={() => setMenuOpen((o) => !o)}
         aria-label="Start or schedule a session"
         aria-expanded={menuOpen}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
       >
-        <Zap size={14} /> New Session <ChevronDown size={12} />
+        <Zap size={16} /> New Session <ChevronDown size={14} />
       </button>
 
       {menuOpen && (
         <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 20, width: 220, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-          <MenuItem icon={<Zap size={14} />} label="Start now" onClick={() => { setMenuOpen(false); setInstantError(''); setInstantOpen(true) }} />
-          <MenuItem icon={<CalendarPlus size={14} />} label="Schedule for later" onClick={() => { setMenuOpen(false); setScheduleCourse(myCourses.find((c) => c.id === courseId) ?? myCourses[0]) }} />
-          <MenuItem icon={<Link2 size={14} />} label="Get invite link" onClick={() => { setMenuOpen(false); setInstantError(''); setInstantOpen(true) }} />
+          <MenuItem icon={<Zap size={16} />} label="Start now" onClick={() => { setMenuOpen(false); setInstantError(''); setInstantOpen(true) }} />
+          <MenuItem icon={<CalendarPlus size={16} />} label="Schedule for later" onClick={() => { setMenuOpen(false); setScheduleCourse(myCourses.find((c) => c.id === courseId) ?? myCourses[0]) }} />
+          <MenuItem icon={<Link2 size={16} />} label="Get invite link" onClick={() => { setMenuOpen(false); setInstantError(''); setInstantOpen(true) }} />
         </div>
       )}
 
       <Modal open={instantOpen} onClose={() => setInstantOpen(false)} title="Start an Instant Session" size="sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
             Starts a live session with your lecturer right now — no scheduling or approval step, same as Meet&apos;s
             &ldquo;Start an instant meeting.&rdquo;
           </p>
           {instantError && (
-            <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
+            <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
               {instantError}
             </div>
           )}
@@ -130,7 +130,7 @@ function MenuItem({ icon, label, onClick }: { icon: React.ReactNode; label: stri
     <button
       onClick={onClick}
       className="hover:bg-black/5"
-      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '10px 12px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '10px 12px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
     >
       {icon} {label}
     </button>

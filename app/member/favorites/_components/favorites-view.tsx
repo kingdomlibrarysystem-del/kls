@@ -69,25 +69,25 @@ export function FavoritesView() {
   return (
     <div>
       {removeError && (
-        <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 11, marginBottom: 12 }}>
+        <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>
           {removeError}
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {favorites.map((item) => (
           <div key={item.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
-              {item.type === 'COURSE' ? <GraduationCap size={16} /> : <BookOpen size={16} />}
+            <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
+              {item.type === 'COURSE' ? <GraduationCap size={18} /> : <BookOpen size={18} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{item.title}</p>
-              <p style={{ fontSize: 9, color: 'var(--text-muted)' }}>{item.subtitle}</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.title}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.subtitle}</p>
             </div>
             <UniversalButton
               href={detailHref(item)}
               variant="gold-outline"
               size="sm"
-              icon={<Eye size={12} />}
+              icon={<Eye size={14} />}
               aria-label={`View details for ${item.title}`}
             >
               View
@@ -95,9 +95,9 @@ export function FavoritesView() {
             <button
               onClick={() => handleRemove(item.id)}
               aria-label={`Remove ${item.title} from favorites`}
-              style={{ width: 24, height: 24, borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           </div>
         ))}

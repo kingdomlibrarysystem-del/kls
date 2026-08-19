@@ -36,12 +36,12 @@ export default function DashboardStats() {
     : 0;
 
   const stats = [
-    { icon: <BookOpen size={18} />, label: "Books Read", value: String(booksRead), color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
-    { icon: <Heart size={18} />, label: "Books Liked", value: String(booksLiked), color: "var(--red-light)", bg: "rgba(239,68,68,0.1)" },
-    { icon: <GraduationCap size={18} />, label: "E-Learning Progress", value: `${avgProgress}%`, color: "var(--teal-light)", bg: "rgba(45,212,191,0.1)" },
-    { icon: <Award size={18} />, label: "Certificates", value: String(memberCertificates), color: "var(--purple-light)", bg: "rgba(168,85,247,0.1)" },
-    { icon: <Star size={18} />, label: "Avg Assessment Score", value: `${avgScore}%`, color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
-    { icon: <CreditCard size={18} />, label: "Payments", value: "Premium", color: "var(--green-light)", bg: "rgba(34,197,94,0.1)" },
+    { icon: <BookOpen size={20} />, label: "Books Read", value: String(booksRead), color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
+    { icon: <Heart size={20} />, label: "Books Liked", value: String(booksLiked), color: "var(--red-light)", bg: "rgba(239,68,68,0.1)" },
+    { icon: <GraduationCap size={20} />, label: "E-Learning Progress", value: `${avgProgress}%`, color: "var(--teal-light)", bg: "rgba(45,212,191,0.1)" },
+    { icon: <Award size={20} />, label: "Certificates", value: String(memberCertificates), color: "var(--purple-light)", bg: "rgba(168,85,247,0.1)" },
+    { icon: <Star size={20} />, label: "Avg Assessment Score", value: `${avgScore}%`, color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
+    { icon: <CreditCard size={20} />, label: "Payments", value: "Premium", color: "var(--green-light)", bg: "rgba(34,197,94,0.1)" },
   ];
 
   return (
@@ -63,10 +63,10 @@ export default function DashboardStats() {
 function StatCard({ icon, label, value, color, bg }: { icon: React.ReactNode; label: string; value: string; color: string; bg: string }) {
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 36, height: 36, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", color }}>{icon}</div>
+      <div style={{ width: 40, height: 40, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", color }}>{icon}</div>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{value}</div>
-        <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{label}</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>{value}</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{label}</div>
       </div>
     </div>
   );

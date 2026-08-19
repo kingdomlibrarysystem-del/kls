@@ -26,20 +26,20 @@ export function InProgressCoursesSection({ inProgress, onRequestSession }: InPro
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <PlayCircle size={14} color="var(--teal-light)" /> Continue Learning
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <PlayCircle size={16} color="var(--teal-light)" /> Continue Learning
       </div>
       {inProgress.map(({ enrollment, course }) => {
         const progress = getProgressPercent(enrollment)
         const nextLessonId = getNextLessonId(enrollment, lessonsByCourse[course.id]?.lessons)
         return (
           <div key={course.id} style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 8, position: 'relative', overflow: 'hidden', background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <RemoteImage src={course.image} alt={course.title} fill sizes="40px" style={{ objectFit: 'cover' }} fallback={<GraduationCap size={20} color="var(--gold)" />} />
+            <div style={{ width: 44, height: 44, borderRadius: 8, position: 'relative', overflow: 'hidden', background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <RemoteImage src={course.image} alt={course.title} fill sizes="40px" style={{ objectFit: 'cover' }} fallback={<GraduationCap size={22} color="var(--gold)" />} />
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{course.title}</div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', marginBottom: 4 }}>{course.instructor} • {enrollment.completedLessonIds.length}/{enrollment.totalLessons} lessons</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{course.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{course.instructor} • {enrollment.completedLessonIds.length}/{enrollment.totalLessons} lessons</div>
               <div style={{ width: '100%', height: 4, background: 'var(--bg-section)', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{ width: `${progress}%`, height: '100%', background: 'var(--teal-light)', borderRadius: 2, transition: 'width 0.3s' }} />
               </div>
@@ -47,20 +47,20 @@ export function InProgressCoursesSection({ inProgress, onRequestSession }: InPro
             <button
               onClick={() => onRequestSession(course)}
               aria-label={`Request a live session with ${course.instructor} for ${course.title}`}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
-              <CalendarPlus size={12} /> Request Session
+              <CalendarPlus size={14} /> Request Session
             </button>
             {nextLessonId ? (
               <Link
                 href={`/member/courses/${course.id}/lessons/${nextLessonId}`}
                 aria-label={`Resume ${course.title}`}
-                style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 10, fontWeight: 600, textDecoration: 'none' }}
+                style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
               >
                 Resume
               </Link>
             ) : (
-              <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>No lessons available</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>No lessons available</span>
             )}
           </div>
         )

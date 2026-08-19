@@ -51,10 +51,10 @@ export default function LeaderboardPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
           Leaderboard
         </div>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
           Ranked by real courses completed, from the real certificates record
         </div>
       </div>
@@ -71,18 +71,18 @@ export default function LeaderboardPage() {
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
                 {(() => { const MedalIcon = medalIcons[m.rank - 1]; return <MedalIcon size={28} color={medalColors[m.rank - 1]} />; })()}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>
                 {m.name}{m.isYou && " (You)"}
               </div>
               <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 6 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--teal-light)" }}>{m.coursesCompleted}</div>
-                  <div style={{ fontSize: 8, color: "var(--text-muted)" }}>Courses</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--teal-light)" }}>{m.coursesCompleted}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Courses</div>
                 </div>
                 {typeof m.booksRead === "number" && (
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>{m.booksRead}</div>
-                    <div style={{ fontSize: 8, color: "var(--text-muted)" }}>Books</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--gold)" }}>{m.booksRead}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Books</div>
                   </div>
                 )}
               </div>
@@ -92,8 +92,8 @@ export default function LeaderboardPage() {
       )}
 
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-          <TrendingUp size={14} color="var(--gold)" /> Full Rankings
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+          <TrendingUp size={16} color="var(--gold)" /> Full Rankings
         </div>
         {ranked.map((m) => (
           <div key={m.name} style={{
@@ -102,22 +102,22 @@ export default function LeaderboardPage() {
           }}>
             <div style={{ width: 20, textAlign: "center" }}>
               {m.rank <= 3 ? (
-                (() => { const MedalIcon = medalIcons[m.rank - 1]; return <MedalIcon size={16} color={medalColors[m.rank - 1]} />; })()
+                (() => { const MedalIcon = medalIcons[m.rank - 1]; return <MedalIcon size={18} color={medalColors[m.rank - 1]} />; })()
               ) : (
-                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{m.rank}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>{m.rank}</span>
               )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{m.name}{m.isYou && " (You)"}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{m.name}{m.isYou && " (You)"}</div>
             </div>
-            <div style={{ fontSize: 9, color: "var(--text-muted)", textAlign: "right", display: "flex", alignItems: "center", gap: 4 }}>
-              <BookOpen size={11} /> {typeof m.booksRead === "number" ? `${m.booksRead} books • ` : ""}{m.coursesCompleted} {m.coursesCompleted === 1 ? "course" : "courses"}
+            <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right", display: "flex", alignItems: "center", gap: 4 }}>
+              <BookOpen size={13} /> {typeof m.booksRead === "number" ? `${m.booksRead} books • ` : ""}{m.coursesCompleted} {m.coursesCompleted === 1 ? "course" : "courses"}
             </div>
           </div>
         ))}
       </div>
 
-      <p style={{ fontSize: 9, color: "var(--text-muted)", textAlign: "center" }}>
+      <p style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
         Books-read counts are only available for your own account — this app doesn&apos;t yet track per-member borrowing history for other members.
       </p>
     </div>

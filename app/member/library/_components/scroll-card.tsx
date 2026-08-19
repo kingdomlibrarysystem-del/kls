@@ -73,19 +73,19 @@ export function ScrollCard({ scroll }: ScrollProps) {
           aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
           style={{
             position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.35)', border: 'none', borderRadius: '50%',
-            width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1,
+            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1,
           }}
         >
-          <Heart size={10} color={liked ? 'var(--red-light)' : '#fff'} fill={liked ? 'var(--red-light)' : 'none'} />
+          <Heart size={12} color={liked ? 'var(--red-light)' : '#fff'} fill={liked ? 'var(--red-light)' : 'none'} />
         </button>
       </div>
       <div style={{ padding: '8px 10px 10px' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {scroll.name.en}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-          <span style={{ fontSize: 8, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{scroll.slug}</span>
-          <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>{sectionName}</span>
+          <span style={{ fontSize: 10, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{scroll.slug}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sectionName}</span>
         </div>
         {readableResourceId && (
           <>
@@ -97,16 +97,16 @@ export function ScrollCard({ scroll }: ScrollProps) {
             <Link
               href={`/member/library/read/${readableResourceId}`}
               aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, width: '100%', padding: '5px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 9, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', marginBottom: 4 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, width: '100%', padding: '5px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', marginBottom: 4 }}
             >
-              <BookOpenCheck size={10} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
+              <BookOpenCheck size={12} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
             </Link>
           </>
         )}
         <Link
           href={`/member/library/${scroll.parentId}/${scroll.id}`}
           aria-label={`Open ${scroll.name.en}`}
-          style={{ display: 'block', textAlign: 'center', width: '100%', padding: '5px 0', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 9, cursor: 'pointer', textDecoration: 'none' }}
+          style={{ display: 'block', textAlign: 'center', width: '100%', padding: '5px 0', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', textDecoration: 'none' }}
         >
           Open Scroll
         </Link>
@@ -130,12 +130,12 @@ export function ScrollListItem({ scroll }: ScrollProps) {
       onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
     >
-      <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ScrollText size={20} color="var(--gold)" /></div>
+      <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ScrollText size={22} color="var(--gold)" /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{scroll.name.en}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{scroll.name.en}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
-          <span style={{ fontSize: 8, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{scroll.slug}</span>
-          <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>{sectionName}</span>
+          <span style={{ fontSize: 10, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{scroll.slug}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sectionName}</span>
         </div>
       </div>
       {readableResourceId && (
@@ -143,9 +143,9 @@ export function ScrollListItem({ scroll }: ScrollProps) {
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/member/library/read/${readableResourceId}` }}
           role="link"
           aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: '#fff', fontSize: 9, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
         >
-          <BookOpenCheck size={10} /> {typeof readingPercent === 'number' ? `${readingPercent}%` : 'Read'}
+          <BookOpenCheck size={12} /> {typeof readingPercent === 'number' ? `${readingPercent}%` : 'Read'}
         </span>
       )}
       <span
@@ -154,9 +154,9 @@ export function ScrollListItem({ scroll }: ScrollProps) {
         aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
         style={{ padding: '4px 6px', cursor: 'pointer', color: liked ? 'var(--red-light)' : 'var(--text-muted)', display: 'flex' }}
       >
-        <Heart size={12} fill={liked ? 'var(--red-light)' : 'none'} />
+        <Heart size={14} fill={liked ? 'var(--red-light)' : 'none'} />
       </span>
-      <ChevronRight size={14} color="var(--text-muted)" />
+      <ChevronRight size={16} color="var(--text-muted)" />
     </Link>
   )
 }
