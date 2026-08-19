@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 function serializePaper(p: {
   id: string
@@ -32,6 +33,9 @@ function serializePaper(p: {
 const INCLUDE = { project: { select: { title: true } } } as const
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const paper = await prisma.researchPaper.findUnique({ where: { id }, include: INCLUDE })
   if (!paper) {
@@ -48,6 +52,9 @@ const updatePaperSchema = z.object({
 })
 
 export const PATCH = withErrorHandling('/api/research-papers/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = updatePaperSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -66,6 +73,9 @@ export const PATCH = withErrorHandling('/api/research-papers/[id]', 'PATCH', asy
 })
 
 export const DELETE = withErrorHandling('/api/research-papers/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.researchPaper.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Research paper not found', 404)

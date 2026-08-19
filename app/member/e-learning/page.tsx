@@ -59,29 +59,29 @@ export default function ELearningPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
           E-Learning
         </div>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
           Expand your knowledge with our course catalog
         </div>
       </div>
 
       {enrollError && (
-        <div role="alert" style={{ background: "var(--red-dim)", color: "var(--red-light)", border: "1px solid var(--red)", borderRadius: 6, padding: "8px 12px", fontSize: 11 }}>
+        <div role="alert" style={{ background: "var(--red-dim)", color: "var(--red-light)", border: "1px solid var(--red)", borderRadius: 6, padding: "8px 12px", fontSize: 13 }}>
           {enrollError}
         </div>
       )}
 
       {/* Search */}
       <div style={{ position: "relative" }}>
-        <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
         <input
           placeholder="Search courses..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           aria-label="Search courses"
-          style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
+          style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 15, outline: "none" }}
         />
       </div>
 
@@ -93,8 +93,8 @@ export default function ELearningPage() {
             onClick={() => { setActiveCat(cat); setPage(1); }}
             aria-pressed={activeCat === cat}
             style={{
-              padding: "5px 12px", borderRadius: 20, border: "1px solid var(--border)", cursor: "pointer",
-              fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
+              padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border)", cursor: "pointer",
+              fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
               background: activeCat === cat ? "var(--teal-light)" : "transparent",
               color: activeCat === cat ? "#fff" : "var(--text-secondary)",
               transition: "all 0.15s",
@@ -131,29 +131,29 @@ export default function ELearningPage() {
               </div>
               {/* Body */}
               <div style={{ padding: "10px 12px 12px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{course.title}</div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 6 }}>{course.instructor}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{course.title}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>{course.instructor}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 8, color: "var(--teal-light)", background: "rgba(45,212,191,0.1)", padding: "1px 6px", borderRadius: 3 }}>{course.category}</span>
-                  <span style={{ fontSize: 8, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}><Clock size={10} />{course.duration}</span>
-                  <span style={{ fontSize: 8, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}><Star size={10} color="var(--gold)" />{course.rating}</span>
+                  <span style={{ fontSize: 10, color: "var(--teal-light)", background: "rgba(45,212,191,0.1)", padding: "1px 6px", borderRadius: 3 }}>{course.category}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}><Clock size={12} />{course.duration}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}><Star size={12} color="var(--gold)" />{course.rating}</span>
                 </div>
-                <div style={{ fontSize: 9, color: "var(--text-secondary)", lineHeight: 1.4, marginBottom: 10, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4, marginBottom: 10, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                   {course.description}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <PlayCircle size={14} color="var(--teal-light)" />
-                  <span style={{ fontSize: 9, color: "var(--text-muted)", flex: 1 }}>{course.lessons} lessons</span>
+                  <PlayCircle size={16} color="var(--teal-light)" />
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{course.lessons} lessons</span>
                   {enrolled ? (
                     <Link
                       href={`/member/courses/${course.id}`}
                       aria-label={`View ${course.title}`}
                       style={{
-                        display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, border: "none",
-                        background: "var(--teal-light)", color: "#fff", fontSize: 10, fontWeight: 600, textDecoration: "none",
+                        display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
+                        background: "var(--teal-light)", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none",
                       }}
                     >
-                      <CheckCircle2 size={11} /> View Course
+                      <CheckCircle2 size={13} /> View Course
                     </Link>
                   ) : (
                     <button
@@ -161,9 +161,9 @@ export default function ELearningPage() {
                       disabled={enrolling === course.id}
                       aria-label={`Enroll in ${course.title}`}
                       style={{
-                        display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, border: "none",
+                        display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
                         background: "var(--teal-light)", color: "#fff",
-                        fontSize: 10, fontWeight: 600, cursor: "pointer",
+                        fontSize: 12, fontWeight: 600, cursor: "pointer",
                         opacity: enrolling === course.id ? 0.7 : 1,
                       }}
                     >
@@ -178,7 +178,7 @@ export default function ELearningPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 11 }}>
+        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>
           No courses match your search.
         </div>
       )}
@@ -188,15 +188,15 @@ export default function ELearningPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 11, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.4 : 1 }}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.4 : 1 }}
           >
             Previous
           </button>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Page {currentPage} of {totalPages}</span>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Page {currentPage} of {totalPages}</span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 11, cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.4 : 1 }}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.4 : 1 }}
           >
             Next
           </button>

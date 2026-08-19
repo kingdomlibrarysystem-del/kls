@@ -60,6 +60,7 @@ export function ResourceFormModal({ open, editing, onClose, onSave }: ResourceFo
             language: editing.language,
             pages: editing.pages,
             price: editing.price,
+            freePreviewChapterCount: editing.freePreviewChapterCount ?? 0,
             bindingType: editing.bindingType,
             mediaType: editing.mediaType,
             tags: editing.tags,

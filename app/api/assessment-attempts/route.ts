@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 /** Real AssessmentAttempt API, replacing the single-persona AssessmentAttempt embedded in app/member/_shared/enrollment-data.ts (no userId at all). */
 function serializeAttempt(a: {
@@ -38,6 +39,9 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId')
   const assessmentId = searchParams.get('assessmentId')
   const reviewStatus = searchParams.get('reviewStatus')
+
+  const auth = await (userId ? requireOwnerOrStaff(userId) : requireStaff())
+  if (auth.response) return auth.response
 
   const where = {
     ...(userId && { userId }),
@@ -82,6 +86,9 @@ export const POST = withErrorHandling('/api/assessment-attempts', 'POST', async 
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const [user, assessment] = await Promise.all([
     prisma.user.findUnique({ where: { id: body.userId } }),

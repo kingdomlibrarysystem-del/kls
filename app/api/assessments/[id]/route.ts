@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth, requireStaff } from '@/lib/auth/require-role'
 
 function serializeAssessment(a: {
   id: string
@@ -37,6 +38,9 @@ function serializeAssessment(a: {
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const assessment = await prisma.assessment.findUnique({ where: { id } })
   if (!assessment) {
@@ -67,6 +71,9 @@ const updateAssessmentSchema = z.object({
 })
 
 export const PATCH = withErrorHandling('/api/assessments/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = updateAssessmentSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -100,6 +107,9 @@ export const PATCH = withErrorHandling('/api/assessments/[id]', 'PATCH', async (
 })
 
 export const DELETE = withErrorHandling('/api/assessments/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.assessment.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Assessment not found', 404)

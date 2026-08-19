@@ -6,13 +6,14 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
 import { roleColor, statusColors, type PlatformUser } from './users-data'
 import { useUsers, type NewUserInput } from './use-users'
 import { UserFormModal } from './user-form-modal'
-import { UserDetailModal } from './user-detail-modal'
 import { DeleteUserModal } from './delete-user-modal'
+import { NewUserCredentialsModal } from './new-user-credentials-modal'
 import { UsersStats } from './users-stats'
 
 /** User Management: full CRUD over the real /api/users backend. */
@@ -21,8 +22,8 @@ export function UsersView() {
   const [toast, setToast] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformUser | null>(null)
-  const [viewing, setViewing] = useState<PlatformUser | null>(null)
   const [deleting, setDeleting] = useState<PlatformUser | null>(null)
+  const [newCredentials, setNewCredentials] = useState<{ name: string; email: string; temporaryPassword: string } | null>(null)
   const { user: currentUser } = useAuth()
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin User'
 
@@ -46,14 +47,14 @@ export function UsersView() {
         }
         showToast(`Updated "${data.name}".`)
       } else {
-        await addUser(data)
+        const created = await addUser(data)
         logAuditEvent({
           actor: actorName,
           action: 'USER_CREATED',
           target: `${data.name} (${data.role})`,
           notes: 'Account created directly by admin, not self-registered.',
         })
-        showToast(`Added "${data.name}".`)
+        setNewCredentials({ name: created.name, email: created.email, temporaryPassword: created.temporaryPassword })
       }
       setFormOpen(false)
       setEditing(null)
@@ -95,9 +96,15 @@ export function UsersView() {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (u) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => setViewing(u)} aria-label={`View ${u.name}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-            <Eye size={12} /> View
-          </button>
+          <UniversalButton
+            href={`/dashboard/users/${u.id}`}
+            aria-label={`View ${u.name}`}
+            variant="outline"
+            size="sm"
+            icon={<Eye size={12} />}
+          >
+            View
+          </UniversalButton>
           <button onClick={() => openEdit(u)} aria-label={`Edit ${u.name}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
             <Pencil size={12} /> Edit
           </button>
@@ -138,8 +145,11 @@ export function UsersView() {
       )}
 
       <UserFormModal open={formOpen} editing={editing} onClose={() => { setFormOpen(false); setEditing(null) }} onSave={handleSave} />
-      <UserDetailModal user={viewing} onClose={() => setViewing(null)} />
       <DeleteUserModal user={deleting} onClose={() => setDeleting(null)} onConfirm={handleDelete} />
+      <NewUserCredentialsModal
+        credentials={newCredentials}
+        onClose={() => { setNewCredentials(null); setFormOpen(false); setEditing(null) }}
+      />
     </div>
   )
 }

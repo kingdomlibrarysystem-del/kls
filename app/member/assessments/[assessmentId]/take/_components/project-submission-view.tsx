@@ -53,19 +53,19 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
 
   return (
     <div>
-      <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>
+      <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>
         {assessment.title}
       </h1>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
-          <ClipboardList size={13} /> Project Brief
+        <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
+          <ClipboardList size={15} /> Project Brief
         </p>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{assessment.brief}</p>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{assessment.brief}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="card">
-        <label htmlFor="project-response" style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+        <label htmlFor="project-response" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
           {isLink ? 'Submission Link' : 'Your Submission'}
         </label>
         {isLink ? (
@@ -74,7 +74,7 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
             type="url"
             placeholder="https://…"
             aria-label="Submission link"
-            style={{ width: '100%', padding: 10, fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none' }}
+            style={{ width: '100%', padding: 10, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none' }}
             {...register('response')}
           />
         ) : (
@@ -83,17 +83,17 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
             rows={6}
             placeholder="Write your submission…"
             aria-label="Submission text"
-            style={{ width: '100%', padding: 10, fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none', resize: 'vertical' }}
+            style={{ width: '100%', padding: 10, fontSize: 14, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', outline: 'none', resize: 'vertical' }}
             {...register('response')}
           />
         )}
         {errors.response && (
-          <p style={{ fontSize: 10, color: 'var(--red-light)', marginTop: 4 }}>{errors.response.message}</p>
+          <p style={{ fontSize: 12, color: 'var(--red-light)', marginTop: 4 }}>{errors.response.message}</p>
         )}
 
         {submitError && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11, marginTop: 12 }}>
-            <AlertCircle size={13} /> {submitError}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginTop: 12 }}>
+            <AlertCircle size={15} /> {submitError}
           </div>
         )}
 
@@ -101,9 +101,9 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
           type="submit"
           disabled={submitting}
           aria-label="Submit project"
-          style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+          style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}
         >
-          <Send size={13} /> {submitting ? 'Submitting…' : 'Submit Project'}
+          <Send size={15} /> {submitting ? 'Submitting…' : 'Submit Project'}
         </button>
       </form>
     </div>

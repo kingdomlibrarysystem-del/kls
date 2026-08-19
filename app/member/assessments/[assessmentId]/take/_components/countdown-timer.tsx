@@ -50,11 +50,11 @@ export function CountdownTimer({ secondsRemaining, onTick, onExpire }: Countdown
         borderRadius: 6,
         background: isLow ? 'var(--red-dim)' : 'var(--bg-section)',
         color: isLow ? 'var(--red-light)' : 'var(--text-primary)',
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: 700,
       }}
     >
-      <Clock size={13} />
+      <Clock size={15} />
       {formatTime(secondsRemaining)}
     </div>
   )

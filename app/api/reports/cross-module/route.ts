@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real cross-module Reports & Analytics API, replacing
@@ -12,6 +13,9 @@ import prisma from '@/prisma/client'
  * live aggregate query over the real collections those phases created.
  */
 export async function GET() {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const [totalMembers, activeLoans, activeEnrollments, pendingPublications, activeResearchProjects] = await Promise.all([
     prisma.user.count(),
     prisma.borrow.count({ where: { status: 'ACTIVE' } }),

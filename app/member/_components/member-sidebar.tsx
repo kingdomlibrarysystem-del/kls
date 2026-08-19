@@ -20,6 +20,9 @@ import {
   Heart,
   CalendarClock,
   MessageSquare,
+  ShoppingBag,
+  ShoppingCart,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -38,51 +41,61 @@ interface NavSection {
 const navSections: NavSection[] = [
   {
     title: "Library",
-    icon: <BookOpen size={14} />,
+    icon: <BookOpen size={16} />,
     items: [
       {
-        icon: <BookOpen size={12} />,
+        icon: <BookOpen size={14} />,
         label: "Browse Books",
         href: "/member/library",
       },
       {
-        icon: <Bookmark size={12} />,
+        icon: <Bookmark size={14} />,
         label: "My Borrowings",
         href: "/member/borrowings",
       },
       {
-        icon: <CalendarDays size={12} />,
+        icon: <CalendarDays size={14} />,
         label: "Reservations",
         href: "/member/reservations",
+      },
+      {
+        icon: <ShoppingCart size={14} />,
+        label: "My Cart",
+        href: "/member/cart",
+      },
+      {
+        icon: <ShoppingBag size={14} />,
+        label: "My Orders",
+        href: "/member/orders",
       },
     ],
   },
   {
     title: "E-Learning",
-    icon: <GraduationCap size={14} />,
+    icon: <GraduationCap size={16} />,
     items: [
       {
-        icon: <GraduationCap size={12} />,
+        icon: <GraduationCap size={14} />,
         label: "Browse Courses",
         href: "/member/e-learning",
       },
       {
-        icon: <CheckSquare size={12} />,
+        icon: <CheckSquare size={14} />,
         label: "My Courses",
         href: "/member/courses",
       },
       {
-        icon: <ClipboardList size={12} />,
+        icon: <ClipboardList size={14} />,
         label: "Assessments",
         href: "/member/assessments",
       },
       {
-        icon: <Award size={12} />,
+        icon: <Award size={14} />,
         label: "Certificates",
         href: "/member/certificates",
       },
       {
-        icon: <CalendarClock size={12} />,
+        icon: <CalendarClock size={14} />,
         label: "My Sessions",
         href: "/member/sessions",
       },
@@ -92,17 +105,22 @@ const navSections: NavSection[] = [
 
 const singleItems: NavItem[] = [
   {
-    icon: <MessageSquare size={14} />,
+    icon: <Bell size={16} />,
+    label: "Notifications",
+    href: "/member/notifications",
+  },
+  {
+    icon: <MessageSquare size={16} />,
     label: "Messages",
     href: "/member/messages",
   },
-  { icon: <Heart size={14} />, label: "Favorites", href: "/member/favorites" },
+  { icon: <Heart size={16} />, label: "Favorites", href: "/member/favorites" },
   {
-    icon: <Trophy size={14} />,
+    icon: <Trophy size={16} />,
     label: "Leaderboard",
     href: "/member/leaderboard",
   },
-  { icon: <User size={14} />, label: "My Profile", href: "/member/profile" },
+  { icon: <User size={16} />, label: "My Profile", href: "/member/profile" },
 ];
 
 export default function MemberSidebar() {
@@ -127,8 +145,8 @@ export default function MemberSidebar() {
   return (
     <aside
       style={{
-        width: collapsed ? 56 : 220,
-        minWidth: collapsed ? 56 : 220,
+        width: collapsed ? 64 : 248,
+        minWidth: collapsed ? 64 : 248,
         background: "var(--bg-sidebar)",
         borderRight: "1px solid var(--border)",
         display: "flex",
@@ -152,9 +170,9 @@ export default function MemberSidebar() {
       >
         <div
           style={{
-            width: 36,
-            height: 36,
-            minWidth: 36,
+            width: 42,
+            height: 42,
+            minWidth: 42,
             background: "linear-gradient(135deg, var(--gold-dim), var(--gold))",
             borderRadius: 8,
             display: "flex",
@@ -162,14 +180,14 @@ export default function MemberSidebar() {
             justifyContent: "center",
           }}
         >
-          <BookCopy size={18} color="#fff" />
+          <BookCopy size={20} color="#fff" />
         </div>
         {!collapsed && (
           <div>
             <div
               className="cinzel"
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: 700,
                 color: "var(--gold)",
                 lineHeight: 1.2,
@@ -180,7 +198,7 @@ export default function MemberSidebar() {
             <div
               className="cinzel"
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: 700,
                 color: "var(--gold)",
                 lineHeight: 1.2,
@@ -190,7 +208,7 @@ export default function MemberSidebar() {
             </div>
             <div
               style={{
-                fontSize: 8,
+                fontSize: 10,
                 color: "var(--text-muted)",
                 letterSpacing: 1,
               }}
@@ -208,10 +226,10 @@ export default function MemberSidebar() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            padding: "7px 12px",
+            gap: 10,
+            padding: "9px 14px",
             textDecoration: "none",
-            fontSize: 12,
+            fontSize: 14,
             background: isActive("/member")
               ? "rgba(212,168,67,0.12)"
               : "transparent",
@@ -225,7 +243,7 @@ export default function MemberSidebar() {
             marginBottom: 4,
           }}
         >
-          <Home size={14} />
+          <Home size={16} />
           {!collapsed && <span>Dashboard</span>}
         </Link>
 
@@ -238,10 +256,10 @@ export default function MemberSidebar() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                  padding: "7px 12px",
+                  gap: 10,
+                  padding: "9px 14px",
                   cursor: "pointer",
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: 700,
                   color: "var(--text-muted)",
                   letterSpacing: 1,
@@ -257,9 +275,9 @@ export default function MemberSidebar() {
                 {section.icon}
                 <span style={{ flex: 1 }}>{section.title}</span>
                 {expandedSections[section.title] ? (
-                  <ChevronDown size={12} />
+                  <ChevronDown size={14} />
                 ) : (
-                  <ChevronLeft size={12} />
+                  <ChevronLeft size={14} />
                 )}
               </div>
               {expandedSections[section.title] &&
@@ -270,10 +288,10 @@ export default function MemberSidebar() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
-                      padding: "5px 12px 5px 32px",
+                      gap: 10,
+                      padding: "7px 14px 7px 36px",
                       textDecoration: "none",
-                      fontSize: 11,
+                      fontSize: 13,
                       color: isActive(item.href)
                         ? "var(--gold)"
                         : "var(--text-secondary)",
@@ -315,10 +333,10 @@ export default function MemberSidebar() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              padding: "7px 12px",
+              gap: 10,
+              padding: "9px 14px",
               textDecoration: "none",
-              fontSize: 12,
+              fontSize: 14,
               color: isActive(item.href)
                 ? "var(--gold)"
                 : "var(--text-secondary)",

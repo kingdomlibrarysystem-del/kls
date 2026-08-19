@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { certificateIssuedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /** Real Certificate API, replacing app/dashboard/e-learning/certificates/_components/certificates-data.ts. */
 function serializeCertificate(c: {
@@ -40,6 +44,16 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId')
   const verificationCode = searchParams.get('verificationCode')
 
+  // A verificationCode lookup is the public "verify this certificate" page
+  // (app/(public)/certificate/verify/[code]) — anyone with the code is
+  // meant to be able to confirm it's real, so that path stays unauthenticated.
+  // Without a code, this is "my certificates" (ownership) or the admin list
+  // (staff, no filter at all).
+  if (!verificationCode) {
+    const auth = await (userId ? requireOwnerOrStaff(userId) : requireStaff())
+    if (auth.response) return auth.response
+  }
+
   const where = {
     ...(userId && { userId }),
     ...(verificationCode && { verificationCode }),
@@ -75,6 +89,9 @@ const createCertificateSchema = z.object({
 
 /** Guarded: only one certificate per user per course (deduplicates issuance, matching the mock's own stated intent for the optional courseId field). */
 export const POST = withErrorHandling('/api/certificates', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createCertificateSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
@@ -89,14 +106,26 @@ export const POST = withErrorHandling('/api/certificates', 'POST', async (reques
     if (already) throw new ApiError('A certificate for this user and course already exists', 409)
   }
 
+  const memberName = user.name ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
   const certificate = await prisma.certificate.create({
     data: {
       userId: body.userId,
-      memberName: user.name ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+      memberName,
       courseId: body.courseId ?? null,
       courseTitle: body.courseTitle,
       verificationCode: generateVerificationCode(),
     },
   })
+
+  const certificateUrl = `${appBaseUrl()}/member/certificates/${certificate.id}`
+  await notifyUser({
+    userId: body.userId,
+    type: 'COURSE',
+    title: 'Certificate issued',
+    message: `You've earned a certificate for completing "${body.courseTitle}".`,
+    href: `/member/certificates/${certificate.id}`,
+    email: { subject: 'Your certificate is ready', html: certificateIssuedEmailHtml(memberName, body.courseTitle, certificateUrl) },
+  })
+
   return NextResponse.json({ data: serializeCertificate(certificate), message: 'Certificate issued successfully', code: 'success', status: 201 }, { status: 201 })
 })

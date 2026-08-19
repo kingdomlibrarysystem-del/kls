@@ -1,12 +1,12 @@
 import { Eye, CheckCircle, XCircle, RotateCcw, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { statusConfig, daysOverdue, type Borrowing, type BorrowStatus } from './borrowings-data'
 
 interface BorrowingsTableProps {
   data: Borrowing[]
   statusFilter: BorrowStatus | 'all'
   onStatusFilterChange: (value: BorrowStatus | 'all') => void
-  onView: (borrowing: Borrowing) => void
   onApprove: (borrowing: Borrowing) => void
   onReject: (borrowing: Borrowing) => void
   onReturn: (borrowing: Borrowing) => void
@@ -14,7 +14,7 @@ interface BorrowingsTableProps {
 }
 
 /** DataTable of borrowings with View + the existing approve/reject/return/waive-fine actions. */
-export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onView, onApprove, onReject, onReturn, onWaiveFine }: BorrowingsTableProps) {
+export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onApprove, onReject, onReturn, onWaiveFine }: BorrowingsTableProps) {
   const tableData = statusFilter === 'all' ? data : data.filter((r) => r.status === statusFilter)
 
   const columns: Column<Borrowing>[] = [
@@ -71,9 +71,16 @@ export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onVi
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (b) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
-          <button onClick={() => onView(b)} aria-label={`View borrowing for ${b.memberName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-            <Eye size={12} /> View
-          </button>
+          <UniversalButton
+            href={`/dashboard/library/borrowings/${b.id}`}
+            aria-label={`View borrowing for ${b.memberName}`}
+            variant="secondary"
+            size="sm"
+            icon={<Eye size={12} />}
+            className="!px-2.5 !py-1 !text-xs"
+          >
+            View
+          </UniversalButton>
           {b.status === 'pending' && (
             <>
               <button onClick={() => onApprove(b)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">

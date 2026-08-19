@@ -58,8 +58,8 @@ export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
     <Modal open={open} onClose={onClose} title="Edit Profile" size="sm">
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isSubmitSuccessful && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--green-dim)', color: 'var(--green-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
-            <CheckCircle2 size={13} /> Profile updated.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--green-dim)', color: 'var(--green-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
+            <CheckCircle2 size={15} /> Profile updated.
           </div>
         )}
 

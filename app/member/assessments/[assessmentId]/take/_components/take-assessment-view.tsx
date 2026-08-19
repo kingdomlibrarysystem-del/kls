@@ -86,7 +86,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{assessment.title}</h1>
+        <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{assessment.title}</h1>
         {assessment.kind === 'EXAM' && secondsRemaining !== null && (
           <CountdownTimer
             secondsRemaining={secondsRemaining}
@@ -97,8 +97,8 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
       </div>
 
       {submitError && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11, marginBottom: 12 }}>
-          <AlertCircle size={13} /> {submitError}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>
+          <AlertCircle size={15} /> {submitError}
         </div>
       )}
 

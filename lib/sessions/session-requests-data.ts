@@ -19,8 +19,9 @@ export interface SessionRequest {
   id: string
   learnerId: string
   learnerName: string
-  lecturerId: string
-  lecturerName: string
+  /** Unset for a SCHEDULED request submitted with no lecturer in mind — see prisma/schema.prisma's SessionRequest.lecturerId docstring. */
+  lecturerId?: string
+  lecturerName?: string
   courseId: string
   courseTitle: string
   /** ISO date the request was made. */

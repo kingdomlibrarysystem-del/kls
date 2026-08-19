@@ -28,19 +28,19 @@ export function ContinueReadingSection() {
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <BookOpen size={14} color="var(--gold)" /> Continue Reading
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <BookOpen size={16} color="var(--gold)" /> Continue Reading
       </div>
       {inProgress.map(({ progress: p, resource }) => {
         const percent = getReadingProgressPercent(p)
         return (
           <div key={resource.id} style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ScrollText size={20} color="var(--gold)" />
+            <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ScrollText size={22} color="var(--gold)" />
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{resource.title}</div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', marginBottom: 4 }}>{p.completedChapterIds.length}/{p.totalChapters} chapters</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{resource.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{p.completedChapterIds.length}/{p.totalChapters} chapters</div>
               <div style={{ width: '100%', height: 4, background: 'var(--bg-section)', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{ width: `${percent}%`, height: '100%', background: 'var(--gold)', borderRadius: 2, transition: 'width 0.3s' }} />
               </div>
@@ -48,7 +48,7 @@ export function ContinueReadingSection() {
             <Link
               href={`/member/library/read/${resource.id}`}
               aria-label={`Resume ${resource.title}`}
-              style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 10, fontWeight: 600, textDecoration: 'none' }}
+              style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
             >
               Resume
             </Link>

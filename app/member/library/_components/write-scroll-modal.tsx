@@ -38,8 +38,8 @@ export function WriteScrollModal({ open, onClose, onSubmitted }: WriteScrollModa
     <div role="dialog" aria-modal="true" aria-label="Write Your Scroll" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
       <div style={{ background: 'var(--bg-card)', borderRadius: 10, padding: 20, width: '100%', maxWidth: 440, border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Feather size={18} color="var(--gold)" />
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)', fontFamily: "'Cinzel',serif" }}>Write Your Scroll</h2>
+          <Feather size={20} color="var(--gold)" />
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold)', fontFamily: "'Cinzel',serif" }}>Write Your Scroll</h2>
         </div>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
@@ -48,7 +48,7 @@ export function WriteScrollModal({ open, onClose, onSubmitted }: WriteScrollModa
               key={t}
               onClick={() => setType(t)}
               style={{
-                padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', fontSize: 10, fontWeight: 600,
+                padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 background: type === t ? 'var(--gold)' : 'transparent', color: type === t ? '#fff' : 'var(--text-secondary)',
               }}
             >
@@ -62,7 +62,7 @@ export function WriteScrollModal({ open, onClose, onSubmitted }: WriteScrollModa
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Give your scroll a title..."
           aria-label="Scroll title"
-          style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, marginBottom: 10, outline: 'none' }}
+          style={{ width: '100%', padding: '9px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 14, marginBottom: 10, outline: 'none' }}
         />
 
         <textarea
@@ -71,17 +71,17 @@ export function WriteScrollModal({ open, onClose, onSubmitted }: WriteScrollModa
           placeholder="Write your story..."
           aria-label="Scroll content"
           rows={5}
-          style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, marginBottom: 14, outline: 'none', resize: 'vertical' }}
+          style={{ width: '100%', padding: '9px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 14, marginBottom: 14, outline: 'none', resize: 'vertical' }}
         />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: canSubmit ? 'pointer' : 'not-allowed', opacity: canSubmit ? 1 : 0.5 }}
+            style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: canSubmit ? 'pointer' : 'not-allowed', opacity: canSubmit ? 1 : 0.5 }}
           >
             Submit Scroll
           </button>

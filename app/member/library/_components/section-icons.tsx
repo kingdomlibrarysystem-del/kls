@@ -10,12 +10,12 @@ import { ScrollText, History, Lightbulb, Radio, Heart, Rocket, BookCopy, Eye } f
  * its own once folded in.
  */
 export const sectionIcons: Record<string, ReactNode> = {
-  'kcs-fnd': <ScrollText size={14} />,
-  'kcs-his': <History size={14} />,
-  'kcs-wis': <Lightbulb size={14} />,
-  'kcs-prp': <Radio size={14} />,
-  'kcs-gos': <Heart size={14} />,
-  'kcs-act': <Rocket size={14} />,
-  'kcs-epi': <BookCopy size={14} />,
-  'kcs-rev': <Eye size={14} />,
+  'kcs-fnd': <ScrollText size={16} />,
+  'kcs-his': <History size={16} />,
+  'kcs-wis': <Lightbulb size={16} />,
+  'kcs-prp': <Radio size={16} />,
+  'kcs-gos': <Heart size={16} />,
+  'kcs-act': <Rocket size={16} />,
+  'kcs-epi': <BookCopy size={16} />,
+  'kcs-rev': <Eye size={16} />,
 }

@@ -30,7 +30,7 @@ export function HighlightedParagraph({ text, paragraphStart, highlights, onHighl
     .sort((a, b) => a.start - b.start)
 
   if (overlapping.length === 0) {
-    return <p data-paragraph-start={paragraphStart} style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text-primary)' }}>{text}</p>
+    return <p data-paragraph-start={paragraphStart} style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-primary)' }}>{text}</p>
   }
 
   const segments: React.ReactNode[] = []
@@ -52,5 +52,5 @@ export function HighlightedParagraph({ text, paragraphStart, highlights, onHighl
   })
   if (cursor < text.length) segments.push(<span key="plain-end">{text.slice(cursor)}</span>)
 
-  return <p data-paragraph-start={paragraphStart} style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text-primary)' }}>{segments}</p>
+  return <p data-paragraph-start={paragraphStart} style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-primary)' }}>{segments}</p>
 }

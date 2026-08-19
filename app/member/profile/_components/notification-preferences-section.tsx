@@ -15,8 +15,8 @@ export function NotificationPreferencesSection() {
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Bell size={14} color="var(--gold)" /> Notification Preferences
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Bell size={16} color="var(--gold)" /> Notification Preferences
       </div>
       <div style={{ padding: '4px 14px' }}>
         {notificationCategories.map((category) => {
@@ -27,8 +27,8 @@ export function NotificationPreferencesSection() {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}
             >
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{category.label}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{category.description}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{category.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{category.description}</div>
               </div>
               <button
                 onClick={() => toggle(category.id)}

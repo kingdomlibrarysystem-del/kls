@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Resource API — the digital library catalog, replacing the old
@@ -27,6 +28,7 @@ function serializeResource(r: {
   pages: number
   isbn: string
   price: number
+  freePreviewChapterCount: number
   totalQty: number
   availableQty: number
   status: string
@@ -56,6 +58,7 @@ function serializeResource(r: {
     pages: r.pages,
     isbn: r.isbn,
     price: r.price,
+    freePreviewChapterCount: r.freePreviewChapterCount,
     totalQty: r.totalQty,
     availableQty: r.availableQty,
     status: r.status.toLowerCase(),
@@ -132,6 +135,7 @@ const createResourceSchema = z.object({
   pages: z.number().int().nonnegative().optional(),
   isbn: z.string().optional(),
   price: z.number().nonnegative().optional(),
+  freePreviewChapterCount: z.number().int().nonnegative().optional(),
   totalQty: z.number().int().nonnegative().optional(),
   availableQty: z.number().int().nonnegative().optional(),
   coverImages: z.array(z.string()).optional(),
@@ -145,6 +149,9 @@ const createResourceSchema = z.object({
 })
 
 export const POST = withErrorHandling('/api/resources', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createResourceSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
@@ -167,6 +174,7 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       pages: body.pages ?? 0,
       isbn: body.isbn ?? '',
       price: body.price ?? 0,
+      freePreviewChapterCount: body.freePreviewChapterCount ?? 0,
       totalQty: body.totalQty ?? 1,
       availableQty: body.availableQty ?? body.totalQty ?? 1,
       status: 'AVAILABLE',

@@ -12,14 +12,12 @@ import type { Borrowing, BorrowStatus } from './_components/borrowings-data'
 import { useBorrowingsAdmin, approveBorrowing, rejectBorrowing, returnBorrowing, waiveFine } from './_components/use-borrowings-admin'
 import { BorrowingsStats } from './_components/borrowings-stats'
 import { BorrowingsTable } from './_components/borrowings-table'
-import { BorrowingDetailModal } from './_components/borrowing-detail-modal'
 
 /** Borrowings Management: approval workflow (not a create-a-record page) plus a details view per row. */
 export default function AdminBorrowingsPage() {
   const { data, loading, error } = useBorrowingsAdmin()
   const [statusFilter, setStatusFilter] = useState<BorrowStatus | 'all'>('all')
   const [toast, setToast] = useState('')
-  const [viewing, setViewing] = useState<Borrowing | null>(null)
   const { user: currentUser } = useAuth()
   const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Staff User'
 
@@ -89,14 +87,11 @@ export default function AdminBorrowingsPage() {
         data={data}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
-        onView={setViewing}
         onApprove={handleApprove}
         onReject={handleReject}
         onReturn={handleReturn}
         onWaiveFine={handleWaiveFine}
       />
-
-      <BorrowingDetailModal borrowing={viewing} onClose={() => setViewing(null)} />
     </PageTransition>
   )
 }

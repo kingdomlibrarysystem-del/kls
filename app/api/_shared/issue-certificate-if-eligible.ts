@@ -1,4 +1,7 @@
 import prisma from '@/prisma/client'
+import { notifyUser } from '@/lib/notify'
+import { certificateIssuedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /**
  * Server-side port of the mock's `issueCertificate` auto-issuance rule
@@ -27,7 +30,7 @@ export async function issueCertificateIfEligible(userId: string, courseId: strin
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   const part = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 
-  await prisma.certificate.create({
+  const certificate = await prisma.certificate.create({
     data: {
       userId,
       memberName,
@@ -35,5 +38,15 @@ export async function issueCertificateIfEligible(userId: string, courseId: strin
       courseTitle: enrollment.course.title,
       verificationCode: `KLS-${part()}-${part()}`,
     },
+  })
+
+  const certificateUrl = `${appBaseUrl()}/member/certificates/${certificate.id}`
+  await notifyUser({
+    userId,
+    type: 'COURSE',
+    title: 'Certificate issued',
+    message: `You've earned a certificate for completing "${enrollment.course.title}".`,
+    href: `/member/certificates/${certificate.id}`,
+    email: { subject: 'Your certificate is ready', html: certificateIssuedEmailHtml(memberName, enrollment.course.title, certificateUrl) },
   })
 }

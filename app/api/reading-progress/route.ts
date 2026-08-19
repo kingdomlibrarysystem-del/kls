@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Reading Progress API, replacing
@@ -36,6 +37,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: null, message: 'userId is required', code: 'error', status: 400 }, { status: 400 })
   }
 
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
+
   const progress = await prisma.readingProgress.findMany({
     where: { userId },
     orderBy: { lastReadAt: 'desc' },
@@ -61,6 +65,9 @@ export const POST = withErrorHandling('/api/reading-progress', 'POST', async (re
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const { userId, resourceId } = parsed.data
+
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
 
   const existing = await prisma.readingProgress.findUnique({ where: { userId_resourceId: { userId, resourceId } } })
   if (existing) {
@@ -111,6 +118,9 @@ export const PATCH = withErrorHandling('/api/reading-progress', 'PATCH', async (
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const { userId, resourceId, chapterId, markAllComplete } = parsed.data
+
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
 
   const existing = await prisma.readingProgress.findUnique({ where: { userId_resourceId: { userId, resourceId } } })
   if (!existing) throw new ApiError('Reading progress not found — call POST to start reading first', 404)

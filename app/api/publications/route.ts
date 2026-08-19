@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Publication API, replacing the already-unified mock store at
@@ -66,6 +67,9 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status')
   const contributorId = searchParams.get('contributorId')
 
+  const auth = await (contributorId ? requireOwnerOrStaff(contributorId) : requireStaff())
+  if (auth.response) return auth.response
+
   const where = {
     ...(contributorId && { contributorId }),
     ...(status && status !== 'all' && VALID_STATUSES.includes(status.toUpperCase()) && { status: status.toUpperCase() as 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' }),
@@ -122,6 +126,9 @@ export const POST = withErrorHandling('/api/publications', 'POST', async (reques
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.contributorId)
+  if (auth.response) return auth.response
 
   const contributor = await prisma.user.findUnique({ where: { id: body.contributorId } })
   if (!contributor) throw new ApiError('The specified contributor does not exist', 400)

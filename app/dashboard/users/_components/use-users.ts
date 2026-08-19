@@ -29,7 +29,7 @@ export function useUsers() {
     const json = await res.json()
     if (!res.ok) throw new Error(json.message ?? 'Failed to create user')
     await refetch()
-    return json.data as PlatformUser
+    return json.data as PlatformUser & { temporaryPassword: string }
   }, [refetch])
 
   const updateUser = useCallback(async (id: string, data: NewUserInput) => {

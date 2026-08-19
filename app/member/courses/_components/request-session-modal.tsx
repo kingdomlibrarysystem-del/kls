@@ -7,6 +7,7 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { requestSession } from '@/lib/sessions/use-session-requests'
 import { addNotification } from '@/app/dashboard/notifications/_components/use-notifications'
+import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 
 interface RequestSessionModalProps {
@@ -39,25 +40,47 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
     setError('')
     if (!user) return
     if (!proposedTime) { setError('Choose a proposed date and time'); return }
-    if (!course.lecturerId) { setError('This course has no assigned lecturer'); return }
 
     setSubmitting(true)
     try {
       await requestSession({
         learnerId: user.id,
-        lecturerId: course.lecturerId,
+        lecturerId: course.lecturerId ?? undefined,
         courseId: course.id,
         proposedTime: new Date(proposedTime).toISOString(),
         notes: notes.trim() || undefined,
       })
 
-      addNotification({
-        type: 'course',
-        title: 'Session Requested',
-        message: `${currentMemberName} requested a live session for "${course.title}" with ${course.instructor}.`,
-        href: '/dashboard/e-learning/sessions',
-        recipientRole: 'admin',
-      }).catch(() => {})
+      if (course.lecturerId) {
+        addNotification({
+          type: 'course',
+          title: 'Session Requested',
+          message: `${currentMemberName} requested a live session for "${course.title}" with ${course.instructor}.`,
+          href: '/dashboard/e-learning/sessions',
+          recipientRole: 'admin',
+        }).catch(() => {})
+      } else {
+        // No lecturer assigned yet — notify every real lecturer (not just the admin queue) so any of them can claim it on approval.
+        Promise.all(
+          lecturerRoster.map((l) =>
+            addNotification({
+              type: 'course',
+              title: 'Unassigned Session Request',
+              message: `${currentMemberName} requested a live session for "${course.title}" — no lecturer assigned yet. Approve it to claim it.`,
+              href: '/dashboard/e-learning/sessions',
+              recipientRole: 'lecturer',
+              recipientId: l.id,
+            })
+          )
+        ).catch(() => {})
+        addNotification({
+          type: 'course',
+          title: 'Unassigned Session Request',
+          message: `${currentMemberName} requested a live session for "${course.title}" — no lecturer assigned yet.`,
+          href: '/dashboard/e-learning/sessions',
+          recipientRole: 'admin',
+        }).catch(() => {})
+      }
 
       setProposedTime('')
       setNotes('')
@@ -72,12 +95,12 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
   return (
     <Modal open onClose={onClose} title="Request a Live Session" size="sm">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
           Request a live Q&amp;A session with {course.instructor} for &ldquo;{course.title}&rdquo;.
         </p>
 
         {error && (
-          <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
+          <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
             {error}
           </div>
         )}

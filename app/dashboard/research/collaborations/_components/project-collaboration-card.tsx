@@ -1,14 +1,14 @@
 import { Calendar, Eye } from 'lucide-react'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { projectStatusConfig, type ResearchProjectSummary } from './collaborations-data'
 import { ContributorAvatar } from './contributor-avatar'
 
 interface ProjectCollaborationCardProps {
   project: ResearchProjectSummary
-  onViewDetails: (project: ResearchProjectSummary) => void
 }
 
 /** One research project's summary card: title, status, description, contributor avatars, and a Details action. */
-export function ProjectCollaborationCard({ project, onViewDetails }: ProjectCollaborationCardProps) {
+export function ProjectCollaborationCard({ project }: ProjectCollaborationCardProps) {
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
@@ -33,13 +33,17 @@ export function ProjectCollaborationCard({ project, onViewDetails }: ProjectColl
         </div>
       </div>
 
-      <button
-        onClick={() => onViewDetails(project)}
+      <UniversalButton
+        href={`/dashboard/research/collaborations/${project.id}`}
+        variant="secondary"
+        size="sm"
+        fullWidth
+        icon={<Eye size={12} />}
         aria-label={`View details for ${project.title}`}
-        className="flex items-center justify-center gap-1.5 mt-auto px-3 py-1.5 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+        className="mt-auto"
       >
-        <Eye size={12} /> View Details
-      </button>
+        View Details
+      </UniversalButton>
     </div>
   )
 }

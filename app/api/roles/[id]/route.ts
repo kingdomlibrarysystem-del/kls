@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff, requireAdmin } from '@/lib/auth/require-role'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
 
   const role = await prisma.role.findUnique({

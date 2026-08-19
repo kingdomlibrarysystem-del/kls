@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { reservationReadyEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 function serializeReservation(r: {
   id: string
@@ -43,6 +47,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!reservation) {
     return NextResponse.json({ data: null, message: 'Reservation not found', code: 'error', status: 404 }, { status: 404 })
   }
+  const auth = await requireOwnerOrStaff(reservation.userId)
+  if (auth.response) return auth.response
   return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation fetched successfully', code: 'success', status: 200 })
 }
 
@@ -73,6 +79,9 @@ const patchReservationSchema = z.union([
  * logic in handleCancel.
  */
 export const PATCH = withErrorHandling('/api/reservations/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = patchReservationSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -92,6 +101,17 @@ export const PATCH = withErrorHandling('/api/reservations/[id]', 'PATCH', async 
       data: { status: 'NOTIFIED', notifiedAt, claimDeadline },
       include: RESOURCE_INCLUDE,
     })
+
+    const reservationUrl = `${appBaseUrl()}/member/reservations/${updated.id}`
+    await notifyUser({
+      userId: updated.userId,
+      type: 'RESERVATION',
+      title: 'Your reservation is ready',
+      message: `"${updated.resource.title}" is ready for you to claim.`,
+      href: `/member/reservations/${updated.id}`,
+      email: { subject: 'Your reserved book is ready', html: reservationReadyEmailHtml(updated.memberName, updated.resource.title, claimDeadline.toLocaleString(), reservationUrl) },
+    })
+
     return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
   }
 
@@ -139,6 +159,9 @@ export const PATCH = withErrorHandling('/api/reservations/[id]', 'PATCH', async 
 })
 
 export const DELETE = withErrorHandling('/api/reservations/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const existing = await prisma.reservation.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Reservation not found', 404)

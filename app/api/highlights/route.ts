@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Highlight API, replacing app/member/_shared/highlight-data.ts's
@@ -39,6 +40,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: null, message: 'userId is required', code: 'error', status: 400 }, { status: 400 })
   }
 
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
+
   const highlights = await prisma.highlight.findMany({
     where: { userId, ...(resourceId && { resourceId }) },
     orderBy: { startOffset: 'asc' },
@@ -69,6 +73,9 @@ export const POST = withErrorHandling('/api/highlights', 'POST', async (request:
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const user = await prisma.user.findUnique({ where: { id: body.userId } })
   if (!user) throw new ApiError('The specified user does not exist', 400)

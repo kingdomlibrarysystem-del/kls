@@ -1,25 +1,21 @@
 'use client'
 
-import { useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RankingBarChart } from '@/components/ui/ranking-bar-chart'
 import { useProgressAnalytics } from './use-progress-analytics'
-import type { CourseAnalytics } from './progress-data'
 import { CourseAnalyticsCard } from './course-analytics-card'
-import { CourseAnalyticsDetailModal } from './course-analytics-detail-modal'
 
 /**
  * Completion-rate comparison chart followed by a grid of per-course
  * analytics cards (completion rate, top performers, dropoff points),
  * backed by real Enrollment/Lesson aggregates from
  * /api/reports/e-learning-progress. Each card links to a full details
- * modal with the complete enrolled roster and lesson dropoff data.
+ * page with the complete enrolled roster and lesson dropoff data.
  */
 export function ProgressView() {
   const { data: courseAnalytics, loading, error } = useProgressAnalytics()
-  const [viewing, setViewing] = useState<CourseAnalytics | null>(null)
 
   if (loading) {
     return (
@@ -57,11 +53,9 @@ export function ProgressView() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {courseAnalytics.map((course) => (
-          <CourseAnalyticsCard key={course.id} course={course} onViewDetails={setViewing} />
+          <CourseAnalyticsCard key={course.id} course={course} />
         ))}
       </div>
-
-      <CourseAnalyticsDetailModal course={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

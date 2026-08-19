@@ -37,10 +37,10 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
 export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, nextLesson, courseId }: LessonContentPaneProps) {
   return (
     <div className="card">
-      <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+      <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
         {lesson.title}
       </h1>
-      <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} min</p>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} min</p>
 
       {lesson.contentMarkdown ? (
         <div style={{ marginBottom: 16 }}>
@@ -61,22 +61,22 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
                   style={{ border: 'none', display: 'block' }}
                 />
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{lesson.content}</p>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{lesson.content}</p>
             </div>
           )}
 
           {lesson.contentType === 'TEXT' && (
             <div style={{ marginBottom: 16 }}>
               {lesson.content.split('\n\n').map((paragraph, i) => (
-                <p key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 12 }}>{paragraph}</p>
+                <p key={i} style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 12 }}>{paragraph}</p>
               ))}
             </div>
           )}
 
           {lesson.contentType === 'FILE' && (
             <div style={{ background: 'var(--bg-section)', borderRadius: 8, padding: 18, marginBottom: 16 }}>
-              <p className="flex items-center gap-1.5" style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1, marginBottom: 12, display: 'flex' }}>
-                <BookOpen size={13} /> STUDY GUIDE
+              <p className="flex items-center gap-1.5" style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1, marginBottom: 12, display: 'flex' }}>
+                <BookOpen size={15} /> STUDY GUIDE
               </p>
               {lesson.content.split('\n\n').map((paragraph, i) => {
                 const isHeading = /^[IVX]+\.\s/.test(paragraph)
@@ -84,7 +84,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
                   <p
                     key={i}
                     style={{
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: isHeading ? 700 : 400,
                       color: isHeading ? 'var(--text-primary)' : 'var(--text-secondary)',
                       lineHeight: 1.7,
@@ -103,8 +103,8 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
       )}
 
       {markError && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 11, marginBottom: 12 }}>
-          <AlertCircle size={13} /> {markError}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>
+          <AlertCircle size={15} /> {markError}
         </div>
       )}
 
@@ -115,7 +115,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
           className={completed ? 'btn btn-outline-dim btn-sm' : 'btn btn-gold btn-sm'}
           style={completed ? { cursor: 'default' } : undefined}
         >
-          <CheckCircle2 size={13} /> {completed ? 'Completed' : 'Mark Complete'}
+          <CheckCircle2 size={15} /> {completed ? 'Completed' : 'Mark Complete'}
         </button>
 
         {nextLesson && (
@@ -125,15 +125,15 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
             aria-label={`Go to next lesson: ${nextLesson.title}`}
             style={{ marginLeft: 'auto', textDecoration: 'none' }}
           >
-            Next Lesson <ChevronRight size={13} />
+            Next Lesson <ChevronRight size={15} />
           </Link>
         )}
       </div>
 
       {courseCompleteAssessmentTitle && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>
-          <ClipboardList size={16} color="#7a5c00" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#3a2e00', flex: 1 }}>
+          <ClipboardList size={18} color="#7a5c00" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 14, color: '#3a2e00', flex: 1 }}>
             You&apos;ve completed all lessons — take <strong>{courseCompleteAssessmentTitle}</strong> to finish the course.
           </span>
           <Link href="/member/assessments" className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>

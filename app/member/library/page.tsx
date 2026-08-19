@@ -52,10 +52,10 @@ export default function MemberLibraryPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
             Kingdom Library
           </div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, maxWidth: 400, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, maxWidth: 400, lineHeight: 1.5 }}>
             The Bible is not one book — it is a library. {totalBooks} scrolls organized across {rootSections.length} sections under the Kingdom Classification System (KCS).
           </div>
         </div>
@@ -63,9 +63,9 @@ export default function MemberLibraryPage() {
           <button
             onClick={() => setShowAbout(!showAbout)}
             aria-label="About the Kingdom Classification System"
-            style={{ padding: "6px 8px", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", background: showAbout ? "rgba(212,168,67,0.15)" : "transparent", color: showAbout ? "var(--gold)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, fontSize: 10 }}
+            style={{ padding: "6px 8px", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", background: showAbout ? "rgba(212,168,67,0.15)" : "transparent", color: showAbout ? "var(--gold)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
           >
-            <Info size={12} /> About KCS
+            <Info size={14} /> About KCS
           </button>
           <button
             onClick={() => setView("grid")}
@@ -73,7 +73,7 @@ export default function MemberLibraryPage() {
             aria-pressed={view === "grid"}
             style={{ padding: "6px 8px", background: view === "grid" ? "rgba(212,168,67,0.15)" : "transparent", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: view === "grid" ? "var(--gold)" : "var(--text-muted)" }}
           >
-            <Grid3X3 size={14} />
+            <Grid3X3 size={16} />
           </button>
           <button
             onClick={() => setView("list")}
@@ -81,25 +81,25 @@ export default function MemberLibraryPage() {
             aria-pressed={view === "list"}
             style={{ padding: "6px 8px", background: view === "list" ? "rgba(212,168,67,0.15)" : "transparent", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: view === "list" ? "var(--gold)" : "var(--text-muted)" }}
           >
-            <List size={14} />
+            <List size={16} />
           </button>
         </div>
       </div>
 
       {showAbout && (
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "12px 14px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 6, fontFamily: "'Cinzel',serif" }}>Kingdom Classification System (KCS)</div>
-          <div style={{ fontSize: 10, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", marginBottom: 6, fontFamily: "'Cinzel',serif" }}>Kingdom Classification System (KCS)</div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 6 }}>
             The KCS organizes Scripture according to divine pattern: <strong>Foundation → History → Wisdom → Prophetic → Gospels → Acts → Epistles → Revelation</strong>. This system ensures truth is not just known, but applied for transformation.
           </div>
-          <div style={{ fontSize: 10, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             <strong>Navigation replaces memorization.</strong> You don&apos;t need to memorize every verse — learn how to visit the right scrolls at the right time. Each section has a specific purpose, and every citizen can contribute their own Acts, Epistles, and Revelations.
           </div>
         </div>
       )}
 
       <div style={{ position: "relative" }}>
-        <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
         <input
           placeholder="Search scrolls by title or section..."
           value={search}
@@ -107,7 +107,7 @@ export default function MemberLibraryPage() {
           aria-label="Search scrolls by title or section"
           style={{
             width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)",
-            background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 13,
+            background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 15,
             outline: "none",
           }}
         />
@@ -117,8 +117,8 @@ export default function MemberLibraryPage() {
         <button
           onClick={() => { setActiveSection("All"); setPageBySection({}); }}
           style={{
-            padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer",
-            fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
+            padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer",
+            fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
             background: activeSection === "All" ? "var(--gold)" : "transparent",
             color: activeSection === "All" ? "#fff" : "var(--text-secondary)",
           }}
@@ -130,8 +130,8 @@ export default function MemberLibraryPage() {
             key={s.id}
             onClick={() => { setActiveSection(s.name.en); setPageBySection({}); }}
             style={{
-              display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6,
-              border: "1px solid var(--border)", cursor: "pointer", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
+              display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6,
+              border: "1px solid var(--border)", cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
               background: activeSection === s.name.en ? "var(--gold)" : "transparent",
               color: activeSection === s.name.en ? "#fff" : "var(--text-secondary)",
               transition: "all 0.15s",
@@ -146,7 +146,7 @@ export default function MemberLibraryPage() {
       <ContinueReadingSection />
 
       {noResults && (
-        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 11 }}>
+        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>
           No scrolls match &ldquo;{search}&rdquo;.
         </div>
       )}
@@ -165,13 +165,13 @@ export default function MemberLibraryPage() {
             }}>
               <span style={{ display: "flex", color: "var(--gold)" }}>{sectionIcons[section.id]}</span>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
                   {section.name.en}
-                  <span style={{ fontSize: 9, color: "var(--gold)", fontWeight: 600, fontFamily: "monospace" }}>{section.code}</span>
+                  <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600, fontFamily: "monospace" }}>{section.code}</span>
                 </div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{section.description}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{section.description}</div>
               </div>
-              <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
             </div>
 
             <div style={{ display: view === "grid" ? "grid" : "flex", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 4, padding: 6, flexDirection: view === "list" ? "column" : undefined }}>
@@ -195,20 +195,20 @@ export default function MemberLibraryPage() {
 
       <div style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.08), var(--bg-card))", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "14px 16px", textAlign: "center" }}>
         <Feather size={24} color="var(--gold)" style={{ marginBottom: 8 }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", fontFamily: "'Cinzel',serif", marginBottom: 4 }}>Your Scroll</div>
-        <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 10, maxWidth: 400, margin: "0 auto 10px", lineHeight: 1.5 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--gold)", fontFamily: "'Cinzel',serif", marginBottom: 4 }}>Your Scroll</div>
+        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 10, maxWidth: 400, margin: "0 auto 10px", lineHeight: 1.5 }}>
           Every citizen of the Kingdom can contribute — write your own Acts (actions), Epistles (letters), and Revelations (visions). Add your story to the living archive.
         </div>
         <button
           onClick={() => setWriteOpen(true)}
-          style={{ padding: "8px 20px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "8px 20px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
         >
           Write Your Scroll
         </button>
       </div>
 
       {toast && (
-        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--green-dim)", color: "var(--green-light)", border: "1px solid var(--green)", borderRadius: 8, padding: "10px 16px", fontSize: 12, zIndex: 60 }}>
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--green-dim)", color: "var(--green-light)", border: "1px solid var(--green)", borderRadius: 8, padding: "10px 16px", fontSize: 14, zIndex: 60 }}>
           {toast}
         </div>
       )}

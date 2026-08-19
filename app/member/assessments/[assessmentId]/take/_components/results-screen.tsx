@@ -25,8 +25,8 @@ export function ResultsScreen({ assessment, attempt, autoSubmitted }: ResultsScr
   return (
     <div className="card" style={{ textAlign: 'center', padding: 32 }}>
       {autoSubmitted && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11, marginBottom: 16 }}>
-          <AlertTriangle size={13} /> Time expired — your answers were submitted automatically.
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 16 }}>
+          <AlertTriangle size={15} /> Time expired — your answers were submitted automatically.
         </div>
       )}
 
@@ -38,19 +38,19 @@ export function ResultsScreen({ assessment, attempt, autoSubmitted }: ResultsScr
         <XCircle size={40} color="var(--red-light)" />
       )}
 
-      <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '12px 0 4px' }}>
+      <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: '12px 0 4px' }}>
         {assessment.title}
       </h1>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+      <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 16 }}>
         {isPending
           ? 'Submitted — awaiting manager review.'
           : passed ? 'Well done — you passed.' : 'You did not reach the passing threshold this time.'}
       </p>
 
-      <div style={{ fontSize: 32, fontWeight: 700, color: isPending ? 'var(--gold)' : passed ? 'var(--green-light)' : 'var(--red-light)' }}>
+      <div style={{ fontSize: 36, fontWeight: 700, color: isPending ? 'var(--gold)' : passed ? 'var(--green-light)' : 'var(--red-light)' }}>
         {score} / {totalMarks}
       </div>
-      <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 20 }}>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
         {isPending
           ? assessment.kind === 'PROJECT'
             ? 'Your score will appear once a manager reviews this submission.'

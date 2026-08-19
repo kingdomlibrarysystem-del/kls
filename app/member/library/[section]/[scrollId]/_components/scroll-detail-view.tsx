@@ -71,32 +71,32 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>
-        <ChevronLeft size={14} /> Back to Kingdom Library
+      <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
+        <ChevronLeft size={16} /> Back to Kingdom Library
       </Link>
 
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 48, height: 48, borderRadius: 8, background: 'linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <ScrollText size={22} color="var(--gold)" />
+          <ScrollText size={24} color="var(--gold)" />
         </div>
         <div style={{ flex: 1 }}>
-          <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{scroll.name.en}</h1>
-          <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.slug} · {section.name.en}</p>
+          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{scroll.name.en}</h1>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.slug} · {section.name.en}</p>
         </div>
         <button
           onClick={() => toggleFavorite(scroll.id, 'RESOURCE', scroll.name.en, `Scroll · ${section.name.en}`)}
           aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
-          style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
-          <Heart size={14} color={liked ? 'var(--red-light)' : 'var(--text-muted)'} fill={liked ? 'var(--red-light)' : 'none'} />
+          <Heart size={16} color={liked ? 'var(--red-light)' : 'var(--text-muted)'} fill={liked ? 'var(--red-light)' : 'none'} />
         </button>
       </div>
 
-      <p style={{ fontSize: 11, color: 'var(--green-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <CheckCircle2 size={12} /> Available in the Kingdom Classification System
+      <p style={{ fontSize: 13, color: 'var(--green-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <CheckCircle2 size={14} /> Available in the Kingdom Classification System
       </p>
 
-      <h2 className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Related Resources</h2>
+      <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Related Resources</h2>
 
       {matches.length === 0 ? (
         <EmptyState
@@ -119,7 +119,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
                       <Link
                         href={`/member/library/read/${resource.id}`}
                         aria-label={`Read ${resource.title} online`}
-                        style={{ display: 'block', textAlign: 'center', padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, textDecoration: 'none' }}
+                        style={{ display: 'block', textAlign: 'center', padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
                       >
                         Read Online
                       </Link>
@@ -129,7 +129,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
                         <button
                           onClick={() => startAction('borrow', resource)}
                           aria-label={`Borrow ${resource.title}`}
-                          style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                          style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                         >
                           Borrow
                         </button>
@@ -137,7 +137,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
                       <button
                         onClick={() => startAction('reserve', resource)}
                         aria-label={`Reserve ${resource.title}`}
-                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                       >
                         Reserve
                       </button>

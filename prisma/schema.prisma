@@ -106,6 +106,8 @@ model User {
   immunizations                    Immunization[]
   userSessions                     UserSession[]
   twoFactorSecret                  TwoFactorSecret?
+  orders                           Order[]
+  cart                             Cart?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt()
@@ -306,6 +308,13 @@ model Resource {
   documentUrl  String?
   audioUrl     String?
   videoUrl     String?
+  /// How many of this resource's Chapter rows (ordered by Chapter.order)
+  /// are readable for free before a paywall kicks in — only meaningful
+  /// when price > 0; ignored for a free resource, which stays fully
+  /// readable as before. Enforced server-side in GET /api/chapters via a
+  /// real entitlement check (PAID Order, active Borrow, or claimed
+  /// Reservation for the requesting user), not just hidden client-side.
+  freePreviewChapterCount Int @default(0)
   borrows      Borrow[]
   reservations Reservation[]
   /// Not truly one-to-many in practice — exactly one Publication ever
@@ -317,6 +326,8 @@ model Resource {
   publications Publication[]
   chapters     Chapter[]
   readingProgress ReadingProgress[]
+  orders       Order[]
+  cartItems    CartItem[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -325,6 +336,124 @@ enum ResourceStatus {
   AVAILABLE
   OUT_OF_STOCK
   ARCHIVED
+}
+
+/// Real purchase/rental order, replacing
+/// app/dashboard/library/sales/_components/sales-data.ts's fully mocked
+/// Transaction[] (free-text buyerName/buyerEmail/resourceTitle, no FKs,
+/// no real payment behind it, admin-only read view). A member checking
+/// out from Sales & Store creates one Order in PENDING, then a real
+/// PayPack cashin request (Rwanda MTN/Airtel mobile money — the
+/// provider this app already has real, configured credentials for, per
+/// PAYPACK_APPLICATION_ID/SECRET/WEBHOOK_SECRET in .env, unlike Stripe
+/// which has none). PayPack's cashin call returns a `ref` immediately
+/// but the transaction is NOT yet settled at that point — status only
+/// flips to PAID once PayPack's `transaction:processed` webhook confirms
+/// `status: "successful"` (or a manual status-poll fallback finds the
+/// same), never on the client-side "request sent" assumption alone.
+/// Provider fields are prefixed `paypack*` rather than left provider-
+/// agnostic — this app has exactly one real, working payment rail
+/// (Rwanda mobile money) for its single-item Buy/Rent buttons, and
+/// Stripe (USD/card, no RWF settlement) was evaluated and set aside as a
+/// poor fit for that flow. `stripeSessionId` was added later,
+/// specifically and only for the real multi-item Cart's checkout (see
+/// Cart/CartItem below) — a real Stripe test-mode Checkout Session per
+/// cart item, exactly one of paypackRef/stripeSessionId ever populated
+/// per Order depending on which flow created it, not a provider swap.
+model Order {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String      @db.ObjectId
+  user              User        @relation(fields: [userId], references: [id])
+  buyerName         String
+  buyerEmail        String
+  buyerPhone        String
+  resourceId        String      @db.ObjectId
+  resource          Resource    @relation(fields: [resourceId], references: [id])
+  resourceTitle     String
+  resourceFormat    String
+  type              OrderType
+  amountRwf         Float
+  status            OrderStatus @default(PENDING)
+  /// PayPack's own transaction reference (a UUID), returned immediately
+  /// by the cashin call — the key used to match an incoming webhook or
+  /// status-poll response back to this Order. Deliberately NOT declared
+  /// `@unique` here — Prisma's MongoDB connector has no schema-level way
+  /// to express a *sparse* unique index, and every new Order is created
+  /// with this field unset (it's only set later, once PayPack's cashin
+  /// call returns a ref); a plain unique index on MongoDB treats every
+  /// null/absent value as colliding with every other one, which meant
+  /// the SECOND Order ever created (with this field still unset) would
+  /// throw a 500 — confirmed by direct reproduction against the real
+  /// database. A real sparse unique index is created out-of-band via
+  /// scripts/create-order-sparse-indexes.mjs instead (run once after any
+  /// `prisma db push` touching this model), which still enforces real
+  /// uniqueness once a value IS set, just exempts null/absent.
+  paypackRef        String?
+  paypackStatus     String?
+  paypackProvider   String?
+  /// Real Stripe Checkout Session id (cs_test_... in test mode) — set
+  /// only for an Order created from Cart checkout, matched back to this
+  /// row by the Stripe webhook's checkout.session.completed event. Same
+  /// sparse-index reasoning as paypackRef above — not `@unique` here.
+  stripeSessionId   String?
+  paidAt            DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([resourceId])
+}
+
+enum OrderType {
+  SALE
+  RENTAL
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+/// Real shopping cart — one per member, replacing the previous
+/// one-resource-per-checkout-modal-invocation flow (BuyConfirmModal)
+/// with genuine "add several books, review, then check out once."
+/// Deliberately userId-only (no guest-cart concept): every existing
+/// Borrow/Reserve/Buy/Rent action already requires a signed-in member,
+/// so a cart with no owner would be a new kind of gap, not a
+/// simplification. Checkout (see app/api/cart/checkout/route.ts) creates
+/// one real Order per CartItem via Stripe test-mode Checkout — PayPack
+/// stays exactly as-is for the existing single-item Buy/Rent buttons;
+/// this is an additive second payment path for the cart specifically,
+/// not a replacement (see Order's own docstring for why PayPack, not
+/// Stripe, is this platform's real mobile-money rail).
+model Cart {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @db.ObjectId @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  cartId     String    @db.ObjectId
+  cart       Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  resourceId String    @db.ObjectId
+  resource   Resource  @relation(fields: [resourceId], references: [id])
+  type       OrderType
+  /// Kept even though every real add-to-cart flow only ever sets 1 — a
+  /// book isn't naturally multi-quantity the way a physical retail SKU
+  /// is, but modeling it honestly as "always exactly 1, no field at all"
+  /// would make a future "buy 2 copies to gift" case a schema migration
+  /// instead of a UI change.
+  quantity   Int       @default(1)
+  addedAt    DateTime  @default(now())
+
+  @@index([cartId])
+  @@unique([cartId, resourceId, type])
 }
 
 enum BindingType {
@@ -732,9 +861,17 @@ model SessionRequest {
   learnerId     String        @db.ObjectId
   learner       User          @relation("SessionRequestLearner", fields: [learnerId], references: [id])
   learnerName   String
-  lecturerId    String        @db.ObjectId
-  lecturer      User          @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
-  lecturerName  String
+  /// Nullable as of the "lecturer assignment optional" feature — a
+  /// SCHEDULED request can be submitted with no lecturer in mind
+  /// (Course.lecturerId was already optional; these two fields just
+  /// hadn't caught up). Approving an unassigned request is how it gets a
+  /// real lecturer attached (see the `approve` PATCH action), at which
+  /// point both fields are backfilled. INSTANT sessions still require a
+  /// lecturer at creation time (someone has to actually be present right
+  /// now), so this stays non-null for every INSTANT row in practice.
+  lecturerId    String?       @db.ObjectId
+  lecturer      User?         @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
+  lecturerName  String?
   courseId      String        @db.ObjectId
   course        Course        @relation(fields: [courseId], references: [id])
   courseTitle   String
@@ -746,6 +883,7 @@ model SessionRequest {
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  presence      SessionPresence[]
 }
 
 enum SessionRequestStatus {
@@ -758,6 +896,35 @@ enum SessionRequestStatus {
 enum SessionRequestMode {
   SCHEDULED
   INSTANT
+}
+
+/// Real per-room presence roster — who has actually opened this
+/// session's room and is still there right now, distinct from who was
+/// merely invited (learnerId/lecturerId on SessionRequest, or a name
+/// added via AddParticipantModal). `leftAt` is set on an explicit Leave
+/// or a stale heartbeat (see the presence route's docstring for the
+/// staleness window), never deleted outright, so a room's real join
+/// history survives a refresh. `displayName` is a point-in-time snapshot
+/// (same pattern as SessionRequest.learnerName) since a presence row can
+/// belong to either the learner, the lecturer, or an admin observer.
+model SessionPresence {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  sessionRequestId String         @db.ObjectId
+  sessionRequest   SessionRequest @relation(fields: [sessionRequestId], references: [id], onDelete: Cascade)
+  userId           String?        @db.ObjectId
+  displayName      String
+  role             SessionPresenceRole
+  joinedAt         DateTime       @default(now())
+  lastSeenAt       DateTime       @default(now())
+  leftAt           DateTime?
+
+  @@index([sessionRequestId])
+}
+
+enum SessionPresenceRole {
+  LEARNER
+  LECTURER
+  ADMIN
 }
 
 /// Real research project, replacing

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real E-Learning Progress Analytics API, replacing
@@ -12,6 +13,9 @@ import prisma from '@/prisma/client'
  * lesson order exactly like a funnel dropoff chart should.
  */
 export async function GET() {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const courses = await prisma.course.findMany({
     include: {
       lessons: { orderBy: { order: 'asc' }, select: { id: true, title: true, order: true } },

@@ -38,6 +38,26 @@ function loadBorrowings(): Promise<void> {
   return fetchPromise
 }
 
+/**
+ * Silent background refresh — a member borrowing a book elsewhere doesn't
+ * push an update to this admin table, so without polling a new request
+ * only appears after a manual reload or an admin action (approve/reject/
+ * return/waiveFine) that happens to refetch. Doesn't touch `loading`, so
+ * the table doesn't flash back to its skeleton on every poll.
+ */
+const POLL_INTERVAL_MS = 20_000
+function pollBorrowings(): Promise<void> {
+  return fetch('/api/borrowings?pageSize=1000')
+    .then((res) => (res.ok ? res.json() : null))
+    .then((json) => {
+      if (json?.code === 'success') {
+        cache = json.data
+        notify()
+      }
+    })
+    .catch(() => {})
+}
+
 export function useBorrowingsAdmin() {
   const [data, setData] = useState<Borrowing[]>(cache)
   const [loading, setLoading] = useState(!hasFetched)
@@ -53,8 +73,10 @@ export function useBorrowingsAdmin() {
     } else {
       setLoading(false)
     }
+    const interval = setInterval(pollBorrowings, POLL_INTERVAL_MS)
     return () => {
       listeners.delete(listener)
+      clearInterval(interval)
     }
   }, [])
 

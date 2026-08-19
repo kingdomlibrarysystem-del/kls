@@ -1,16 +1,16 @@
 import { Shield, Eye, Edit3, Trash2, Users } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { permissionLabels, type Role } from './roles-data'
 
 interface RoleCardsProps {
   roles: Role[]
-  onView: (role: Role) => void
   onEdit: (role: Role) => void
   onDelete: (id: string) => void
 }
 
 /** Grid of role summary cards with View/Edit/Delete actions. */
-export function RoleCards({ roles, onView, onEdit, onDelete }: RoleCardsProps) {
+export function RoleCards({ roles, onEdit, onDelete }: RoleCardsProps) {
   if (roles.length === 0) {
     return <EmptyState icon={Shield} title="No roles defined" description="Use New Role above to create the first role." style={{ color: 'var(--text-secondary)' }} />
   }
@@ -38,9 +38,16 @@ export function RoleCards({ roles, onView, onEdit, onDelete }: RoleCardsProps) {
           </div>
 
           <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-            <button onClick={() => onView(role)} aria-label={`View ${role.name}`} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: '1px solid var(--border)', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 10, color: 'var(--text-secondary)' }}>
-              <Eye size={12} /> View
-            </button>
+            <UniversalButton
+              href={`/dashboard/roles/${role.id}`}
+              aria-label={`View ${role.name}`}
+              variant="dim-outline"
+              size="sm"
+              icon={<Eye size={12} />}
+              style={{ padding: '4px 8px', fontSize: 10 }}
+            >
+              View
+            </UniversalButton>
             <button onClick={() => onEdit(role)} aria-label={`Edit ${role.name}`} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: '1px solid var(--border)', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 10, color: 'var(--text-secondary)' }}>
               <Edit3 size={12} /> Edit
             </button>

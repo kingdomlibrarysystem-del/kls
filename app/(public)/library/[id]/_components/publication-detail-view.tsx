@@ -3,17 +3,19 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle, ShoppingCart, Check } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ElegantButton } from '@/components/ui/elegant-button'
+import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
 import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
 import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
+import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 
 interface PublicationDetailViewProps {
   id: string
@@ -29,10 +31,14 @@ interface PublicationDetailViewProps {
  */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [action, setAction] = useState<BorrowReserveAction>(null)
-  const { isAuthenticated } = useAuth()
+  const [buyAction, setBuyAction] = useState<BuyAction>(null)
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [cartError, setCartError] = useState('')
+  const { user, isAuthenticated } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { data: publications, loading: publicationsLoading, error: publicationsError } = usePublications()
   const readableContent = useReadableContent()
+  useCart(user?.id)
 
   const loading = resourcesLoading || publicationsLoading
   const error = resourcesError ?? publicationsError
@@ -57,8 +63,8 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8" aria-label="Loading publication">
-        <Skeleton className="h-96 w-full rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-[420px_1fr] gap-12" aria-label="Loading publication">
+        <Skeleton className="h-[34rem] w-full rounded-lg" />
         <div className="space-y-3">
           <Skeleton className="h-8 w-2/3 rounded" />
           <Skeleton className="h-4 w-1/3 rounded" />
@@ -98,12 +104,42 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const quantity = resource ? resource.availableQty : catalogBook!.quantity
   const available = resource ? resource.availableQty > 0 && resource.status !== 'archived' : !!catalogBook?.available
   const language = catalogBook ? languageBadgeLabels[catalogBook.language] : resource!.language
+  const inCart = resource ? isInCart(resource.id, 'SALE') : false
+
+  const handleAddToCart = async () => {
+    if (!user || !resource) return
+    setAddingToCart(true)
+    setCartError('')
+    try {
+      await addToCart(user.id, resource.id, 'SALE')
+    } catch (err) {
+      setCartError(err instanceof Error ? err.message : 'Could not add to cart')
+    } finally {
+      setAddingToCart(false)
+    }
+  }
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
-        <div className="relative w-full h-96 bg-w-200 rounded-lg overflow-hidden">
-          <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 280px" />
+      <div className="grid grid-cols-1 md:grid-cols-[420px_1fr] gap-12">
+        <div className="bg-w-200 rounded-lg pt-10 pb-8 px-10">
+          <div
+            className="relative w-full h-[34rem] rounded-[2px] overflow-hidden"
+            style={{
+              boxShadow:
+                '0 1px 0 1px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.18), 0 16px 32px -8px rgba(0,0,0,0.3), inset -4px 0 8px rgba(0,0,0,0.14)',
+            }}
+          >
+            <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 420px" />
+            <div
+              className="absolute top-0 right-0 h-full w-2"
+              style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.35) 40%, rgba(0,0,0,0.1))' }}
+            />
+            <div
+              className="absolute top-0 left-0 h-full w-4"
+              style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }}
+            />
+          </div>
         </div>
 
         <div>
@@ -136,44 +172,83 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           )}
 
           {isReadable && (
-            <Link href={isAuthenticated ? `/member/library/read/${id}` : `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${id}`)}`} className="block mb-3">
-              <ElegantButton variant="primary" className="w-full flex items-center justify-center gap-2">
-                <BookOpenCheck size={15} /> {isAuthenticated ? 'Read Online' : 'Sign In to Read'}
-              </ElegantButton>
-            </Link>
+            <UniversalButton
+              href={isAuthenticated ? `/member/library/read/${id}` : `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${id}`)}`}
+              variant="primary"
+              fullWidth
+              className="mb-3"
+              icon={<BookOpenCheck size={15} />}
+            >
+              {price > 0
+                ? (isAuthenticated ? 'Preview' : 'Sign In to Preview')
+                : (isAuthenticated ? 'Read Online' : 'Sign In to Read')}
+            </UniversalButton>
           )}
 
           {isAuthenticated && resource ? (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <ElegantButton
-                variant={isReadable ? 'outline' : 'primary'}
-                disabled={!available}
-                onClick={() => setAction('borrow')}
-                className="flex-1 sm:flex-none"
-              >
-                Borrow
-              </ElegantButton>
-              <ElegantButton
-                variant="outline"
-                onClick={() => setAction('reserve')}
-                className="flex-1 sm:flex-none"
-              >
-                Reserve
-              </ElegantButton>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <UniversalButton
+                  variant={isReadable ? 'outline' : 'primary'}
+                  disabled={!available}
+                  onClick={() => setAction('borrow')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Borrow
+                </UniversalButton>
+                <UniversalButton
+                  variant="outline"
+                  onClick={() => setAction('reserve')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Reserve
+                </UniversalButton>
+              </div>
+              {price > 0 && (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <UniversalButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
+                      Buy — {price.toLocaleString()} RWF
+                    </UniversalButton>
+                    <UniversalButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
+                      Rent
+                    </UniversalButton>
+                  </div>
+                  <UniversalButton
+                    variant="outline"
+                    disabled={inCart}
+                    loading={addingToCart}
+                    icon={inCart ? <Check size={15} /> : <ShoppingCart size={15} />}
+                    onClick={handleAddToCart}
+                    className="flex-1 sm:flex-none"
+                  >
+                    {inCart ? 'In Cart' : 'Add to Cart'}
+                  </UniversalButton>
+                  {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
+                </>
+              )}
             </div>
           ) : isAuthenticated ? null : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
-                  <ElegantButton variant={isReadable ? 'outline' : 'primary'} className="w-full flex items-center justify-center gap-2">
-                    <LogIn size={15} /> Sign In to Borrow
-                  </ElegantButton>
-                </Link>
-                <Link href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} className="flex-1 sm:flex-none">
-                  <ElegantButton variant="outline" className="w-full flex items-center justify-center gap-2">
-                    <LogIn size={15} /> Sign In to Reserve
-                  </ElegantButton>
-                </Link>
+                <UniversalButton
+                  href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`}
+                  variant={isReadable ? 'outline' : 'primary'}
+                  fullWidth
+                  className="flex-1 sm:flex-none"
+                  icon={<LogIn size={15} />}
+                >
+                  Sign In to Borrow
+                </UniversalButton>
+                <UniversalButton
+                  href={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`}
+                  variant="outline"
+                  fullWidth
+                  className="flex-1 sm:flex-none"
+                  icon={<LogIn size={15} />}
+                >
+                  Sign In to Reserve
+                </UniversalButton>
               </div>
               <p className="font-lato text-xs text-w-600 mt-2">
                 Sign in to borrow or reserve this book — you&apos;ll land back here once you&apos;re signed in.
@@ -184,6 +259,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
       </div>
 
       <BorrowReserveConfirmModal action={action} resourceId={resource?.id ?? ''} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
+      <BuyConfirmModal action={buyAction} resourceId={resource?.id ?? ''} bookTitle={title} priceRwf={price} onClose={() => setBuyAction(null)} />
     </div>
   )
 }

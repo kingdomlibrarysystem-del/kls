@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> — already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
@@ -52,6 +53,9 @@ const createLessonSchema = z.object({
 })
 
 export const POST = withErrorHandling('/api/lessons', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const parsed = createLessonSchema.safeParse(await request.json())
   if (!parsed.success) {
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)

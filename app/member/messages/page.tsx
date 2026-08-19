@@ -10,10 +10,10 @@ export default function MemberMessagesPage() {
   return (
     <PageTransition>
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Cinzel',serif" }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Cinzel',serif" }}>
           Messages
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
           Course channels with your lecturers and direct messages
         </div>
       </div>

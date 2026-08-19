@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -20,6 +21,7 @@ function serializeResource(r: {
   pages: number
   isbn: string
   price: number
+  freePreviewChapterCount: number
   totalQty: number
   availableQty: number
   status: string
@@ -45,6 +47,7 @@ function serializeResource(r: {
     pages: r.pages,
     isbn: r.isbn,
     price: r.price,
+    freePreviewChapterCount: r.freePreviewChapterCount,
     totalQty: r.totalQty,
     availableQty: r.availableQty,
     status: r.status.toLowerCase(),
@@ -89,6 +92,7 @@ const updateResourceSchema = z.object({
   pages: z.number().int().nonnegative().optional(),
   isbn: z.string().optional(),
   price: z.number().nonnegative().optional(),
+  freePreviewChapterCount: z.number().int().nonnegative().optional(),
   totalQty: z.number().int().nonnegative().optional(),
   availableQty: z.number().int().nonnegative().optional(),
   status: z.string().optional(),
@@ -103,6 +107,9 @@ const updateResourceSchema = z.object({
 })
 
 export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (request: NextRequest, { params }: RouteParams) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const parsed = updateResourceSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -130,6 +137,7 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
   if (body.pages !== undefined) data.pages = body.pages
   if (body.isbn !== undefined) data.isbn = body.isbn
   if (body.price !== undefined) data.price = body.price
+  if (body.freePreviewChapterCount !== undefined) data.freePreviewChapterCount = body.freePreviewChapterCount
   if (body.totalQty !== undefined) data.totalQty = body.totalQty
   if (body.availableQty !== undefined) data.availableQty = body.availableQty
   if (body.status !== undefined) data.status = body.status.toUpperCase()
@@ -148,6 +156,9 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
 })
 
 export const DELETE = withErrorHandling('/api/resources/[id]', 'DELETE', async (_request: NextRequest, { params }: RouteParams) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
   const { id } = await params
 
   const existing = await prisma.resource.findUnique({ where: { id } })
