@@ -43,14 +43,14 @@ export function ChapterSearch({ chapters, onJump }: ChapterSearchProps) {
   return (
     <div style={{ position: 'relative' }}>
       <div style={{ position: 'relative' }}>
-        <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         <input
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
           placeholder="Search within this book..."
           aria-label="Search within this book"
-          style={{ width: '100%', padding: '7px 30px 7px 30px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, outline: 'none' }}
+          style={{ width: '100%', padding: '8px 32px 8px 32px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 14, outline: 'none' }}
         />
         {query && (
           <button
@@ -58,7 +58,7 @@ export function ChapterSearch({ chapters, onJump }: ChapterSearchProps) {
             aria-label="Clear search"
             style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
           >
-            <X size={13} />
+            <X size={15} />
           </button>
         )}
       </div>
@@ -66,16 +66,16 @@ export function ChapterSearch({ chapters, onJump }: ChapterSearchProps) {
       {open && query.trim().length >= 2 && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', zIndex: 50, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
           {matches.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>No matches in this book.</div>
+            <div style={{ padding: 12, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>No matches in this book.</div>
           ) : (
             matches.map((match) => (
               <button
                 key={match.chapterIndex}
                 onClick={() => { onJump(match.chapterIndex); setOpen(false) }}
-                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'none', border: 'none', borderBottom: '1px solid var(--border-light)', cursor: 'pointer' }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', background: 'none', border: 'none', borderBottom: '1px solid var(--border-light)', cursor: 'pointer' }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--gold)' }}>{match.chapterTitle}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>{match.snippet}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold)' }}>{match.chapterTitle}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{match.snippet}</div>
               </button>
             ))
           )}

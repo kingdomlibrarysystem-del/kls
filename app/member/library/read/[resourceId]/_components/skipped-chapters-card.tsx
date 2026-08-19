@@ -10,7 +10,7 @@ interface SkippedChaptersCardProps {
 export function SkippedChaptersCard({ progressPercent, chapters, onJump }: SkippedChaptersCardProps) {
   return (
     <div className="card" style={{ padding: 14 }}>
-      <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
         {progressPercent}% read — {chapters.length === 1 ? 'a chapter was' : `${chapters.length} chapters were`} skipped along the way. Read the remaining chapter{chapters.length === 1 ? '' : 's'}, or use Mark Complete above to finish anyway:
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -18,7 +18,7 @@ export function SkippedChaptersCard({ progressPercent, chapters, onJump }: Skipp
           <button
             key={c.id}
             onClick={() => onJump(c.id)}
-            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
           >
             {c.title}
           </button>

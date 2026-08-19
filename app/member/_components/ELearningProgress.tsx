@@ -30,14 +30,14 @@ export default function ELearningProgress() {
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <GraduationCap size={16} color="var(--teal-light)" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>E-Learning Progress</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--text-muted)" }}>
-          <Award size={12} /> {totalProgress}% overall
+        <GraduationCap size={18} color="var(--teal-light)" />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>E-Learning Progress</span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
+          <Award size={14} /> {totalProgress}% overall
         </span>
       </div>
       {rows.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 11 }}>
+        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
           Not enrolled in any courses yet.{" "}
           <a href="/member/e-learning" style={{ color: "var(--gold)", textDecoration: "underline" }}>Explore courses</a>
         </div>
@@ -48,8 +48,8 @@ export default function ELearningProgress() {
           ariaLabel="Course completion percentage, ranked highest to lowest"
         />
       )}
-      <a href="/member/courses" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 10, color: "var(--gold)", textDecoration: "none" }}>
-        View all courses <ChevronRight size={12} />
+      <a href="/member/courses" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
+        View all courses <ChevronRight size={14} />
       </a>
     </div>
   );

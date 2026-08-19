@@ -63,7 +63,7 @@ export function CertificateDetailView({ id }: CertificateDetailViewProps) {
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>
-          <UniversalButton href="/member/certificates" variant="gold-outline" icon={<ArrowLeft size={14} />}>
+          <UniversalButton href="/member/certificates" variant="gold-outline" icon={<ArrowLeft size={16} />}>
             Back to My Certificates
           </UniversalButton>
         </div>
@@ -74,7 +74,7 @@ export function CertificateDetailView({ id }: CertificateDetailViewProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="certificate-print-hide">
-        <UniversalButton href="/member/certificates" variant="dim-outline" size="sm" icon={<ArrowLeft size={14} />}>
+        <UniversalButton href="/member/certificates" variant="dim-outline" size="sm" icon={<ArrowLeft size={16} />}>
           Back to My Certificates
         </UniversalButton>
       </div>
@@ -98,7 +98,7 @@ export function CertificateDetailView({ id }: CertificateDetailViewProps) {
             className="certificate-print-hide"
             variant="gold"
             fullWidth
-            icon={<Download size={14} />}
+            icon={<Download size={16} />}
             onClick={() => window.print()}
             aria-label={`Download certificate for ${certificate.course}`}
           >

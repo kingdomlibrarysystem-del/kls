@@ -17,7 +17,7 @@ import 'react-pdf/dist/Page/TextLayer.css'
 // node_modules.
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`
 
-const PAGE_WIDTH = 640
+const PAGE_WIDTH = 720
 
 interface PdfReaderViewProps {
   documentUrl: string
@@ -48,9 +48,9 @@ export function PdfReaderView({ documentUrl, bookTitle }: PdfReaderViewProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720, margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {numPages ? `Page ${pageIndex + 1} of ${numPages}` : 'Loading pages…'}
         </p>
         <PdfViewModeToggle mode={mode} onChange={setMode} />
@@ -100,15 +100,15 @@ export function PdfReaderView({ documentUrl, bookTitle }: PdfReaderViewProps) {
             className="btn btn-outline-dim btn-sm"
             style={{ opacity: pageIndex === 0 ? 0.4 : 1, cursor: pageIndex === 0 ? 'not-allowed' : 'pointer' }}
           >
-            <ChevronLeft size={13} /> Previous
+            <ChevronLeft size={15} /> Previous
           </button>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{bookTitle}</span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{bookTitle}</span>
           <button
             onClick={() => goToPage(pageIndex + (mode === 'spread' ? 2 : 1))}
             disabled={!numPages || pageIndex >= numPages - 1}
             className="btn btn-gold btn-sm"
           >
-            Next <ChevronRight size={13} />
+            Next <ChevronRight size={15} />
           </button>
         </div>
       )}

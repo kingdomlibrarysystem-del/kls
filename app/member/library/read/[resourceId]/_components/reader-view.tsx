@@ -125,9 +125,9 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>
-        <ChevronLeft size={14} /> Back to Kingdom Library
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
+      <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
+        <ChevronLeft size={16} /> Back to Kingdom Library
       </Link>
 
       <ReaderHeader
@@ -140,7 +140,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
       <ChapterSearch chapters={chapters} onJump={goToChapter} />
 
       <div className="card" style={{ padding: 24 }}>
-        <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', marginBottom: 14 }}>{chapter.title}</h2>
+        <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)', marginBottom: 14 }}>{chapter.title}</h2>
         {chapter.locked ? (
           <LockedChapterPaywall bookTitle={resource.title} priceRwf={resource.price} onBuyAction={setBuyAction} />
         ) : (

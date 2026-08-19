@@ -15,8 +15,8 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ color: 'var(--gold)', marginTop: 2 }}>{icon}</span>
-      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 70, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
+      <span style={{ fontSize: 13, color: 'var(--text-muted)', width: 70, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
     </div>
   )
 }
@@ -68,7 +68,7 @@ export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>
-          <UniversalButton href="/member/borrowings" variant="gold-outline" icon={<ArrowLeft size={14} />}>
+          <UniversalButton href="/member/borrowings" variant="gold-outline" icon={<ArrowLeft size={16} />}>
             Back to My Borrowings
           </UniversalButton>
         </div>
@@ -78,32 +78,32 @@ export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <UniversalButton href="/member/borrowings" variant="dim-outline" size="sm" icon={<ArrowLeft size={14} />}>
+      <UniversalButton href="/member/borrowings" variant="dim-outline" size="sm" icon={<ArrowLeft size={16} />}>
         Back to My Borrowings
       </UniversalButton>
 
       <div className="card space-y-4" style={{ maxWidth: 560 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <h1 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
+          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
             {borrowing.resourceTitle}
           </h1>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
             {statusConfig[borrowing.status].label}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-          <DetailRow icon={<BookText size={13} />} label="Type" value={borrowing.resourceType} />
-          <DetailRow icon={<Calendar size={13} />} label="Borrowed" value={borrowing.borrowDate} />
+          <DetailRow icon={<BookText size={15} />} label="Type" value={borrowing.resourceType} />
+          <DetailRow icon={<Calendar size={15} />} label="Borrowed" value={borrowing.borrowDate} />
           <DetailRow
-            icon={<CalendarCheck size={13} />}
+            icon={<CalendarCheck size={15} />}
             label={borrowing.status === 'returned' ? 'Was Due' : 'Due'}
             value={borrowing.dueDate}
           />
           {borrowing.returnDate && (
-            <DetailRow icon={<CalendarCheck size={13} />} label="Returned" value={borrowing.returnDate} />
+            <DetailRow icon={<CalendarCheck size={15} />} label="Returned" value={borrowing.returnDate} />
           )}
-          <DetailRow icon={<Hash size={13} />} label="ISBN" value={borrowing.isbn} />
+          <DetailRow icon={<Hash size={15} />} label="ISBN" value={borrowing.isbn} />
         </div>
       </div>
     </div>

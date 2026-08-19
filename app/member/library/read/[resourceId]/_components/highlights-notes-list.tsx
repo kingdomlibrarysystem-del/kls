@@ -38,10 +38,10 @@ export function HighlightsNotesList({ resourceId, chapters, onJump }: Highlights
         onClick={() => setOpen((v) => !v)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer' }}
       >
-        <Highlighter size={13} color="var(--gold)" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>My Highlights & Notes</span>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>({allHighlights.length + allNotes.length})</span>
-        <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', display: 'flex' }}>{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
+        <Highlighter size={15} color="var(--gold)" />
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>My Highlights & Notes</span>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({allHighlights.length + allNotes.length})</span>
+        <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', display: 'flex' }}>{open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
       </button>
 
       {open && (
@@ -50,23 +50,23 @@ export function HighlightsNotesList({ resourceId, chapters, onJump }: Highlights
             <div key={h.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--border-light)' }}>
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: highlightColorTokens[h.color].background, border: `2px solid ${highlightColorTokens[h.color].border}`, flexShrink: 0, marginTop: 3 }} />
               <button onClick={() => onJump(chapterIndex(h.chapterId))} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
-                <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.4 }}>&ldquo;{h.text}&rdquo;</p>
-                <p style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{chapterTitle(h.chapterId)}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4 }}>&ldquo;{h.text}&rdquo;</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{chapterTitle(h.chapterId)}</p>
               </button>
               <button onClick={() => removeHighlight(h.id)} aria-label="Delete highlight" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-light)', flexShrink: 0 }}>
-                <Trash2 size={12} />
+                <Trash2 size={14} />
               </button>
             </div>
           ))}
           {allNotes.map((n) => (
             <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--border-light)' }}>
-              <StickyNote size={12} color="var(--gold)" style={{ flexShrink: 0, marginTop: 2 }} />
+              <StickyNote size={14} color="var(--gold)" style={{ flexShrink: 0, marginTop: 2 }} />
               <button onClick={() => onJump(chapterIndex(n.chapterId))} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
-                <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.4 }}>{n.text}</p>
-                <p style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{chapterTitle(n.chapterId)}{n.highlightId ? ' · on a highlight' : ''}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4 }}>{n.text}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{chapterTitle(n.chapterId)}{n.highlightId ? ' · on a highlight' : ''}</p>
               </button>
               <button onClick={() => removeNote(n.id)} aria-label="Delete note" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-light)', flexShrink: 0 }}>
-                <Trash2 size={12} />
+                <Trash2 size={14} />
               </button>
             </div>
           ))}

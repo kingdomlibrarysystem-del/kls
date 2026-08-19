@@ -15,8 +15,8 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   return (
     <div className="flex items-start gap-2">
       <span style={{ color: 'var(--gold)', marginTop: 2 }} className="shrink-0">{icon}</span>
-      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 70 }} className="shrink-0">{label}</span>
-      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
+      <span style={{ fontSize: 13, color: 'var(--text-muted)', width: 70 }} className="shrink-0">{label}</span>
+      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
     </div>
   )
 }
@@ -64,7 +64,7 @@ export function ReservationDetailView({ id }: ReservationDetailViewProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <EmptyState icon={CalendarX} title="Reservation not found" description={error || 'This reservation does not exist or was removed.'} style={{ color: 'var(--text-secondary)' }} />
         <div>
-          <UniversalButton href="/member/reservations" variant="gold-outline" icon={<ArrowLeft size={14} />}>
+          <UniversalButton href="/member/reservations" variant="gold-outline" icon={<ArrowLeft size={16} />}>
             Back to Reservations
           </UniversalButton>
         </div>
@@ -74,24 +74,24 @@ export function ReservationDetailView({ id }: ReservationDetailViewProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <UniversalButton href="/member/reservations" variant="dim-outline" size="sm" icon={<ArrowLeft size={14} />}>
+      <UniversalButton href="/member/reservations" variant="dim-outline" size="sm" icon={<ArrowLeft size={16} />}>
         Back to Reservations
       </UniversalButton>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{reservation.resourceTitle}</h3>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>{statusConfig[reservation.status].label}</span>
+          <h3 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{reservation.resourceTitle}</h3>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>{statusConfig[reservation.status].label}</span>
         </div>
 
         <div className="card space-y-2">
-          <DetailRow icon={<User size={13} />} label="Author" value={reservation.resourceAuthor} />
-          <DetailRow icon={<CalendarDays size={13} />} label="Reserved" value={reservation.reservationDate} />
+          <DetailRow icon={<User size={15} />} label="Author" value={reservation.resourceAuthor} />
+          <DetailRow icon={<CalendarDays size={15} />} label="Reserved" value={reservation.reservationDate} />
           {reservation.status === 'pending' && reservation.queuePosition > 0 && (
-            <DetailRow icon={<Users size={13} />} label="Queue" value={`Position ${reservation.queuePosition}`} />
+            <DetailRow icon={<Users size={15} />} label="Queue" value={`Position ${reservation.queuePosition}`} />
           )}
-          {reservation.claimDeadline && <DetailRow icon={<CheckCircle2 size={13} />} label="Claim by" value={new Date(reservation.claimDeadline).toLocaleString()} />}
-          <DetailRow icon={<Hash size={13} />} label="ID" value={reservation.id} />
+          {reservation.claimDeadline && <DetailRow icon={<CheckCircle2 size={15} />} label="Claim by" value={new Date(reservation.claimDeadline).toLocaleString()} />}
+          <DetailRow icon={<Hash size={15} />} label="ID" value={reservation.id} />
         </div>
       </div>
     </div>

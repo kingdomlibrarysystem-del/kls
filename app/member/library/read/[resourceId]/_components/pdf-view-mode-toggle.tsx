@@ -4,9 +4,9 @@ import { AlignLeft, FileText, BookOpen } from 'lucide-react'
 import type { PdfViewMode } from '@/app/member/_shared/use-pdf-view-mode'
 
 const OPTIONS: { mode: PdfViewMode; label: string; icon: React.ReactNode }[] = [
-  { mode: 'scroll', label: 'Scroll', icon: <AlignLeft size={13} /> },
-  { mode: 'single', label: 'Single Page', icon: <FileText size={13} /> },
-  { mode: 'spread', label: 'Two-Page Spread', icon: <BookOpen size={13} /> },
+  { mode: 'scroll', label: 'Scroll', icon: <AlignLeft size={15} /> },
+  { mode: 'single', label: 'Single Page', icon: <FileText size={15} /> },
+  { mode: 'spread', label: 'Two-Page Spread', icon: <BookOpen size={15} /> },
 ]
 
 interface PdfViewModeToggleProps {

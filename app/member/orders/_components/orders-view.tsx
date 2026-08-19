@@ -29,23 +29,23 @@ export function OrdersView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         {[
-          { icon: <Clock size={16} />, label: 'Pending', value: pending.length.toString(), color: 'var(--gold)' },
-          { icon: <CheckCircle2 size={16} />, label: 'Completed', value: orders.filter((o) => o.status === 'paid').length.toString(), color: 'var(--green-light)' },
-          { icon: <Coins size={16} />, label: 'Total Paid', value: `${paidTotal.toLocaleString()} RWF`, color: 'var(--gold)' },
+          { icon: <Clock size={18} />, label: 'Pending', value: pending.length.toString(), color: 'var(--gold)' },
+          { icon: <CheckCircle2 size={18} />, label: 'Completed', value: orders.filter((o) => o.status === 'paid').length.toString(), color: 'var(--green-light)' },
+          { icon: <Coins size={18} />, label: 'Total Paid', value: `${paidTotal.toLocaleString()} RWF`, color: 'var(--gold)' },
         ].map((s) => (
           <div key={s.label} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
+            <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
             </div>
           </div>
         ))}
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Clock size={14} color="var(--gold)" /> Pending Payments
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Clock size={16} color="var(--gold)" /> Pending Payments
         </div>
         {pending.length === 0 ? (
           <EmptyState icon={ShoppingBag} title="No pending orders" description="Payment requests you send from the library will appear here until confirmed." style={{ color: 'var(--text-secondary)' }} />
@@ -59,18 +59,18 @@ export function OrdersView() {
               className="w-full text-left"
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border-light)', border: 'none', borderRadius: 0 }}
             >
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
-                <ShoppingBag size={18} />
+              <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0 }}>
+                <ShoppingBag size={20} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{o.resourceTitle}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{typeConfig[o.type].label}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{o.resourceTitle}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{typeConfig[o.type].label}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 600 }}>Pending</div>
-                <div style={{ fontSize: 8, color: 'var(--text-muted)', marginTop: 1 }}>{o.amount.toLocaleString()} RWF</div>
+                <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 600 }}>Pending</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{o.amount.toLocaleString()} RWF</div>
               </div>
-              <ChevronRight size={14} color="var(--text-muted)" />
+              <ChevronRight size={16} color="var(--text-muted)" />
             </UniversalButton>
           ))
         )}
@@ -78,8 +78,8 @@ export function OrdersView() {
 
       {settled.length > 0 && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CheckCircle2 size={14} color="var(--text-muted)" /> Order History
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={16} color="var(--text-muted)" /> Order History
           </div>
           {settled.map((o) => (
             <UniversalButton
@@ -90,16 +90,16 @@ export function OrdersView() {
               className="w-full text-left"
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', borderBottom: '1px solid var(--border-light)', border: 'none', borderRadius: 0 }}
             >
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexShrink: 0 }}>
-                {o.status === 'paid' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+              <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexShrink: 0 }}>
+                {o.status === 'paid' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>{o.resourceTitle}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{typeConfig[o.type].label}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{o.resourceTitle}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{typeConfig[o.type].label}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 9, color: statusConfig[o.status].color }}>{statusConfig[o.status].label}</div>
-                <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{o.amount.toLocaleString()} RWF</div>
+                <div style={{ fontSize: 11, color: statusConfig[o.status].color }}>{statusConfig[o.status].label}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{o.amount.toLocaleString()} RWF</div>
               </div>
             </UniversalButton>
           ))}

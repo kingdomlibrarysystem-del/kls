@@ -11,8 +11,8 @@ interface ReaderHeaderProps {
 export function ReaderHeader({ title, chapterIndex, totalChapters, progressPercent }: ReaderHeaderProps) {
   return (
     <div>
-      <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</h1>
-      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+      <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</h1>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
         Chapter {chapterIndex + 1} of {totalChapters}
         {progressPercent !== undefined && ` — ${progressPercent}% complete`}
       </p>

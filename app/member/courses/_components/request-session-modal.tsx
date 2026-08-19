@@ -95,12 +95,12 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
   return (
     <Modal open onClose={onClose} title="Request a Live Session" size="sm">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
           Request a live Q&amp;A session with {course.instructor} for &ldquo;{course.title}&rdquo;.
         </p>
 
         {error && (
-          <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 11 }}>
+          <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
             {error}
           </div>
         )}

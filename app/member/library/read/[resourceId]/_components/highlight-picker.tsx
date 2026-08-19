@@ -20,7 +20,7 @@ export function HighlightPicker({ position, onPick, onClose }: HighlightPickerPr
         display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 70,
       }}
     >
-      <Highlighter size={12} color="var(--text-muted)" style={{ marginRight: 2 }} />
+      <Highlighter size={14} color="var(--text-muted)" style={{ marginRight: 2 }} />
       {(Object.keys(highlightColorTokens) as HighlightColor[]).map((color) => (
         <button
           key={color}

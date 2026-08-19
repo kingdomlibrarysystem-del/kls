@@ -11,12 +11,12 @@ import type { NotificationType } from '@/app/dashboard/notifications/_components
 import { useMemberNotifications, markMemberNotificationRead } from '@/app/member/_shared/use-member-notifications'
 
 const iconMap: Record<NotificationType, React.ReactNode> = {
-  borrow:      <BookOpen size={16} className="text-green-600" />,
-  reservation: <CalendarClock size={16} className="text-blue-600" />,
-  course:      <GraduationCap size={16} className="text-purple-600" />,
-  publication: <BookCopy size={16} className="text-w-600" />,
-  due:         <AlertCircle size={16} className="text-orange-500" />,
-  system:      <Bell size={16} className="text-w-700" />,
+  borrow:      <BookOpen size={18} className="text-green-600" />,
+  reservation: <CalendarClock size={18} className="text-blue-600" />,
+  course:      <GraduationCap size={18} className="text-purple-600" />,
+  publication: <BookCopy size={18} className="text-w-600" />,
+  due:         <AlertCircle size={18} className="text-orange-500" />,
+  system:      <Bell size={18} className="text-w-700" />,
 }
 
 /**
@@ -100,7 +100,7 @@ export default function MemberNotificationsPage() {
               </div>
               <p className="font-lato text-sm text-w-700 mt-0.5">{n.message}</p>
             </div>
-            <ChevronRight size={16} className="text-w-400 shrink-0 mt-0.5" />
+            <ChevronRight size={18} className="text-w-400 shrink-0 mt-0.5" />
           </Link>
         ))}
       </div>

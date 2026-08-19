@@ -36,7 +36,7 @@ export function SessionsSection() {
       key: 'device', label: 'Device', sortable: true,
       render: (s) => (
         <span className="flex items-center gap-1.5" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-          <Monitor size={13} color="var(--text-muted)" /> {s.device} {s.current && <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--green)' }}>(this device)</span>}
+          <Monitor size={15} color="var(--text-muted)" /> {s.device} {s.current && <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--green)' }}>(this device)</span>}
         </span>
       ),
     },
@@ -50,9 +50,9 @@ export function SessionsSection() {
           disabled={revoking === s.id}
           aria-label={`Revoke session on ${s.device}`}
           className="flex items-center gap-1 ml-auto transition-colors"
-          style={{ padding: '4px 10px', background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 4, fontSize: 11, opacity: revoking === s.id ? 0.5 : 1 }}
+          style={{ padding: '4px 10px', background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 4, fontSize: 13, opacity: revoking === s.id ? 0.5 : 1 }}
         >
-          <ShieldOff size={12} /> Revoke
+          <ShieldOff size={14} /> Revoke
         </button>
       ),
     },
@@ -60,9 +60,9 @@ export function SessionsSection() {
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Sessions &amp; Devices</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Sessions &amp; Devices</div>
       {toast && (
-        <div style={{ background: 'var(--green-dim)', color: 'var(--green-light)', border: '1px solid var(--green)', borderRadius: 6, padding: '6px 10px', fontSize: 10, marginBottom: 10 }}>{toast}</div>
+        <div style={{ background: 'var(--green-dim)', color: 'var(--green-light)', border: '1px solid var(--green)', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 10 }}>{toast}</div>
       )}
       {loading ? (
         <Skeleton className="h-32 w-full rounded-lg" />

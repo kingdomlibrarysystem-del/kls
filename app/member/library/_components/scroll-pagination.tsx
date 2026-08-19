@@ -22,7 +22,7 @@ export function ScrollPagination({ page, totalPages, onPage }: ScrollPaginationP
       aria-label={`Page ${n}`}
       aria-current={active ? 'page' : undefined}
       style={{
-        minWidth: 22, height: 22, borderRadius: 5, border: '1px solid var(--border)', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+        minWidth: 22, height: 22, borderRadius: 5, border: '1px solid var(--border)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
         background: active ? 'var(--gold)' : 'transparent', color: active ? '#fff' : 'var(--text-secondary)',
       }}
     >
@@ -38,12 +38,12 @@ export function ScrollPagination({ page, totalPages, onPage }: ScrollPaginationP
         aria-label="Previous page"
         style={{ width: 22, height: 22, borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1 }}
       >
-        <ChevronLeft size={12} />
+        <ChevronLeft size={14} />
       </button>
 
       {pages.map((n, i) => (
         <span key={n} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {i > 0 && pages[i - 1] !== n - 1 && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>…</span>}
+          {i > 0 && pages[i - 1] !== n - 1 && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>…</span>}
           {pageBtn(n, n === page)}
         </span>
       ))}
@@ -54,7 +54,7 @@ export function ScrollPagination({ page, totalPages, onPage }: ScrollPaginationP
         aria-label="Next page"
         style={{ width: 22, height: 22, borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1 }}
       >
-        <ChevronRight size={12} />
+        <ChevronRight size={14} />
       </button>
     </div>
   )
