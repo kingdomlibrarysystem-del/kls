@@ -46,8 +46,8 @@ export function LibraryBrowser() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" aria-label="Loading books">
-        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-96 w-full rounded-lg" />)}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8" aria-label="Loading books">
+        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[34rem] w-full rounded-lg" />)}
       </div>
     )
   }
@@ -110,7 +110,7 @@ export function LibraryBrowser() {
       </div>
 
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {filtered.map((book) => <BookCard key={book.id} book={book} onAction={(b, action) => setPending({ book: b, action })} />)}
         </div>
       ) : (

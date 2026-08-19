@@ -63,8 +63,8 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] gap-10" aria-label="Loading publication">
-        <Skeleton className="h-120 w-full rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-[420px_1fr] gap-12" aria-label="Loading publication">
+        <Skeleton className="h-[34rem] w-full rounded-lg" />
         <div className="space-y-3">
           <Skeleton className="h-8 w-2/3 rounded" />
           <Skeleton className="h-4 w-1/3 rounded" />
@@ -121,9 +121,25 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] gap-10">
-        <div className="relative w-full h-120 bg-w-200 rounded-lg overflow-hidden">
-          <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 340px" />
+      <div className="grid grid-cols-1 md:grid-cols-[420px_1fr] gap-12">
+        <div className="bg-w-200 rounded-lg pt-10 pb-8 px-10">
+          <div
+            className="relative w-full h-[34rem] rounded-[2px] overflow-hidden"
+            style={{
+              boxShadow:
+                '0 1px 0 1px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.18), 0 16px 32px -8px rgba(0,0,0,0.3), inset -4px 0 8px rgba(0,0,0,0.14)',
+            }}
+          >
+            <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 420px" />
+            <div
+              className="absolute top-0 right-0 h-full w-2"
+              style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.35) 40%, rgba(0,0,0,0.1))' }}
+            />
+            <div
+              className="absolute top-0 left-0 h-full w-4"
+              style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }}
+            />
+          </div>
         </div>
 
         <div>

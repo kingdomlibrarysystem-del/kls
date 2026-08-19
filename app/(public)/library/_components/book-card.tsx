@@ -49,18 +49,34 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
   }
 
   return (
-    <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-      <Link href={detailHref} aria-label={`View details for ${book.title}`}>
-        <div className="relative w-full h-72 bg-w-200">
-          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
+    <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
+      <Link href={detailHref} aria-label={`View details for ${book.title}`} className="block bg-w-200 pt-6 pb-4 px-6">
+        <div
+          className="relative w-full h-96 rounded-[2px] overflow-hidden"
+          style={{
+            boxShadow:
+              '0 1px 0 1px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.15), 0 8px 16px -4px rgba(0,0,0,0.25), inset -3px 0 6px rgba(0,0,0,0.12)',
+          }}
+        >
+          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 40vw, 25vw" />
+          {/* Page-edge stripe on the right — the visual cue that reads as "this is a bound book," not a flat poster. */}
+          <div
+            className="absolute top-0 right-0 h-full w-[6px]"
+            style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.35) 40%, rgba(0,0,0,0.1))' }}
+          />
+          {/* Spine-shadow on the left edge, suggesting the cover wraps around a bound spine. */}
+          <div
+            className="absolute top-0 left-0 h-full w-3"
+            style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }}
+          />
         </div>
       </Link>
       <div className="p-4 flex flex-col gap-2 flex-1">
         <Link href={detailHref} className="hover:text-w-600 transition-colors">
-          <h3 className="font-cinzel text-sm font-semibold text-w-950 leading-snug mb-1">{book.title}</h3>
-          <p className="font-lato text-xs text-w-700">by {book.author}</p>
+          <h3 className="font-cinzel text-base font-semibold text-w-950 leading-snug mb-1">{book.title}</h3>
+          <p className="font-lato text-sm text-w-700">by {book.author}</p>
         </Link>
-        <p className="font-cinzel text-base font-bold text-w-600">{book.price.toLocaleString('en-RW')} RWF</p>
+        <p className="font-cinzel text-lg font-bold text-w-600">{book.price.toLocaleString('en-RW')} RWF</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{getCategoryName(book.categoryId)}</span>
           <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
