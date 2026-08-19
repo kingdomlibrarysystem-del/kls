@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { publicationApprovedEmailHtml, publicationRejectedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 function serializePublication(p: {
   id: string
@@ -157,6 +160,17 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
         include: REVENUE_INCLUDE,
       })
     })
+
+    const publicationUrl = `${appBaseUrl()}/library/${updated.resourceId}`
+    await notifyUser({
+      userId: updated.contributorId,
+      type: 'PUBLICATION',
+      title: 'Publication approved',
+      message: `"${updated.title}" has been approved and published.`,
+      href: `/library/${updated.resourceId}`,
+      email: { subject: 'Your submission has been published', html: publicationApprovedEmailHtml(updated.contributorName, updated.title, publicationUrl) },
+    })
+
     return NextResponse.json({ data: serializePublication(updated), message: 'Publication approved and published successfully', code: 'success', status: 200 })
   }
 
@@ -165,6 +179,17 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
       throw new ApiError('Only a submitted or under-review publication can be rejected', 409)
     }
     const updated = await prisma.publication.update({ where: { id }, data: { status: 'REJECTED' }, include: REVENUE_INCLUDE })
+
+    const publicationUrl = `${appBaseUrl()}/dashboard/publishing`
+    await notifyUser({
+      userId: updated.contributorId,
+      type: 'PUBLICATION',
+      title: 'Publication not approved',
+      message: `"${updated.title}" was not approved for publishing.`,
+      href: `/dashboard/publishing`,
+      email: { subject: 'Update on your submission', html: publicationRejectedEmailHtml(updated.contributorName, updated.title, publicationUrl) },
+    })
+
     return NextResponse.json({ data: serializePublication(updated), message: 'Publication rejected', code: 'success', status: 200 })
   }
 

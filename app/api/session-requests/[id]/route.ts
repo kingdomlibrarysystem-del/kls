@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireAuth, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { sessionApprovedEmailHtml, sessionRejectedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 function serializeSessionRequest(s: {
   id: string
@@ -106,12 +109,34 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
       where: { id },
       data: { status: 'APPROVED', scheduledAt, notes: body.notes ?? existing.notes, ...lecturerFields },
     })
+
+    const sessionUrl = `${appBaseUrl()}/member/sessions/${updated.id}`
+    await notifyUser({
+      userId: updated.learnerId,
+      type: 'SYSTEM',
+      title: 'Session approved',
+      message: `Your session request for "${updated.courseTitle}" has been approved.`,
+      href: `/member/sessions/${updated.id}`,
+      email: { subject: 'Your session has been approved', html: sessionApprovedEmailHtml(updated.learnerName, updated.courseTitle, scheduledAt.toLocaleString(), sessionUrl) },
+    })
+
     return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request approved', code: 'success', status: 200 })
   }
 
   if (body.action === 'reject') {
     if (existing.status !== 'PENDING') throw new ApiError('Only a pending session request can be rejected', 409)
     const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'REJECTED', notes: body.notes ?? existing.notes } })
+
+    const sessionUrl = `${appBaseUrl()}/member/sessions/${updated.id}`
+    await notifyUser({
+      userId: updated.learnerId,
+      type: 'SYSTEM',
+      title: 'Session not approved',
+      message: `Your session request for "${updated.courseTitle}" was not approved.`,
+      href: `/member/sessions/${updated.id}`,
+      email: { subject: 'Update on your session request', html: sessionRejectedEmailHtml(updated.learnerName, updated.courseTitle, sessionUrl) },
+    })
+
     return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request rejected', code: 'success', status: 200 })
   }
 

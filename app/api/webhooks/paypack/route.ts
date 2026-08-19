@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { verifyPaypackSignature, type PaypackWebhookPayload } from '@/lib/paypack'
+import { notifyUser } from '@/lib/notify'
+import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /**
  * Real PayPack webhook receiver — fires on the `transaction:processed`
@@ -52,6 +55,27 @@ export async function POST(request: NextRequest) {
       ...(isFailed && { status: 'FAILED' }),
     },
   })
+
+  const orderUrl = `${appBaseUrl()}/member/orders/${order.id}`
+  if (isSuccessful) {
+    await notifyUser({
+      userId: order.userId,
+      type: 'SYSTEM',
+      title: 'Payment confirmed',
+      message: `Your payment for "${order.resourceTitle}" was successful.`,
+      href: `/member/orders/${order.id}`,
+      email: { subject: 'Your order is confirmed', html: orderPaidEmailHtml(order.buyerName, order.resourceTitle, order.amountRwf, orderUrl) },
+    })
+  } else if (isFailed) {
+    await notifyUser({
+      userId: order.userId,
+      type: 'SYSTEM',
+      title: 'Payment failed',
+      message: `Your payment for "${order.resourceTitle}" could not be completed.`,
+      href: `/member/orders/${order.id}`,
+      email: { subject: 'Your order payment failed', html: orderFailedEmailHtml(order.buyerName, order.resourceTitle, orderUrl) },
+    })
+  }
 
   return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
 }

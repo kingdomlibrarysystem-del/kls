@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { reservationReadyEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 function serializeReservation(r: {
   id: string
@@ -98,6 +101,17 @@ export const PATCH = withErrorHandling('/api/reservations/[id]', 'PATCH', async 
       data: { status: 'NOTIFIED', notifiedAt, claimDeadline },
       include: RESOURCE_INCLUDE,
     })
+
+    const reservationUrl = `${appBaseUrl()}/member/reservations/${updated.id}`
+    await notifyUser({
+      userId: updated.userId,
+      type: 'RESERVATION',
+      title: 'Your reservation is ready',
+      message: `"${updated.resource.title}" is ready for you to claim.`,
+      href: `/member/reservations/${updated.id}`,
+      email: { subject: 'Your reserved book is ready', html: reservationReadyEmailHtml(updated.memberName, updated.resource.title, claimDeadline.toLocaleString(), reservationUrl) },
+    })
+
     return NextResponse.json({ data: serializeReservation(updated), message: 'Reservation updated successfully', code: 'success', status: 200 })
   }
 

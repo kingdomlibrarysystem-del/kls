@@ -22,6 +22,7 @@ import {
   MessageSquare,
   ShoppingBag,
   ShoppingCart,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -103,6 +104,11 @@ const navSections: NavSection[] = [
 ];
 
 const singleItems: NavItem[] = [
+  {
+    icon: <Bell size={14} />,
+    label: "Notifications",
+    href: "/member/notifications",
+  },
   {
     icon: <MessageSquare size={14} />,
     label: "Messages",
