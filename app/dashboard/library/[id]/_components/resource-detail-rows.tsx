@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film, FileText, Music, Video } from 'lucide-react'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
 import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from '../../_components/resources-data'
@@ -30,15 +31,15 @@ export function ResourceDetailRows({ resource }: { resource: Resource }) {
   )
 }
 
-/** Document/audio/video external link chips, extracted from the original detail modal. */
+/** Document/audio/video link chips, extracted from the original detail modal. Document opens the real page-by-page reader instead of downloading the raw Cloudinary PDF (browsers force-download resource_type: raw URLs). */
 export function ResourceMediaLinks({ resource }: { resource: Resource }) {
   if (!resource.documentUrl && !resource.audioUrl && !resource.videoUrl) return null
   return (
     <div className="flex flex-wrap gap-2">
       {resource.documentUrl && (
-        <a href={resource.documentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-w-100 text-w-700 rounded text-xs font-lato hover:text-w-950">
-          <FileText size={12} /> Document
-        </a>
+        <Link href={`/member/library/read/${resource.id}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-w-100 text-w-700 rounded text-xs font-lato hover:text-w-950">
+          <FileText size={12} /> Read Document
+        </Link>
       )}
       {resource.audioUrl && (
         <a href={resource.audioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-w-100 text-w-700 rounded text-xs font-lato hover:text-w-950">
