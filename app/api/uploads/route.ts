@@ -3,8 +3,14 @@ import { v2 as cloudinary } from 'cloudinary'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 
+// Reads the public NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME rather than a
+// separate server-only CLOUDINARY_CLOUD_NAME — this app has exactly one
+// real Cloudinary account, and CldUploadWidget (components/ui/
+// cloudinary-upload-field.tsx, image-uploader.tsx) can only ever read
+// the public var, so this signed-upload path uses the same single
+// source of truth instead of risking a second, divergent cloud name.
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })

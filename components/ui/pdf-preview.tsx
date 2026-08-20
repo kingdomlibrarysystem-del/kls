@@ -44,7 +44,7 @@ export function PdfPreview({ url }: PdfPreviewProps) {
   return (
     <div className="border border-w-300 rounded bg-w-50 p-3">
       <Document
-        file={url}
+        file={`/api/uploads/pdf-preview?url=${encodeURIComponent(url)}`}
         onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         onLoadError={(err) => setLoadError(err.message ?? 'The document failed to load.')}
         loading={<div className="h-40 flex items-center justify-center text-w-500 text-xs font-lato">Loading preview…</div>}
