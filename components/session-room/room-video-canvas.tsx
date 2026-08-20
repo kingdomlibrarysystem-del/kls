@@ -9,27 +9,26 @@ import { formatTimer } from './room-error-banner'
 import type { ParticipantDeviceState } from './participant-tile'
 import type { LiveKitDataMessage } from './use-livekit-room'
 
-interface RoomVideoCanvasProps {
-  sessionId: string
-  youName: string
-  you: ParticipantDeviceState
-  youPresenting: boolean
-  youVideoStream?: MediaStream | null
-  youCameraTrack?: Track | null
-  hideSelf: boolean
-  otherName: string
-  otherState: ParticipantDeviceState
-  otherNotJoined: boolean
-  otherCameraTrack?: Track | null
-  otherMicTrack?: Track | null
-  otherScreenTrack?: Track | null
-  extraParticipants: ExtraParticipant[]
-  transcriptActive: boolean
-  interimCaption: string
-  captionsUnsupported: boolean
-  recording: boolean
-  recordingSeconds: number
+export interface RoomVideoCanvasYou {
+  name: string
+  state: ParticipantDeviceState
+  presenting: boolean
+  videoStream?: MediaStream | null
+  cameraTrack?: Track | null
   handRaised: boolean
+}
+
+export interface RoomVideoCanvasOther {
+  name: string
+  state: ParticipantDeviceState
+  notJoined: boolean
+  cameraTrack?: Track | null
+  micTrack?: Track | null
+  screenTrack?: Track | null
+}
+
+export interface RoomVideoCanvasControls {
+  hideSelf: boolean
   sidePanelHidden: boolean
   onToggleCamera: () => void
   onToggleMic: () => void
@@ -42,7 +41,21 @@ interface RoomVideoCanvasProps {
   onAddParticipant: () => void
   onLeave: () => void
   leaveLabel: string
+}
+
+interface RoomVideoCanvasProps {
+  sessionId: string
+  you: RoomVideoCanvasYou
+  other: RoomVideoCanvasOther
+  extraParticipants: ExtraParticipant[]
+  transcriptActive: boolean
+  interimCaption: string
+  captionsUnsupported: boolean
+  recording: boolean
+  recordingSeconds: number
+  controls: RoomVideoCanvasControls
   sendLiveKitData?: (message: LiveKitDataMessage) => void
+  onReact?: (emoji: string) => void
 }
 
 /**
@@ -51,26 +64,24 @@ interface RoomVideoCanvasProps {
  * session-room-view.tsx to keep that file under the 200-line cap.
  */
 export function RoomVideoCanvas({
-  sessionId, youName, you, youPresenting, youVideoStream, youCameraTrack, hideSelf, otherName, otherState, otherNotJoined,
-  otherCameraTrack, otherMicTrack, otherScreenTrack, extraParticipants, transcriptActive, interimCaption, captionsUnsupported, recording, recordingSeconds,
-  handRaised, sidePanelHidden, onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording,
-  onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel, sendLiveKitData,
+  sessionId, you, other, extraParticipants, transcriptActive, interimCaption, captionsUnsupported, recording, recordingSeconds,
+  controls, sendLiveKitData, onReact,
 }: RoomVideoCanvasProps) {
   return (
     <div style={{ position: 'relative', minHeight: 520, borderRadius: 14, overflow: 'hidden', background: 'var(--bg-dashboard)' }}>
       <VideoTileGrid
-        youName={youName}
-        youState={you}
-        youPresenting={youPresenting}
-        youVideoStream={youVideoStream}
-        youCameraTrack={youCameraTrack}
-        hideSelf={hideSelf}
-        otherName={otherName}
-        otherState={otherState}
-        otherNotJoined={otherNotJoined}
-        otherCameraTrack={otherCameraTrack}
-        otherMicTrack={otherMicTrack}
-        otherScreenTrack={otherScreenTrack}
+        youName={you.name}
+        youState={you.state}
+        youPresenting={you.presenting}
+        youVideoStream={you.videoStream}
+        youCameraTrack={you.cameraTrack}
+        hideSelf={controls.hideSelf}
+        otherName={other.name}
+        otherState={other.state}
+        otherNotJoined={other.notJoined}
+        otherCameraTrack={other.cameraTrack}
+        otherMicTrack={other.micTrack}
+        otherScreenTrack={other.screenTrack}
         extraParticipants={extraParticipants}
       />
       <ReactionBurst />
@@ -90,27 +101,27 @@ export function RoomVideoCanvas({
           background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.28) 55%, transparent 100%)',
         }}
       >
-        <ReactionBar sessionId={sessionId} senderName={youName} sendLiveKitData={sendLiveKitData} />
+        <ReactionBar sessionId={sessionId} senderName={you.name} sendLiveKitData={sendLiveKitData} onReact={onReact} />
         <ControlBar
-          cameraOn={you.cameraOn}
-          micOn={you.micOn}
-          handRaised={handRaised}
-          presenting={youPresenting}
+          cameraOn={you.state.cameraOn}
+          micOn={you.state.micOn}
+          handRaised={you.handRaised}
+          presenting={you.presenting}
           recording={recording}
           captionsOn={transcriptActive}
-          hideSelf={hideSelf}
-          sidePanelHidden={sidePanelHidden}
-          onToggleCamera={onToggleCamera}
-          onToggleMic={onToggleMic}
-          onToggleHand={onToggleHand}
-          onTogglePresenting={onTogglePresenting}
-          onToggleRecording={onToggleRecording}
-          onToggleCaptions={onToggleCaptions}
-          onToggleHideSelf={onToggleHideSelf}
-          onToggleSidePanel={onToggleSidePanel}
-          onAddParticipant={onAddParticipant}
-          onLeave={onLeave}
-          leaveLabel={leaveLabel}
+          hideSelf={controls.hideSelf}
+          sidePanelHidden={controls.sidePanelHidden}
+          onToggleCamera={controls.onToggleCamera}
+          onToggleMic={controls.onToggleMic}
+          onToggleHand={controls.onToggleHand}
+          onTogglePresenting={controls.onTogglePresenting}
+          onToggleRecording={controls.onToggleRecording}
+          onToggleCaptions={controls.onToggleCaptions}
+          onToggleHideSelf={controls.onToggleHideSelf}
+          onToggleSidePanel={controls.onToggleSidePanel}
+          onAddParticipant={controls.onAddParticipant}
+          onLeave={controls.onLeave}
+          leaveLabel={controls.leaveLabel}
         />
       </div>
     </div>

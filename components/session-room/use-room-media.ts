@@ -1,5 +1,6 @@
 'use client'
 
+import type { RemoteParticipant } from 'livekit-client'
 import { useMediaStream } from './use-media-stream'
 import { useLiveKitRoom, type LiveKitDataMessage } from './use-livekit-room'
 
@@ -8,6 +9,8 @@ interface UseRoomMediaInput {
   displayName: string
   enabled: boolean
   onData: (message: LiveKitDataMessage) => void
+  onParticipantConnected?: (participant: RemoteParticipant) => void
+  onParticipantDisconnected?: (participant: RemoteParticipant) => void
 }
 
 /**
@@ -17,8 +20,8 @@ interface UseRoomMediaInput {
  * screen-share toggles, only for the extra LiveKit-specific fields
  * (remote tracks, sendData) it still reads directly off `liveKit`.
  */
-export function useRoomMedia({ sessionId, displayName, enabled, onData }: UseRoomMediaInput) {
-  const liveKit = useLiveKitRoom({ sessionId, displayName, enabled, onData })
+export function useRoomMedia({ sessionId, displayName, enabled, onData, onParticipantConnected, onParticipantDisconnected }: UseRoomMediaInput) {
+  const liveKit = useLiveKitRoom({ sessionId, displayName, enabled, onData, onParticipantConnected, onParticipantDisconnected })
   const mockMedia = useMediaStream()
   const ready = liveKit.connected && !liveKit.connectError
 
