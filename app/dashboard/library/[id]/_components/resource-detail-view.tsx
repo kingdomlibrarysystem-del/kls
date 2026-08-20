@@ -60,7 +60,8 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     if (!editingId) return
     try {
-      const { coverImage, documentUrl, audioUrl, videoUrl, ...rest } = formData
+      // chapterTitle/chapterContent are create-only (see resource-form-media-files.tsx) and never sent here.
+      const { coverImage, documentUrl, audioUrl, videoUrl, chapterTitle: _chapterTitle, chapterContent: _chapterContent, ...rest } = formData
       const updated = await updateResource(editingId, {
         ...rest,
         coverImages: [coverImage],

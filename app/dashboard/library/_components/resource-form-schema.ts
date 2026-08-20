@@ -35,6 +35,15 @@ export const resourceSchema = z.object({
   audioName: z.string().optional(),
   videoUrl: z.string().optional(),
   videoName: z.string().optional(),
+  /**
+   * Client-only — never sent to POST /api/resources directly. When a
+   * TEXT (or COMBINATION) resource is created with real markdown typed
+   * here, the modal creates a real first Chapter row (via POST
+   * /api/chapters) right after the Resource itself, so a text-based
+   * resource has real readable content from the moment it's created.
+   */
+  chapterTitle: z.string().optional(),
+  chapterContent: z.string().optional(),
 })
 
 export type ResourceFormData = z.infer<typeof resourceSchema>
@@ -60,6 +69,8 @@ export const defaultResourceFormValues: ResourceFormData = {
   audioName: '',
   videoUrl: '',
   videoName: '',
+  chapterTitle: '',
+  chapterContent: '',
 }
 
 /** Common language codes a library resource is realistically authored/translated in — replaces a free-text field prone to inconsistent values (e.g. "english" vs "EN" vs "en-US"). */
