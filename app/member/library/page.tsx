@@ -1,28 +1,60 @@
 "use client";
-import { useState } from "react";
-import { Search, Grid3X3, List, Feather, Info, AlertTriangle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, Grid3X3, List, Info, AlertTriangle, ScrollText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getRootCategories, getChildCategories } from "@/lib/kcs-taxonomy";
+import { getRootCategories, getChildCategories, getCategoryById } from "@/lib/kcs-taxonomy";
 import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
+import { useResources } from "@/app/dashboard/library/_components/use-resources";
 import { sectionIcons } from "./_components/section-icons";
-import { ScrollCard, ScrollListItem } from "./_components/scroll-card";
-import { ScrollPagination } from "./_components/scroll-pagination";
-import { WriteScrollModal } from "./_components/write-scroll-modal";
+import { ResourceCard, ResourceListItem } from "./_components/resource-card";
 import { ContinueReadingSection } from "./_components/continue-reading-section";
 
-/** Scrolls shown per section per page — keeps a 19-scroll section (History) from rendering an unbounded grid. */
-const PAGE_SIZE = 12;
+type SortMode = "newest" | "rating" | "price-asc" | "price-desc";
 
+/** Resources filed directly under this category, or (for a root pillar) under any of its child scrolls too — matches resourceCountFor's own root-includes-children rule. */
+function resourcesInSection<T extends { categoryId: string }>(sectionId: string, resources: T[]): T[] {
+  const isRoot = getRootCategories().some((c) => c.id === sectionId);
+  if (!isRoot) return resources.filter((r) => r.categoryId === sectionId);
+  const childIds = new Set(getChildCategories(sectionId).map((c) => c.id));
+  return resources.filter((r) => r.categoryId === sectionId || childIds.has(r.categoryId));
+}
+
+/**
+ * Resource-first Kingdom Library: real Resource records are the primary
+ * view (search/sort/filter, grid or list), replacing the previous
+ * scroll-grouped-by-KCS-section layout — a scroll is still reachable by
+ * clicking its section chip (filters resources to that section) or via
+ * "Browse the KCS Map" for the pure-taxonomy view with no resource
+ * attached yet.
+ */
 export default function MemberLibraryPage() {
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState("All");
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [sort, setSort] = useState<SortMode>("newest");
   const [showAbout, setShowAbout] = useState(false);
-  const [writeOpen, setWriteOpen] = useState(false);
-  const [toast, setToast] = useState("");
-  const [pageBySection, setPageBySection] = useState<Record<string, number>>({});
-  const { loading, error } = useCategories();
+  const { loading: categoriesLoading, error: categoriesError } = useCategories();
+  const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources();
+
+  const loading = categoriesLoading || resourcesLoading;
+  const error = categoriesError ?? resourcesError;
+
+  const rootSections = getRootCategories();
+
+  const filtered = useMemo(() => {
+    const bySection = activeSection === "All" ? resources : resourcesInSection(activeSection, resources);
+    const q = search.trim().toLowerCase();
+    const bySearch = q
+      ? bySection.filter((r) => r.title.toLowerCase().includes(q) || r.author.toLowerCase().includes(q) || (getCategoryById(r.categoryId)?.name.en.toLowerCase().includes(q) ?? false))
+      : bySection;
+    const visible = bySearch.filter((r) => r.status !== "archived");
+    const sorted = [...visible];
+    if (sort === "rating") sorted.sort((a, b) => b.avgRating - a.avgRating);
+    else if (sort === "price-asc") sorted.sort((a, b) => a.price - b.price);
+    else if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
+    return sorted;
+  }, [resources, activeSection, search, sort]);
 
   if (loading) {
     return (
@@ -37,26 +69,13 @@ export default function MemberLibraryPage() {
     return <EmptyState icon={AlertTriangle} title="Couldn't load the Kingdom Library" description={error} style={{ color: "var(--text-secondary)" }} />;
   }
 
-  const rootSections = getRootCategories();
-  const sections = activeSection === "All" ? rootSections : rootSections.filter((s) => s.name.en === activeSection);
-
-  const filteredSections = sections.map((section) => ({
-    ...section,
-    scrolls: getChildCategories(section.id).filter((b) => b.name.en.toLowerCase().includes(search.toLowerCase())),
-  })).filter((s) => s.scrolls.length > 0);
-
-  const noResults = search.trim().length > 0 && filteredSections.length === 0;
-  const totalBooks = rootSections.reduce((sum, s) => sum + getChildCategories(s.id).length, 0);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
-            Kingdom Library
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, maxWidth: 400, lineHeight: 1.5 }}>
-            The Bible is not one book — it is a library. {totalBooks} scrolls organized across {rootSections.length} sections under the Kingdom Classification System (KCS).
+          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>Kingdom Library</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, maxWidth: 420, lineHeight: 1.5 }}>
+            {resources.length} resources across {rootSections.length} sections under the Kingdom Classification System (KCS).
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -67,20 +86,10 @@ export default function MemberLibraryPage() {
           >
             <Info size={14} /> About KCS
           </button>
-          <button
-            onClick={() => setView("grid")}
-            aria-label="Grid view"
-            aria-pressed={view === "grid"}
-            style={{ padding: "6px 8px", background: view === "grid" ? "rgba(212,168,67,0.15)" : "transparent", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: view === "grid" ? "var(--gold)" : "var(--text-muted)" }}
-          >
+          <button onClick={() => setView("grid")} aria-label="Grid view" aria-pressed={view === "grid"} style={{ padding: "6px 8px", background: view === "grid" ? "rgba(212,168,67,0.15)" : "transparent", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: view === "grid" ? "var(--gold)" : "var(--text-muted)" }}>
             <Grid3X3 size={16} />
           </button>
-          <button
-            onClick={() => setView("list")}
-            aria-label="List view"
-            aria-pressed={view === "list"}
-            style={{ padding: "6px 8px", background: view === "list" ? "rgba(212,168,67,0.15)" : "transparent", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: view === "list" ? "var(--gold)" : "var(--text-muted)" }}
-          >
+          <button onClick={() => setView("list")} aria-label="List view" aria-pressed={view === "list"} style={{ padding: "6px 8px", background: view === "list" ? "rgba(212,168,67,0.15)" : "transparent", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: view === "list" ? "var(--gold)" : "var(--text-muted)" }}>
             <List size={16} />
           </button>
         </div>
@@ -89,11 +98,8 @@ export default function MemberLibraryPage() {
       {showAbout && (
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "12px 14px" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", marginBottom: 6, fontFamily: "'Cinzel',serif" }}>Kingdom Classification System (KCS)</div>
-          <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 6 }}>
-            The KCS organizes Scripture according to divine pattern: <strong>Foundation → History → Wisdom → Prophetic → Gospels → Acts → Epistles → Revelation</strong>. This system ensures truth is not just known, but applied for transformation.
-          </div>
           <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-            <strong>Navigation replaces memorization.</strong> You don&apos;t need to memorize every verse — learn how to visit the right scrolls at the right time. Each section has a specific purpose, and every citizen can contribute their own Acts, Epistles, and Revelations.
+            The KCS organizes Scripture according to divine pattern: <strong>Foundation → History → Wisdom → Prophetic → Gospels → Acts → Epistles → Revelation</strong>. Click a section below to see the resources filed under it.
           </div>
         </div>
       )}
@@ -101,127 +107,59 @@ export default function MemberLibraryPage() {
       <div style={{ position: "relative" }}>
         <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
         <input
-          placeholder="Search scrolls by title or section..."
+          placeholder="Search resources by title or author..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPageBySection({}); }}
-          aria-label="Search scrolls by title or section"
-          style={{
-            width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)",
-            background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 15,
-            outline: "none",
-          }}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search resources by title or author"
+          style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 15, outline: "none" }}
         />
       </div>
 
-      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-        <button
-          onClick={() => { setActiveSection("All"); setPageBySection({}); }}
-          style={{
-            padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer",
-            fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
-            background: activeSection === "All" ? "var(--gold)" : "transparent",
-            color: activeSection === "All" ? "#fff" : "var(--text-secondary)",
-          }}
-        >
-          All Sections
-        </button>
-        {rootSections.map((s) => (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
           <button
-            key={s.id}
-            onClick={() => { setActiveSection(s.name.en); setPageBySection({}); }}
-            style={{
-              display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6,
-              border: "1px solid var(--border)", cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
-              background: activeSection === s.name.en ? "var(--gold)" : "transparent",
-              color: activeSection === s.name.en ? "#fff" : "var(--text-secondary)",
-              transition: "all 0.15s",
-            }}
+            onClick={() => setActiveSection("All")}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: activeSection === "All" ? "var(--gold)" : "transparent", color: activeSection === "All" ? "#fff" : "var(--text-secondary)" }}
           >
-            <span style={{ display: "flex" }}>{sectionIcons[s.id]}</span>
-            <span>{s.code}</span>
+            All Sections
           </button>
-        ))}
+          {rootSections.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setActiveSection(s.id)}
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: activeSection === s.id ? "var(--gold)" : "transparent", color: activeSection === s.id ? "#fff" : "var(--text-secondary)", transition: "all 0.15s" }}
+            >
+              <span style={{ display: "flex" }}>{sectionIcons[s.id]}</span>
+              <span>{s.code}</span>
+            </button>
+          ))}
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortMode)}
+          aria-label="Sort resources"
+          style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-secondary)", fontSize: 12 }}
+        >
+          <option value="newest">Newest First</option>
+          <option value="rating">Highest Rated</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
       </div>
 
       <ContinueReadingSection />
 
-      {noResults && (
-        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          No scrolls match &ldquo;{search}&rdquo;.
+      {filtered.length === 0 ? (
+        <EmptyState icon={ScrollText} title="No resources found" description={search ? `No resources match "${search}".` : "No resources are filed under this section yet."} style={{ color: "var(--text-secondary)" }} />
+      ) : view === "grid" ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+          {filtered.map((r) => <ResourceCard key={r.id} resource={r} />)}
+        </div>
+      ) : (
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+          {filtered.map((r) => <ResourceListItem key={r.id} resource={r} />)}
         </div>
       )}
-
-      {filteredSections.map((section) => {
-        const totalPages = Math.max(1, Math.ceil(section.scrolls.length / PAGE_SIZE));
-        const page = Math.min(pageBySection[section.id] ?? 1, totalPages);
-        const pagedScrolls = section.scrolls.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-        return (
-          <div key={section.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-            <div style={{
-              padding: "10px 14px", borderBottom: "1px solid var(--border)",
-              display: "flex", alignItems: "center", gap: 8,
-              background: "linear-gradient(90deg, rgba(212,168,67,0.05), transparent)",
-            }}>
-              <span style={{ display: "flex", color: "var(--gold)" }}>{sectionIcons[section.id]}</span>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                  {section.name.en}
-                  <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600, fontFamily: "monospace" }}>{section.code}</span>
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{section.description}</div>
-              </div>
-              <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
-            </div>
-
-            <div style={{ display: view === "grid" ? "grid" : "flex", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, padding: 14, flexDirection: view === "list" ? "column" : undefined }}>
-              {pagedScrolls.map((scroll) => (
-                view === "grid" ? (
-                  <ScrollCard key={scroll.id} scroll={scroll} />
-                ) : (
-                  <ScrollListItem key={scroll.id} scroll={scroll} />
-                )
-              ))}
-            </div>
-
-            <ScrollPagination
-              page={page}
-              totalPages={totalPages}
-              onPage={(n) => setPageBySection((prev) => ({ ...prev, [section.id]: n }))}
-            />
-          </div>
-        );
-      })}
-
-      <div style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.08), var(--bg-card))", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "14px 16px", textAlign: "center" }}>
-        <Feather size={24} color="var(--gold)" style={{ marginBottom: 8 }} />
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--gold)", fontFamily: "'Cinzel',serif", marginBottom: 4 }}>Your Scroll</div>
-        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 10, maxWidth: 400, margin: "0 auto 10px", lineHeight: 1.5 }}>
-          Every citizen of the Kingdom can contribute — write your own Acts (actions), Epistles (letters), and Revelations (visions). Add your story to the living archive.
-        </div>
-        <button
-          onClick={() => setWriteOpen(true)}
-          style={{ padding: "8px 20px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-        >
-          Write Your Scroll
-        </button>
-      </div>
-
-      {toast && (
-        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--green-dim)", color: "var(--green-light)", border: "1px solid var(--green)", borderRadius: 8, padding: "10px 16px", fontSize: 14, zIndex: 60 }}>
-          {toast}
-        </div>
-      )}
-
-      <WriteScrollModal
-        open={writeOpen}
-        onClose={() => setWriteOpen(false)}
-        onSubmitted={() => {
-          setWriteOpen(false);
-          setToast("Your scroll has been submitted for review.");
-          setTimeout(() => setToast(""), 3000);
-        }}
-      />
     </div>
   );
 }
