@@ -92,10 +92,15 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
       </div>
 
       <div>
-        <FieldLabel htmlFor="freePreviewChapterCount">Free Preview Chapters</FieldLabel>
+        <FieldLabel htmlFor="freePreviewChapterCount">
+          {mediaType === 'DOCUMENT' || mediaType === 'COMBINATION' ? 'Free Preview Pages' : 'Free Preview Chapters'}
+        </FieldLabel>
         <FormInput id="freePreviewChapterCount" type="number" min={0} error={errors.freePreviewChapterCount?.message} {...register('freePreviewChapterCount', { valueAsNumber: true })} />
         <p className="font-lato text-xs text-w-600 mt-1">
-          Readable for free before the reader shows a "Buy to Continue" paywall. Ignored while price is 0 — a free resource stays fully readable.
+          {mediaType === 'DOCUMENT' || mediaType === 'COMBINATION'
+            ? 'How many pages of the uploaded PDF are readable for free before the reader shows a "Buy or Rent" paywall.'
+            : 'Readable for free before the reader shows a "Buy to Continue" paywall.'}
+          {' '}Ignored while price is 0 — a free resource stays fully readable.
         </p>
       </div>
 

@@ -110,6 +110,16 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
               <BookOpenCheck size={12} /> Read
             </Link>
           )}
+          {r.documentUrl && r.price > 0 && (
+            <Link
+              href={`/member/library/read/${r.id}?preview=1`}
+              target="_blank"
+              aria-label={`Preview ${r.title} as a member would see it`}
+              className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+            >
+              <Eye size={12} /> Preview
+            </Link>
+          )}
         </div>
       ),
     },
