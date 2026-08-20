@@ -101,7 +101,14 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
           <button
             type="button"
             id={id}
-            onClick={() => open()}
+            onClick={() => {
+              if (!open) {
+                setError('The uploader script failed to load — this is usually a browser extension (ad blocker) or network/firewall blocking upload-widget.cloudinary.com. Try disabling ad blockers for this site or on a different network.')
+                return
+              }
+              setError('')
+              open()
+            }}
             disabled={uploading}
             aria-label={value ? `Replace ${label}` : label}
             className={`w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-lg transition-colors ${

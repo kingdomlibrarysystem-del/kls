@@ -1,16 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell } from 'lucide-react'
+import { Bell, ShoppingCart } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useAuth } from '@/contexts/auth-context'
 import { useMemberNotifications } from '@/app/member/_shared/use-member-notifications'
+import { useCart } from '@/app/member/_shared/use-cart'
 
 interface AppTopbarProps {
   /** Portal name shown at the left, e.g. "Member Portal". */
   portalLabel: string
   /** Where the avatar/identity block links to, e.g. "/member/profile". */
   profileHref: string
+  /** Shows a real cart icon (with a live item-count badge) next to notifications — member portal only; the admin dashboard has its own separate topbar and never passes this. */
+  showCart?: boolean
 }
 
 /**
@@ -29,10 +32,12 @@ interface AppTopbarProps {
  * of the admin dashboard's role-broadcast-only store, which has no
  * concept of "this specific person's" notifications.
  */
-export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
+export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTopbarProps) {
   const { user } = useAuth()
   const { data: notifications } = useMemberNotifications(user?.id)
   const notificationCount = notifications.filter((n) => !n.read).length
+  const { data: cart } = useCart(showCart ? user?.id : undefined)
+  const cartCount = cart.items.length
 
   return (
     <header
@@ -56,6 +61,27 @@ export function AppTopbar({ portalLabel, profileHref }: AppTopbarProps) {
 
       <div className="flex items-center" style={{ gap: 16, marginLeft: 'auto' }}>
         <LanguageSwitcher minimal />
+
+        {showCart && (
+          <Link
+            href="/member/cart"
+            aria-label={cartCount > 0 ? `My Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}` : 'My Cart'}
+            style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
+          >
+            <ShoppingCart size={20} />
+            {cartCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute', top: -4, right: -4, background: 'var(--gold)', color: 'white',
+                  width: 16, height: 16, borderRadius: '50%', fontSize: 10, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                }}
+              >
+                {cartCount}
+              </span>
+            )}
+          </Link>
+        )}
 
         <Link
           href="/member/notifications"

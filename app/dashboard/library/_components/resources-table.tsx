@@ -158,8 +158,7 @@ export function ResourcesTable({
         <div className="flex items-center justify-end gap-1.5">
           {r.documentUrl && (
             <Link
-              href={`/member/library/read/${r.id}`}
-              target="_blank"
+              href={`/dashboard/library/read/${r.id}`}
               aria-label={`Read ${r.title}`}
               className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
             >
@@ -168,8 +167,7 @@ export function ResourcesTable({
           )}
           {r.documentUrl && r.price > 0 && (
             <Link
-              href={`/member/library/read/${r.id}?preview=1`}
-              target="_blank"
+              href={`/dashboard/library/read/${r.id}?preview=1`}
               aria-label={`Preview ${r.title} as a member would see it`}
               className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
             >

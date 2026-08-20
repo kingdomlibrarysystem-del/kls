@@ -164,14 +164,14 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
               </ElegantButton>
             )}
             {isReadable && (
-              <Link href={`/member/library/read/${resource.id}`} target="_blank">
+              <Link href={`/dashboard/library/read/${resource.id}`}>
                 <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
-                  <BookOpenCheck size={13} /> Preview Reader
+                  <BookOpenCheck size={13} /> Read
                 </ElegantButton>
               </Link>
             )}
             {resource.documentUrl && resource.price > 0 && (
-              <Link href={`/member/library/read/${resource.id}?preview=1`} target="_blank">
+              <Link href={`/dashboard/library/read/${resource.id}?preview=1`}>
                 <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
                   <Eye size={13} /> Preview
                 </ElegantButton>

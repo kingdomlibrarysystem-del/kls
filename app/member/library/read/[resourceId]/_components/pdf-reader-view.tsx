@@ -31,6 +31,8 @@ interface PdfReaderViewProps {
   priceRwf: number
   /** Staff-only QA flag — forces the same paywall a non-entitled member would see. */
   forcePreview?: boolean
+  /** Where the "Back" link goes — see ReaderView's own backHref docstring. */
+  backHref?: string
 }
 
 interface Entitlement {
@@ -50,7 +52,7 @@ interface Entitlement {
  * text resources. Download (a separate, stronger privilege than
  * reading) is offered only after a real PAID SALE Order.
  */
-export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = false }: PdfReaderViewProps) {
+export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = false, backHref = '/member/library' }: PdfReaderViewProps) {
   const [mode, setMode] = usePdfViewMode()
   const [numPages, setNumPages] = useState<number | null>(null)
   const [pageIndex, setPageIndex] = useState(0)
@@ -70,8 +72,8 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
   }, [resourceId, forcePreview])
 
   const backLink = (
-    <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
-      <ChevronLeft size={16} /> Back to Kingdom Library
+    <Link href={backHref} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
+      <ChevronLeft size={16} /> {backHref === '/member/library' ? 'Back to Kingdom Library' : 'Back to Book Inventory'}
     </Link>
   )
 

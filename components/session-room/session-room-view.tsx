@@ -50,6 +50,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const [request, setRequest] = useState<SessionRequest | undefined>(undefined)
   const [loading, setLoading] = useState(true)
   const [handRaised, setHandRaised] = useState(false)
+  const [otherHandRaised, setOtherHandRaised] = useState(false)
   const [hideSelf, setHideSelf] = useState(false)
   const [sidePanelHidden, setSidePanelHidden] = useState(false)
   const [addedNames, setAddedNames] = useState<string[]>([])
@@ -78,6 +79,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const handleLiveKitData = useCallback((message: LiveKitDataMessage) => {
     if (message.kind === 'reaction') receiveSessionReaction(message.id, message.emoji, message.senderName)
     else if (message.kind === 'chat') receiveSessionMessage(sessionId, message.id, message.senderName, message.body, message.sentAt)
+    else if (message.kind === 'hand-raise') setOtherHandRaised(message.raised)
   }, [sessionId])
 
   const { liveKit, mockMedia, media, ready: liveKitReady, recordingStream } = useRoomMedia({
@@ -109,10 +111,17 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   const adminExtraParticipant = viewer === 'admin' && request.lecturerName ? { name: request.lecturerName, state: OTHER_PARTY_STATE } : null
   const isLecturerName = (name: string) => lecturerRoster.some((l) => l.name === name)
   const you: ParticipantDeviceState = { cameraOn: media.cameraOn, micOn: media.micOn, handRaised }
-  const otherPresent = presence.roster.some((p) => p.displayName === otherName && p.present)
   const otherRemote = liveKit.remoteParticipants.find((p) => p.name === otherName || p.identity === request.lecturerId || p.identity === request.learnerId)
+  // Once LiveKit is actually connected, a real remote participant in the
+  // room IS the ground truth for "have they joined" — more reliable than
+  // matching /presence's polled displayName string (case/whitespace
+  // differences, or the 8s poll not having refreshed yet, previously
+  // left this stuck on "Waiting to join…" even after the other party
+  // genuinely connected). Presence stays the fallback for the mock path,
+  // where there's no real connection to check at all.
+  const otherPresent = liveKitReady ? !!otherRemote : presence.roster.some((p) => p.displayName === otherName && p.present)
   const otherState: ParticipantDeviceState = liveKitReady && otherRemote
-    ? { cameraOn: !!otherRemote.cameraTrack, micOn: !otherRemote.micMuted, handRaised: false }
+    ? { cameraOn: !!otherRemote.cameraTrack, micOn: !otherRemote.micMuted, handRaised: otherHandRaised }
     : OTHER_PARTY_STATE
 
   const handleLeave = () => {
@@ -153,6 +162,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             otherNotJoined={!otherPresent}
             otherCameraTrack={liveKitReady ? otherRemote?.cameraTrack : null}
             otherMicTrack={liveKitReady ? otherRemote?.micTrack : null}
+            otherScreenTrack={liveKitReady ? otherRemote?.screenTrack : null}
             extraParticipants={[
               ...(adminExtraParticipant ? [adminExtraParticipant] : []),
               ...addedNames.map((name) => ({ name, state: ADDED_PARTICIPANT_STATE })),
@@ -166,7 +176,11 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
             sidePanelHidden={sidePanelHidden}
             onToggleCamera={media.toggleCamera}
             onToggleMic={media.toggleMic}
-            onToggleHand={() => setHandRaised((h) => !h)}
+            onToggleHand={() => {
+              const next = !handRaised
+              setHandRaised(next)
+              if (liveKitReady) liveKit.sendData({ kind: 'hand-raise', raised: next, senderName: youName })
+            }}
             onTogglePresenting={media.togglePresenting}
             onToggleRecording={toggleRecording}
             onToggleCaptions={toggleCaptions}
