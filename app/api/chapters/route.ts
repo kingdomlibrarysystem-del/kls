@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { roleNameToUserRole } from '@/lib/roles'
 import prisma from '@/prisma/client'
+import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireStaff } from '@/lib/auth/require-role'
 
 interface ChapterRow {
   id: string
@@ -111,3 +114,44 @@ export async function GET(request: NextRequest) {
     status: 200,
   })
 }
+
+const createChapterSchema = z.object({
+  resourceId: z.string().min(1, 'resourceId is required'),
+  title: z.string().trim().min(1, 'title is required'),
+  body: z.string(),
+})
+
+/**
+ * Creates one chapter for a resource — staff-only authoring. Used by the
+ * admin Resource form's markdown editor (shown for a TEXT resource) to
+ * create a real first Chapter row alongside the Resource itself, so a
+ * TEXT resource has real readable content from the moment it's created
+ * instead of needing a separate chapter-authoring step. `order` is
+ * assigned as the next value after this resource's existing chapters,
+ * matching how additional chapters would be appended later.
+ */
+export const POST = withErrorHandling('/api/chapters', 'POST', async (request: NextRequest) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
+  const parsed = createChapterSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  }
+  const body = parsed.data
+
+  const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
+  if (!resource) throw new ApiError('The specified resource does not exist', 400)
+
+  const maxOrder = await prisma.chapter.aggregate({ where: { resourceId: body.resourceId }, _max: { order: true } })
+  const chapter = await prisma.chapter.create({
+    data: {
+      resourceId: body.resourceId,
+      title: body.title,
+      body: body.body,
+      order: (maxOrder._max.order ?? -1) + 1,
+    },
+  })
+
+  return NextResponse.json({ data: serializeChapter(chapter, false), message: 'Chapter created successfully', code: 'success', status: 201 }, { status: 201 })
+})

@@ -133,6 +133,7 @@ export function ResourceFormModal({
           errors={errors}
           setValue={setValue}
           watch={watch}
+          isCreating={!editing}
         />
 
         <div className="flex gap-2 pt-2">

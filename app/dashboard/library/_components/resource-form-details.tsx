@@ -18,6 +18,7 @@ interface ResourceFormDetailsProps {
   errors: FieldErrors<ResourceFormData>
   setValue: UseFormSetValue<ResourceFormData>
   watch: UseFormWatch<ResourceFormData>
+  isCreating: boolean
 }
 
 /**
@@ -27,7 +28,7 @@ interface ResourceFormDetailsProps {
  * tags, and real Cloudinary-uploaded cover/document/audio/video. Split
  * out of resource-form-modal.tsx to keep it under the 200-line cap.
  */
-export function ResourceFormDetails({ register, control, errors, setValue, watch }: ResourceFormDetailsProps) {
+export function ResourceFormDetails({ register, control, errors, setValue, watch, isCreating }: ResourceFormDetailsProps) {
   const coverImageValue = watch('coverImage')
   const mediaType = watch('mediaType')
   /** Tracks whether the current coverImage came from this picker (vs. the typed-URL text input above it) — so the picker only shows its "uploaded" state for a genuine upload, not a pasted URL. */
@@ -99,13 +100,21 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
       </div>
 
       <div className="grid grid-cols-[1fr_120px] gap-4 items-start">
-        <div>
-          <FieldLabel htmlFor="coverImage" required>Cover Image</FieldLabel>
-          <FormInput id="coverImage" type="text" placeholder="https://images.unsplash.com/... (or upload below)" error={errors.coverImage?.message} {...register('coverImage')} />
-          <Controller
-            name="coverImage"
-            control={control}
-            render={({ field }) => (
+        <Controller
+          name="coverImage"
+          control={control}
+          render={({ field }) => (
+            <div>
+              <FieldLabel htmlFor="coverImage" required>Cover Image</FieldLabel>
+              <FormInput
+                id="coverImage"
+                type="text"
+                placeholder="https://images.unsplash.com/... (or upload below)"
+                error={errors.coverImage?.message}
+                value={field.value}
+                onChange={(e) => { field.onChange(e.target.value); setCoverUploaded(false) }}
+                onBlur={field.onBlur}
+              />
               <div className="mt-2">
                 <CloudinaryUploadField
                   id="coverImageFile"
@@ -117,9 +126,9 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
                   onClear={() => { field.onChange(''); setCoverUploaded(false) }}
                 />
               </div>
-            )}
-          />
-        </div>
+            </div>
+          )}
+        />
         <div className="relative w-full h-32 rounded overflow-hidden border border-w-300 bg-w-200 mt-7">
           {coverImageValue ? (
             <RemoteImage
@@ -136,7 +145,7 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
         </div>
       </div>
 
-      <ResourceFormMediaFiles control={control} setValue={setValue} mediaType={mediaType} />
+      <ResourceFormMediaFiles control={control} setValue={setValue} watch={watch} mediaType={mediaType} isCreating={isCreating} />
 
       <div>
         <FieldLabel htmlFor="tags">Tags</FieldLabel>
