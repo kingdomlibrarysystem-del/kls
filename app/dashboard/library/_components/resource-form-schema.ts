@@ -1,26 +1,24 @@
 import { z } from 'zod'
 
 /**
- * Full canonical Resource shape, per use-resources.ts/resources-data.ts —
- * previously this form only validated 5 of the ~13 real fields (title,
- * author, category, isbn, totalQty), while the Detail/View modal already
- * displayed and expected the complete shape, silently defaulting every
- * missing field (price, description, publisher, language, pages,
- * bindingType, mediaType, tags, coverImages) to a placeholder value in
- * `library-view.tsx`'s `handleSave` — hence every resource created
- * through the form showing "0 RWF" and an empty description regardless
- * of what an admin actually intended.
+ * Full canonical Resource shape, per use-resources.ts/resources-data.ts.
+ * `isbn` is deliberately absent — it's generated server-side (a real
+ * unique ISBN-13, see lib/generate-isbn.ts) on create, never entered by
+ * an admin. Cover/document/audio/video fields hold real Cloudinary
+ * secure_url values from CloudinaryUploadField, not client-only blob:
+ * URLs — this form used to accept blob: URLs that never left the
+ * browser and were useless once sent to the API.
  */
 export const resourceSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   author: z.string().min(2, 'Author is required'),
   /** FK into the canonical KCS taxonomy (`lib/kcs-taxonomy`) — the leaf/scroll category this resource is filed under. */
   categoryId: z.string().min(1, 'Select a category'),
-  isbn: z.string().min(3, 'ISBN is required'),
   totalQty: z.number().int().min(0, 'Must be 0 or more'),
   description: z.string().min(1, 'Description is required'),
   publisher: z.string().min(1, 'Publisher is required'),
   language: z.string().min(1, 'Language is required'),
+  /** Auto-filled from a real extracted PDF page count when a document is uploaded (see /api/uploads); still editable for a resource with no document, or to correct it. */
   pages: z.number().int().min(1, 'Must be at least 1 page'),
   price: z.number().min(0, 'Must be 0 or more'),
   /** How many of this resource's chapters (once seeded) are readable free before the reader shows a real "Buy to Continue" paywall — see /api/chapters. Ignored while price is 0. */
@@ -29,20 +27,12 @@ export const resourceSchema = z.object({
   mediaType: z.enum(['VIDEO', 'DOCUMENT', 'TEXT', 'COMBINATION']),
   /** Comma-separated in the UI, parsed to string[] on submit — see tag-input.tsx. */
   tags: z.array(z.string()),
-  /**
-   * Cover image — either a real Unsplash/remote URL (typed in) or a local
-   * blob: URL produced by the file picker (see FilePickerField). No real
-   * backend exists in this prototype, so a picked file never leaves the
-   * browser; the blob URL is what previews it for the current session.
-   */
+  /** Real Cloudinary secure_url (or a typed-in remote URL) — see CloudinaryUploadField. */
   coverImage: z.string().min(1, 'A cover image is required'),
-  /** Optional document/PDF file — blob: URL from the file picker, no backend to persist it to. */
   documentUrl: z.string().optional(),
   documentName: z.string().optional(),
-  /** Optional audio file — blob: URL from the file picker. */
   audioUrl: z.string().optional(),
   audioName: z.string().optional(),
-  /** Optional video file — blob: URL from the file picker. */
   videoUrl: z.string().optional(),
   videoName: z.string().optional(),
 })
@@ -53,11 +43,10 @@ export const defaultResourceFormValues: ResourceFormData = {
   title: '',
   author: '',
   categoryId: '',
-  isbn: '',
   totalQty: 1,
   description: '',
   publisher: '',
-  language: '',
+  language: 'EN',
   pages: 1,
   price: 0,
   freePreviewChapterCount: 0,
@@ -72,3 +61,17 @@ export const defaultResourceFormValues: ResourceFormData = {
   videoUrl: '',
   videoName: '',
 }
+
+/** Common language codes a library resource is realistically authored/translated in — replaces a free-text field prone to inconsistent values (e.g. "english" vs "EN" vs "en-US"). */
+export const LANGUAGE_OPTIONS = [
+  { code: 'EN', label: 'English' },
+  { code: 'FR', label: 'French' },
+  { code: 'RW', label: 'Kinyarwanda' },
+  { code: 'SW', label: 'Swahili' },
+  { code: 'HE', label: 'Hebrew' },
+  { code: 'GR', label: 'Greek' },
+  { code: 'LA', label: 'Latin' },
+  { code: 'AR', label: 'Arabic' },
+  { code: 'PT', label: 'Portuguese' },
+  { code: 'ES', label: 'Spanish' },
+] as const
