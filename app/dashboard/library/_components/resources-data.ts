@@ -37,6 +37,9 @@ export interface Resource {
   audioUrl?: string
   /** The actual video file for this resource, when mediaType includes a video component. */
   videoUrl?: string
+  /** Denormalized from real Review rows (see /api/reviews) — 0 when reviewCount is 0, not a placeholder. */
+  avgRating: number
+  reviewCount: number
 }
 
 export const statusConfig: Record<Resource['status'], { label: string; cls: string }> = {

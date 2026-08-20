@@ -51,7 +51,10 @@ export async function GET(request: NextRequest) {
 
   const cart = await getOrCreateCart(userId)
   const items = cart.items.map(serializeCartItem)
-  const totalRwf = items.reduce((sum, i) => sum + i.unitPriceRwf * i.quantity, 0)
+  // Only SALE/RENTAL items are real charges — BORROW/RESERVE never cost
+  // anything, so they're excluded from the payable total even though
+  // they still show the resource's price for reference on the card.
+  const totalRwf = items.filter((i) => i.type === 'SALE' || i.type === 'RENTAL').reduce((sum, i) => sum + i.unitPriceRwf * i.quantity, 0)
 
   return NextResponse.json({
     data: { id: cart.id, items, totalRwf },
@@ -64,7 +67,7 @@ export async function GET(request: NextRequest) {
 const addToCartSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
   resourceId: z.string().min(1, 'resourceId is required'),
-  type: z.enum(['SALE', 'RENTAL']),
+  type: z.enum(['SALE', 'RENTAL', 'BORROW', 'RESERVE']),
 })
 
 export const POST = withErrorHandling('/api/cart', 'POST', async (request: NextRequest) => {
@@ -77,7 +80,12 @@ export const POST = withErrorHandling('/api/cart', 'POST', async (request: NextR
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
   if (!resource) throw new ApiError('Resource not found', 404)
-  if (!resource.price || resource.price <= 0) throw new ApiError('This resource has no price set', 400)
+  // A SALE/RENTAL cart item is a real purchase intent — a free resource
+  // has nothing to buy/rent. BORROW/RESERVE never charge anything, so a
+  // free resource is exactly as borrowable/reservable as a priced one.
+  if ((body.type === 'SALE' || body.type === 'RENTAL') && (!resource.price || resource.price <= 0)) {
+    throw new ApiError('This resource has no price set', 400)
+  }
 
   const cart = await prisma.cart.upsert({ where: { userId: body.userId }, update: {}, create: { userId: body.userId } })
 
@@ -89,7 +97,7 @@ export const POST = withErrorHandling('/api/cart', 'POST', async (request: NextR
 
   const updated = await getOrCreateCart(body.userId)
   const items = updated.items.map(serializeCartItem)
-  const totalRwf = items.reduce((sum, i) => sum + i.unitPriceRwf * i.quantity, 0)
+  const totalRwf = items.filter((i) => i.type === 'SALE' || i.type === 'RENTAL').reduce((sum, i) => sum + i.unitPriceRwf * i.quantity, 0)
 
   return NextResponse.json(
     { data: { id: updated.id, items, totalRwf }, message: 'Added to cart', code: 'success', status: 201 },

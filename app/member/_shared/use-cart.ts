@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
+export type CartItemType = 'SALE' | 'RENTAL' | 'BORROW' | 'RESERVE'
+
 export interface CartItem {
   id: string
   resourceId: string
@@ -9,7 +11,7 @@ export interface CartItem {
   resourceAuthor: string
   resourceCover: string | null
   unitPriceRwf: number
-  type: 'SALE' | 'RENTAL'
+  type: CartItemType
   quantity: number
   addedAt: string
 }
@@ -59,12 +61,12 @@ export function getCartSnapshot(): CartData {
   return cache
 }
 
-/** Whether a given resource (in this exact SALE/RENTAL type) is already in the cart — for "In Cart" vs "Add to Cart" button state. */
-export function isInCart(resourceId: string, type: 'SALE' | 'RENTAL'): boolean {
+/** Whether a given resource (in this exact cart-item type) is already in the cart — for "In Cart" vs "Add to Cart" button state. */
+export function isInCart(resourceId: string, type: CartItemType): boolean {
   return cache.items.some((i) => i.resourceId === resourceId && i.type === type)
 }
 
-export async function addToCart(userId: string, resourceId: string, type: 'SALE' | 'RENTAL'): Promise<void> {
+export async function addToCart(userId: string, resourceId: string, type: CartItemType): Promise<void> {
   const res = await fetch('/api/cart', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,6 +86,16 @@ export async function removeFromCart(itemId: string, userId: string): Promise<vo
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to remove from cart')
   hasFetched = false
   await loadCart(userId)
+}
+
+/** Resolves a BORROW/RESERVE cart item into a real Borrow/Reservation row (see /api/cart/[itemId]/confirm) and removes it from the cart on success. Returns the created Borrow/Reservation's own serialized data. */
+export async function confirmCartItem(itemId: string, userId: string): Promise<unknown> {
+  const res = await fetch(`/api/cart/${itemId}/confirm`, { method: 'POST' })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not confirm this request')
+  hasFetched = false
+  await loadCart(userId)
+  return json.data
 }
 
 /** Live-subscribes to the shared cart store, loading it from the real API for the signed-in user. */
