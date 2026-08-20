@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Room, RoomEvent, Track, type RemoteParticipant, type LocalParticipant } from 'livekit-client'
+import type { ActivityKind } from './use-session-activity'
 
 export interface RemoteParticipantState {
   identity: string
@@ -16,6 +17,7 @@ export type LiveKitDataMessage =
   | { kind: 'reaction'; id: string; emoji: string; senderName: string }
   | { kind: 'chat'; id: string; senderName: string; body: string; sentAt: string }
   | { kind: 'hand-raise'; raised: boolean; senderName: string }
+  | { kind: 'activity'; id: string; activityKind: ActivityKind; actorName: string; detail?: string; at: string }
 
 interface UseLiveKitRoomInput {
   sessionId: string
@@ -23,6 +25,9 @@ interface UseLiveKitRoomInput {
   /** When false, the hook does nothing — lets the caller fall back to the local-only mock without ever opening a connection. */
   enabled: boolean
   onData?: (message: LiveKitDataMessage) => void
+  /** Fires on LiveKit's own real ParticipantConnected/Disconnected events — server-verified join/leave, not a self-reported message, so the caller can log a real activity entry without this hook needing to know about the activity store itself. */
+  onParticipantConnected?: (participant: RemoteParticipant) => void
+  onParticipantDisconnected?: (participant: RemoteParticipant) => void
 }
 
 /**
@@ -36,10 +41,14 @@ interface UseLiveKitRoomInput {
  * /api/session-requests/[id]/livekit-token), so everyone hitting the
  * same /room route joins the same real room.
  */
-export function useLiveKitRoom({ sessionId, displayName, enabled, onData }: UseLiveKitRoomInput) {
+export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onParticipantConnected, onParticipantDisconnected }: UseLiveKitRoomInput) {
   const roomRef = useRef<Room | null>(null)
   const onDataRef = useRef(onData)
   onDataRef.current = onData
+  const onConnectedRef = useRef(onParticipantConnected)
+  onConnectedRef.current = onParticipantConnected
+  const onDisconnectedRef = useRef(onParticipantDisconnected)
+  onDisconnectedRef.current = onParticipantDisconnected
 
   const [connected, setConnected] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
@@ -79,12 +88,14 @@ export function useLiveKitRoom({ sessionId, displayName, enabled, onData }: UseL
       .on(RoomEvent.TrackUnsubscribed, (_track, _pub, participant) => updateRemote(participant))
       .on(RoomEvent.TrackMuted, (_pub, participant) => { if (participant !== room.localParticipant) updateRemote(participant as RemoteParticipant) })
       .on(RoomEvent.TrackUnmuted, (_pub, participant) => { if (participant !== room.localParticipant) updateRemote(participant as RemoteParticipant) })
+      .on(RoomEvent.ParticipantConnected, (participant) => { onConnectedRef.current?.(participant) })
       .on(RoomEvent.ParticipantDisconnected, (participant) => {
         setRemoteParticipants((prev) => {
           const next = new Map(prev)
           next.delete(participant.identity)
           return next
         })
+        onDisconnectedRef.current?.(participant)
       })
       .on(RoomEvent.DataReceived, (payload, participant) => {
         if (!participant) return

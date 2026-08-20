@@ -1,16 +1,8 @@
 import { Users, Mic, MicOff, Hand, UserX } from 'lucide-react'
-import type { ParticipantDeviceState } from './participant-tile'
-
-interface RoomParticipant {
-  name: string
-  role: 'Lecturer' | 'Learner' | 'Admin'
-  state: ParticipantDeviceState
-  /** Set when this row has a live SessionPresence row — remove is only ever offered for someone actually present. */
-  presenceId?: string
-}
+import type { RoomParticipantEntry } from './build-room-participants'
 
 interface ParticipantListPanelProps {
-  participants: RoomParticipant[]
+  participants: RoomParticipantEntry[]
   /** Host-only real remove action — omit entirely for a non-host viewer (a learner has no authority to remove anyone). */
   onRemove?: (presenceId: string) => void
 }
@@ -27,7 +19,7 @@ export function ParticipantListPanel({ participants, onRemove }: ParticipantList
           <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', transition: 'background 0.1s' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{p.role}{!p.presenceId && p.role !== 'Admin' ? ' — not joined' : ''}</div>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{p.role}{!p.joined ? ' — not joined' : ''}</div>
             </div>
             {p.state.handRaised && <Hand size={13} color="var(--gold)" />}
             {p.state.micOn ? <Mic size={13} color="var(--text-muted)" /> : <MicOff size={13} color="var(--red-light)" />}

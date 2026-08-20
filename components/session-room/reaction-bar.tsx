@@ -8,6 +8,8 @@ interface ReactionBarProps {
   senderName: string
   /** Broadcasts the reaction over LiveKit's real-time data channel so every other real participant's browser actually receives it — undefined when not connected to a real room (local-only, matches the previous mock behavior). */
   sendLiveKitData?: (message: LiveKitDataMessage) => void
+  /** Logs the local user's own reaction into the real activity feed — separate from sendLiveKitData since that only broadcasts to others, not the local activity log. */
+  onReact?: (emoji: string) => void
 }
 
 const QUICK_REACTIONS = ['👍', '🎉', '❤️', '😂', '👏', '🙌']
@@ -20,10 +22,11 @@ const QUICK_REACTIONS = ['👍', '🎉', '❤️', '😂', '👏', '🙌']
  * session-room-view.tsx), so its background/border are fixed rather
  * than theme-variable.
  */
-export function ReactionBar({ sessionId, senderName, sendLiveKitData }: ReactionBarProps) {
+export function ReactionBar({ sessionId, senderName, sendLiveKitData, onReact }: ReactionBarProps) {
   const react = (emoji: string) => {
     const reaction = sendSessionReaction(sessionId, senderName, emoji)
     sendLiveKitData?.({ kind: 'reaction', id: reaction.id, emoji, senderName })
+    onReact?.(emoji)
   }
 
   return (
