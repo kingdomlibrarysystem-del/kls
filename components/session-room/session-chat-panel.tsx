@@ -3,21 +3,25 @@
 import { useState } from 'react'
 import { Send, MessageSquare } from 'lucide-react'
 import { useSessionChat, sendSessionMessage } from './use-session-chat'
+import type { LiveKitDataMessage } from './use-livekit-room'
 
 interface SessionChatPanelProps {
   sessionId: string
   senderName: string
+  /** Broadcasts the message over LiveKit's real-time data channel so every other real participant's browser actually receives it — undefined when not connected to a real room. */
+  sendLiveKitData?: (message: LiveKitDataMessage) => void
 }
 
-/** Real, session-scoped chat: a message list backed by use-session-chat.ts's in-memory store, plus a working input that actually appends messages. */
-export function SessionChatPanel({ sessionId, senderName }: SessionChatPanelProps) {
+/** Real, session-scoped chat: a message list backed by use-session-chat.ts's in-memory store, plus a working input that actually appends messages and (when connected) broadcasts them to real remote participants. */
+export function SessionChatPanel({ sessionId, senderName, sendLiveKitData }: SessionChatPanelProps) {
   const messages = useSessionChat(sessionId)
   const [draft, setDraft] = useState('')
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault()
     if (!draft.trim()) return
-    sendSessionMessage(sessionId, senderName, draft.trim())
+    const message = sendSessionMessage(sessionId, senderName, draft.trim())
+    sendLiveKitData?.({ kind: 'chat', id: message.id, senderName, body: message.body, sentAt: message.sentAt })
     setDraft('')
   }
 

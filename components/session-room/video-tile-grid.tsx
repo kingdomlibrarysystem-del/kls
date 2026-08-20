@@ -1,48 +1,76 @@
+import { useEffect, useRef } from "react";
+import type { Track } from "livekit-client";
 import {
   ParticipantTile,
   type ParticipantDeviceState,
 } from "./participant-tile";
 
+/** Attaches a real remote audio track to a hidden <audio> element — audio has no visual tile of its own, it just needs to actually play. */
+function RemoteAudio({ track }: { track: Track }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    track.attach(el);
+    return () => { track.detach(el); };
+  }, [track]);
+  return <audio ref={ref} autoPlay />;
+}
+
 export interface ExtraParticipant {
   name: string;
   state: ParticipantDeviceState;
+  cameraTrack?: Track | null;
+  micTrack?: Track | null;
 }
 
 interface VideoTileGridProps {
   youName: string;
   youState: ParticipantDeviceState;
   youPresenting?: boolean;
-  /** Real MediaStream (camera or, while presenting, the captured screen) for the local user's own tile only — see participant-tile.tsx's videoStream docstring for why no other tile ever receives one. */
+  /** Real MediaStream (mock fallback) for the local user's own tile. */
   youVideoStream?: MediaStream | null;
-  /** Hides the local user's OWN tile from their OWN view only — standard Meet/Zoom "Hide self view." Has zero effect on any other participant, since there's no real peer connection anyway. */
+  /** Real local LiveKit camera track, when connected to a real room. */
+  youCameraTrack?: Track | null;
+  /** Hides the local user's OWN tile from their OWN view only. */
   hideSelf?: boolean;
   otherName: string;
-  /** The other participant's device state is fixed (mock — no real second client to reflect toggles from), always shown camera-on/mic-on/hand-down. */
   otherState: ParticipantDeviceState;
   /** True when the other party has no live SessionPresence row — shows a real "Waiting to join…" placeholder instead of a fake always-connected state. */
   otherNotJoined?: boolean;
+  /** The other party's real remote camera track, once LiveKit has subscribed to it — absent while not connected/not publishing. */
+  otherCameraTrack?: Track | null;
+  otherMicTrack?: Track | null;
   /** Personas added via AddParticipantModal — real additional tiles, not a fixed 2-up layout. */
   extraParticipants?: ExtraParticipant[];
 }
 
 /**
- * Video grid. While presenting, restructures to match Meet's real
- * behavior: the presented content becomes one large primary tile, and
- * every other tile (other participant, any added ones) collapses into a
- * small vertical strip beside it. Reverts to the equal grid once
- * presenting stops. Pure CSS/layout — no new dependency.
+ * Video grid. Three layouts:
+ * - Presenting: the presented content becomes one large primary tile,
+ *   every other tile collapses into a small strip beside it (Meet-style).
+ * - Solo (only "you" are actually present — the other party hasn't
+ *   joined and nothing was added): one tile fills the entire canvas,
+ *   matching a real single-person call rather than wasting half the
+ *   space on a permanent "waiting" box.
+ * - Otherwise: an even grid.
  */
 export function VideoTileGrid({
   youName,
   youState,
   youPresenting,
   youVideoStream,
+  youCameraTrack,
   hideSelf,
   otherName,
   otherState,
   otherNotJoined,
+  otherCameraTrack,
+  otherMicTrack,
   extraParticipants = [],
 }: VideoTileGridProps) {
+  const isSolo = !!otherNotJoined && extraParticipants.length === 0 && !hideSelf;
+
   const youTile = !hideSelf && (
     <ParticipantTile
       name={youName}
@@ -50,6 +78,8 @@ export function VideoTileGrid({
       state={youState}
       presenting={youPresenting}
       videoStream={youVideoStream}
+      liveKitTrack={youCameraTrack}
+      solo={isSolo}
     />
   );
   const otherTiles = [
@@ -59,6 +89,7 @@ export function VideoTileGrid({
       isYou={false}
       state={otherState}
       notJoined={otherNotJoined}
+      liveKitTrack={otherCameraTrack}
     />,
     ...extraParticipants.map((p) => (
       <ParticipantTile
@@ -66,9 +97,21 @@ export function VideoTileGrid({
         name={p.name}
         isYou={false}
         state={p.state}
+        liveKitTrack={p.cameraTrack}
       />
     )),
   ];
+
+  const remoteAudio = otherMicTrack && <RemoteAudio track={otherMicTrack} />;
+
+  if (isSolo) {
+    return (
+      <div className="h-full">
+        {youTile}
+        {remoteAudio}
+      </div>
+    );
+  }
 
   if (youPresenting) {
     return (
@@ -81,6 +124,7 @@ export function VideoTileGrid({
             </div>
           ))}
         </div>
+        {remoteAudio}
       </div>
     );
   }
@@ -89,6 +133,7 @@ export function VideoTileGrid({
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 h-full p-3 auto-rows-fr">
       {youTile}
       {otherTiles}
+      {remoteAudio}
     </div>
   );
 }

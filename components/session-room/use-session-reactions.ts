@@ -37,9 +37,17 @@ function getSnapshot() {
   return activeReaction
 }
 
-/** Sends a quick reaction into the room — replaces whatever reaction is currently showing. */
-export function sendSessionReaction(sessionId: string, senderName: string, emoji: string) {
-  activeReaction = { id: `${sessionId}-${Date.now()}`, emoji, senderName }
+/** Sends a quick reaction into the room — replaces whatever reaction is currently showing. Returns the created reaction so the caller can also broadcast its exact id (e.g. over LiveKit's data channel) without generating a second, mismatched id. */
+export function sendSessionReaction(sessionId: string, senderName: string, emoji: string): SessionReaction {
+  const reaction: SessionReaction = { id: `${sessionId}-${Date.now()}`, emoji, senderName }
+  activeReaction = reaction
+  emitChange()
+  return reaction
+}
+
+/** Renders a reaction that arrived over LiveKit's real-time data channel from another participant — same store, so it uses the exact same ReactionBurst UI as a locally-sent one. */
+export function receiveSessionReaction(id: string, emoji: string, senderName: string) {
+  activeReaction = { id, emoji, senderName }
   emitChange()
 }
 
