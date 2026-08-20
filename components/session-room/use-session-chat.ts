@@ -52,6 +52,14 @@ export function sendSessionMessage(sessionId: string, senderName: string, body: 
   return created
 }
 
+/** Appends a chat message that arrived over LiveKit's real-time data channel from another participant — same store as a locally-sent one, deduped by id in case of a redundant delivery. */
+export function receiveSessionMessage(sessionId: string, id: string, senderName: string, body: string, sentAt: string) {
+  const existing = messagesBySession[sessionId] ?? []
+  if (existing.some((m) => m.id === id)) return
+  messagesBySession = { ...messagesBySession, [sessionId]: [...existing, { id, sessionId, senderName, body, sentAt }] }
+  emitChange()
+}
+
 /** Live-subscribes to one session's chat thread. */
 export function useSessionChat(sessionId: string) {
   return useSyncExternalStore(subscribe, () => getSnapshotFor(sessionId), () => emptyMessages)
