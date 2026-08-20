@@ -6,11 +6,14 @@ import { ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 
-// Same CDN-worker fix as the member PDF reader (pdf-reader-view.tsx) —
-// pdfjs's worker is a separate script, not a normal import, so Next.js
-// can't bundle it; pointing at the exact matching version on a CDN is
-// the documented-safe approach.
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`
+// Same fix as the member PDF reader (pdf-reader-view.tsx) — a CDN-hosted
+// worker fails with "Setting up fake worker failed: Failed to fetch
+// dynamically imported module" (pdf.js v5's worker is itself an ES
+// module loaded via a cross-origin dynamic import). Bundling the exact
+// matching worker file as a same-origin static asset via
+// new URL(..., import.meta.url) avoids both the CDN dependency and the
+// cross-origin import.
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
 const PAGE_WIDTH = 320
 

@@ -12,7 +12,15 @@ import { PdfViewModeToggle } from './pdf-view-mode-toggle'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`
+// A CDN-hosted worker (the docs' usual recommendation) fails in this
+// app with "Setting up fake worker failed: Failed to fetch dynamically
+// imported module" — pdf.js v5's worker is itself an ES module loaded
+// via a cross-origin dynamic import, which browsers/CSP can refuse.
+// Bundling the exact matching worker file as a same-origin static
+// asset via new URL(..., import.meta.url) (Next.js/Turbopack resolves
+// this at build time) sidesteps both the CDN dependency and the
+// cross-origin import entirely.
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
 const PAGE_WIDTH = 720
 
