@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX } from 'lucide-react'
+import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -35,7 +35,13 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
   const [editing, setEditing] = useState(false)
   const [toast, setToast] = useState('')
   const readableContent = useReadableContent()
-  const isReadable = !!resource && !!readableContent[resource.id]
+  // A resource is readable either through real authored Chapter rows
+  // (readableContent) or a real uploaded PDF (documentUrl) — ReaderView
+  // itself already falls back to the page-native PdfReaderView for the
+  // latter, but this button never showed for a PDF-only resource before
+  // this fix, since readableContent only ever contains chapter-backed
+  // resources (from /api/chapters, grouped by resource).
+  const isReadable = !!resource && (!!readableContent[resource.id] || !!resource.documentUrl)
 
   useEffect(() => {
     let cancelled = false
@@ -60,7 +66,8 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     if (!editingId) return
     try {
-      const { coverImage, documentUrl, audioUrl, videoUrl, ...rest } = formData
+      // chapterTitle/chapterContent are create-only (see resource-form-media-files.tsx) and never sent here.
+      const { coverImage, documentUrl, audioUrl, videoUrl, chapterTitle: _chapterTitle, chapterContent: _chapterContent, ...rest } = formData
       const updated = await updateResource(editingId, {
         ...rest,
         coverImages: [coverImage],
@@ -157,9 +164,16 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
               </ElegantButton>
             )}
             {isReadable && (
-              <Link href={`/member/library/read/${resource.id}`} target="_blank">
+              <Link href={`/dashboard/library/read/${resource.id}`}>
                 <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
-                  <BookOpenCheck size={13} /> Preview Reader
+                  <BookOpenCheck size={13} /> Read
+                </ElegantButton>
+              </Link>
+            )}
+            {resource.documentUrl && resource.price > 0 && (
+              <Link href={`/dashboard/library/read/${resource.id}?preview=1`}>
+                <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
+                  <Eye size={13} /> Preview
                 </ElegantButton>
               </Link>
             )}

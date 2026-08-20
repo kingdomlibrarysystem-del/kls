@@ -66,51 +66,52 @@ model Authenticator {
 }
 
 model User {
-  id                      String          @id @default(auto()) @map("_id") @db.ObjectId
-  name                    String?
-  firstName               String?
-  lastName                String?
-  email                   String          @unique
-  country                 String?
-  phonenumber             String?
-  emailVerified           DateTime?
-  image                   String?
-  password                String?
-  notificationPreferences Json? // e.g., { "email": true, "sms": false }
-  status                  UserStatus      @default(ACTIVE)
-  roleId                  String?         @db.ObjectId
-  role                    Role?           @relation(fields: [roleId], references: [id])
-  accounts                Account[]
-  sessions                Session[]
-  Authenticator           Authenticator[]
-  invitationsSent         Invitation[]
-  borrows                 Borrow[]
-  reservations            Reservation[]
-  publications            Publication[]
-  coursesTeaching         Course[]
-  enrollments             Enrollment[]
-  assessmentAttempts      AssessmentAttempt[]
-  certificates            Certificate[]
-  sessionRequestsAsLearner  SessionRequest[] @relation("SessionRequestLearner")
-  sessionRequestsAsLecturer SessionRequest[] @relation("SessionRequestLecturer")
+  id                        String              @id @default(auto()) @map("_id") @db.ObjectId
+  name                      String?
+  firstName                 String?
+  lastName                  String?
+  email                     String              @unique
+  country                   String?
+  phonenumber               String?
+  emailVerified             DateTime?
+  image                     String?
+  password                  String?
+  notificationPreferences   Json? // e.g., { "email": true, "sms": false }
+  status                    UserStatus          @default(ACTIVE)
+  roleId                    String?             @db.ObjectId
+  role                      Role?               @relation(fields: [roleId], references: [id])
+  accounts                  Account[]
+  sessions                  Session[]
+  Authenticator             Authenticator[]
+  invitationsSent           Invitation[]
+  borrows                   Borrow[]
+  reservations              Reservation[]
+  publications              Publication[]
+  coursesTeaching           Course[]
+  enrollments               Enrollment[]
+  assessmentAttempts        AssessmentAttempt[]
+  certificates              Certificate[]
+  sessionRequestsAsLearner  SessionRequest[]    @relation("SessionRequestLearner")
+  sessionRequestsAsLecturer SessionRequest[]    @relation("SessionRequestLecturer")
   projectMemberships        ProjectMember[]
-  researchPapers             ResearchPaper[]
-  messagesSent               Message[]
-  notifications               Notification[]
-  favorites                   Favorite[]
-  readingProgress              ReadingProgress[]
-  highlights                    Highlight[]
-  notes                         Note[]
-  appointments                   Appointment[]
-  healthRecords                   HealthRecord[]
-  immunizations                    Immunization[]
-  userSessions                     UserSession[]
-  twoFactorSecret                  TwoFactorSecret?
-  orders                           Order[]
-  cart                             Cart?
+  researchPapers            ResearchPaper[]
+  messagesSent              Message[]
+  notifications             Notification[]
+  favorites                 Favorite[]
+  readingProgress           ReadingProgress[]
+  highlights                Highlight[]
+  notes                     Note[]
+  appointments              Appointment[]
+  healthRecords             HealthRecord[]
+  immunizations             Immunization[]
+  userSessions              UserSession[]
+  twoFactorSecret           TwoFactorSecret?
+  orders                    Order[]
+  cart                      Cart?
+  reviews                   Review[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt()
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
 }
 
 /// Account status — a real, admin-settable lifecycle state (suspend a
@@ -218,14 +219,14 @@ model Settings {
 /// separate from its parent pillar (ruling out embedding children inside
 /// their root document).
 model Category {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  slug        String     @unique
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String          @unique
   nameEn      String
   nameFr      String
   nameRw      String
-  parentId    String?    @db.ObjectId
-  parent      Category?  @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children    Category[] @relation("CategoryToParent")
+  parentId    String?         @db.ObjectId
+  parent      Category?       @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    Category[]      @relation("CategoryToParent")
   /// KCS classification code, e.g. "KCS-FND". Roots only.
   code        String?
   /// Tagline, e.g. "Constitution of the Kingdom". Roots only.
@@ -243,8 +244,8 @@ model Category {
   /// Availability status. Leaf/scroll rows only.
   status      CategoryStatus?
   resources   Resource[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 enum CategoryStatus {
@@ -261,10 +262,10 @@ enum CategoryStatus {
 /// `category: string` from before that merge — this schema is the final
 /// step of making that FK real, not a new decision).
 model Resource {
-  id           String       @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  author       String
-  publisher    String
+  id                      String            @id @default(auto()) @map("_id") @db.ObjectId
+  title                   String
+  author                  String
+  publisher               String
   /// Optional as of Phase 4: published books (see Publication.status
   /// PUBLISHED, which auto-creates a Resource row on approval) use a
   /// free-text category vocabulary (Theology, Leadership, etc.) that
@@ -273,17 +274,17 @@ model Resource {
   /// these are two different classification systems. Every Resource
   /// created before Phase 4 (all 16 KCS scrolls) already has a real
   /// categoryId and is unaffected by this widening.
-  categoryId   String?      @db.ObjectId
-  category     Category?    @relation(fields: [categoryId], references: [id])
-  type         String
-  format       String
-  language     String
-  year         Int
-  pages        Int
-  isbn         String
-  price        Float
-  totalQty     Int
-  availableQty Int
+  categoryId              String?           @db.ObjectId
+  category                Category?         @relation(fields: [categoryId], references: [id])
+  type                    String
+  format                  String
+  language                String
+  year                    Int
+  pages                   Int
+  isbn                    String            @unique
+  price                   Float
+  totalQty                Int
+  availableQty            Int
   /// Monotonically-increasing counter used to atomically assign each new
   /// reservation's queuePosition (see /api/reservations POST). A plain
   /// `count()`-then-`create()` is a read-then-write race on MongoDB —
@@ -298,38 +299,69 @@ model Resource {
   /// truth for "next queue position," even though it never decreases
   /// when a reservation is cancelled/claimed (queue positions are
   /// display-order hints, not a compacted 1..N sequence).
-  reservationQueueCounter Int @default(0)
-  status       ResourceStatus @default(AVAILABLE)
-  coverImages  String[]
-  bindingType  BindingType
-  mediaType    MediaType
-  description  String
-  tags         String[]
-  documentUrl  String?
-  audioUrl     String?
-  videoUrl     String?
+  reservationQueueCounter Int               @default(0)
+  status                  ResourceStatus    @default(AVAILABLE)
+  coverImages             String[]
+  bindingType             BindingType
+  mediaType               MediaType
+  description             String
+  tags                    String[]
+  documentUrl             String?
+  audioUrl                String?
+  videoUrl                String?
   /// How many of this resource's Chapter rows (ordered by Chapter.order)
   /// are readable for free before a paywall kicks in — only meaningful
   /// when price > 0; ignored for a free resource, which stays fully
   /// readable as before. Enforced server-side in GET /api/chapters via a
   /// real entitlement check (PAID Order, active Borrow, or claimed
   /// Reservation for the requesting user), not just hidden client-side.
-  freePreviewChapterCount Int @default(0)
-  borrows      Borrow[]
-  reservations Reservation[]
+  freePreviewChapterCount Int               @default(0)
+  /// Denormalized from Review rows (avg of Review.rating, count of
+  /// Review rows) rather than aggregated live on every card render —
+  /// a member-library grid can show dozens of resources at once, and
+  /// re-running a Review aggregate per card per request doesn't scale
+  /// the way reading two already-computed fields does. Recomputed
+  /// server-side (see /api/reviews) on every review create/update/
+  /// delete, so it can drift only if a write path bypasses that route
+  /// entirely (none does).
+  avgRating               Float             @default(0)
+  reviewCount             Int               @default(0)
+  reviews                 Review[]
+  borrows                 Borrow[]
+  reservations            Reservation[]
   /// Not truly one-to-many in practice — exactly one Publication ever
   /// points at a given Resource, set once at approval time — but Prisma
   /// requires a list back-relation for a non-unique FK (see
   /// Publication.resourceId's docstring for why @unique doesn't work
   /// here). List type is a Prisma-modeling artifact, not a real
   /// multi-publication-per-resource case.
-  publications Publication[]
-  chapters     Chapter[]
-  readingProgress ReadingProgress[]
-  orders       Order[]
-  cartItems    CartItem[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  publications            Publication[]
+  chapters                Chapter[]
+  readingProgress         ReadingProgress[]
+  orders                  Order[]
+  cartItems               CartItem[]
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+}
+
+/// Real member review of a Resource — one per user per resource
+/// (editable in place rather than allowing duplicates), backing the
+/// star rating shown on resource cards/detail pages. Resource.avgRating/
+/// reviewCount are recomputed from this table on every write (see
+/// /api/reviews) rather than aggregated live per page render.
+model Review {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  resourceId String   @db.ObjectId
+  resource   Resource @relation(fields: [resourceId], references: [id])
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, resourceId])
+  @@index([resourceId])
 }
 
 enum ResourceStatus {
@@ -361,19 +393,19 @@ enum ResourceStatus {
 /// cart item, exactly one of paypackRef/stripeSessionId ever populated
 /// per Order depending on which flow created it, not a provider swap.
 model Order {
-  id                String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String      @db.ObjectId
-  user              User        @relation(fields: [userId], references: [id])
-  buyerName         String
-  buyerEmail        String
-  buyerPhone        String
-  resourceId        String      @db.ObjectId
-  resource          Resource    @relation(fields: [resourceId], references: [id])
-  resourceTitle     String
-  resourceFormat    String
-  type              OrderType
-  amountRwf         Float
-  status            OrderStatus @default(PENDING)
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String      @db.ObjectId
+  user            User        @relation(fields: [userId], references: [id])
+  buyerName       String
+  buyerEmail      String
+  buyerPhone      String
+  resourceId      String      @db.ObjectId
+  resource        Resource    @relation(fields: [resourceId], references: [id])
+  resourceTitle   String
+  resourceFormat  String
+  type            OrderType
+  amountRwf       Float
+  status          OrderStatus @default(PENDING)
   /// PayPack's own transaction reference (a UUID), returned immediately
   /// by the cashin call — the key used to match an incoming webhook or
   /// status-poll response back to this Order. Deliberately NOT declared
@@ -388,17 +420,17 @@ model Order {
   /// scripts/create-order-sparse-indexes.mjs instead (run once after any
   /// `prisma db push` touching this model), which still enforces real
   /// uniqueness once a value IS set, just exempts null/absent.
-  paypackRef        String?
-  paypackStatus     String?
-  paypackProvider   String?
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
   /// Real Stripe Checkout Session id (cs_test_... in test mode) — set
   /// only for an Order created from Cart checkout, matched back to this
   /// row by the Stripe webhook's checkout.session.completed event. Same
   /// sparse-index reasoning as paypackRef above — not `@unique` here.
-  stripeSessionId   String?
-  paidAt            DateTime?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  stripeSessionId String?
+  paidAt          DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([userId])
   @@index([resourceId])
@@ -422,38 +454,55 @@ enum OrderStatus {
 /// Deliberately userId-only (no guest-cart concept): every existing
 /// Borrow/Reserve/Buy/Rent action already requires a signed-in member,
 /// so a cart with no owner would be a new kind of gap, not a
-/// simplification. Checkout (see app/api/cart/checkout/route.ts) creates
-/// one real Order per CartItem via Stripe test-mode Checkout — PayPack
-/// stays exactly as-is for the existing single-item Buy/Rent buttons;
-/// this is an additive second payment path for the cart specifically,
-/// not a replacement (see Order's own docstring for why PayPack, not
-/// Stripe, is this platform's real mobile-money rail).
+/// simplification. A SALE/RENTAL item's real checkout (one Order via
+/// Stripe test-mode Checkout — see app/api/cart/checkout/route.ts once
+/// Stripe keys exist; PayPack stays exactly as-is for the existing
+/// single-item Buy/Rent buttons, this is an additive second payment
+/// path) is still blocked on real Stripe test-mode keys not yet being
+/// configured. A BORROW/RESERVE item has no such blocker — it's
+/// confirmed independently via POST /api/cart/[itemId]/confirm, which
+/// calls the existing /api/borrowings or /api/reservations route and
+/// removes the cart item on success (see CartItemType's docstring).
 model Cart {
   id        String     @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String     @db.ObjectId @unique
+  userId    String     @unique @db.ObjectId
   user      User       @relation(fields: [userId], references: [id])
   items     CartItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
 
+/// SALE/RENTAL are real purchase intents resolved at Stripe checkout
+/// into an Order (see Cart's docstring). BORROW/RESERVE are staged
+/// requests, not payments — added to the cart for review, but resolved
+/// by calling the existing POST /api/borrowings / POST /api/reservations
+/// at confirm-time (see app/api/cart/[itemId]/confirm/route.ts), so the
+/// real due-date/queue-position logic those routes already have stays
+/// exactly as it was; the cart item is deleted once that call succeeds.
+enum CartItemType {
+  SALE
+  RENTAL
+  BORROW
+  RESERVE
+}
+
 model CartItem {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  cartId     String    @db.ObjectId
-  cart       Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  resourceId String    @db.ObjectId
-  resource   Resource  @relation(fields: [resourceId], references: [id])
-  type       OrderType
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  cartId     String       @db.ObjectId
+  cart       Cart         @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  resourceId String       @db.ObjectId
+  resource   Resource     @relation(fields: [resourceId], references: [id])
+  type       CartItemType
   /// Kept even though every real add-to-cart flow only ever sets 1 — a
   /// book isn't naturally multi-quantity the way a physical retail SKU
   /// is, but modeling it honestly as "always exactly 1, no field at all"
   /// would make a future "buy 2 copies to gift" case a schema migration
   /// instead of a UI change.
-  quantity   Int       @default(1)
-  addedAt    DateTime  @default(now())
+  quantity   Int          @default(1)
+  addedAt    DateTime     @default(now())
 
-  @@index([cartId])
   @@unique([cartId, resourceId, type])
+  @@index([cartId])
 }
 
 enum BindingType {
@@ -480,22 +529,22 @@ enum MediaType {
 /// name/email later changes) alongside the real userId FK, not instead of
 /// it — same pattern already used for AuditLog's actor/actorId.
 model Borrow {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String       @db.ObjectId
-  user          User         @relation(fields: [userId], references: [id])
-  memberName    String
-  memberEmail   String
-  resourceId    String       @db.ObjectId
-  resource      Resource     @relation(fields: [resourceId], references: [id])
-  borrowDate    DateTime     @default(now())
-  dueDate       DateTime
-  returnDate    DateTime?
-  status        BorrowStatus @default(PENDING)
-  renewalCount  Int          @default(0)
-  fineAmount    Float?
-  finePaid      Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String       @db.ObjectId
+  user         User         @relation(fields: [userId], references: [id])
+  memberName   String
+  memberEmail  String
+  resourceId   String       @db.ObjectId
+  resource     Resource     @relation(fields: [resourceId], references: [id])
+  borrowDate   DateTime     @default(now())
+  dueDate      DateTime
+  returnDate   DateTime?
+  status       BorrowStatus @default(PENDING)
+  renewalCount Int          @default(0)
+  fineAmount   Float?
+  finePaid     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 enum BorrowStatus {
@@ -562,16 +611,16 @@ enum ReservationStatus {
 /// call kls-architecture-rules already made for e-learning's category
 /// field.
 model Publication {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
-  title          String
-  contributorId  String            @db.ObjectId
-  contributor    User              @relation(fields: [contributorId], references: [id])
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  contributorId   String              @db.ObjectId
+  contributor     User                @relation(fields: [contributorId], references: [id])
   contributorName String
-  category       String
-  language       PublicationLanguage @default(EN)
-  coverImage     String?
-  description    String
-  status         PublicationStatus @default(DRAFT)
+  category        String
+  language        PublicationLanguage @default(EN)
+  coverImage      String?
+  description     String
+  status          PublicationStatus   @default(DRAFT)
   /// Real Resource FK, populated when this Publication is approved and
   /// published — see the model docstring above.
   /// Not @unique: MongoDB/Prisma's sparse-unique-index behavior treats
@@ -581,20 +630,20 @@ model Publication {
   /// non-published row. One-to-one-ness is enforced at the application
   /// level instead: resourceId is only ever set once, inside the
   /// approve-action transaction in app/api/publications/[id]/route.ts.
-  resourceId     String?           @db.ObjectId
-  resource       Resource?         @relation(fields: [resourceId], references: [id])
+  resourceId      String?             @db.ObjectId
+  resource        Resource?           @relation(fields: [resourceId], references: [id])
   /// Sale price and stock, only meaningful once PUBLISHED — mirrors
   /// catalog-data.ts's PublishedBook.price/quantity/bindingType/mediaType,
   /// which had no equivalent on the pre-publish submission.
-  price          Float?
-  quantity       Int?
-  bindingType    BindingType?
-  mediaType      MediaType?
-  featured       Boolean           @default(false)
-  submittedAt    DateTime          @default(now())
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  revenueShare   RevenueShare?
+  price           Float?
+  quantity        Int?
+  bindingType     BindingType?
+  mediaType       MediaType?
+  featured        Boolean             @default(false)
+  submittedAt     DateTime            @default(now())
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  revenueShare    RevenueShare?
 }
 
 enum PublicationStatus {
@@ -622,14 +671,14 @@ enum PublicationLanguage {
 /// date-range queries across all publications' revenue, per the
 /// migration plan's own reasoning for this domain.
 model RevenueShare {
-  id                String      @id @default(auto()) @map("_id") @db.ObjectId
-  publicationId     String      @unique @db.ObjectId
-  publication       Publication @relation(fields: [publicationId], references: [id])
-  contributorShare  Int
-  platformShare     Int
-  totalRevenue      Float       @default(0)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  publicationId    String      @unique @db.ObjectId
+  publication      Publication @relation(fields: [publicationId], references: [id])
+  contributorShare Int
+  platformShare    Int
+  totalRevenue     Float       @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
 
 /// Real course, consolidating THREE previously-unreconciled mock catalogs
@@ -648,27 +697,27 @@ model RevenueShare {
 /// User collection had no rows for the 3 lecturer personas, same
 /// situation as contributors in Phase 4).
 model Course {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  description   String
-  category      String
-  language      CourseLanguage @default(EN)
-  status        CourseStatus   @default(DRAFT)
-  author        String
-  lecturerId    String?        @db.ObjectId
-  lecturer      User?          @relation(fields: [lecturerId], references: [id])
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String
+  category        String
+  language        CourseLanguage   @default(EN)
+  status          CourseStatus     @default(DRAFT)
+  author          String
+  lecturerId      String?          @db.ObjectId
+  lecturer        User?            @relation(fields: [lecturerId], references: [id])
   /// Cover image URL, from the member catalog's real Unsplash images.
-  image         String?
-  duration      String?
-  rating        String?
-  lessons       Lesson[]
-  enrollments   Enrollment[]
-  assessments   Assessment[]
-  certificates  Certificate[]
+  image           String?
+  duration        String?
+  rating          String?
+  lessons         Lesson[]
+  enrollments     Enrollment[]
+  assessments     Assessment[]
+  certificates    Certificate[]
   sessionRequests SessionRequest[]
-  channels      Channel[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  channels        Channel[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 enum CourseLanguage {
@@ -687,9 +736,9 @@ enum CourseStatus {
 /// and written by BOTH the admin Lessons page and the member lesson
 /// viewer (no duplicate-store problem here, unlike the course catalogs).
 model Lesson {
-  id              String             @id @default(auto()) @map("_id") @db.ObjectId
-  courseId        String             @db.ObjectId
-  course          Course             @relation(fields: [courseId], references: [id])
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  courseId        String            @db.ObjectId
+  course          Course            @relation(fields: [courseId], references: [id])
   title           String
   contentType     LessonContentType
   durationMinutes Int
@@ -703,9 +752,9 @@ model Lesson {
   /// renders via the old fields — every lesson currently in the catalog
   /// has been migrated to populate this field for real, though.
   contentMarkdown String?
-  order           Int                @default(0)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  order           Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 enum LessonContentType {
@@ -720,18 +769,18 @@ enum LessonContentType {
 /// a real FK; completedLessonIds stays an array of Lesson ObjectId
 /// strings, same shape the mock already used.
 model Enrollment {
-  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
-  userId              String           @db.ObjectId
-  user                User             @relation(fields: [userId], references: [id])
-  courseId            String           @db.ObjectId
-  course              Course           @relation(fields: [courseId], references: [id])
-  status              EnrollmentStatus @default(ENROLLED)
-  enrolledAt          DateTime         @default(now())
-  completedLessonIds  String[]
-  totalLessons        Int
-  assessmentPassed    Boolean          @default(false)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String           @db.ObjectId
+  user               User             @relation(fields: [userId], references: [id])
+  courseId           String           @db.ObjectId
+  course             Course           @relation(fields: [courseId], references: [id])
+  status             EnrollmentStatus @default(ENROLLED)
+  enrolledAt         DateTime         @default(now())
+  completedLessonIds String[]
+  totalLessons       Int
+  assessmentPassed   Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@unique([userId, courseId])
 }
@@ -749,30 +798,30 @@ enum EnrollmentStatus {
 /// same embed-vs-reference reasoning the migration plan already applied
 /// to AuditLog's review_notes.
 model Assessment {
-  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  id               String                   @id @default(auto()) @map("_id") @db.ObjectId
   title            String
   kind             AssessmentKind
-  courseId         String           @db.ObjectId
-  course           Course           @relation(fields: [courseId], references: [id])
+  courseId         String                   @db.ObjectId
+  course           Course                   @relation(fields: [courseId], references: [id])
   durationSeconds  Int?
   questions        Question[]
   brief            String?
   submissionFormat ProjectSubmissionFormat?
   projectMarks     Int?
   attempts         AssessmentAttempt[]
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 }
 
 type Question {
-  id                    String
-  text                  String
-  type                  QuestionType
-  context               String?
-  options               String[]
-  correctOptionIndex    Int?
-  correctOptionIndices  Int[]
-  marks                 Int
+  id                   String
+  text                 String
+  type                 QuestionType
+  context              String?
+  options              String[]
+  correctOptionIndex   Int?
+  correctOptionIndices Int[]
+  marks                Int
 }
 
 enum QuestionType {
@@ -799,20 +848,20 @@ enum ProjectSubmissionFormat {
 /// stay Json (keyed by Question.id, exactly as the mock modeled them)
 /// since Mongo has no native map-of-string type suited to this shape.
 model AssessmentAttempt {
-  id             String         @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String         @db.ObjectId
-  user           User           @relation(fields: [userId], references: [id])
-  assessmentId   String         @db.ObjectId
-  assessment     Assessment     @relation(fields: [assessmentId], references: [id])
-  status         AttemptResult
-  reviewStatus   AttemptReviewStatus
-  score          Int
-  totalMarks     Int
-  takenAt        DateTime       @default(now())
-  openAnswers    Json?
-  openScores     Json?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String              @db.ObjectId
+  user         User                @relation(fields: [userId], references: [id])
+  assessmentId String              @db.ObjectId
+  assessment   Assessment          @relation(fields: [assessmentId], references: [id])
+  status       AttemptResult
+  reviewStatus AttemptReviewStatus
+  score        Int
+  totalMarks   Int
+  takenAt      DateTime            @default(now())
+  openAnswers  Json?
+  openScores   Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 enum AttemptResult {
@@ -857,10 +906,10 @@ model Certificate {
 /// there's no reason to defer a fully independent feature to a later
 /// phase just because a stale plan grouped it elsewhere.
 model SessionRequest {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  learnerId     String        @db.ObjectId
-  learner       User          @relation("SessionRequestLearner", fields: [learnerId], references: [id])
-  learnerName   String
+  id           String               @id @default(auto()) @map("_id") @db.ObjectId
+  learnerId    String               @db.ObjectId
+  learner      User                 @relation("SessionRequestLearner", fields: [learnerId], references: [id])
+  learnerName  String
   /// Nullable as of the "lecturer assignment optional" feature — a
   /// SCHEDULED request can be submitted with no lecturer in mind
   /// (Course.lecturerId was already optional; these two fields just
@@ -869,21 +918,21 @@ model SessionRequest {
   /// point both fields are backfilled. INSTANT sessions still require a
   /// lecturer at creation time (someone has to actually be present right
   /// now), so this stays non-null for every INSTANT row in practice.
-  lecturerId    String?       @db.ObjectId
-  lecturer      User?         @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
-  lecturerName  String?
-  courseId      String        @db.ObjectId
-  course        Course        @relation(fields: [courseId], references: [id])
-  courseTitle   String
-  requestedAt   DateTime      @default(now())
-  proposedTime  DateTime
-  status        SessionRequestStatus @default(PENDING)
-  mode          SessionRequestMode   @default(SCHEDULED)
-  scheduledAt   DateTime?
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  presence      SessionPresence[]
+  lecturerId   String?              @db.ObjectId
+  lecturer     User?                @relation("SessionRequestLecturer", fields: [lecturerId], references: [id])
+  lecturerName String?
+  courseId     String               @db.ObjectId
+  course       Course               @relation(fields: [courseId], references: [id])
+  courseTitle  String
+  requestedAt  DateTime             @default(now())
+  proposedTime DateTime
+  status       SessionRequestStatus @default(PENDING)
+  mode         SessionRequestMode   @default(SCHEDULED)
+  scheduledAt  DateTime?
+  notes        String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  presence     SessionPresence[]
 }
 
 enum SessionRequestStatus {
@@ -908,14 +957,14 @@ enum SessionRequestMode {
 /// (same pattern as SessionRequest.learnerName) since a presence row can
 /// belong to either the learner, the lecturer, or an admin observer.
 model SessionPresence {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  sessionRequestId String         @db.ObjectId
-  sessionRequest   SessionRequest @relation(fields: [sessionRequestId], references: [id], onDelete: Cascade)
-  userId           String?        @db.ObjectId
+  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  sessionRequestId String              @db.ObjectId
+  sessionRequest   SessionRequest      @relation(fields: [sessionRequestId], references: [id], onDelete: Cascade)
+  userId           String?             @db.ObjectId
   displayName      String
   role             SessionPresenceRole
-  joinedAt         DateTime       @default(now())
-  lastSeenAt       DateTime       @default(now())
+  joinedAt         DateTime            @default(now())
+  lastSeenAt       DateTime            @default(now())
   leftAt           DateTime?
 
   @@index([sessionRequestId])
@@ -937,15 +986,15 @@ enum SessionPresenceRole {
 /// contributor lists — so this phase seeds real data from the mock
 /// without needing to design a live write path for it.
 model ResearchProject {
-  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  id          String                @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
   status      ResearchProjectStatus @default(ACTIVE)
-  startDate   DateTime          @default(now())
+  startDate   DateTime              @default(now())
   members     ProjectMember[]
   papers      ResearchPaper[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 }
 
 enum ResearchProjectStatus {
@@ -975,19 +1024,19 @@ model ProjectMember {
 /// but the mock's ResearchPaper type had nowhere to store it, silently
 /// discarding it on submit.
 model ResearchPaper {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  abstract      String
-  authorId      String          @db.ObjectId
-  author        User            @relation(fields: [authorId], references: [id])
-  authorName    String
-  projectId     String          @db.ObjectId
-  project       ResearchProject @relation(fields: [projectId], references: [id])
-  keywords      String[]
-  publishedAt   DateTime        @default(now())
-  status        ResearchPaperStatus @default(DRAFT)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  abstract    String
+  authorId    String              @db.ObjectId
+  author      User                @relation(fields: [authorId], references: [id])
+  authorName  String
+  projectId   String              @db.ObjectId
+  project     ResearchProject     @relation(fields: [projectId], references: [id])
+  keywords    String[]
+  publishedAt DateTime            @default(now())
+  status      ResearchPaperStatus @default(DRAFT)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 }
 
 enum ResearchPaperStatus {
@@ -1008,15 +1057,15 @@ enum ResearchPaperStatus {
 /// phases' seeds, so participantIds are real @db.ObjectId FKs, not a
 /// speculative design.
 model Channel {
-  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
   kind           ChannelKind
   name           String
-  participantIds String[]      @db.ObjectId
-  courseId       String?       @db.ObjectId
-  course         Course?       @relation(fields: [courseId], references: [id])
+  participantIds String[]    @db.ObjectId
+  courseId       String?     @db.ObjectId
+  course         Course?     @relation(fields: [courseId], references: [id])
   messages       Message[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 enum ChannelKind {
@@ -1041,7 +1090,7 @@ model Message {
 }
 
 type MessageReaction {
-  emoji      String
+  emoji        String
   reactedByIds String[]
 }
 
@@ -1055,16 +1104,16 @@ type MessageReaction {
 /// once a caller has one, without forcing every notification to require
 /// one.
 model Notification {
-  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
   type          NotificationType
   title         String
   message       String
   href          String
-  read          Boolean            @default(false)
+  read          Boolean          @default(false)
   recipientRole String
-  recipientId   String?            @db.ObjectId
-  recipient     User?              @relation(fields: [recipientId], references: [id])
-  createdAt     DateTime           @default(now())
+  recipientId   String?          @db.ObjectId
+  recipient     User?            @relation(fields: [recipientId], references: [id])
+  createdAt     DateTime         @default(now())
 }
 
 enum NotificationType {
@@ -1149,17 +1198,17 @@ model Chapter {
 /// computed from completedChapterIds.length/totalChapters server-side
 /// (never stored), same convention as Enrollment.
 model ReadingProgress {
-  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
-  userId             String            @db.ObjectId
-  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resourceId         String            @db.ObjectId
-  resource           Resource          @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  status             ReadingStatus     @default(READING)
-  startedAt          DateTime          @default(now())
+  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String        @db.ObjectId
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId          String        @db.ObjectId
+  resource            Resource      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  status              ReadingStatus @default(READING)
+  startedAt           DateTime      @default(now())
   completedChapterIds String[]
-  totalChapters      Int
-  lastChapterId      String?
-  lastReadAt         DateTime          @default(now())
+  totalChapters       Int
+  lastChapterId       String?
+  lastReadAt          DateTime      @default(now())
 
   @@unique([userId, resourceId])
 }
@@ -1175,16 +1224,16 @@ enum ReadingStatus {
 /// startOffset/endOffset are real character positions into that
 /// Chapter's `body`, not decorative.
 model Highlight {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String        @db.ObjectId
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resourceId  String        @db.ObjectId
-  chapterId   String        @db.ObjectId
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String         @db.ObjectId
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String         @db.ObjectId
+  chapterId   String         @db.ObjectId
   startOffset Int
   endOffset   Int
   text        String
   color       HighlightColor
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime       @default(now())
 
   @@index([userId, resourceId])
 }
@@ -1222,15 +1271,15 @@ model Note {
 /// this schema is authored from the existing mock's own field shape
 /// rather than an official spec, since none exists.
 model Clinic {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  specialty   String
-  location    String
-  image       String
-  appointments Appointment[]
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  specialty     String
+  location      String
+  image         String
+  appointments  Appointment[]
   healthRecords HealthRecord[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 /// Real checkup appointment, replacing health-data.ts's initialAppointments
@@ -1325,12 +1374,12 @@ model UserSession {
 /// generated code during setup, not merely after a secret is issued —
 /// see /api/auth/2fa/verify.
 model TwoFactorSecret {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String   @unique @db.ObjectId
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  secret         String
-  enabled        Boolean  @default(false)
-  recoveryCodes  String[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret        String
+  enabled       Boolean  @default(false)
+  recoveryCodes String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

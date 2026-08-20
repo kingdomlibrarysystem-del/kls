@@ -1,4 +1,5 @@
 import { Circle } from 'lucide-react'
+import type { Track } from 'livekit-client'
 import { VideoTileGrid, type ExtraParticipant } from './video-tile-grid'
 import { ReactionBar } from './reaction-bar'
 import { ReactionBurst } from './reaction-burst'
@@ -6,6 +7,7 @@ import { LiveCaptionOverlay } from './live-caption-overlay'
 import { ControlBar } from './control-bar'
 import { formatTimer } from './room-error-banner'
 import type { ParticipantDeviceState } from './participant-tile'
+import type { LiveKitDataMessage } from './use-livekit-room'
 
 interface RoomVideoCanvasProps {
   sessionId: string
@@ -13,10 +15,14 @@ interface RoomVideoCanvasProps {
   you: ParticipantDeviceState
   youPresenting: boolean
   youVideoStream?: MediaStream | null
+  youCameraTrack?: Track | null
   hideSelf: boolean
   otherName: string
   otherState: ParticipantDeviceState
   otherNotJoined: boolean
+  otherCameraTrack?: Track | null
+  otherMicTrack?: Track | null
+  otherScreenTrack?: Track | null
   extraParticipants: ExtraParticipant[]
   transcriptActive: boolean
   interimCaption: string
@@ -36,6 +42,7 @@ interface RoomVideoCanvasProps {
   onAddParticipant: () => void
   onLeave: () => void
   leaveLabel: string
+  sendLiveKitData?: (message: LiveKitDataMessage) => void
 }
 
 /**
@@ -44,22 +51,26 @@ interface RoomVideoCanvasProps {
  * session-room-view.tsx to keep that file under the 200-line cap.
  */
 export function RoomVideoCanvas({
-  sessionId, youName, you, youPresenting, youVideoStream, hideSelf, otherName, otherState, otherNotJoined,
-  extraParticipants, transcriptActive, interimCaption, captionsUnsupported, recording, recordingSeconds,
+  sessionId, youName, you, youPresenting, youVideoStream, youCameraTrack, hideSelf, otherName, otherState, otherNotJoined,
+  otherCameraTrack, otherMicTrack, otherScreenTrack, extraParticipants, transcriptActive, interimCaption, captionsUnsupported, recording, recordingSeconds,
   handRaised, sidePanelHidden, onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording,
-  onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel,
+  onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel, sendLiveKitData,
 }: RoomVideoCanvasProps) {
   return (
-    <div style={{ position: 'relative', minHeight: 460, borderRadius: 14, overflow: 'hidden', background: 'var(--bg-dashboard)' }}>
+    <div style={{ position: 'relative', minHeight: 520, borderRadius: 14, overflow: 'hidden', background: 'var(--bg-dashboard)' }}>
       <VideoTileGrid
         youName={youName}
         youState={you}
         youPresenting={youPresenting}
         youVideoStream={youVideoStream}
+        youCameraTrack={youCameraTrack}
         hideSelf={hideSelf}
         otherName={otherName}
         otherState={otherState}
         otherNotJoined={otherNotJoined}
+        otherCameraTrack={otherCameraTrack}
+        otherMicTrack={otherMicTrack}
+        otherScreenTrack={otherScreenTrack}
         extraParticipants={extraParticipants}
       />
       <ReactionBurst />
@@ -79,7 +90,7 @@ export function RoomVideoCanvas({
           background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.28) 55%, transparent 100%)',
         }}
       >
-        <ReactionBar sessionId={sessionId} senderName={youName} />
+        <ReactionBar sessionId={sessionId} senderName={youName} sendLiveKitData={sendLiveKitData} />
         <ControlBar
           cameraOn={you.cameraOn}
           micOn={you.micOn}

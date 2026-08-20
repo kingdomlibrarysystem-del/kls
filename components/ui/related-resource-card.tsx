@@ -1,4 +1,5 @@
-import { BookMarked, Film, Package } from 'lucide-react'
+import Image from 'next/image'
+import { BookMarked, Film, Package, BookOpen } from 'lucide-react'
 import type { Resource, BindingType, MediaType } from '@/app/dashboard/library/_components/resources-data'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 
@@ -35,11 +36,20 @@ export function RelatedResourceCard({ resource, action, className, style }: Rela
       </span>
     )
 
+  const cover = resource.coverImages?.[0]
+
   return (
     <div
       className={isDialectB ? '' : `card ${className ?? ''}`}
       style={isDialectB ? { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 6, ...style } : undefined}
     >
+      <div style={{ position: 'relative', height: isDialectB ? 160 : undefined, borderRadius: 6, overflow: 'hidden', background: 'var(--bg-section, #f0ece4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className={isDialectB ? '' : 'h-40 mb-2'}>
+        {cover ? (
+          <Image src={cover} alt={resource.title} fill sizes="240px" className="object-cover" />
+        ) : (
+          <BookOpen size={28} color="var(--gold, #b8860b)" />
+        )}
+      </div>
       <p className={isDialectB ? '' : 'font-cinzel text-sm font-semibold text-w-950'} style={isDialectB ? { fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' } : undefined}>
         {resource.title}
       </p>

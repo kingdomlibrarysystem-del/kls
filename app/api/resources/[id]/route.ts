@@ -33,6 +33,8 @@ function serializeResource(r: {
   documentUrl: string | null
   audioUrl: string | null
   videoUrl: string | null
+  avgRating: number
+  reviewCount: number
 }) {
   return {
     id: r.id,
@@ -59,6 +61,8 @@ function serializeResource(r: {
     documentUrl: r.documentUrl ?? undefined,
     audioUrl: r.audioUrl ?? undefined,
     videoUrl: r.videoUrl ?? undefined,
+    avgRating: r.avgRating,
+    reviewCount: r.reviewCount,
   }
 }
 

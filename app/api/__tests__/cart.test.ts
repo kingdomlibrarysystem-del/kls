@@ -71,7 +71,7 @@ describe('POST /api/cart', () => {
     expect(json.data.items).toHaveLength(1)
   })
 
-  it('rejects a resource with no price set', async () => {
+  it('rejects a resource with no price set for SALE/RENTAL', async () => {
     const freeResource = await prisma.resource.create({
       data: {
         title: `Vitest Free Resource ${RUN_ID}`, author: 'Test', publisher: 'Test', type: 'Book', format: 'Digital',
@@ -82,6 +82,32 @@ describe('POST /api/cart', () => {
     const res = await addToCart(postRequest('http://localhost/api/cart', { userId: testUserId, resourceId: freeResource.id, type: 'SALE' }))
     expect(res.status).toBe(400)
     await prisma.resource.delete({ where: { id: freeResource.id } })
+  })
+
+  it('allows a free resource to be added as BORROW or RESERVE', async () => {
+    const freeResource = await prisma.resource.create({
+      data: {
+        title: `Vitest Free Borrow Resource ${RUN_ID}`, author: 'Test', publisher: 'Test', type: 'Book', format: 'Digital',
+        language: 'EN', year: 2026, pages: 5, isbn: `vitest-free-borrow-${RUN_ID}`, price: 0, freePreviewChapterCount: 0,
+        totalQty: 1, availableQty: 1, coverImages: [], bindingType: 'SOFT', mediaType: 'TEXT', description: '', tags: [],
+      },
+    })
+    const res = await addToCart(postRequest('http://localhost/api/cart', { userId: testUserId, resourceId: freeResource.id, type: 'BORROW' }))
+    expect(res.status).toBe(201)
+    const json = await res.json()
+    const borrowItem = json.data.items.find((i: { resourceId: string; type: string }) => i.resourceId === freeResource.id && i.type === 'BORROW')
+    expect(borrowItem).toBeTruthy()
+    await prisma.cartItem.deleteMany({ where: { resourceId: freeResource.id } })
+    await prisma.resource.delete({ where: { id: freeResource.id } })
+  })
+
+  it('excludes BORROW/RESERVE items from totalRwf', async () => {
+    const res = await addToCart(postRequest('http://localhost/api/cart', { userId: testUserId, resourceId: testResourceId, type: 'RESERVE' }))
+    const json = await res.json()
+    // testResourceId already has a SALE item worth 3000 — a RESERVE item on the same resource must not add to that total.
+    expect(json.data.totalRwf).toBe(3000)
+    const reserveItem = json.data.items.find((i: { type: string }) => i.type === 'RESERVE')
+    await prisma.cartItem.delete({ where: { id: reserveItem.id } })
   })
 })
 

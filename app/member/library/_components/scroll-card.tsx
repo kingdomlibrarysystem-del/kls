@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { ScrollText, Heart, ChevronRight, BookOpenCheck } from 'lucide-react'
+import { ScrollText, Heart, ChevronRight, BookOpenCheck, Package } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
@@ -9,6 +10,7 @@ import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_c
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { getParentName, getScrollImage, type Category } from '@/lib/kcs-taxonomy'
+import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 
 interface ScrollProps {
   /** A leaf/scroll-level Category row from the canonical KCS taxonomy. */
@@ -22,11 +24,10 @@ function useIsFavorited(id: string) {
 }
 
 /** The one readable-online match for this scroll, if any — a real `categoryId` FK match, not a title-string hack. */
-function useReadableResourceId(categoryId: string): string | undefined {
+function useReadableResource(categoryId: string) {
   const { data: resources } = useResources()
   const content = useReadableContent()
-  const match = findResourcesForScroll(categoryId, resources).find((r) => !!content[r.id])
-  return match?.id
+  return findResourcesForScroll(categoryId, resources).find((r) => !!content[r.id])
 }
 
 /** This scroll's reading-progress percent, if the member has started reading it. */
@@ -38,79 +39,143 @@ function useReadingPercent(resourceId: string | undefined): number | undefined {
   return entry ? getReadingProgressPercent(entry) : undefined
 }
 
-/** Grid-view scroll card: heart toggle wired to the real shared favorites store, "Open Scroll" navigates to a real detail page. */
+/**
+ * Grid-view scroll card: real large cover (matches the physical-book
+ * mockups this was redesigned against, not the old 80px thumbnail strip),
+ * heart toggle wired to the real shared favorites store. When a readable
+ * resource is linked, Read/Borrow/Reserve render directly on the card —
+ * previously these only appeared after a click-through to the detail
+ * page, which made the reading path easy to miss entirely.
+ */
 export function ScrollCard({ scroll }: ScrollProps) {
+  const { isAuthenticated } = useAuth()
+  const [action, setAction] = useState<BorrowReserveAction>(null)
   const liked = useIsFavorited(scroll.id)
-  const readableResourceId = useReadableResourceId(scroll.id)
-  const readingPercent = useReadingPercent(readableResourceId)
+  const readableResource = useReadableResource(scroll.id)
+  const readingPercent = useReadingPercent(readableResource?.id)
   const sectionName = getParentName(scroll) ?? ''
   const image = getScrollImage(scroll)
 
   return (
     <div
       style={{
-        background: 'var(--bg-subtle, var(--bg-card))', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden',
-        transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer',
+        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden',
+        transition: 'transform 0.2s, box-shadow 0.2s', display: 'flex', flexDirection: 'column',
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.16)' }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
     >
-      <div style={{ height: 80, background: 'linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-        {image ? (
-          <RemoteImage
-            src={image}
-            alt={scroll.name.en}
-            fill
-            sizes="(max-width: 768px) 50vw, 20vw"
-            className="object-cover"
-            fallback={<ScrollText size={28} color="var(--gold)" />}
-          />
-        ) : (
-          <ScrollText size={28} color="var(--gold)" />
-        )}
+      <div style={{ position: 'relative' }}>
+        <Link href={`/member/library/${scroll.parentId}/${scroll.id}`} aria-label={`Open ${scroll.name.en}`} style={{ display: 'block' }}>
+          <div
+            style={{
+              height: 220, background: 'linear-gradient(135deg, rgba(212,168,67,0.12), var(--bg-section))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden',
+            }}
+          >
+            {image ? (
+              <RemoteImage
+                src={image}
+                alt={scroll.name.en}
+                fill
+                sizes="(max-width: 768px) 90vw, 30vw"
+                className="object-cover"
+                fallback={<ScrollText size={40} color="var(--gold)" />}
+              />
+            ) : (
+              <ScrollText size={40} color="var(--gold)" />
+            )}
+            {/* Page-edge + spine depth — same book-like treatment as the public library redesign, reused here for visual consistency. */}
+            <div style={{ position: 'absolute', top: 0, right: 0, height: '100%', width: 8, background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.3) 40%, rgba(0,0,0,0.1))' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 16, background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }} />
+          </div>
+        </Link>
+
         <button
           onClick={(e) => { e.stopPropagation(); toggleFavorite(scroll.id, 'RESOURCE', scroll.name.en, `Scroll · ${sectionName}`) }}
           aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
           style={{
-            position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.35)', border: 'none', borderRadius: '50%',
-            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1,
+            position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.4)', border: 'none', borderRadius: '50%',
+            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1,
           }}
         >
-          <Heart size={12} color={liked ? 'var(--red-light)' : '#fff'} fill={liked ? 'var(--red-light)' : 'none'} />
+          <Heart size={16} color={liked ? 'var(--red-light)' : '#fff'} fill={liked ? 'var(--red-light)' : 'none'} />
         </button>
       </div>
-      <div style={{ padding: '8px 10px 10px' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {scroll.name.en}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{scroll.slug}</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sectionName}</span>
-        </div>
-        {readableResourceId && (
-          <>
-            {typeof readingPercent === 'number' && (
-              <div style={{ height: 3, borderRadius: 2, background: 'var(--bg-section)', marginBottom: 4, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${readingPercent}%`, background: 'var(--gold)' }} />
-              </div>
-            )}
-            <Link
-              href={`/member/library/read/${readableResourceId}`}
-              aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, width: '100%', padding: '5px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', marginBottom: 4 }}
-            >
-              <BookOpenCheck size={12} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
-            </Link>
-          </>
-        )}
-        <Link
-          href={`/member/library/${scroll.parentId}/${scroll.id}`}
-          aria-label={`Open ${scroll.name.en}`}
-          style={{ display: 'block', textAlign: 'center', width: '100%', padding: '5px 0', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer', textDecoration: 'none' }}
-        >
-          Open Scroll
+
+      <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+        <Link href={`/member/library/${scroll.parentId}/${scroll.id}`} style={{ textDecoration: 'none' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {scroll.name.en}
+          </div>
         </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, color: 'var(--gold)', background: 'rgba(212,168,67,0.1)', padding: '2px 7px', borderRadius: 4, fontFamily: 'monospace' }}>{scroll.slug}</span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sectionName}</span>
+        </div>
+
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {readableResource && (
+            <>
+              {typeof readingPercent === 'number' && (
+                <div style={{ height: 4, borderRadius: 2, background: 'var(--bg-section)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${readingPercent}%`, background: 'var(--gold)' }} />
+                </div>
+              )}
+              <Link
+                href={`/member/library/read/${readableResource.id}`}
+                aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
+              >
+                <BookOpenCheck size={14} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
+              </Link>
+              {isAuthenticated && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {readableResource.availableQty > 0 && (
+                    <button
+                      onClick={() => setAction('borrow')}
+                      aria-label={`Borrow ${readableResource.title}`}
+                      style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Borrow
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setAction('reserve')}
+                    aria-label={`Reserve ${readableResource.title}`}
+                    style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Reserve
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          <Link
+            href={`/member/library/${scroll.parentId}/${scroll.id}`}
+            aria-label={`Open ${scroll.name.en}`}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%', padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'none' }}
+          >
+            {readableResource ? 'View Details' : 'Open Scroll'} <ChevronRight size={13} />
+          </Link>
+          {!readableResource && (
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+              <Package size={11} /> No linked resource yet
+            </p>
+          )}
+        </div>
       </div>
+
+      {readableResource && (
+        <BorrowReserveConfirmModal
+          action={action}
+          resourceId={readableResource.id}
+          bookTitle={readableResource.title}
+          bookAuthor={readableResource.author}
+          availableQty={readableResource.availableQty}
+          onClose={() => setAction(null)}
+        />
+      )}
     </div>
   )
 }
@@ -118,8 +183,8 @@ export function ScrollCard({ scroll }: ScrollProps) {
 /** List-view scroll row: same real favorite toggle + real Open Scroll destination as the card variant. */
 export function ScrollListItem({ scroll }: ScrollProps) {
   const liked = useIsFavorited(scroll.id)
-  const readableResourceId = useReadableResourceId(scroll.id)
-  const readingPercent = useReadingPercent(readableResourceId)
+  const readableResource = useReadableResource(scroll.id)
+  const readingPercent = useReadingPercent(readableResource?.id)
   const sectionName = getParentName(scroll) ?? ''
 
   return (
@@ -138,9 +203,9 @@ export function ScrollListItem({ scroll }: ScrollProps) {
           <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sectionName}</span>
         </div>
       </div>
-      {readableResourceId && (
+      {readableResource && (
         <span
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/member/library/read/${readableResourceId}` }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/member/library/read/${readableResource.id}` }}
           role="link"
           aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
           style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}

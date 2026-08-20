@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { generateUniqueIsbn } from '@/lib/generate-isbn'
 
 /**
  * Real Resource API — the digital library catalog, replacing the old
@@ -40,6 +41,8 @@ function serializeResource(r: {
   documentUrl: string | null
   audioUrl: string | null
   videoUrl: string | null
+  avgRating: number
+  reviewCount: number
 }) {
   return {
     id: r.id,
@@ -70,6 +73,8 @@ function serializeResource(r: {
     documentUrl: r.documentUrl ?? undefined,
     audioUrl: r.audioUrl ?? undefined,
     videoUrl: r.videoUrl ?? undefined,
+    avgRating: r.avgRating,
+    reviewCount: r.reviewCount,
   }
 }
 
@@ -99,7 +104,7 @@ export async function GET(request: NextRequest) {
     prisma.resource.count({ where }),
     prisma.resource.findMany({
       where,
-      orderBy: { title: 'asc' },
+      orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -133,7 +138,6 @@ const createResourceSchema = z.object({
   language: z.string().optional(),
   year: z.number().int().optional(),
   pages: z.number().int().nonnegative().optional(),
-  isbn: z.string().optional(),
   price: z.number().nonnegative().optional(),
   freePreviewChapterCount: z.number().int().nonnegative().optional(),
   totalQty: z.number().int().nonnegative().optional(),
@@ -161,6 +165,8 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
   const category = await prisma.category.findUnique({ where: { id: body.categoryId } })
   if (!category) throw new ApiError('The specified category does not exist', 400)
 
+  const isbn = await generateUniqueIsbn()
+
   const resource = await prisma.resource.create({
     data: {
       title: body.title,
@@ -172,7 +178,7 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       language: body.language ?? 'EN',
       year: body.year ?? new Date().getFullYear(),
       pages: body.pages ?? 0,
-      isbn: body.isbn ?? '',
+      isbn,
       price: body.price ?? 0,
       freePreviewChapterCount: body.freePreviewChapterCount ?? 0,
       totalQty: body.totalQty ?? 1,

@@ -27,6 +27,10 @@ import { ChapterBody } from './chapter-body'
 interface ReaderViewProps {
   resourceId: string
   initialChapterId?: string
+  /** Staff-only QA flag — forces the same paywall a non-entitled member would see, instead of the usual staff bypass, so an admin can verify what free-preview readers actually experience. */
+  forcePreview?: boolean
+  /** Where the "Back" link goes — /member/library by default, or /dashboard/library when this same reader is reached from the admin-side route (app/dashboard/library/read/[id]), so staff stay within dashboard navigation instead of being routed into the member portal. */
+  backHref?: string
 }
 
 /**
@@ -36,7 +40,7 @@ interface ReaderViewProps {
  * auto-starts/resumes and tracks every chapter actually viewed, resuming
  * at `lastChapterId` unless the URL names one explicitly.
  */
-export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
+export function ReaderView({ resourceId, initialChapterId, forcePreview = false, backHref = '/member/library' }: ReaderViewProps) {
   const { user } = useAuth()
   const { data: resources, loading, error } = useResources()
   const content = useReadableContent()
@@ -69,9 +73,16 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resourceId, chapterIndex, chapters.length])
 
+  const backLink = (
+    <Link href={backHref} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
+      <ChevronLeft size={16} /> {backHref === '/member/library' ? 'Back to Kingdom Library' : 'Back to Book Inventory'}
+    </Link>
+  )
+
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading reader">
+        {backLink}
         <Skeleton style={{ height: 40, borderRadius: 8 }} />
         <Skeleton style={{ height: 320, borderRadius: 8 }} />
       </div>
@@ -79,7 +90,12 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   }
 
   if (error) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load this book" description={error} style={{ color: 'var(--text-secondary)' }} />
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {backLink}
+        <EmptyState icon={AlertTriangle} title="Couldn't load this book" description={error} style={{ color: 'var(--text-secondary)' }} />
+      </div>
+    )
   }
 
   // A resource with no authored Chapter rows but a real uploaded PDF gets
@@ -87,17 +103,20 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   // chapters stay the primary experience (real highlights/notes/paywall
   // gating) whenever they exist, so this only applies to PDF-only resources.
   if (resource && (!readable || chapters.length === 0) && resource.documentUrl) {
-    return <PdfReaderView documentUrl={resource.documentUrl} bookTitle={resource.title} />
+    return <PdfReaderView resourceId={resourceId} bookTitle={resource.title} priceRwf={resource.price} forcePreview={forcePreview} backHref={backHref} />
   }
 
   if (!resource || !readable || chapters.length === 0) {
     return (
-      <EmptyState
-        icon={BookX}
-        title="Not available to read online yet"
-        description="This resource doesn't have readable chapter content in the Kingdom Library yet."
-        style={{ color: 'var(--text-secondary)' }}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {backLink}
+        <EmptyState
+          icon={BookX}
+          title="Not available to read online yet"
+          description="This resource doesn't have readable chapter content in the Kingdom Library yet."
+          style={{ color: 'var(--text-secondary)' }}
+        />
+      </div>
     )
   }
 
@@ -126,9 +145,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
-      <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
-        <ChevronLeft size={16} /> Back to Kingdom Library
-      </Link>
+      {backLink}
 
       <ReaderHeader
         title={resource.title}

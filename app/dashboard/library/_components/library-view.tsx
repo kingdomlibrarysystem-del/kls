@@ -50,7 +50,7 @@ export function LibraryView() {
 
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     try {
-      const { coverImage, documentUrl, documentName, audioUrl, audioName, videoUrl, videoName, ...rest } = formData
+      const { coverImage, documentUrl, documentName, audioUrl, audioName, videoUrl, videoName, chapterTitle, chapterContent, ...rest } = formData
       const fileFields = {
         documentUrl: documentUrl || undefined,
         audioUrl: audioUrl || undefined,
@@ -60,7 +60,7 @@ export function LibraryView() {
         await updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
         showToast(`Updated "${formData.title}".`)
       } else {
-        await addResource({
+        const created = await addResource({
           ...rest,
           type: 'Scroll',
           format: 'Physical',
@@ -70,6 +70,16 @@ export function LibraryView() {
           coverImages: [coverImage],
           ...fileFields,
         })
+        // A TEXT resource authored with real markdown gets a real first
+        // Chapter row right away, so it has genuine readable content from
+        // creation instead of needing a separate chapter-authoring step.
+        if (chapterContent?.trim()) {
+          await fetch('/api/chapters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resourceId: created.id, title: chapterTitle?.trim() || 'Chapter 1', body: chapterContent }),
+          })
+        }
         showToast(`Added "${formData.title}".`)
       }
       setFormOpen(false)
