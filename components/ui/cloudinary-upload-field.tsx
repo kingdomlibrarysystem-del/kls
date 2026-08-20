@@ -85,7 +85,7 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
       <CldUploadWidget
         uploadPreset={UPLOAD_PRESET}
         options={{
-          sources: ['local', 'url'],
+          sources: ['local'],
           multiple: false,
           maxFiles: 1,
           resourceType: RESOURCE_TYPE[kind],
@@ -97,28 +97,24 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
         onSuccess={handleSuccess}
         onError={(err) => { setUploading(false); setError(typeof err === 'string' ? err : 'Upload failed') }}
       >
-        {({ open, isLoading }) => (
+        {({ open }) => (
           <button
             type="button"
             id={id}
-            onClick={() => {
-              if (isLoading || !open) { setError('The uploader is still loading — please wait a moment and try again.'); return }
-              setError('')
-              open()
-            }}
+            onClick={() => open()}
             disabled={uploading}
             aria-label={value ? `Replace ${label}` : label}
             className={`w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-lg transition-colors ${
               value ? 'border-w-500 bg-w-100' : uploading ? 'border-w-300 bg-w-50 cursor-wait' : 'border-w-400 bg-form-bg hover:border-w-600'
             }`}
           >
-            {uploading || isLoading ? (
+            {uploading ? (
               <Loader2 size={22} className="text-w-500 animate-spin" />
             ) : (
               <UploadCloud size={22} className={value ? 'text-w-700' : 'text-w-500'} />
             )}
             <p className="font-lato text-sm font-semibold text-w-800 truncate max-w-full px-2">
-              {uploading ? 'Uploading…' : isLoading ? 'Loading uploader…' : value ? `${fileName || label} · click to change` : label}
+              {uploading ? 'Uploading…' : value ? `${fileName || label} · click to change` : label}
             </p>
           </button>
         )}
