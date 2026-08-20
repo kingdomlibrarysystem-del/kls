@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX } from 'lucide-react'
+import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -167,6 +167,13 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
               <Link href={`/member/library/read/${resource.id}`} target="_blank">
                 <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
                   <BookOpenCheck size={13} /> Preview Reader
+                </ElegantButton>
+              </Link>
+            )}
+            {resource.documentUrl && resource.price > 0 && (
+              <Link href={`/member/library/read/${resource.id}?preview=1`} target="_blank">
+                <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
+                  <Eye size={13} /> Preview
                 </ElegantButton>
               </Link>
             )}

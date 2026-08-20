@@ -27,6 +27,8 @@ import { ChapterBody } from './chapter-body'
 interface ReaderViewProps {
   resourceId: string
   initialChapterId?: string
+  /** Staff-only QA flag — forces the same paywall a non-entitled member would see, instead of the usual staff bypass, so an admin can verify what free-preview readers actually experience. */
+  forcePreview?: boolean
 }
 
 /**
@@ -36,7 +38,7 @@ interface ReaderViewProps {
  * auto-starts/resumes and tracks every chapter actually viewed, resuming
  * at `lastChapterId` unless the URL names one explicitly.
  */
-export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
+export function ReaderView({ resourceId, initialChapterId, forcePreview = false }: ReaderViewProps) {
   const { user } = useAuth()
   const { data: resources, loading, error } = useResources()
   const content = useReadableContent()
@@ -87,7 +89,7 @@ export function ReaderView({ resourceId, initialChapterId }: ReaderViewProps) {
   // chapters stay the primary experience (real highlights/notes/paywall
   // gating) whenever they exist, so this only applies to PDF-only resources.
   if (resource && (!readable || chapters.length === 0) && resource.documentUrl) {
-    return <PdfReaderView documentUrl={resource.documentUrl} bookTitle={resource.title} />
+    return <PdfReaderView resourceId={resourceId} bookTitle={resource.title} priceRwf={resource.price} forcePreview={forcePreview} />
   }
 
   if (!resource || !readable || chapters.length === 0) {
