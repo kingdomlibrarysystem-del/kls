@@ -61,7 +61,12 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
   }, [sessionId])
 
   const backHref = viewer === 'learner' ? '/member/sessions' : '/dashboard/e-learning/sessions'
-  const youNameForTranscript = viewer === 'learner' ? request?.learnerName : 'Admin (Observer)'
+  // An admin/staff viewer joins with their own real identity (matches how
+  // staff already get unrestricted real access elsewhere, e.g. the
+  // reading paywall bypass) rather than a fixed "Admin (Observer)"
+  // label — they're a genuine participant, not a name-only placeholder.
+  const adminDisplayName = user ? `${user.firstName} ${user.lastName}`.trim() || 'Admin' : 'Admin'
+  const youNameForTranscript = viewer === 'learner' ? request?.learnerName : adminDisplayName
   const transcript = useLiveTranscript(youNameForTranscript ?? 'You')
   const presence = useSessionPresence({
     sessionRequestId: sessionId,
@@ -99,7 +104,7 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     )
   }
 
-  const youName = viewer === 'learner' ? request.learnerName : 'Admin (Observer)'
+  const youName = viewer === 'learner' ? request.learnerName : adminDisplayName
   const otherName = viewer === 'admin' ? request.learnerName : (request.lecturerName ?? 'No lecturer assigned yet')
   const adminExtraParticipant = viewer === 'admin' && request.lecturerName ? { name: request.lecturerName, state: OTHER_PARTY_STATE } : null
   const isLecturerName = (name: string) => lecturerRoster.some((l) => l.name === name)
@@ -124,7 +129,14 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <RoomHeader viewer={viewer} onBack={() => router.push(backHref)} mediaError={liveKitReady ? null : mockMedia.error} recordingError={recording.error} liveKitActive={liveKitReady} />
+      <RoomHeader
+        viewer={viewer}
+        onBack={() => router.push(backHref)}
+        mediaError={liveKitReady ? null : mockMedia.error}
+        recordingError={recording.error}
+        liveKitActive={liveKitReady}
+        liveKitConnectError={liveKit.connectError}
+      />
 
       <div className={`grid grid-cols-1 gap-3 ${sidePanelHidden ? '' : 'lg:grid-cols-[1fr_260px]'}`}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
