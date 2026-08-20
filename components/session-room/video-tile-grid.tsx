@@ -41,13 +41,17 @@ interface VideoTileGridProps {
   /** The other party's real remote camera track, once LiveKit has subscribed to it — absent while not connected/not publishing. */
   otherCameraTrack?: Track | null;
   otherMicTrack?: Track | null;
+  /** The other party's real remote screen-share track — when present, their tile becomes the primary "presenting" tile, same as when the local user presents. */
+  otherScreenTrack?: Track | null;
   /** Personas added via AddParticipantModal — real additional tiles, not a fixed 2-up layout. */
   extraParticipants?: ExtraParticipant[];
 }
 
 /**
  * Video grid. Three layouts:
- * - Presenting: the presented content becomes one large primary tile,
+ * - Presenting: whichever side is actually sharing their screen (local
+ *   OR remote — a screen-share is real content either party can be the
+ *   source of, not just the local user) becomes one large primary tile,
  *   every other tile collapses into a small strip beside it (Meet-style).
  * - Solo (only "you" are actually present — the other party hasn't
  *   joined and nothing was added): one tile fills the entire canvas,
@@ -67,9 +71,11 @@ export function VideoTileGrid({
   otherNotJoined,
   otherCameraTrack,
   otherMicTrack,
+  otherScreenTrack,
   extraParticipants = [],
 }: VideoTileGridProps) {
   const isSolo = !!otherNotJoined && extraParticipants.length === 0 && !hideSelf;
+  const otherPresenting = !!otherScreenTrack;
 
   const youTile = !hideSelf && (
     <ParticipantTile
@@ -82,25 +88,26 @@ export function VideoTileGrid({
       solo={isSolo}
     />
   );
-  const otherTiles = [
+  const otherTile = (
     <ParticipantTile
       key={otherName}
       name={otherName}
       isYou={false}
       state={otherState}
       notJoined={otherNotJoined}
-      liveKitTrack={otherCameraTrack}
-    />,
-    ...extraParticipants.map((p) => (
-      <ParticipantTile
-        key={p.name}
-        name={p.name}
-        isYou={false}
-        state={p.state}
-        liveKitTrack={p.cameraTrack}
-      />
-    )),
-  ];
+      presenting={otherPresenting}
+      liveKitTrack={otherPresenting ? otherScreenTrack : otherCameraTrack}
+    />
+  );
+  const extraTiles = extraParticipants.map((p) => (
+    <ParticipantTile
+      key={p.name}
+      name={p.name}
+      isYou={false}
+      state={p.state}
+      liveKitTrack={p.cameraTrack}
+    />
+  ));
 
   const remoteAudio = otherMicTrack && <RemoteAudio track={otherMicTrack} />;
 
@@ -113,13 +120,17 @@ export function VideoTileGrid({
     );
   }
 
-  if (youPresenting) {
+  if (youPresenting || otherPresenting) {
+    const primaryTile = youPresenting ? youTile : otherTile;
+    const stripTiles = youPresenting
+      ? [{ key: otherName, tile: otherTile }, ...extraParticipants.map((p, i) => ({ key: p.name, tile: extraTiles[i] }))]
+      : [{ key: 'you', tile: youTile }, ...extraParticipants.map((p, i) => ({ key: p.name, tile: extraTiles[i] }))];
     return (
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 h-full p-3">
-        <div className="flex-1 min-w-0 min-h-0">{youTile}</div>
+        <div className="flex-1 min-w-0 min-h-0">{primaryTile}</div>
         <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-x-visible sm:w-32 shrink-0">
-          {otherTiles.map((tile) => (
-            <div key={tile.key} className="w-24 sm:w-full shrink-0">
+          {stripTiles.map(({ key, tile }) => (
+            <div key={key} className="w-24 sm:w-full shrink-0">
               {tile}
             </div>
           ))}
@@ -132,7 +143,8 @@ export function VideoTileGrid({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 h-full p-3 auto-rows-fr">
       {youTile}
-      {otherTiles}
+      {otherTile}
+      {extraTiles}
       {remoteAudio}
     </div>
   );

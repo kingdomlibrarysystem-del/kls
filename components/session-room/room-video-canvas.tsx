@@ -22,6 +22,7 @@ interface RoomVideoCanvasProps {
   otherNotJoined: boolean
   otherCameraTrack?: Track | null
   otherMicTrack?: Track | null
+  otherScreenTrack?: Track | null
   extraParticipants: ExtraParticipant[]
   transcriptActive: boolean
   interimCaption: string
@@ -51,7 +52,7 @@ interface RoomVideoCanvasProps {
  */
 export function RoomVideoCanvas({
   sessionId, youName, you, youPresenting, youVideoStream, youCameraTrack, hideSelf, otherName, otherState, otherNotJoined,
-  otherCameraTrack, otherMicTrack, extraParticipants, transcriptActive, interimCaption, captionsUnsupported, recording, recordingSeconds,
+  otherCameraTrack, otherMicTrack, otherScreenTrack, extraParticipants, transcriptActive, interimCaption, captionsUnsupported, recording, recordingSeconds,
   handRaised, sidePanelHidden, onToggleCamera, onToggleMic, onToggleHand, onTogglePresenting, onToggleRecording,
   onToggleCaptions, onToggleHideSelf, onToggleSidePanel, onAddParticipant, onLeave, leaveLabel, sendLiveKitData,
 }: RoomVideoCanvasProps) {
@@ -69,6 +70,7 @@ export function RoomVideoCanvas({
         otherNotJoined={otherNotJoined}
         otherCameraTrack={otherCameraTrack}
         otherMicTrack={otherMicTrack}
+        otherScreenTrack={otherScreenTrack}
         extraParticipants={extraParticipants}
       />
       <ReactionBurst />
