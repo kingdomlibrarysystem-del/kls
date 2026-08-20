@@ -91,7 +91,7 @@ export default function MyCoursesPage() {
       {/* Completed */}
       <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} />
 
-      <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} />
+      <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} availableCourses={rows.map((r) => r.course)} />
     </div>
   );
 }
