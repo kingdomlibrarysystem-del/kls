@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 
-export type PdfViewMode = 'scroll' | 'single' | 'spread'
+export type PdfViewMode = "scroll" | "single" | "spread";
 
-const STORAGE_KEY = 'kls-pdf-view-mode'
+const STORAGE_KEY = "kls-pdf-view-mode";
 
 /**
  * Purely a client-side reading preference (which of the 3 view modes the
@@ -14,17 +14,18 @@ const STORAGE_KEY = 'kls-pdf-view-mode'
  * field for a one-person, purely cosmetic setting.
  */
 export function usePdfViewMode(): [PdfViewMode, (mode: PdfViewMode) => void] {
-  const [mode, setMode] = useState<PdfViewMode>('scroll')
+  const [mode, setMode] = useState<PdfViewMode>("spread");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored === 'scroll' || stored === 'single' || stored === 'spread') setMode(stored)
-  }, [])
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "spread" || stored === "single" || stored === "scroll")
+      setMode(stored);
+  }, []);
 
   const update = (next: PdfViewMode) => {
-    setMode(next)
-    window.localStorage.setItem(STORAGE_KEY, next)
-  }
+    setMode(next);
+    window.localStorage.setItem(STORAGE_KEY, next);
+  };
 
-  return [mode, update]
+  return [mode, update];
 }

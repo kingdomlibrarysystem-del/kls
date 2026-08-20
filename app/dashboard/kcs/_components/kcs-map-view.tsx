@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState } from '@/components/ui/empty-state'
-import { AlertTriangle } from 'lucide-react'
-import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
-import { getRootCategories, getCategoryById } from '@/lib/kcs-taxonomy'
-import { KcsPillarView } from './kcs-pillar-view'
-import { KcsTaxonomyAnalytics } from './kcs-taxonomy-analytics'
-import { ManageCategoriesSection } from './manage-categories-section'
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AlertTriangle } from "lucide-react";
+import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
+import { getRootCategories, getCategoryById } from "@/lib/kcs-taxonomy";
+import { KcsPillarView } from "./kcs-pillar-view";
+import { KcsTaxonomyAnalytics } from "./kcs-taxonomy-analytics";
+import { ManageCategoriesSection } from "./manage-categories-section";
 
 /**
  * Client wrapper resolving the active pillar from the `?pillar=` search
@@ -35,22 +35,24 @@ import { ManageCategoriesSection } from './manage-categories-section'
  * before picking a default and rendering the rest of the page.
  */
 export function KcsMapView() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const paramPillar = searchParams.get('pillar')
-  const { loading, error } = useCategories()
-  const [pillarSlug, setPillarSlug] = useState<string | null>(null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramPillar = searchParams.get("pillar");
+  const { loading, error } = useCategories();
+  const [pillarSlug, setPillarSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    if (loading || error || pillarSlug) return
-    const defaultSlug = getRootCategories()[0]?.slug ?? null
-    setPillarSlug(paramPillar && getCategoryById(paramPillar) ? paramPillar : defaultSlug)
-  }, [loading, error, paramPillar, pillarSlug])
+    if (loading || error || pillarSlug) return;
+    const defaultSlug = getRootCategories()[0]?.slug ?? null;
+    setPillarSlug(
+      paramPillar && getCategoryById(paramPillar) ? paramPillar : defaultSlug,
+    );
+  }, [loading, error, paramPillar, pillarSlug]);
 
   const handlePillarChange = (next: string) => {
-    setPillarSlug(next)
-    router.replace(`/dashboard/kcs?pillar=${next}`, { scroll: false })
-  }
+    setPillarSlug(next);
+    router.replace(`/dashboard/kcs?pillar=${next}`, { scroll: false });
+  };
 
   if (loading || !pillarSlug) {
     return (
@@ -58,18 +60,27 @@ export function KcsMapView() {
         <Skeleton className="h-40 w-full rounded-lg" />
         <Skeleton className="h-64 w-full rounded-lg" />
       </div>
-    )
+    );
   }
 
   if (error) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load the KCS taxonomy" description={error} />
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Couldn't load the KCS taxonomy"
+        description={error}
+      />
+    );
   }
 
   return (
     <div>
       <KcsTaxonomyAnalytics />
-      <KcsPillarView pillarSlug={pillarSlug} onPillarChange={handlePillarChange} />
+      <KcsPillarView
+        pillarSlug={pillarSlug}
+        onPillarChange={handlePillarChange}
+      />
       <ManageCategoriesSection />
     </div>
-  )
+  );
 }
