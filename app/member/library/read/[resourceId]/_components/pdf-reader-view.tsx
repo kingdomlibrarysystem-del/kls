@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { ChevronLeft, ChevronRight, AlertTriangle, Download, Lock } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -22,7 +23,7 @@ import 'react-pdf/dist/Page/TextLayer.css'
 // cross-origin import entirely.
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
-const PAGE_WIDTH = 720
+const PAGE_WIDTH = 900
 
 interface PdfReaderViewProps {
   resourceId: string
@@ -68,12 +69,28 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resourceId, forcePreview])
 
+  const backLink = (
+    <Link href="/member/library" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
+      <ChevronLeft size={16} /> Back to Kingdom Library
+    </Link>
+  )
+
   if (loadError) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load this PDF" description={loadError} style={{ color: 'var(--text-secondary)' }} />
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400, width: '100%', margin: '0 auto' }}>
+        {backLink}
+        <EmptyState icon={AlertTriangle} title="Couldn't load this PDF" description={loadError} style={{ color: 'var(--text-secondary)' }} />
+      </div>
+    )
   }
 
   if (!entitlement) {
-    return <Skeleton style={{ height: 640, borderRadius: 8 }} />
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400, width: '100%', margin: '0 auto' }}>
+        {backLink}
+        <Skeleton style={{ height: 640, borderRadius: 8 }} />
+      </div>
+    )
   }
 
   const documentUrl = `/api/resources/${resourceId}/document${previewQuery}`
@@ -82,7 +99,9 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+      {backLink}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {numPages ? `Page ${pageIndex + 1} of ${numPages}${entitlement.entitled ? '' : ' (preview)'}` : 'Loading pages…'}
