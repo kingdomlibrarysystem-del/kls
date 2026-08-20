@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     prisma.resource.count({ where }),
     prisma.resource.findMany({
       where,
-      orderBy: { title: 'asc' },
+      orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
