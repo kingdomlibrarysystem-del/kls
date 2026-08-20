@@ -35,7 +35,13 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
   const [editing, setEditing] = useState(false)
   const [toast, setToast] = useState('')
   const readableContent = useReadableContent()
-  const isReadable = !!resource && !!readableContent[resource.id]
+  // A resource is readable either through real authored Chapter rows
+  // (readableContent) or a real uploaded PDF (documentUrl) — ReaderView
+  // itself already falls back to the page-native PdfReaderView for the
+  // latter, but this button never showed for a PDF-only resource before
+  // this fix, since readableContent only ever contains chapter-backed
+  // resources (from /api/chapters, grouped by resource).
+  const isReadable = !!resource && (!!readableContent[resource.id] || !!resource.documentUrl)
 
   useEffect(() => {
     let cancelled = false

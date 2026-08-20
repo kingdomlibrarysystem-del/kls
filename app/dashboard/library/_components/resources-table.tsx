@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import { Eye, Pencil, Archive } from 'lucide-react'
+import Link from 'next/link'
+import { Eye, Pencil, Archive, BookOpenCheck } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { getCategoryById } from '@/lib/kcs-taxonomy'
@@ -98,6 +99,16 @@ export function ResourcesTable({ data, statusFilter, typeFilter, onStatusFilterC
             <button onClick={() => onArchive(r)} aria-label={`Archive ${r.title}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
               <Archive size={12} /> Archive
             </button>
+          )}
+          {r.documentUrl && (
+            <Link
+              href={`/member/library/read/${r.id}`}
+              target="_blank"
+              aria-label={`Read ${r.title}`}
+              className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+            >
+              <BookOpenCheck size={12} /> Read
+            </Link>
           )}
         </div>
       ),
