@@ -280,7 +280,7 @@ model Resource {
   language     String
   year         Int
   pages        Int
-  isbn         String
+  isbn         String       @unique
   price        Float
   totalQty     Int
   availableQty Int
