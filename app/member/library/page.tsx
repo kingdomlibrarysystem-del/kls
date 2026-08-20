@@ -174,7 +174,7 @@ export default function MemberLibraryPage() {
               <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)" }}>{section.scrolls.length} scrolls</span>
             </div>
 
-            <div style={{ display: view === "grid" ? "grid" : "flex", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 4, padding: 6, flexDirection: view === "list" ? "column" : undefined }}>
+            <div style={{ display: view === "grid" ? "grid" : "flex", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, padding: 14, flexDirection: view === "list" ? "column" : undefined }}>
               {pagedScrolls.map((scroll) => (
                 view === "grid" ? (
                   <ScrollCard key={scroll.id} scroll={scroll} />

@@ -75,28 +75,28 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
         <ChevronLeft size={16} /> Back to Kingdom Library
       </Link>
 
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 8, background: 'linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <ScrollText size={24} color="var(--gold)" />
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 8, background: 'linear-gradient(135deg, rgba(212,168,67,0.1), var(--bg-section))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <ScrollText size={28} color="var(--gold)" />
         </div>
         <div style={{ flex: 1 }}>
-          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{scroll.name.en}</h1>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.slug} · {section.name.en}</p>
+          <h1 className="cinzel" style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{scroll.name.en}</h1>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>{scroll.slug} · {section.name.en}</p>
         </div>
         <button
           onClick={() => toggleFavorite(scroll.id, 'RESOURCE', scroll.name.en, `Scroll · ${section.name.en}`)}
           aria-label={liked ? `Remove ${scroll.name.en} from favorites` : `Add ${scroll.name.en} to favorites`}
-          style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
-          <Heart size={16} color={liked ? 'var(--red-light)' : 'var(--text-muted)'} fill={liked ? 'var(--red-light)' : 'none'} />
+          <Heart size={18} color={liked ? 'var(--red-light)' : 'var(--text-muted)'} fill={liked ? 'var(--red-light)' : 'none'} />
         </button>
       </div>
 
-      <p style={{ fontSize: 13, color: 'var(--green-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <CheckCircle2 size={14} /> Available in the Kingdom Classification System
+      <p style={{ fontSize: 15, color: 'var(--green-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <CheckCircle2 size={16} /> Available in the Kingdom Classification System
       </p>
 
-      <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Related Resources</h2>
+      <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>Related Resources</h2>
 
       {matches.length === 0 ? (
         <EmptyState
@@ -106,7 +106,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
           style={{ color: 'var(--text-secondary)' }}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {matches.map((resource) => (
             <RelatedResourceCard
               key={resource.id}
