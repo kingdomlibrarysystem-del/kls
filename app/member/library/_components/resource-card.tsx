@@ -16,16 +16,18 @@ interface ResourceCardProps {
   resource: Resource
 }
 
-function StarRating({ avgRating, reviewCount }: { avgRating: number; reviewCount: number }) {
-  if (reviewCount === 0) {
+function StarRating({ avgRating, reviewCount }: { avgRating: number | undefined; reviewCount: number | undefined }) {
+  const rating = avgRating ?? 0
+  const count = reviewCount ?? 0
+  if (count === 0) {
     return <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>No reviews yet</span>
   }
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }} aria-label={`${avgRating.toFixed(1)} out of 5 stars, ${reviewCount} review${reviewCount === 1 ? '' : 's'}`}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }} aria-label={`${rating.toFixed(1)} out of 5 stars, ${count} review${count === 1 ? '' : 's'}`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <Star key={i} size={13} color="var(--gold)" fill={i < Math.round(avgRating) ? 'var(--gold)' : 'none'} />
+        <Star key={i} size={13} color="var(--gold)" fill={i < Math.round(rating) ? 'var(--gold)' : 'none'} />
       ))}
-      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>({reviewCount})</span>
+      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>({count})</span>
     </div>
   )
 }

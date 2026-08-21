@@ -43,6 +43,8 @@ function getProgressSnapshot() {
   return progress
 }
 
+const EMPTY: ReadingProgress[] = []
+
 async function loadProgress(userId: string) {
   loadedForUserId = userId
   const res = await fetch(`/api/reading-progress?userId=${userId}`)
@@ -176,5 +178,5 @@ export function useReadingProgress(userId?: string) {
     if (loadedForUserId !== userId) loadProgress(userId)
   }, [userId])
 
-  return useSyncExternalStore(subscribe, getProgressSnapshot, () => [])
+  return useSyncExternalStore(subscribe, getProgressSnapshot, EMPTY)
 }

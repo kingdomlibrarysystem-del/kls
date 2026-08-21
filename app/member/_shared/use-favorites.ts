@@ -35,6 +35,8 @@ function getSnapshot() {
   return favorites
 }
 
+const EMPTY: FavoriteItem[] = []
+
 async function loadFavorites(userId: string) {
   loadedForUserId = userId
   const res = await fetch(`/api/favorites?userId=${userId}`)
@@ -97,5 +99,5 @@ export function useFavorites(userId?: string) {
     }
   }, [userId])
 
-  return useSyncExternalStore(subscribe, getSnapshot, () => (resolvedUserId ? favorites : []))
+  return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY)
 }
