@@ -1,13 +1,16 @@
 'use client'
 
+import Link from 'next/link'
 import { Award, GraduationCap, ChevronRight, CalendarPlus } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { isCertificateEligible, type CourseEnrollment } from '@/app/member/_shared/use-enrollments'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
+import type { Certificate } from '@/app/member/_shared/use-certificates'
 
 interface CompletedCoursesSectionProps {
   completed: { enrollment: CourseEnrollment; course: CatalogCourse }[]
   onRequestSession: (course: CatalogCourse) => void
+  certificates: Certificate[]
 }
 
 /**
@@ -18,7 +21,7 @@ interface CompletedCoursesSectionProps {
  * completion (see in-progress-courses-section.tsx, which offers the same
  * action on courses still in progress).
  */
-export function CompletedCoursesSection({ completed, onRequestSession }: CompletedCoursesSectionProps) {
+export function CompletedCoursesSection({ completed, onRequestSession, certificates }: CompletedCoursesSectionProps) {
   if (completed.length === 0) return null
 
   return (
@@ -28,6 +31,7 @@ export function CompletedCoursesSection({ completed, onRequestSession }: Complet
       </div>
       {completed.map(({ enrollment, course }) => {
         const lecturerName = course.instructor
+        const certificate = isCertificateEligible(enrollment) ? certificates.find((c) => c.courseId === course.id) : undefined
         return (
           <div key={course.id} style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ width: 36, height: 36, borderRadius: 6, position: 'relative', overflow: 'hidden', background: 'rgba(212,168,67,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -47,7 +51,13 @@ export function CompletedCoursesSection({ completed, onRequestSession }: Complet
             >
               <CalendarPlus size={14} /> Request Session
             </button>
-            {isCertificateEligible(enrollment) ? <GraduationCap size={16} color="var(--gold)" /> : <ChevronRight size={16} color="var(--text-muted)" />}
+            {certificate ? (
+              <Link href={`/member/certificates/${certificate.id}`} aria-label={`View certificate for ${course.title}`} style={{ display: 'flex' }}>
+                <GraduationCap size={16} color="var(--gold)" />
+              </Link>
+            ) : (
+              <ChevronRight size={16} color="var(--text-muted)" />
+            )}
           </div>
         )
       })}

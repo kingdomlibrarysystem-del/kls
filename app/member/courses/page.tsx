@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCourses, type CatalogCourse } from "../_shared/use-courses";
 import { useEnrollments, getProgressPercent, isCertificateEligible } from "../_shared/use-enrollments";
+import { useCertificates } from "../_shared/use-certificates";
 import { InProgressCoursesSection } from "./_components/in-progress-courses-section";
 import { CompletedCoursesSection } from "./_components/completed-courses-section";
 import { RequestSessionModal } from "./_components/request-session-modal";
@@ -14,6 +15,7 @@ export default function MyCoursesPage() {
   const [requesting, setRequesting] = useState<CatalogCourse | null>(null);
   const { data: enrollments, loading: enrollmentsLoading } = useEnrollments();
   const { data: courseCatalog, loading: coursesLoading } = useCourses();
+  const { data: certificates } = useCertificates();
   const loading = enrollmentsLoading || coursesLoading;
 
   if (loading) {
@@ -70,26 +72,37 @@ export default function MyCoursesPage() {
         <Award size={24} color="var(--gold)" />
       </div>
 
-      {/* Certificate eligibility banner */}
-      {eligibleForCertificate.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(212,168,67,0.08)", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "10px 14px" }}>
-          <Sparkles size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
-          <div style={{ flex: 1, fontSize: 13, color: "var(--text-primary)" }}>
-            {eligibleForCertificate.length === 1
-              ? `You're eligible for a certificate in "${eligibleForCertificate[0].course.title}".`
-              : `You're eligible for certificates in ${eligibleForCertificate.length} courses.`}
+      {/* Certificate ready banner — the certificate already exists by the time a course is eligible (issued server-side on completion), so this links straight to it rather than implying a future action. */}
+      {eligibleForCertificate.length > 0 && (() => {
+        const singleCert = eligibleForCertificate.length === 1
+          ? certificates.find((c) => c.courseId === eligibleForCertificate[0].course.id)
+          : undefined;
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(212,168,67,0.08)", border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))", borderRadius: 8, padding: "10px 14px" }}>
+            <Sparkles size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1, fontSize: 13, color: "var(--text-primary)" }}>
+              {eligibleForCertificate.length === 1
+                ? `Your certificate for "${eligibleForCertificate[0].course.title}" is ready.`
+                : `Your certificates are ready for ${eligibleForCertificate.length} courses.`}
+            </div>
+            <Link href={singleCert ? `/member/certificates/${singleCert.id}` : "/member/certificates"} className="btn btn-gold btn-sm" aria-label="View certificate">
+              View Certificate{eligibleForCertificate.length === 1 ? "" : "s"}
+            </Link>
           </div>
-          <Link href="/member/certificates" className="btn btn-gold btn-sm" aria-label="View certificates">
-            View Certificates
-          </Link>
-        </div>
-      )}
+        );
+      })()}
 
       {/* In progress */}
       <InProgressCoursesSection inProgress={inProgress} onRequestSession={setRequesting} />
 
       {/* Completed */}
-      <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} />
+      <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} certificates={certificates} />
+
+      <div style={{ textAlign: "center" }}>
+        <Link href="/member/e-learning" style={{ fontSize: 13, fontWeight: 600, color: "var(--teal-light)", textDecoration: "none" }}>
+          Browse more courses →
+        </Link>
+      </div>
 
       <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} availableCourses={rows.map((r) => r.course)} />
     </div>
