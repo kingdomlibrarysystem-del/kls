@@ -32,6 +32,7 @@ import {
   Mail,
   Settings,
   Shield,
+  MessageSquare,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -112,6 +113,7 @@ export const adminMgmtNav: NavItem[] = [
   { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={14} />,     label: "Notifications",       href: "/dashboard/notifications" },
+  { icon: <MessageSquare size={14} />, label: "Messages",       href: "/dashboard/messages" },
   { icon: <Mail size={14} />,     label: "Invitations",         href: "/dashboard/invitations" },
   { icon: <Settings size={14} />, label: "System Settings",     href: "/dashboard/settings" },
   { icon: <ScrollText size={14} />, label: "Audit Log",         href: "/dashboard/audit-log" },
