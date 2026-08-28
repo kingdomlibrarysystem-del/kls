@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { CalendarClock } from 'lucide-react'
-import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import { fetchSessionRequestById, type SessionRequest } from '@/lib/sessions/use-session-requests'
 import { useSessionPresence } from '@/lib/sessions/use-session-presence'
 import { getJoinWindowState } from '@/lib/sessions/join-window'
+import { RoomAccessGuard } from './room-access-guard'
 import { RoomVideoCanvas } from './room-video-canvas'
 import { RoomHeader } from './room-header'
 import { AddParticipantModal } from './add-participant-modal'
@@ -100,18 +99,8 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveKitReady])
 
-  if (!loading && !request) return <EmptyState icon={CalendarClock} title="Session not found" description="This session request doesn't exist." style={{ color: 'var(--text-secondary)' }} />
-  if (!request) return null
-
-  const joinWindow = getJoinWindowState(request)
-  if (!joinWindow.canJoin) {
-    return <EmptyState
-      icon={CalendarClock}
-      title={joinWindow.reason === 'too-early' ? 'This session hasn\'t opened yet' : 'This session\'s window has passed'}
-      description={joinWindow.reason === 'too-early' ? `The room opens at ${joinWindow.opensAt.toLocaleString()}.` : 'This scheduled session is no longer joinable — ask to reschedule if you still need it.'}
-      style={{ color: 'var(--text-secondary)' }}
-    />
-  }
+  const guard = <RoomAccessGuard loading={loading} request={request} waitingForHost={liveKit.waitingForHost} />
+  if (!request || getJoinWindowState(request).canJoin === false || liveKit.waitingForHost) return guard
 
   const {
     youName, otherName, you, otherRemote, otherPresent, otherState, extraParticipants, roomParticipants,

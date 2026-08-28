@@ -3,14 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireAuth } from '@/lib/auth/require-role'
-
-/**
- * A presence row is considered "still in the room" if its last heartbeat
- * was within this window — the room UI pings on an interval shorter than
- * this (see use-session-presence.ts), so a stale row past this window
- * means the tab was closed/crashed without a clean Leave.
- */
-const STALE_AFTER_MS = 30_000
+import { PRESENCE_STALE_AFTER_MS as STALE_AFTER_MS } from '@/lib/sessions/host-presence'
 
 function serializePresence(p: {
   id: string

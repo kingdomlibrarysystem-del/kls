@@ -52,6 +52,8 @@ export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onPart
 
   const [connected, setConnected] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
+  /** True specifically when the token route rejected the join because the host isn't present yet (see the livekit-token route's `reason: 'host-not-present'`) — distinct from a real connect failure, so the UI can render a real waiting state instead of an error banner. */
+  const [waitingForHost, setWaitingForHost] = useState(false)
   const [cameraOn, setCameraOn] = useState(false)
   const [micOn, setMicOn] = useState(false)
   const [presenting, setPresenting] = useState(false)
@@ -107,22 +109,38 @@ export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onPart
         }
       })
 
-    ;(async () => {
+    let retryTimer: ReturnType<typeof setInterval> | undefined
+
+    const attemptJoin = async () => {
       try {
         const res = await fetch(`/api/session-requests/${sessionId}/livekit-token?displayName=${encodeURIComponent(displayName)}`)
         const json = await res.json()
+        if (json.reason === 'host-not-present') {
+          if (!cancelled) setWaitingForHost(true)
+          return
+        }
         if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not join the real-time room')
         if (cancelled) return
+        if (retryTimer) clearInterval(retryTimer)
+        setWaitingForHost(false)
         await room.connect(json.data.url, json.data.token)
         if (cancelled) return
         setConnected(true)
       } catch (err) {
         if (!cancelled) setConnectError(err instanceof Error ? err.message : 'Could not join the real-time room')
       }
-    })()
+    }
+
+    attemptJoin()
+    // While waiting for the host, re-check on the same cadence the presence
+    // roster itself polls (see use-session-presence.ts's ROSTER_POLL_MS) —
+    // once the host's own presence row appears, the next attempt succeeds
+    // and this interval is cleared, no manual refresh needed.
+    retryTimer = setInterval(attemptJoin, 8_000)
 
     return () => {
       cancelled = true
+      if (retryTimer) clearInterval(retryTimer)
       room.disconnect()
       roomRef.current = null
     }
@@ -184,6 +202,7 @@ export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onPart
   return {
     connected,
     connectError,
+    waitingForHost,
     cameraOn,
     micOn,
     presenting,
