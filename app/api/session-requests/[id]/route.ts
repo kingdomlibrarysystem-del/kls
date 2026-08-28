@@ -74,7 +74,8 @@ const patchSessionRequestSchema = z.union([
   }),
   z.object({ action: z.literal('reject'), notes: z.string().optional() }),
   z.object({ action: z.literal('complete') }),
-  z.object({ action: z.undefined() }).passthrough(),
+  z.object({ action: z.literal('mark-unavailable'), notes: z.string().optional() }),
+  z.object({ action: z.literal('notify') }),
 ])
 
 /** Status-transition guard porting the mock's approveSession/rejectSession/completeSession. */
@@ -146,8 +147,43 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
     return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session marked complete', code: 'success', status: 200 })
   }
 
-  const data: Record<string, unknown> = { ...body }
-  delete data.action
-  const updated = await prisma.sessionRequest.update({ where: { id }, data })
-  return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request updated successfully', code: 'success', status: 200 })
+  if (body.action === 'mark-unavailable') {
+    if (existing.status !== 'PENDING') throw new ApiError('Only a pending session request can be marked unavailable', 409)
+    const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'UNAVAILABLE', notes: body.notes ?? existing.notes } })
+
+    await notifyUser({
+      userId: updated.learnerId,
+      type: 'SYSTEM',
+      title: 'Session unavailable',
+      message: `Your session request for "${updated.courseTitle}" is no longer available.`,
+      href: `/member/sessions/${updated.id}`,
+    })
+
+    return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request marked unavailable', code: 'success', status: 200 })
+  }
+
+  if (body.action === 'notify') {
+    if (existing.status !== 'APPROVED') throw new ApiError('Only an approved session can be notified', 409)
+
+    await notifyUser({
+      userId: existing.learnerId,
+      type: 'SYSTEM',
+      title: 'Session reminder',
+      message: `Reminder: your session for "${existing.courseTitle}" is scheduled${existing.scheduledAt ? ` for ${existing.scheduledAt.toLocaleString()}` : ''}.`,
+      href: `/member/sessions/${existing.id}`,
+    })
+    if (existing.lecturerId) {
+      await notifyUser({
+        userId: existing.lecturerId,
+        type: 'SYSTEM',
+        title: 'Session reminder',
+        message: `Reminder: you have a session for "${existing.courseTitle}" scheduled${existing.scheduledAt ? ` for ${existing.scheduledAt.toLocaleString()}` : ''}.`,
+        href: `/dashboard/e-learning/sessions/${existing.id}/room`,
+      })
+    }
+
+    return NextResponse.json({ data: serializeSessionRequest(existing), message: 'Reminder sent to the learner and lecturer', code: 'success', status: 200 })
+  }
+
+  throw new ApiError('Unrecognized action', 400)
 })

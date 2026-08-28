@@ -940,6 +940,11 @@ enum SessionRequestStatus {
   APPROVED
   REJECTED
   COMPLETED
+  /// A PENDING request whose window has passed unactioned, or one an admin
+  /// explicitly marks unavailable (e.g. the lecturer can no longer make
+  /// it) — a distinct terminal state from REJECTED, which implies an
+  /// active decision was made rather than an opportunity simply lapsing.
+  UNAVAILABLE
 }
 
 enum SessionRequestMode {

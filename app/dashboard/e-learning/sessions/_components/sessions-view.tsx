@@ -2,18 +2,22 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { CalendarClock, Zap, CheckCircle, XCircle, Video, AlertTriangle } from 'lucide-react'
+import { CalendarClock, Zap, CheckCircle, XCircle, Video, AlertTriangle, Ban, Bell } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useSessionRequestsAdmin, approveSessionAdmin, rejectSessionAdmin } from './use-session-requests-admin'
+import { useSessionRequestsAdmin, approveSessionAdmin, rejectSessionAdmin, markSessionUnavailable, notifySessionParticipants } from './use-session-requests-admin'
 import { sessionStatusConfig, type SessionRequest, type SessionStatus } from '@/lib/sessions/session-requests-data'
 import { SessionDecisionModal } from '@/lib/sessions/session-decision-modal'
 import { SessionsStats } from './sessions-stats'
 
 type ModalAction = 'approve' | 'reject' | null
 
-function buildColumns(onOpenModal: (r: SessionRequest, action: 'approve' | 'reject') => void): Column<SessionRequest>[] {
+function buildColumns(
+  onOpenModal: (r: SessionRequest, action: 'approve' | 'reject') => void,
+  onMarkUnavailable: (r: SessionRequest) => void,
+  onNotify: (r: SessionRequest) => void,
+): Column<SessionRequest>[] {
   return [
     { key: 'learnerName', label: 'Learner', sortable: true, render: (r) => <span className="font-semibold text-w-950">{r.learnerName}</span> },
     {
@@ -46,25 +50,38 @@ function buildColumns(onOpenModal: (r: SessionRequest, action: 'approve' | 'reje
     },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
-      render: (r) => (
-        <div className="flex items-center justify-end gap-1.5">
-          {r.status === 'PENDING' && (
-            <>
-              <button onClick={() => onOpenModal(r, 'approve')} aria-label={`Approve session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">
-                <CheckCircle size={12} /> Approve
+      render: (r) => {
+        const isLapsed = r.status === 'PENDING' && new Date(r.proposedTime) < new Date()
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            {r.status === 'PENDING' && !isLapsed && (
+              <>
+                <button onClick={() => onOpenModal(r, 'approve')} aria-label={`Approve session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">
+                  <CheckCircle size={12} /> Approve
+                </button>
+                <button onClick={() => onOpenModal(r, 'reject')} aria-label={`Reject session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
+                  <XCircle size={12} /> Reject
+                </button>
+              </>
+            )}
+            {r.status === 'PENDING' && isLapsed && (
+              <button onClick={() => onMarkUnavailable(r)} aria-label={`Mark session request from ${r.learnerName} unavailable`} className="flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 border border-gray-200 rounded text-xs font-lato hover:bg-gray-100 transition-colors">
+                <Ban size={12} /> Mark Unavailable
               </button>
-              <button onClick={() => onOpenModal(r, 'reject')} aria-label={`Reject session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
-                <XCircle size={12} /> Reject
+            )}
+            {r.status === 'APPROVED' && (
+              <button onClick={() => onNotify(r)} aria-label={`Notify learner and lecturer for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+                <Bell size={12} /> Notify
               </button>
-            </>
-          )}
-          {r.status !== 'PENDING' && (
-            <Link href={`/dashboard/e-learning/sessions/${r.id}/room`} aria-label={`Enter room for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
-              <Video size={12} /> Room
-            </Link>
-          )}
-        </div>
-      ),
+            )}
+            {r.status !== 'PENDING' && (
+              <Link href={`/dashboard/e-learning/sessions/${r.id}/room`} aria-label={`Enter room for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+                <Video size={12} /> Room
+              </Link>
+            )}
+          </div>
+        )
+      },
     },
   ]
 }
@@ -111,6 +128,24 @@ export function SessionsView() {
     closeModal()
   }
 
+  const handleMarkUnavailable = async (r: SessionRequest) => {
+    try {
+      await markSessionUnavailable(r.id)
+      showToast(`Marked session with ${r.learnerName} unavailable`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not mark this session unavailable')
+    }
+  }
+
+  const handleNotify = async (r: SessionRequest) => {
+    try {
+      await notifySessionParticipants(r.id)
+      showToast(`Notified learner and lecturer for session with ${r.learnerName}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not send this notification')
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-2" aria-label="Loading session requests">
@@ -149,7 +184,7 @@ export function SessionsView() {
       ) : (
         <DataTable<SessionRequest>
           data={tableData}
-          columns={buildColumns((r, action) => { setModalTarget(r); setModalAction(action) })}
+          columns={buildColumns((r, action) => { setModalTarget(r); setModalAction(action) }, handleMarkUnavailable, handleNotify)}
           rowKey={(r) => r.id}
           searchPlaceholder="Search learner, lecturer, or course..."
           searchFilter={(r, q) => r.learnerName.toLowerCase().includes(q) || (r.lecturerName?.toLowerCase().includes(q) ?? false) || r.courseTitle.toLowerCase().includes(q)}
