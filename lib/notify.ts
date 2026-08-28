@@ -1,5 +1,6 @@
 import prisma from '@/prisma/client'
 import { sendMail } from '@/lib/mailer'
+import { broadcast } from '@/lib/sse-hub'
 
 type NotificationType = 'BORROW' | 'RESERVATION' | 'COURSE' | 'PUBLICATION' | 'DUE' | 'SYSTEM'
 
@@ -44,6 +45,8 @@ export async function notifyUser(input: NotifyUserInput): Promise<void> {
   }).catch((error) => {
     console.error('Failed to create notification:', error)
   })
+
+  broadcast(input.userId, { type: 'notification' })
 
   if (!input.email) return
 

@@ -4289,3 +4289,42 @@ admin can set a course's price via a direct PATCH today, but there's
 no dashboard form control for it. Left out of this batch's scope
 (member-facing payment flow, not the admin course-authoring form).
 
+## Admin↔member messaging + live notification delivery (branch enhance/auto-wip) — Completed
+
+Closed the messaging API's deliberately-deferred auth gap
+(`app/api/channels/route.ts`, `app/api/messages/route.ts`,
+`app/api/messages/[id]/route.ts` were built with zero auth ahead of
+real sessions existing, per their own docstrings — real sessions exist
+now, so channel reads/message sends/message actions are all
+ownership-checked). Added a real admin-side messaging inbox at
+`/dashboard/messages`, reusing `MessagesView` unchanged — DM channels
+are keyed by real `participantIds` and already work for any real user,
+admin included, unlike course channels (correctly left without an
+admin view, since they're matched by `lecturerRoster` names an admin
+has no entry in).
+
+Added real live notification delivery via Server-Sent Events:
+`lib/sse-hub.ts` (in-memory per-user subscriber map),
+`app/api/notifications/stream/route.ts` (real-auth-gated stream, one
+per signed-in user), `lib/notify.ts`'s `notifyUser()` now broadcasts a
+signal on that user's stream after creating the real `Notification`
+row, and `use-member-notifications.ts` subscribes via `EventSource`
+and refetches on signal — the member topbar's bell badge now updates
+live, with zero polling.
+
+### Known limitation — in-memory SSE hub is single-process only
+
+`lib/sse-hub.ts` holds subscriber connections in a plain module-level
+`Map`, scoped to whichever Node process handled the request. This is
+correct on local dev and any single, always-on Node server. **It is
+NOT guaranteed correct if this app is deployed across multiple
+serverless instances** (e.g. Vercel functions) — a `broadcast()` call
+and a subscriber's open connection can land on different instances
+with no shared state between them, so a notification created on one
+instance could silently never reach a browser whose SSE connection is
+held open on another. If/when this app moves to a multi-instance
+deployment target, live delivery will need a real pub/sub backend
+(Redis or similar) fanning broadcasts across instances instead of the
+current in-process `Map` — not built here, explicitly flagged per the
+user's own accepted tradeoff when this was scoped.
+
