@@ -4,19 +4,30 @@ import { Award, BookX, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCourses, type CatalogCourse } from "../_shared/use-courses";
-import { useEnrollments, getProgressPercent, isCertificateEligible } from "../_shared/use-enrollments";
+import { useEnrollments, getProgressPercent, isCertificateEligible, unenrollFromCourse } from "../_shared/use-enrollments";
 import { useCertificates } from "../_shared/use-certificates";
 import { InProgressCoursesSection } from "./_components/in-progress-courses-section";
 import { CompletedCoursesSection } from "./_components/completed-courses-section";
 import { RequestSessionModal } from "./_components/request-session-modal";
+import { CourseCheckoutModal } from "./_components/course-checkout-modal";
 import { useState } from "react";
 
 export default function MyCoursesPage() {
   const [requesting, setRequesting] = useState<CatalogCourse | null>(null);
-  const { data: enrollments, loading: enrollmentsLoading } = useEnrollments();
+  const [checkoutCourse, setCheckoutCourse] = useState<CatalogCourse | null>(null);
+  const { data: enrollments, loading: enrollmentsLoading, refetch: refetchEnrollments } = useEnrollments();
   const { data: courseCatalog, loading: coursesLoading } = useCourses();
   const { data: certificates } = useCertificates();
   const loading = enrollmentsLoading || coursesLoading;
+
+  const handleUnenroll = async (enrollmentId: string) => {
+    try {
+      await unenrollFromCourse(enrollmentId);
+      await refetchEnrollments();
+    } catch {
+      // Silently keep the row as-is on failure — the button remains available to retry.
+    }
+  };
 
   if (loading) {
     return (
@@ -93,10 +104,10 @@ export default function MyCoursesPage() {
       })()}
 
       {/* In progress */}
-      <InProgressCoursesSection inProgress={inProgress} onRequestSession={setRequesting} />
+      <InProgressCoursesSection inProgress={inProgress} onRequestSession={setRequesting} onUnenroll={handleUnenroll} onPay={setCheckoutCourse} />
 
       {/* Completed */}
-      <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} certificates={certificates} />
+      <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} certificates={certificates} onUnenroll={handleUnenroll} onPay={setCheckoutCourse} />
 
       <div style={{ textAlign: "center" }}>
         <Link href="/member/e-learning" style={{ fontSize: 13, fontWeight: 600, color: "var(--teal-light)", textDecoration: "none" }}>
@@ -105,6 +116,11 @@ export default function MyCoursesPage() {
       </div>
 
       <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} availableCourses={rows.map((r) => r.course)} />
+      <CourseCheckoutModal
+        course={checkoutCourse}
+        onClose={() => setCheckoutCourse(null)}
+        onPaid={() => { refetchEnrollments(); setCheckoutCourse(null); }}
+      />
     </div>
   );
 }

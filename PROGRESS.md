@@ -4230,3 +4230,62 @@ every gap addressed here was a rule-1 judgment call (reversible,
 reversible naming/pattern choices, no destructive action, no auth/
 payment behavior change beyond what was explicitly requested).
 
+## Member + admin fix batch (branch enhance/auto-wip) — Completed
+
+Addressed 9 user-reported issues spanning member and admin portals.
+
+**Member:**
+1. Certificate confusion — not a bug; the Certificate row is already
+   created server-side on completion. Fixed the copy ("eligible" →
+   "ready") and linked straight to the specific certificate instead of
+   just the list.
+2. "Only saw existing courses" — not a bug; `/member/e-learning` is
+   already a real full-catalog browse page, just under-discovered.
+   Added a "Browse more courses" link from the enrolled-only view.
+3. Real "wait for host" gate for SCHEDULED sessions — the
+   livekit-token route now checks real `SessionPresence` data
+   server-side before issuing a learner a join token; the client shows
+   a real waiting state and auto-retries. INSTANT sessions and the
+   hoster's own token request are exempt.
+4. Real Unenroll (`Enrollment.status: DROPPED`, already in the enum,
+   never had a UI path) plus a real two-rail course-payment checkout:
+   `Course.price`, `Enrollment.paid`, and a new `CourseOrder` model
+   (parallel to `Order`, not polymorphic — see its schema docstring).
+   PayPack reuses `lib/paypack.ts` unchanged. Stripe is genuinely new
+   (`npm install stripe`, `lib/stripe.ts`, a new webhook route) — **this
+   repo had zero working Stripe integration before this batch.**
+5. Real logout button added to the member topbar (`useAuth().logout()`
+   existed but was never rendered under `/member/*`).
+
+**Admin:**
+6. Fixed a real bug in Add Resource where a new resource's category
+   could silently default to unset if the categories fetch hadn't
+   resolved yet when the modal opened — same visual form, no layout
+   change.
+7. Added a real `UNAVAILABLE` session status (for a `PENDING` request
+   whose window lapsed unactioned) and a real `Notify` action for
+   `APPROVED` sessions (reminds both learner and lecturer/hoster).
+   Also removed the PATCH route's unrestricted fallback branch, which
+   let any field be updated with zero status guard — a real gap, not a
+   used feature.
+8. Add New User's Role dropdown now fetches real roles from
+   `GET /api/roles` instead of a hardcoded `KNOWN_ROLES` array.
+
+### Needs human input — real Stripe test-mode keys required
+
+`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` placeholder key
+**names** (no values) were added to `.env`. Everything up to the
+actual live Stripe API call is built and verified (schema, the
+`lib/stripe.ts` wrapper, `/api/course-orders`'s Stripe branch, the
+`/api/webhooks/stripe` route, the checkout modal's "Pay with Card"
+button) — but calling it will fail at runtime until a human supplies
+real Stripe test-mode keys from their own Stripe dashboard. The
+PayPack rail needs no such setup and is fully live today (same real,
+no-sandbox PayPack account already used for Resource purchases).
+
+Also flagged, not built: the admin Course create/edit form has no
+`price` field in its UI yet (the schema/API already accept one) — an
+admin can set a course's price via a direct PATCH today, but there's
+no dashboard form control for it. Left out of this batch's scope
+(member-facing payment flow, not the admin course-authoring form).
+

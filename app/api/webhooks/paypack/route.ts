@@ -4,6 +4,7 @@ import { verifyPaypackSignature, type PaypackWebhookPayload } from '@/lib/paypac
 import { notifyUser } from '@/lib/notify'
 import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
+import { settleCourseOrder } from '@/app/api/course-orders/settle'
 
 /**
  * Real PayPack webhook receiver — fires on the `transaction:processed`
@@ -40,7 +41,12 @@ export async function POST(request: NextRequest) {
   // WhereUniqueInput no longer accepts it alone.
   const order = await prisma.order.findFirst({ where: { paypackRef: ref } })
   if (!order) {
-    return NextResponse.json({ data: null, message: 'No matching order for this transaction', code: 'success', status: 200 })
+    const courseOrder = await prisma.courseOrder.findFirst({ where: { paypackRef: ref } })
+    if (!courseOrder) {
+      return NextResponse.json({ data: null, message: 'No matching order for this transaction', code: 'success', status: 200 })
+    }
+    await settleCourseOrder(courseOrder.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
+    return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
   }
 
   const isSuccessful = status === 'successful'

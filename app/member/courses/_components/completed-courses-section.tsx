@@ -6,11 +6,14 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { isCertificateEligible, type CourseEnrollment } from '@/app/member/_shared/use-enrollments'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 import type { Certificate } from '@/app/member/_shared/use-certificates'
+import { EnrollmentActionButton } from './enrollment-action-button'
 
 interface CompletedCoursesSectionProps {
   completed: { enrollment: CourseEnrollment; course: CatalogCourse }[]
   onRequestSession: (course: CatalogCourse) => void
   certificates: Certificate[]
+  onUnenroll: (enrollmentId: string) => void
+  onPay: (course: CatalogCourse) => void
 }
 
 /**
@@ -21,7 +24,7 @@ interface CompletedCoursesSectionProps {
  * completion (see in-progress-courses-section.tsx, which offers the same
  * action on courses still in progress).
  */
-export function CompletedCoursesSection({ completed, onRequestSession, certificates }: CompletedCoursesSectionProps) {
+export function CompletedCoursesSection({ completed, onRequestSession, certificates, onUnenroll, onPay }: CompletedCoursesSectionProps) {
   if (completed.length === 0) return null
 
   return (
@@ -51,6 +54,7 @@ export function CompletedCoursesSection({ completed, onRequestSession, certifica
             >
               <CalendarPlus size={14} /> Request Session
             </button>
+            <EnrollmentActionButton enrollment={enrollment} course={course} onUnenroll={onUnenroll} onPay={onPay} />
             {certificate ? (
               <Link href={`/member/certificates/${certificate.id}`} aria-label={`View certificate for ${course.title}`} style={{ display: 'flex' }}>
                 <GraduationCap size={16} color="var(--gold)" />

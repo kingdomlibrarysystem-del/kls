@@ -16,6 +16,7 @@ function serializeEnrollment(e: {
   completedLessonIds: string[]
   totalLessons: number
   assessmentPassed: boolean
+  paid: boolean
 }) {
   const memberName = e.user.name ?? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim()
   const progress = e.totalLessons > 0 ? Math.round((e.completedLessonIds.length / e.totalLessons) * 100) : 0
@@ -31,6 +32,7 @@ function serializeEnrollment(e: {
     completedLessonIds: e.completedLessonIds,
     totalLessons: e.totalLessons,
     assessmentPassed: e.assessmentPassed,
+    paid: e.paid,
   }
 }
 
@@ -56,6 +58,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 const patchEnrollmentSchema = z.union([
   z.object({ action: z.literal('completeLesson'), lessonId: z.string().min(1, 'lessonId is required') }),
   z.object({ action: z.literal('markAssessmentPassed') }),
+  z.object({ action: z.literal('unenroll') }),
   z.object({ action: z.undefined(), status: z.string().optional() }).passthrough(),
 ])
 
@@ -70,13 +73,18 @@ export const PATCH = withErrorHandling('/api/enrollments/[id]', 'PATCH', async (
   const existing = await prisma.enrollment.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Enrollment not found', 404)
 
-  // completeLesson/markAssessmentPassed are the member's own progress
-  // actions (fired from the lesson viewer/quiz take-flow); any other
-  // field-level PATCH is an admin edit to someone else's enrollment record.
-  const auth = await (body.action === 'completeLesson' || body.action === 'markAssessmentPassed'
+  // completeLesson/markAssessmentPassed/unenroll are the member's own
+  // actions on their own enrollment; any other field-level PATCH is an
+  // admin edit to someone else's enrollment record.
+  const auth = await (body.action === 'completeLesson' || body.action === 'markAssessmentPassed' || body.action === 'unenroll'
     ? requireOwnerOrStaff(existing.userId)
     : requireStaff())
   if (auth.response) return auth.response
+
+  if (body.action === 'unenroll') {
+    const updated = await prisma.enrollment.update({ where: { id }, data: { status: 'DROPPED' }, include: INCLUDE })
+    return NextResponse.json({ data: serializeEnrollment(updated), message: 'Unenrolled successfully', code: 'success', status: 200 })
+  }
 
   if (body.action === 'completeLesson') {
     const completedLessonIds = existing.completedLessonIds.includes(body.lessonId)

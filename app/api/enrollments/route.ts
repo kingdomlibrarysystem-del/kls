@@ -24,6 +24,7 @@ function serializeEnrollment(e: {
   completedLessonIds: string[]
   totalLessons: number
   assessmentPassed: boolean
+  paid: boolean
 }) {
   const memberName = e.user.name ?? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim()
   const progress = e.totalLessons > 0 ? Math.round((e.completedLessonIds.length / e.totalLessons) * 100) : 0
@@ -39,6 +40,7 @@ function serializeEnrollment(e: {
     completedLessonIds: e.completedLessonIds,
     totalLessons: e.totalLessons,
     assessmentPassed: e.assessmentPassed,
+    paid: e.paid,
   }
 }
 
@@ -103,6 +105,8 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
   const already = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: body.courseId } } })
   if (already) throw new ApiError('This user is already enrolled in this course', 409)
 
+  if (course.price > 0) throw new ApiError('This course requires payment — use /api/course-orders to pay and enroll', 400)
+
   const enrollment = await prisma.enrollment.create({
     data: {
       userId: body.userId,
@@ -110,6 +114,7 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
       totalLessons: course._count.lessons,
       completedLessonIds: [],
       status: 'ENROLLED',
+      paid: true,
     },
     include: INCLUDE,
   })
