@@ -165,6 +165,7 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
     await notifyUser({
       userId: updated.contributorId,
       type: 'PUBLICATION',
+      category: 'publication-approved',
       title: 'Publication approved',
       message: `"${updated.title}" has been approved and published.`,
       href: `/library/${updated.resourceId}`,
@@ -184,6 +185,7 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
     await notifyUser({
       userId: updated.contributorId,
       type: 'PUBLICATION',
+      category: 'publication-rejected',
       title: 'Publication not approved',
       message: `"${updated.title}" was not approved for publishing.`,
       href: `/dashboard/publishing`,

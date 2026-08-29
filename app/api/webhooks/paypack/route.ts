@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     await notifyUser({
       userId: order.userId,
       type: 'SYSTEM',
+      category: 'order-payment-success',
       title: 'Payment confirmed',
       message: `Your payment for "${order.resourceTitle}" was successful.`,
       href: `/member/orders/${order.id}`,
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
     await notifyUser({
       userId: order.userId,
       type: 'SYSTEM',
+      category: 'order-payment-failed',
       title: 'Payment failed',
       message: `Your payment for "${order.resourceTitle}" could not be completed.`,
       href: `/member/orders/${order.id}`,

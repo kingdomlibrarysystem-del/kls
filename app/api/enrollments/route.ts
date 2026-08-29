@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { enrollmentConfirmedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /**
  * Real Enrollment API, replacing app/member/_shared/enrollment-data.ts
@@ -118,5 +121,18 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
     },
     include: INCLUDE,
   })
+
+  const memberName = user.name ?? (`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'there')
+  const coursesUrl = `${appBaseUrl()}/member/courses`
+  await notifyUser({
+    userId: body.userId,
+    type: 'COURSE',
+    category: 'course-enrollment',
+    title: 'Enrolled in course',
+    message: `You're enrolled in "${course.title}".`,
+    href: '/member/courses',
+    email: { subject: 'Your course enrollment is confirmed', html: enrollmentConfirmedEmailHtml(memberName, course.title, coursesUrl) },
+  })
+
   return NextResponse.json({ data: serializeEnrollment(enrollment), message: 'Enrolled successfully', code: 'success', status: 201 }, { status: 201 })
 })

@@ -106,6 +106,7 @@ export const PATCH = withErrorHandling('/api/reservations/[id]', 'PATCH', async 
     await notifyUser({
       userId: updated.userId,
       type: 'RESERVATION',
+      category: 'reservation-ready',
       title: 'Your reservation is ready',
       message: `"${updated.resource.title}" is ready for you to claim.`,
       href: `/member/reservations/${updated.id}`,

@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { reservationCreatedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 const createReservationSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -173,6 +176,17 @@ export const POST = withErrorHandling('/api/reservations', 'POST', async (reques
       status: 'PENDING',
     },
     include: RESOURCE_INCLUDE,
+  })
+
+  const reservationUrl = `${appBaseUrl()}/member/reservations/${reservation.id}`
+  await notifyUser({
+    userId: body.userId,
+    type: 'RESERVATION',
+    category: 'reservation-created',
+    title: 'Reservation placed',
+    message: `Your reservation for "${reservation.resource.title}" has been placed.`,
+    href: `/member/reservations/${reservation.id}`,
+    email: { subject: 'Your reservation has been placed', html: reservationCreatedEmailHtml(body.memberName, reservation.resource.title, reservation.queuePosition, reservationUrl) },
   })
 
   return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation created successfully', code: 'success', status: 201 }, { status: 201 })

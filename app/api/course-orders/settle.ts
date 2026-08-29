@@ -1,5 +1,6 @@
 import prisma from '@/prisma/client'
 import { notifyUser } from '@/lib/notify'
+import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
 
 interface SettleInput {
@@ -48,17 +49,22 @@ export async function settleCourseOrder(orderId: string, input: SettleInput) {
     await notifyUser({
       userId: order.userId,
       type: 'COURSE',
+      category: 'course-payment-success',
       title: 'Payment confirmed',
       message: `Your payment for "${order.courseTitle}" was successful — you're enrolled.`,
-      href: courseUrl,
+      href: '/member/courses',
+      email: { subject: 'Your course payment is confirmed', html: orderPaidEmailHtml(order.buyerName, order.courseTitle, order.amountRwf, courseUrl) },
     })
   } else if (isFailed && order.status !== 'FAILED') {
+    const courseUrl = `${appBaseUrl()}/member/e-learning`
     await notifyUser({
       userId: order.userId,
       type: 'COURSE',
+      category: 'course-payment-failed',
       title: 'Payment failed',
       message: `Your payment for "${order.courseTitle}" could not be completed.`,
       href: '/member/e-learning',
+      email: { subject: 'Your course payment failed', html: orderFailedEmailHtml(order.buyerName, order.courseTitle, courseUrl) },
     })
   }
 

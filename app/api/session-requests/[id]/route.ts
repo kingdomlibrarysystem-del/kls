@@ -4,7 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireAuth, requireStaff } from '@/lib/auth/require-role'
 import { notifyUser } from '@/lib/notify'
-import { sessionApprovedEmailHtml, sessionRejectedEmailHtml } from '@/lib/email-templates'
+import { sessionApprovedEmailHtml, sessionRejectedEmailHtml, sessionUnavailableEmailHtml, sessionReminderEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
 
 function serializeSessionRequest(s: {
@@ -115,6 +115,7 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
     await notifyUser({
       userId: updated.learnerId,
       type: 'SYSTEM',
+      category: 'session-approved',
       title: 'Session approved',
       message: `Your session request for "${updated.courseTitle}" has been approved.`,
       href: `/member/sessions/${updated.id}`,
@@ -132,6 +133,7 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
     await notifyUser({
       userId: updated.learnerId,
       type: 'SYSTEM',
+      category: 'session-rejected',
       title: 'Session not approved',
       message: `Your session request for "${updated.courseTitle}" was not approved.`,
       href: `/member/sessions/${updated.id}`,
@@ -151,12 +153,15 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
     if (existing.status !== 'PENDING') throw new ApiError('Only a pending session request can be marked unavailable', 409)
     const updated = await prisma.sessionRequest.update({ where: { id }, data: { status: 'UNAVAILABLE', notes: body.notes ?? existing.notes } })
 
+    const unavailableSessionUrl = `${appBaseUrl()}/member/sessions/${updated.id}`
     await notifyUser({
       userId: updated.learnerId,
       type: 'SYSTEM',
+      category: 'session-unavailable',
       title: 'Session unavailable',
       message: `Your session request for "${updated.courseTitle}" is no longer available.`,
       href: `/member/sessions/${updated.id}`,
+      email: { subject: 'Your session is no longer available', html: sessionUnavailableEmailHtml(updated.learnerName, updated.courseTitle, unavailableSessionUrl) },
     })
 
     return NextResponse.json({ data: serializeSessionRequest(updated), message: 'Session request marked unavailable', code: 'success', status: 200 })
@@ -165,20 +170,27 @@ export const PATCH = withErrorHandling('/api/session-requests/[id]', 'PATCH', as
   if (body.action === 'notify') {
     if (existing.status !== 'APPROVED') throw new ApiError('Only an approved session can be notified', 409)
 
+    const scheduledAtLabel = existing.scheduledAt ? existing.scheduledAt.toLocaleString() : null
+    const learnerSessionUrl = `${appBaseUrl()}/member/sessions/${existing.id}`
     await notifyUser({
       userId: existing.learnerId,
       type: 'SYSTEM',
+      category: 'session-reminder',
       title: 'Session reminder',
-      message: `Reminder: your session for "${existing.courseTitle}" is scheduled${existing.scheduledAt ? ` for ${existing.scheduledAt.toLocaleString()}` : ''}.`,
+      message: `Reminder: your session for "${existing.courseTitle}" is scheduled${scheduledAtLabel ? ` for ${scheduledAtLabel}` : ''}.`,
       href: `/member/sessions/${existing.id}`,
+      email: { subject: 'Reminder: your upcoming session', html: sessionReminderEmailHtml(existing.learnerName, existing.courseTitle, scheduledAtLabel, learnerSessionUrl) },
     })
     if (existing.lecturerId) {
+      const lecturerRoomUrl = `${appBaseUrl()}/dashboard/e-learning/sessions/${existing.id}/room`
       await notifyUser({
         userId: existing.lecturerId,
         type: 'SYSTEM',
+        category: 'session-reminder',
         title: 'Session reminder',
-        message: `Reminder: you have a session for "${existing.courseTitle}" scheduled${existing.scheduledAt ? ` for ${existing.scheduledAt.toLocaleString()}` : ''}.`,
+        message: `Reminder: you have a session for "${existing.courseTitle}" scheduled${scheduledAtLabel ? ` for ${scheduledAtLabel}` : ''}.`,
         href: `/dashboard/e-learning/sessions/${existing.id}/room`,
+        email: { subject: 'Reminder: your upcoming session', html: sessionReminderEmailHtml(existing.lecturerName ?? 'there', existing.courseTitle, scheduledAtLabel, lecturerRoomUrl) },
       })
     }
 

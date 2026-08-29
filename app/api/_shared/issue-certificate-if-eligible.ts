@@ -44,6 +44,7 @@ export async function issueCertificateIfEligible(userId: string, courseId: strin
   await notifyUser({
     userId,
     type: 'COURSE',
+    category: 'certificate-issued',
     title: 'Certificate issued',
     message: `You've earned a certificate for completing "${enrollment.course.title}".`,
     href: `/member/certificates/${certificate.id}`,

@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { borrowApprovedEmailHtml, borrowRejectedEmailHtml, borrowReturnedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 function serializeBorrow(b: {
   id: string
@@ -63,7 +66,6 @@ const patchBorrowSchema = z.union([
   z.object({ action: z.literal('reject') }),
   z.object({ action: z.literal('return') }),
   z.object({ action: z.literal('waiveFine') }),
-  z.object({ action: z.undefined() }).passthrough(),
 ])
 
 export const PATCH = withErrorHandling('/api/borrowings/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -96,15 +98,45 @@ export const PATCH = withErrorHandling('/api/borrowings/[id]', 'PATCH', async (r
     data.fineAmount = existing.status === 'OVERDUE'
       ? Math.max(0, Math.floor((now.getTime() - existing.dueDate.getTime()) / 86400000)) * 200
       : null
-  } else if (body.action === 'waiveFine') {
-    data.finePaid = true
   } else {
-    const rest = { ...body } as Record<string, unknown>
-    delete rest.action
-    Object.assign(data, rest)
+    data.finePaid = true
   }
 
   const updated = await prisma.borrow.update({ where: { id }, data, include: RESOURCE_INCLUDE })
+
+  const borrowUrl = `${appBaseUrl()}/member/borrowings/${updated.id}`
+  if (body.action === 'approve') {
+    await notifyUser({
+      userId: updated.userId,
+      type: 'BORROW',
+      category: 'borrow-approved',
+      title: 'Borrowing approved',
+      message: `Your borrow request for "${updated.resource.title}" has been approved. Due back by ${updated.dueDate.toISOString().split('T')[0]}.`,
+      href: `/member/borrowings/${updated.id}`,
+      email: { subject: 'Your borrow request was approved', html: borrowApprovedEmailHtml(updated.memberName, updated.resource.title, updated.dueDate.toISOString().split('T')[0], borrowUrl) },
+    })
+  } else if (body.action === 'reject') {
+    await notifyUser({
+      userId: updated.userId,
+      type: 'BORROW',
+      category: 'borrow-rejected',
+      title: 'Borrowing not approved',
+      message: `Your borrow request for "${updated.resource.title}" was not approved.`,
+      href: `/member/borrowings/${updated.id}`,
+      email: { subject: 'Update on your borrow request', html: borrowRejectedEmailHtml(updated.memberName, updated.resource.title, borrowUrl) },
+    })
+  } else if (body.action === 'return') {
+    await notifyUser({
+      userId: updated.userId,
+      type: 'BORROW',
+      category: 'borrow-returned',
+      title: 'Borrowing returned',
+      message: `Thanks for returning "${updated.resource.title}".`,
+      href: `/member/borrowings/${updated.id}`,
+      email: { subject: 'Your return has been recorded', html: borrowReturnedEmailHtml(updated.memberName, updated.resource.title, updated.fineAmount, borrowUrl) },
+    })
+  }
+
   return NextResponse.json({ data: serializeBorrow(updated), message: 'Borrowing updated successfully', code: 'success', status: 200 })
 })
 
