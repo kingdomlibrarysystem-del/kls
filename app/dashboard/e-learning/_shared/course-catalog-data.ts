@@ -26,15 +26,8 @@ export interface CourseCatalogEntry {
   createdAt: string
   /** Course author, used by the catalog's own "Author" filter (previously `/contributor/courses`'s filter before that portal was consolidated into admin). */
   author: string
-  /**
-   * Real link to `lecturerRoster` (see app/lecturer/_components/lecturer-identity.ts)
-   * — the same roster app/member/_shared/course-catalog-data.ts's `CatalogCourse.lecturerId`
-   * already points at. Added so admin's own course management can display/assign an
-   * instructor of record without needing a separate lecturer-facing dataset — this
-   * catalog and the member-facing one remain intentionally separate (different
-   * lifecycles: authoring/business vs. the taken-course experience), but both now
-   * resolve "who teaches this" through the same roster. Optional: not every admin
-   * course has an assigned instructor (e.g. platform-authored courses).
-   */
+  /** Real User.id of any real platform user assigned as this course's instructor of record — resolved via GET /api/users, not a hardcoded roster. Optional: not every admin course has an assigned instructor (e.g. platform-authored courses). */
   lecturerId?: string
+  /** Real Cloudinary secure_url for the course's cover image, or undefined if none set. */
+  image?: string
 }

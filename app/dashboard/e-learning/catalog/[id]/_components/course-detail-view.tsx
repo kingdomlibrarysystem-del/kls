@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { languageLabels } from '../../../add/_components/course-form-schema'
-import { lecturerRoster } from '@/lib/identity/lecturer-identity'
+import { useUsers } from '@/app/dashboard/users/_components/use-users'
 import { EditCourseModal } from '../../_components/edit-course-modal'
 import { ArchiveCourseModal } from '../../_components/archive-course-modal'
 import { archiveCourseInCatalog, refetchCourseCatalog } from '../../../_shared/use-course-catalog'
@@ -70,6 +70,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
  * directly without the list having loaded first.
  */
 export function CourseDetailView({ id }: CourseDetailViewProps) {
+  const { users } = useUsers()
   const [course, setCourse] = useState<CourseCatalogEntry | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -164,7 +165,7 @@ export function CourseDetailView({ id }: CourseDetailViewProps) {
           <DetailRow
             icon={<GraduationCap size={13} />}
             label="Instructor"
-            value={course.lecturerId ? (lecturerRoster.find((l) => l.id === course.lecturerId)?.name ?? '—') : 'None assigned'}
+            value={course.lecturerId ? (users.find((u) => u.id === course.lecturerId)?.name ?? '—') : 'None assigned'}
           />
           <DetailRow icon={<Users size={13} />} label="Enrolled" value={String(course.enrolledCount)} />
           <DetailRow icon={<CalendarDays size={13} />} label="Created" value={course.createdAt} />

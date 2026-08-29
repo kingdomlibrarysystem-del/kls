@@ -12,8 +12,10 @@ export const courseSchema = z.object({
   category: z.string().min(1, 'Category is required'),
   language: z.enum(courseLanguages, { message: 'Select a language' }),
   status: z.enum(courseStatuses, { message: 'Select a status' }),
-  /** Optional — resolves to a lecturerRoster id, or '' for no assigned instructor (e.g. a platform-authored course). */
+  /** Real User.id of any real platform user, or '' for no assigned instructor (e.g. a platform-authored course). */
   lecturerId: z.string().optional(),
+  /** Real Cloudinary secure_url from CourseFormView's upload field, or '' for no cover image. */
+  image: z.string().optional(),
 })
 
 export type CourseFormData = z.infer<typeof courseSchema>
