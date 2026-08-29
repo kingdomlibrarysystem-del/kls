@@ -76,7 +76,11 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
 
   const handleEdit = () => {
     if (!category) return
-    setForm({ nameEn: category.name.en, nameFr: category.name.fr, nameRw: category.name.rw, slug: category.slug, parentId: category.parentId ?? '' })
+    setForm({
+      nameEn: category.name.en, nameFr: category.name.fr, nameRw: category.name.rw, slug: category.slug, parentId: category.parentId ?? '',
+      code: category.code ?? '', subtitle: category.subtitle ?? '', range: category.range ?? '', theme: category.theme ?? '',
+      description: category.description ?? '', detail: category.detail ?? '', heroImage: category.heroImage ?? '', status: category.status ?? '',
+    })
     setFormErrors({})
     setEditing(true)
   }
@@ -93,10 +97,15 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
     }
     setSubmitting(true)
     try {
+      const isRoot = !form.parentId
+      const extraFields = isRoot
+        ? { code: form.code, subtitle: form.subtitle, range: form.range, theme: form.theme, description: form.description, detail: form.detail, heroImage: form.heroImage }
+        : { status: form.status || undefined }
       const updated = await updateCategory(category.id, {
         slug: form.slug,
         name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
         parentId: form.parentId || null,
+        ...extraFields,
       })
       setCategory(updated)
       setEditing(false)

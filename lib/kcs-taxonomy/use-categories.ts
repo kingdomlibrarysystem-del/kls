@@ -8,7 +8,19 @@ import {
   categoriesHaveLoaded,
   refetchCategories,
 } from './taxonomy-helpers'
-import type { Category } from './types'
+import type { Category, CategoryStatus } from './types'
+
+/** Root-only content fields + the leaf-only status field — see CategoryFormState's docstring for why both live in one shared shape. */
+interface CategoryExtraFields {
+  code?: string
+  subtitle?: string
+  range?: string
+  theme?: string
+  description?: string
+  detail?: string
+  heroImage?: string
+  status?: CategoryStatus
+}
 
 /**
  * Real, fetch()-backed categories store — replaces the previous
@@ -44,7 +56,7 @@ export function useCategories() {
   return { data, loading, error }
 }
 
-export async function addCategory(input: { slug: string; name: { en: string; fr?: string; rw?: string }; parentId: string | null }): Promise<Category> {
+export async function addCategory(input: { slug: string; name: { en: string; fr?: string; rw?: string }; parentId: string | null } & CategoryExtraFields): Promise<Category> {
   const res = await fetch('/api/categories', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -56,7 +68,7 @@ export async function addCategory(input: { slug: string; name: { en: string; fr?
   return json.data
 }
 
-export async function updateCategory(id: string, updates: Partial<{ slug: string; name: { en?: string; fr?: string; rw?: string }; parentId: string | null }>): Promise<Category> {
+export async function updateCategory(id: string, updates: Partial<{ slug: string; name: { en?: string; fr?: string; rw?: string }; parentId: string | null } & CategoryExtraFields>): Promise<Category> {
   const res = await fetch(`/api/categories/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

@@ -65,11 +65,17 @@ export function ManageCategoriesSection() {
     setSubmitting(true)
 
     try {
+      const isRoot = !form.parentId
+      const extraFields = isRoot
+        ? { code: form.code, subtitle: form.subtitle, range: form.range, theme: form.theme, description: form.description, detail: form.detail, heroImage: form.heroImage }
+        : { status: form.status || undefined }
+
       if (editTarget) {
         await updateCategory(editTarget.id, {
           slug: form.slug,
           name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
           parentId: form.parentId || null,
+          ...extraFields,
         })
         showToast(`Category "${form.nameEn}" updated.`)
         setEditTarget(null)
@@ -78,6 +84,7 @@ export function ManageCategoriesSection() {
           slug: form.slug,
           name: { en: form.nameEn, fr: form.nameFr || form.nameEn, rw: form.nameRw || form.nameEn },
           parentId: form.parentId || null,
+          ...extraFields,
         })
         showToast(`Category "${form.nameEn}" created.`)
       }
@@ -91,7 +98,11 @@ export function ManageCategoriesSection() {
 
   const handleEdit = (cat: Category) => {
     setEditTarget(cat)
-    setForm({ nameEn: cat.name.en, nameFr: cat.name.fr, nameRw: cat.name.rw, slug: cat.slug, parentId: cat.parentId ?? '' })
+    setForm({
+      nameEn: cat.name.en, nameFr: cat.name.fr, nameRw: cat.name.rw, slug: cat.slug, parentId: cat.parentId ?? '',
+      code: cat.code ?? '', subtitle: cat.subtitle ?? '', range: cat.range ?? '', theme: cat.theme ?? '',
+      description: cat.description ?? '', detail: cat.detail ?? '', heroImage: cat.heroImage ?? '', status: cat.status ?? '',
+    })
     setErrors({})
   }
 
