@@ -11,6 +11,8 @@ interface EmptyStateProps {
   className?: string
   /** Inline style overrides for the wrapping container in Dialect B contexts. */
   style?: React.CSSProperties
+  /** Optional real action rendered below the description — e.g. a real "Add X" button, so a genuinely empty admin list is never a dead end that only a sidebar link could escape. */
+  action?: React.ReactNode
 }
 
 /**
@@ -19,7 +21,7 @@ interface EmptyStateProps {
  * `emptyMessage` prop already covers table-shaped empty states. Dialect-flexible:
  * pass `className` for Tailwind styling or `style` for CSS-var-driven styling.
  */
-export function EmptyState({ icon: Icon, title, description, className, style }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, className, style, action }: EmptyStateProps) {
   return (
     <div
       className={`flex flex-col items-center justify-center text-center px-6 py-12 ${className ?? ''}`}
@@ -32,6 +34,7 @@ export function EmptyState({ icon: Icon, title, description, className, style }:
       <p className="font-lato text-xs text-w-700 dark:text-white/50 mt-1.5 max-w-xs" style={style ? { color: 'var(--text-secondary)' } : undefined}>
         {description}
       </p>
+      {action && <div className="mt-4">{action}</div>}
     </div>
   )
 }
