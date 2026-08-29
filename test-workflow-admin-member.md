@@ -34,14 +34,26 @@ Use this whenever validating a change to `lib/kcs-taxonomy/**`,
 1. `/dashboard/kcs` → **Manage Categories** section → **New Category**
    form.
 2. Fill in:
-   - **Name**: `Philosophy`
-   - **Slug**: leave as auto-generated (`philosophy`)
+   - **Name**: `Foundation`
+   - **Slug**: leave as auto-generated (`foundation`)
    - **Parent Category**: `— None (root category) —`
+   - With no Parent selected, a **Root Category Details** section
+     appears — fill it in with real values from `KCS_LIBRARY.md`:
+     - **Code**: `KCS-FND`
+     - **Subtitle**: `Constitution of the Kingdom`
+     - **Range**: `Genesis – Deuteronomy`
+     - **Theme**: `Origins and Covenant`
+     - **Description**: `Lays the foundation of God's Kingdom, creation, covenant, and divine law.`
+     - **Detail**: any longer paragraph expanding on the description
+     - **Hero Image**: upload a real image via the Cloudinary upload
+       field
 3. Click **Create Category**.
-4. **Expected:** a success toast (`Category "Philosophy" created.`),
+4. **Expected:** a success toast (`Category "Foundation" created.`),
    real `POST /api/categories` call, the new category appears in the
-   categories table below, and (per the fix above) a "Philosophy"
-   pillar tab now appears in the KCS Map browse UI above.
+   categories table below, and (per the fix above) a "Foundation"
+   pillar tab now appears in the KCS Map browse UI above — with the
+   hero image, code, subtitle, range, theme, and description all
+   rendered on the pillar header (not blank).
 
 ## Step 2 — Admin creates a child category under it
 
@@ -49,10 +61,14 @@ Use this whenever validating a change to `lib/kcs-taxonomy/**`,
 2. Fill in:
    - **Name**: `Ethics`
    - **Slug**: leave as auto-generated (`ethics`)
-   - **Parent Category**: `Philosophy` (the root just created)
+   - **Parent Category**: `Foundation` (the root just created)
+   - With a Parent selected, a **Status** select appears instead of
+     the Root Category Details section — set it to `Available`.
 3. Click **Create Category**.
-4. **Expected:** success toast (`Category "Ethics" created.`), `Ethics`
-   now appears in the table nested under `Philosophy`.
+4. **Expected:** success toast (`Category "Ethics" created.`),
+   `Ethics` now appears in the table nested under `Foundation`, and
+   its status badge on the pillar's scroll-card view reflects
+   `Available`.
 
 ## Step 3 — Admin files a resource under the child category
 
@@ -62,7 +78,7 @@ Use this whenever validating a change to `lib/kcs-taxonomy/**`,
    - **Title**: `Nicomachean Ethics`
    - **Author**: `Aristotle`
    - **KCS Scroll**: `Ethics` (only leaf/child categories are
-     selectable here — `Philosophy` itself, being a root, will **not**
+     selectable here — `Foundation` itself, being a root, will **not**
      appear in this dropdown; this is expected, not a bug)
    - **Total Quantity**: `3`
    - **Description**: `A foundational work on virtue ethics.`
@@ -82,13 +98,13 @@ Use this whenever validating a change to `lib/kcs-taxonomy/**`,
 
 1. Log out of admin, log in (or register) as a member.
 2. Go to `/member/library`.
-3. Click the `Philosophy` section chip (the root category's chip is
+3. Click the `Foundation` section chip (the root category's chip is
    what the member-facing filter uses — child categories like `Ethics`
    are not shown as separate chips, only as a further breakdown once a
    resource is opened).
 4. **Expected:** `Nicomachean Ethics` appears in the resource grid/list
    for that section — the "No resources are filed under this section
-   yet" empty state should no longer show for `Philosophy`.
+   yet" empty state should no longer show for `Foundation`.
 
 ## Notes on what's real vs. not visible without a resource
 
@@ -101,4 +117,4 @@ Use this whenever validating a change to `lib/kcs-taxonomy/**`,
 - Deleting a category that still has resources assigned is blocked by
   a real server-side guard (`DeleteCategoryModal` / the resource-count
   check in `manage-categories-section.tsx`) — to clean up after this
-  test, delete the resource first, then `Ethics`, then `Philosophy`.
+  test, delete the resource first, then `Ethics`, then `Foundation`.
