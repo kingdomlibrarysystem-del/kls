@@ -10,7 +10,9 @@ import { getSession } from 'next-auth/react'
 import { FormContainer } from '@/components/ui/form-container'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { GoogleSignInButton } from '@/components/ui/google-signin-button'
 import { useAuth } from '@/contexts/auth-context'
 import { roleNameToUserRole } from '@/lib/roles'
 
@@ -176,9 +178,8 @@ export function LoginForm() {
               Forgot?
             </Link>
           </div>
-          <FormInput
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="••••••••"
             error={errors.password?.message}
             {...register('password')}
@@ -193,6 +194,14 @@ export function LoginForm() {
         >
           Sign In
         </ElegantButton>
+
+        <div className="flex items-center gap-3 text-xs text-w-500">
+          <span className="flex-1 h-px bg-w-300" />
+          or
+          <span className="flex-1 h-px bg-w-300" />
+        </div>
+
+        <GoogleSignInButton callbackUrl={explicitRedirect ?? undefined} />
 
         <p className="text-center font-lato text-sm text-w-700">
           Don&apos;t have an account?{' '}
