@@ -1,4 +1,3 @@
-import { FileStack } from 'lucide-react'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { FieldLabel, inputCls } from './field-label'
 import { toSlug, type Category, type CategoryFormState, type CategoryStatus } from '@/lib/kcs-taxonomy'
@@ -21,7 +20,7 @@ interface SubcategoryFormProps {
   onCancelEdit: () => void
 }
 
-/** Create/Edit form for a subcategory (scroll) — requires a Parent Category and shows Status, no pillar-only detail fields. */
+/** Create/Edit form for a subcategory (scroll) — requires a Parent Category and shows Status, no pillar-only detail fields. Rendered inside a Modal, which supplies the title/close chrome. */
 export function SubcategoryForm({
   form,
   errors,
@@ -34,70 +33,52 @@ export function SubcategoryForm({
   onCancelEdit,
 }: SubcategoryFormProps) {
   return (
-    <div className="bg-white dark:bg-white/5 border border-w-300 dark:border-white/10 rounded-lg p-5 sticky top-4">
-      <div className="flex items-center justify-between mb-5 pb-4 border-b border-w-200 dark:border-white/10">
-        <div>
-          <h2 className="font-cinzel text-sm font-semibold text-w-950 dark:text-white tracking-wide">
-            {editTarget ? 'Edit Subcategory' : 'New Subcategory'}
-          </h2>
-          <p className="font-lato text-xs text-w-600 dark:text-white/40 mt-0.5">
-            {editTarget ? `Editing: ${editTarget.name.en}` : 'Add a new scroll under a root category'}
-          </p>
-        </div>
-        <div className="w-9 h-9 rounded-lg bg-w-100 dark:bg-white/10 flex items-center justify-center">
-          <FileStack size={16} className="text-w-600" />
-        </div>
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <FieldLabel required>Name</FieldLabel>
+        <input type="text" placeholder="e.g. Genesis" value={form.nameEn} onChange={(e) => onNameEnChange(e.target.value)} className={inputCls(!!errors.nameEn)} />
+        {errors.nameEn && <p className="mt-1 font-lato text-xs text-red-500">{errors.nameEn}</p>}
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <FieldLabel required>Name</FieldLabel>
-          <input type="text" placeholder="e.g. Genesis" value={form.nameEn} onChange={(e) => onNameEnChange(e.target.value)} className={inputCls(!!errors.nameEn)} />
-          {errors.nameEn && <p className="mt-1 font-lato text-xs text-red-500">{errors.nameEn}</p>}
-        </div>
+      <div>
+        <FieldLabel required>Slug</FieldLabel>
+        <input type="text" placeholder="e.g. genesis" value={form.slug} onChange={(e) => onFieldChange({ slug: toSlug(e.target.value) })} className={inputCls(!!errors.slug)} />
+        {errors.slug ? <p className="mt-1 font-lato text-xs text-red-500">{errors.slug}</p> : <p className="mt-1 font-lato text-xs text-w-500 dark:text-white/30">Auto-generated · must be unique</p>}
+      </div>
 
-        <div>
-          <FieldLabel required>Slug</FieldLabel>
-          <input type="text" placeholder="e.g. genesis" value={form.slug} onChange={(e) => onFieldChange({ slug: toSlug(e.target.value) })} className={inputCls(!!errors.slug)} />
-          {errors.slug ? <p className="mt-1 font-lato text-xs text-red-500">{errors.slug}</p> : <p className="mt-1 font-lato text-xs text-w-500 dark:text-white/30">Auto-generated · must be unique</p>}
-        </div>
+      <div>
+        <FieldLabel required>Parent Category</FieldLabel>
+        <select value={form.parentId} onChange={(e) => onFieldChange({ parentId: e.target.value })} className={inputCls(!!errors.parentId)}>
+          <option value="">— Select a root category —</option>
+          {parentOptions.map((c) => (
+            <option key={c.id} value={c.id}>{c.name.en}</option>
+          ))}
+        </select>
+        {errors.parentId ? (
+          <p className="mt-1 font-lato text-xs text-red-500">{errors.parentId}</p>
+        ) : (
+          <p className="mt-1 font-lato text-xs text-w-500 dark:text-white/30">Which pillar this scroll belongs under</p>
+        )}
+      </div>
 
-        <div>
-          <FieldLabel required>Parent Category</FieldLabel>
-          <select value={form.parentId} onChange={(e) => onFieldChange({ parentId: e.target.value })} className={inputCls(!!errors.parentId)}>
-            <option value="">— Select a root category —</option>
-            {parentOptions.map((c) => (
-              <option key={c.id} value={c.id}>{c.name.en}</option>
-            ))}
-          </select>
-          {errors.parentId ? (
-            <p className="mt-1 font-lato text-xs text-red-500">{errors.parentId}</p>
-          ) : (
-            <p className="mt-1 font-lato text-xs text-w-500 dark:text-white/30">Which pillar this scroll belongs under</p>
-          )}
-        </div>
+      <div className="pt-2 border-t border-w-200 dark:border-white/10">
+        <FieldLabel>Status</FieldLabel>
+        <select value={form.status} onChange={(e) => onFieldChange({ status: e.target.value as CategoryStatus })} className={inputCls()}>
+          <option value="">— Not set —</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+      </div>
 
-        <div className="pt-2 border-t border-w-200 dark:border-white/10">
-          <FieldLabel>Status</FieldLabel>
-          <select value={form.status} onChange={(e) => onFieldChange({ status: e.target.value as CategoryStatus })} className={inputCls()}>
-            <option value="">— Not set —</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <ElegantButton type="submit" variant="primary" loading={submitting} className="flex-1 text-sm py-2">
-            {editTarget ? 'Save Changes' : 'Create Subcategory'}
-          </ElegantButton>
-          {editTarget && (
-            <ElegantButton type="button" variant="outline" onClick={onCancelEdit} className="text-sm py-2 px-4">
-              Cancel
-            </ElegantButton>
-          )}
-        </div>
-      </form>
-    </div>
+      <div className="flex gap-2 pt-2">
+        <ElegantButton type="submit" variant="primary" loading={submitting} className="flex-1 text-sm py-2">
+          {editTarget ? 'Save Changes' : 'Create Subcategory'}
+        </ElegantButton>
+        <ElegantButton type="button" variant="outline" onClick={onCancelEdit} className="text-sm py-2 px-4">
+          Cancel
+        </ElegantButton>
+      </div>
+    </form>
   )
 }

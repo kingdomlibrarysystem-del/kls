@@ -28,6 +28,7 @@ export function ManageCategoriesSection() {
   const [errors, setErrors] = useState<Partial<CategoryFormState>>({})
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Category | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
 
@@ -37,6 +38,7 @@ export function ManageCategoriesSection() {
   }
 
   const resetForm = () => {
+    setFormOpen(false)
     setEditTarget(null)
     setForm(EMPTY_CATEGORY_FORM)
     setErrors({})
@@ -45,6 +47,13 @@ export function ManageCategoriesSection() {
   const handleTabChange = (next: ManageCategoriesTab) => {
     setTab(next)
     resetForm()
+  }
+
+  const handleAddNew = () => {
+    setEditTarget(null)
+    setForm(EMPTY_CATEGORY_FORM)
+    setErrors({})
+    setFormOpen(true)
   }
 
   const handleNameEn = (value: string) => {
@@ -108,6 +117,7 @@ export function ManageCategoriesSection() {
       description: cat.description ?? '', detail: cat.detail ?? '', heroImage: cat.heroImage ?? '', status: cat.status ?? '',
     })
     setErrors({})
+    setFormOpen(true)
   }
 
   const handleDelete = async () => {
@@ -129,7 +139,8 @@ export function ManageCategoriesSection() {
   }
 
   const panelProps = {
-    categories, resources, form, errors, submitting, editTarget,
+    categories, resources, form, errors, submitting, formOpen, editTarget,
+    onAddNew: handleAddNew,
     onNameEnChange: handleNameEn,
     onFieldChange: (patch: Partial<CategoryFormState>) => { setForm((f) => ({ ...f, ...patch })); setErrors((err) => ({ ...err, ...(patch.slug !== undefined ? { slug: '' } : {}), ...(patch.parentId !== undefined ? { parentId: '' } : {}) })) },
     onSubmit: handleSubmit,

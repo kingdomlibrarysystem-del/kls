@@ -103,7 +103,7 @@ const createCategorySchema = z.object({
     fr: z.string().trim().optional(),
     rw: z.string().trim().optional(),
   }),
-  parentId: z.string().optional(),
+  parentId: z.string().nullable().optional(),
   // Root-only content fields — nullable/optional either way (see
   // Category's own schema.prisma doc comments); not hard-coupled to
   // parentId being absent, since over-constraining this server-side
