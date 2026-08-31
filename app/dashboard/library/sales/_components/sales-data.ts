@@ -7,6 +7,7 @@ export interface Transaction {
   buyerName: string
   buyerEmail: string
   buyerPhone: string
+  resourceId: string
   resourceTitle: string
   resourceFormat: string
   type: TransactionType

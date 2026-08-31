@@ -87,12 +87,24 @@ export function getChildCategories(parentId: string): Category[] {
  * Leaf categories simply count their own direct matches.
  */
 export function resourceCountFor(categoryId: string, resources: { categoryId: string }[]): number {
+  return resourcesForCategory(categoryId, resources).length
+}
+
+/**
+ * Live resource list for a category — same recursive root/leaf join as
+ * `resourceCountFor` (root includes every child's own matches too), just
+ * returning the matched rows instead of only a count, so the category
+ * detail page's Resources/Borrowings/Reservations/Members/Finance
+ * sections can all derive from one real `categoryId` FK lookup rather than
+ * five separate re-implementations of the same join.
+ */
+export function resourcesForCategory<T extends { categoryId: string }>(categoryId: string, resources: T[]): T[] {
   const isRoot = categories.some((c) => c.id === categoryId && c.parentId === null)
   if (!isRoot) {
-    return resources.filter((r) => r.categoryId === categoryId).length
+    return resources.filter((r) => r.categoryId === categoryId)
   }
   const childIds = new Set(getChildCategories(categoryId).map((c) => c.id))
-  return resources.filter((r) => r.categoryId === categoryId || childIds.has(r.categoryId)).length
+  return resources.filter((r) => r.categoryId === categoryId || childIds.has(r.categoryId))
 }
 
 /** Display name for a category id, in English — used wherever a raw id must resolve to a human-readable label. */

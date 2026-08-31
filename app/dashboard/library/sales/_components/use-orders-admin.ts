@@ -23,11 +23,12 @@ function loadOrders(): Promise<void> {
     })
     .then((json) => {
       if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch orders')
-      cache = json.data.map((o: { id: string; buyerName: string; buyerEmail: string; buyerPhone: string; resourceTitle: string; resourceFormat: string; type: string; amount: number; status: string; paypackRef: string | null; createdAt: string }) => ({
+      cache = json.data.map((o: { id: string; buyerName: string; buyerEmail: string; buyerPhone: string; resourceId: string; resourceTitle: string; resourceFormat: string; type: string; amount: number; status: string; paypackRef: string | null; createdAt: string }) => ({
         id: o.id,
         buyerName: o.buyerName,
         buyerEmail: o.buyerEmail,
         buyerPhone: o.buyerPhone,
+        resourceId: o.resourceId,
         resourceTitle: o.resourceTitle,
         resourceFormat: o.resourceFormat,
         type: o.type,
