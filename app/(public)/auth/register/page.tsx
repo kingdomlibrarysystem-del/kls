@@ -9,8 +9,10 @@ import { PageHeader } from '@/components/ui/page-header'
 import { FormContainer } from '@/components/ui/form-container'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { FormSection } from '@/components/ui/form-section'
+import { GoogleSignInButton } from '@/components/ui/google-signin-button'
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -127,9 +129,8 @@ export default function RegisterPage() {
                   <FieldLabel htmlFor="password" required>
                     Password
                   </FieldLabel>
-                  <FormInput
+                  <PasswordInput
                     id="password"
-                    type="password"
                     placeholder="••••••••"
                     error={errors.password?.message}
                     {...register("password")}
@@ -146,6 +147,14 @@ export default function RegisterPage() {
             >
               Create Account
             </ElegantButton>
+
+            <div className="flex items-center gap-3 text-xs text-w-500">
+              <span className="flex-1 h-px bg-w-300" />
+              or
+              <span className="flex-1 h-px bg-w-300" />
+            </div>
+
+            <GoogleSignInButton />
 
             <p className="text-center font-lato text-sm text-w-700">
               Already have an account?{" "}

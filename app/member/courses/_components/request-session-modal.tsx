@@ -13,25 +13,35 @@ import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 interface RequestSessionModalProps {
   course: CatalogCourse | null
   onClose: () => void
+  /** Every course the requester could pick instead of the one they clicked from — when omitted or a single-item list, the course field is fixed (no picker shown), matching the previous behavior. */
+  availableCourses?: CatalogCourse[]
 }
 
 /**
  * Request-a-live-session form for an enrolled course, in progress or
  * completed — per product decision this is an open "Slack huddle"-style
- * action with no completion precondition. On submit, creates a real
- * PENDING SessionRequest via the real /api/session-requests (real
- * learnerId/lecturerId, the latter resolved from the course's own real
- * Course.lecturerId — not the mock lecturerRoster) and a real notification
- * addressed to the admin session-requests queue.
+ * action with no completion precondition. Defaults to whichever course
+ * the requester clicked from, but — when `availableCourses` has more than
+ * one entry — lets them switch to any other course before submitting,
+ * same picker pattern as StartSessionMenu's instant-session course select.
+ * On submit, creates a real PENDING SessionRequest via the real
+ * /api/session-requests (real learnerId/lecturerId, the latter resolved
+ * from the course's own real Course.lecturerId — not the mock
+ * lecturerRoster) and a real notification addressed to the admin
+ * session-requests queue.
  */
-export function RequestSessionModal({ course, onClose }: RequestSessionModalProps) {
+export function RequestSessionModal({ course, onClose, availableCourses }: RequestSessionModalProps) {
   const { user } = useAuth()
+  const [courseId, setCourseId] = useState(course?.id ?? '')
   const [proposedTime, setProposedTime] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   if (!course) return null
+
+  const pickable = availableCourses && availableCourses.length > 1 ? availableCourses : null
+  const selectedCourse = pickable?.find((c) => c.id === courseId) ?? course
 
   const currentMemberName = user ? `${user.firstName} ${user.lastName}`.trim() : ''
 
@@ -45,17 +55,17 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
     try {
       await requestSession({
         learnerId: user.id,
-        lecturerId: course.lecturerId ?? undefined,
-        courseId: course.id,
+        lecturerId: selectedCourse.lecturerId ?? undefined,
+        courseId: selectedCourse.id,
         proposedTime: new Date(proposedTime).toISOString(),
         notes: notes.trim() || undefined,
       })
 
-      if (course.lecturerId) {
+      if (selectedCourse.lecturerId) {
         addNotification({
           type: 'course',
           title: 'Session Requested',
-          message: `${currentMemberName} requested a live session for "${course.title}" with ${course.instructor}.`,
+          message: `${currentMemberName} requested a live session for "${selectedCourse.title}" with ${selectedCourse.instructor}.`,
           href: '/dashboard/e-learning/sessions',
           recipientRole: 'admin',
         }).catch(() => {})
@@ -66,7 +76,7 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
             addNotification({
               type: 'course',
               title: 'Unassigned Session Request',
-              message: `${currentMemberName} requested a live session for "${course.title}" — no lecturer assigned yet. Approve it to claim it.`,
+              message: `${currentMemberName} requested a live session for "${selectedCourse.title}" — no lecturer assigned yet. Approve it to claim it.`,
               href: '/dashboard/e-learning/sessions',
               recipientRole: 'lecturer',
               recipientId: l.id,
@@ -76,7 +86,7 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
         addNotification({
           type: 'course',
           title: 'Unassigned Session Request',
-          message: `${currentMemberName} requested a live session for "${course.title}" — no lecturer assigned yet.`,
+          message: `${currentMemberName} requested a live session for "${selectedCourse.title}" — no lecturer assigned yet.`,
           href: '/dashboard/e-learning/sessions',
           recipientRole: 'admin',
         }).catch(() => {})
@@ -96,12 +106,26 @@ export function RequestSessionModal({ course, onClose }: RequestSessionModalProp
     <Modal open onClose={onClose} title="Request a Live Session" size="sm">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-          Request a live Q&amp;A session with {course.instructor} for &ldquo;{course.title}&rdquo;.
+          Request a live Q&amp;A session with {selectedCourse.instructor} for &ldquo;{selectedCourse.title}&rdquo;.
         </p>
 
         {error && (
           <div style={{ background: 'var(--red-dim)', color: 'var(--red-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
             {error}
+          </div>
+        )}
+
+        {pickable && (
+          <div>
+            <FieldLabel htmlFor="request-session-course" required>Course</FieldLabel>
+            <select
+              id="request-session-course"
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+            >
+              {pickable.map((c) => <option key={c.id} value={c.id}>{c.title} — {c.instructor}</option>)}
+            </select>
           </div>
         )}
 

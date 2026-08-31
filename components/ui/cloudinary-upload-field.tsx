@@ -102,12 +102,23 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
             type="button"
             id={id}
             onClick={() => {
-              if (!open) {
-                setError('The uploader script failed to load — this is usually a browser extension (ad blocker) or network/firewall blocking upload-widget.cloudinary.com. Try disabling ad blockers for this site or on a different network.')
-                return
+              // next-cloudinary's open() itself throws (not a clean
+              // undefined-check failure) when the external widget script
+              // never loaded — window.cloudinary stays undefined, and the
+              // library's own internal open handler dereferences a ref
+              // that was never populated. A try/catch is the only way to
+              // turn that into a real, visible message instead of an
+              // uncaught crash — this is a real network/script-load
+              // failure (browser extension, firewall, or ad blocker
+              // blocking upload-widget.cloudinary.com), not something
+              // fixable from this component alone.
+              try {
+                if (!open) throw new Error('not loaded')
+                setError('')
+                open()
+              } catch {
+                setError('The uploader script failed to load — this is usually a browser extension (ad blocker) or network/firewall blocking upload-widget.cloudinary.com. Try disabling ad blockers for this site or on a different network, then refresh.')
               }
-              setError('')
-              open()
             }}
             disabled={uploading}
             aria-label={value ? `Replace ${label}` : label}

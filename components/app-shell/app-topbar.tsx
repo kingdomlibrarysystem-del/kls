@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell, ShoppingCart } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Bell, ShoppingCart, LogOut } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useAuth } from '@/contexts/auth-context'
 import { useMemberNotifications } from '@/app/member/_shared/use-member-notifications'
@@ -33,7 +34,8 @@ interface AppTopbarProps {
  * concept of "this specific person's" notifications.
  */
 export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTopbarProps) {
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, logout } = useAuth()
   const { data: notifications } = useMemberNotifications(user?.id)
   const notificationCount = notifications.filter((n) => !n.read).length
   const { data: cart } = useCart(showCart ? user?.id : undefined)
@@ -126,6 +128,14 @@ export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTop
             </div>
           </div>
         </Link>
+
+        <button
+          onClick={() => { logout(); router.push('/') }}
+          aria-label="Log out"
+          style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
+          <LogOut size={20} />
+        </button>
       </div>
     </header>
   )

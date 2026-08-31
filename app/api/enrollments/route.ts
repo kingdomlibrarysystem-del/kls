@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser } from '@/lib/notify'
+import { enrollmentConfirmedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /**
  * Real Enrollment API, replacing app/member/_shared/enrollment-data.ts
@@ -24,6 +27,7 @@ function serializeEnrollment(e: {
   completedLessonIds: string[]
   totalLessons: number
   assessmentPassed: boolean
+  paid: boolean
 }) {
   const memberName = e.user.name ?? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim()
   const progress = e.totalLessons > 0 ? Math.round((e.completedLessonIds.length / e.totalLessons) * 100) : 0
@@ -39,6 +43,7 @@ function serializeEnrollment(e: {
     completedLessonIds: e.completedLessonIds,
     totalLessons: e.totalLessons,
     assessmentPassed: e.assessmentPassed,
+    paid: e.paid,
   }
 }
 
@@ -103,6 +108,8 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
   const already = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: body.courseId } } })
   if (already) throw new ApiError('This user is already enrolled in this course', 409)
 
+  if (course.price > 0) throw new ApiError('This course requires payment — use /api/course-orders to pay and enroll', 400)
+
   const enrollment = await prisma.enrollment.create({
     data: {
       userId: body.userId,
@@ -110,8 +117,22 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
       totalLessons: course._count.lessons,
       completedLessonIds: [],
       status: 'ENROLLED',
+      paid: true,
     },
     include: INCLUDE,
   })
+
+  const memberName = user.name ?? (`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'there')
+  const coursesUrl = `${appBaseUrl()}/member/courses`
+  await notifyUser({
+    userId: body.userId,
+    type: 'COURSE',
+    category: 'course-enrollment',
+    title: 'Enrolled in course',
+    message: `You're enrolled in "${course.title}".`,
+    href: '/member/courses',
+    email: { subject: 'Your course enrollment is confirmed', html: enrollmentConfirmedEmailHtml(memberName, course.title, coursesUrl) },
+  })
+
   return NextResponse.json({ data: serializeEnrollment(enrollment), message: 'Enrolled successfully', code: 'success', status: 201 }, { status: 201 })
 })

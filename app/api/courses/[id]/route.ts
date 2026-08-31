@@ -17,6 +17,7 @@ function serializeCourse(c: {
   image: string | null
   duration: string | null
   rating: string | null
+  price: number
   createdAt: Date
   _count?: { lessons: number; enrollments: number }
 }) {
@@ -36,6 +37,7 @@ function serializeCourse(c: {
     image: c.image ?? undefined,
     duration: c.duration ?? undefined,
     rating: c.rating ?? undefined,
+    price: c.price,
     lessons: c._count?.lessons ?? 0,
     students: c._count?.enrollments ?? 0,
     createdAt: c.createdAt.toISOString().split('T')[0],
@@ -64,6 +66,7 @@ const updateCourseSchema = z.object({
   image: z.string().nullable().optional(),
   duration: z.string().nullable().optional(),
   rating: z.string().nullable().optional(),
+  price: z.number().min(0).optional(),
 })
 
 export const PATCH = withErrorHandling('/api/courses/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {

@@ -16,6 +16,7 @@ function serializeUser(u: {
   role: { name: string } | null
   emailVerified: Date | null
   createdAt: Date
+  notificationPreferences?: unknown
 }) {
   return {
     id: u.id,
@@ -27,6 +28,7 @@ function serializeUser(u: {
     status: u.status.toLowerCase(),
     emailVerified: !!u.emailVerified,
     createdAt: u.createdAt.toISOString().split('T')[0],
+    notificationPreferences: (u.notificationPreferences as Record<string, boolean> | null) ?? {},
   }
 }
 
@@ -47,6 +49,8 @@ const updateUserSchema = z.object({
   email: z.string().trim().email().optional(),
   status: z.enum(['active', 'inactive', 'suspended', 'ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
   role: z.string().trim().min(1).optional(),
+  /** Real per-category email preferences (see NotificationCategory in lib/notify.ts) — a member updates only their own via this route (see the auth branch below), staff never sets this for someone else. */
+  notificationPreferences: z.record(z.string(), z.boolean()).optional(),
 })
 
 export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -61,7 +65,11 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
   // reassigning WHICH role a user holds is a privilege-escalation surface
   // (a manager/staff account could otherwise promote themselves or anyone
   // else to Admin), so that specific field requires a real admin session.
-  const auth = await (body.role ? requireAdmin() : requireStaff())
+  // Updating only your own notificationPreferences is a real self-service
+  // action a plain member must be able to do — ownership-checked rather
+  // than staff-gated, unlike every other field this route accepts.
+  const isPreferencesOnly = body.notificationPreferences !== undefined && !body.name && !body.email && !body.status && !body.role
+  const auth = await (body.role ? requireAdmin() : isPreferencesOnly ? requireOwnerOrStaff(id) : requireStaff())
   if (auth.response) return auth.response
 
   const existing = await prisma.user.findUnique({ where: { id } })
@@ -84,6 +92,12 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
 
   const [firstName, ...rest] = body.name ? body.name.trim().split(/\s+/) : [undefined]
 
+  // Merge, not replace — setting one category's preference must not wipe
+  // whatever else was already saved in this Json field.
+  const mergedPreferences = body.notificationPreferences
+    ? { ...(existing.notificationPreferences as Record<string, boolean> | null), ...body.notificationPreferences }
+    : undefined
+
   const user = await prisma.user.update({
     where: { id },
     data: {
@@ -91,6 +105,7 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
       ...(body.email && { email: body.email }),
       ...(body.status && { status: body.status.toUpperCase() as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' }),
       ...(roleId && { roleId }),
+      ...(mergedPreferences && { notificationPreferences: mergedPreferences }),
     },
     include: ROLE_INCLUDE,
   })

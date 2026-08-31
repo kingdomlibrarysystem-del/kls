@@ -50,6 +50,17 @@ export function useMemberNotifications(userId: string | undefined) {
     refetch()
   }, [refetch])
 
+  // Real live delivery — a new Notification anywhere in the app broadcasts
+  // over this stream (see lib/notify.ts), so the bell badge updates without
+  // a reload/navigation. The event carries no payload; it's just a signal
+  // to refetch the real list, keeping one source of truth for the shape.
+  useEffect(() => {
+    if (!userId) return
+    const source = new EventSource('/api/notifications/stream')
+    source.onmessage = () => refetch()
+    return () => source.close()
+  }, [userId, refetch])
+
   return { data, loading, error, refetch }
 }
 

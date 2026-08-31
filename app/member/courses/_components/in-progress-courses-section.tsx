@@ -6,10 +6,13 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { getProgressPercent, getNextLessonId, type CourseEnrollment } from '@/app/member/_shared/use-enrollments'
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
+import { EnrollmentActionButton } from './enrollment-action-button'
 
 interface InProgressCoursesSectionProps {
   inProgress: { enrollment: CourseEnrollment; course: CatalogCourse }[]
   onRequestSession: (course: CatalogCourse) => void
+  onUnenroll: (enrollmentId: string) => void
+  onPay: (course: CatalogCourse) => void
 }
 
 /**
@@ -20,7 +23,7 @@ interface InProgressCoursesSectionProps {
  * gated to COMPLETED (see completed-courses-section.tsx, which now shares
  * the same unrestricted requestSession() call).
  */
-export function InProgressCoursesSection({ inProgress, onRequestSession }: InProgressCoursesSectionProps) {
+export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenroll, onPay }: InProgressCoursesSectionProps) {
   const { data: lessonsByCourse } = useLessonsByCourse()
   if (inProgress.length === 0) return null
 
@@ -51,6 +54,7 @@ export function InProgressCoursesSection({ inProgress, onRequestSession }: InPro
             >
               <CalendarPlus size={14} /> Request Session
             </button>
+            <EnrollmentActionButton enrollment={enrollment} course={course} onUnenroll={onUnenroll} onPay={onPay} />
             {nextLessonId ? (
               <Link
                 href={`/member/courses/${course.id}/lessons/${nextLessonId}`}

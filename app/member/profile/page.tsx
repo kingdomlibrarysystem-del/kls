@@ -130,7 +130,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Notification preferences */}
-      <NotificationPreferencesSection />
+      <NotificationPreferencesSection userId={user?.id} />
 
       {/* Two-factor authentication (admin/manager/staff only) */}
       <TwoFactorSection />

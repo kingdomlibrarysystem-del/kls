@@ -7,11 +7,12 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { useCategories, updateCategory, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
+import { useCategories, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { resourceCountFor, toSlug, EMPTY_CATEGORY_FORM, type Category, type CategoryFormState } from '@/lib/kcs-taxonomy'
-import { CategoryFormPanel } from '../../../_components/manage-categories/category-form-panel'
+import { resourceCountFor, type Category } from '@/lib/kcs-taxonomy'
 import { DeleteCategoryModal } from '../../../_components/manage-categories/delete-category-modal'
+import { CategoryEditModal } from './category-edit-modal'
+import { CategoryRelatedPanel } from './category-related-panel'
 
 interface CategoryDetailViewProps {
   id: string
@@ -28,14 +29,15 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 }
 
 /**
- * Real details page for a single KCS category, replacing the modal that
- * used to open from Manage Categories' "View" button. Fetches directly
- * from /api/categories/:id rather than relying on the already-loaded
- * `useCategories()` list, so this page also works when linked to
- * directly. Parent name and live resource count still read from the
- * shared `useCategories`/`useResources` stores since those are the only
- * source for that derived data (the single-category API response
- * doesn't include either).
+ * Real details page for a single KCS category: identity card + Edit/Delete,
+ * plus a tabbed CategoryRelatedPanel below showing real, categoryId-joined
+ * Resources/Analytics/Borrowings/Reservations/Members/Finance data (see
+ * that component and use-category-related-data.ts for how each is derived)
+ * and an honest "not yet linked" Courses placeholder. Fetches the category
+ * itself directly from /api/categories/:id so this page also works when
+ * linked to directly; parent name and live resource count still read from
+ * the shared useCategories/useResources stores since the single-category
+ * API response doesn't include either.
  */
 export function CategoryDetailView({ id }: CategoryDetailViewProps) {
   const router = useRouter()
@@ -43,9 +45,6 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
-  const [formErrors, setFormErrors] = useState<Partial<CategoryFormState>>({})
-  const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const { data: allCategories } = useCategories()
   const { data: resources } = useResources()
@@ -73,39 +72,6 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
     : null
   const resourceCount = category ? resourceCountFor(category.id, resources) : 0
   const parentOptions = allCategories.filter((c) => !c.parentId && c.id !== category?.id)
-
-  const handleEdit = () => {
-    if (!category) return
-    setForm({ nameEn: category.name.en, nameFr: category.name.fr, nameRw: category.name.rw, slug: category.slug, parentId: category.parentId ?? '' })
-    setFormErrors({})
-    setEditing(true)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!category) return
-    if (!form.nameEn.trim() || !form.slug.trim()) {
-      setFormErrors({
-        nameEn: form.nameEn.trim() ? '' : 'English name is required',
-        slug: form.slug.trim() ? '' : 'Slug is required',
-      })
-      return
-    }
-    setSubmitting(true)
-    try {
-      const updated = await updateCategory(category.id, {
-        slug: form.slug,
-        name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
-        parentId: form.parentId || null,
-      })
-      setCategory(updated)
-      setEditing(false)
-    } catch (err) {
-      setFormErrors({ slug: err instanceof Error ? err.message : 'Could not save this category' })
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   const handleDelete = async () => {
     if (!category) return
@@ -146,7 +112,7 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
           Back to KCS Map
         </UniversalButton>
         <div className="flex gap-2">
-          <UniversalButton variant="outline" size="sm" icon={<Pencil size={13} />} onClick={handleEdit}>
+          <UniversalButton variant="outline" size="sm" icon={<Pencil size={13} />} onClick={() => setEditing(true)}>
             Edit
           </UniversalButton>
           <UniversalButton variant="destructive" size="sm" icon={<Trash2 size={13} />} onClick={() => setDeleting(true)}>
@@ -175,23 +141,17 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
         </div>
       </div>
 
-      {editing && (
-        <div className="max-w-2xl mt-4">
-          <CategoryFormPanel
-            form={form}
-            errors={formErrors}
-            submitting={submitting}
-            editTarget={category}
-            parentOptions={parentOptions}
-            onNameEnChange={(value) => { setForm((f) => ({ ...f, nameEn: value, slug: toSlug(value) })); setFormErrors((e) => ({ ...e, nameEn: '', slug: '' })) }}
-            onFieldChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setFormErrors((e) => ({ ...e, ...(patch.slug !== undefined ? { slug: '' } : {}) })) }}
-            onSubmit={handleSubmit}
-            onCancelEdit={() => setEditing(false)}
-          />
-        </div>
-      )}
+      <CategoryEditModal
+        category={category}
+        parentOptions={parentOptions}
+        open={editing}
+        onClose={() => setEditing(false)}
+        onSaved={(updated) => { setCategory(updated); setEditing(false) }}
+      />
 
       <DeleteCategoryModal category={deleting ? category : null} resourceCount={resourceCount} onClose={() => setDeleting(false)} onConfirm={handleDelete} />
+
+      <CategoryRelatedPanel category={category} />
     </div>
   )
 }

@@ -10,9 +10,6 @@ export interface PlatformUser {
   joinDate: string
 }
 
-/** Known roles offered in the Create/Edit form's role selector — an admin can still type/select any Role.name that exists, this just seeds the common ones. */
-export const KNOWN_ROLES = ['Member', 'Staff', 'Manager', 'Admin']
-
 const ROLE_COLOR_FALLBACK = 'bg-blue-50 text-blue-700 border-blue-200'
 const ROLE_COLORS: Record<string, string> = {
   admin: 'bg-red-50 text-red-700 border-red-200',

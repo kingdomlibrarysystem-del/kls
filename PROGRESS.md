@@ -4230,3 +4230,169 @@ every gap addressed here was a rule-1 judgment call (reversible,
 reversible naming/pattern choices, no destructive action, no auth/
 payment behavior change beyond what was explicitly requested).
 
+## Member + admin fix batch (branch enhance/auto-wip) — Completed
+
+Addressed 9 user-reported issues spanning member and admin portals.
+
+**Member:**
+1. Certificate confusion — not a bug; the Certificate row is already
+   created server-side on completion. Fixed the copy ("eligible" →
+   "ready") and linked straight to the specific certificate instead of
+   just the list.
+2. "Only saw existing courses" — not a bug; `/member/e-learning` is
+   already a real full-catalog browse page, just under-discovered.
+   Added a "Browse more courses" link from the enrolled-only view.
+3. Real "wait for host" gate for SCHEDULED sessions — the
+   livekit-token route now checks real `SessionPresence` data
+   server-side before issuing a learner a join token; the client shows
+   a real waiting state and auto-retries. INSTANT sessions and the
+   hoster's own token request are exempt.
+4. Real Unenroll (`Enrollment.status: DROPPED`, already in the enum,
+   never had a UI path) plus a real two-rail course-payment checkout:
+   `Course.price`, `Enrollment.paid`, and a new `CourseOrder` model
+   (parallel to `Order`, not polymorphic — see its schema docstring).
+   PayPack reuses `lib/paypack.ts` unchanged. Stripe is genuinely new
+   (`npm install stripe`, `lib/stripe.ts`, a new webhook route) — **this
+   repo had zero working Stripe integration before this batch.**
+5. Real logout button added to the member topbar (`useAuth().logout()`
+   existed but was never rendered under `/member/*`).
+
+**Admin:**
+6. Fixed a real bug in Add Resource where a new resource's category
+   could silently default to unset if the categories fetch hadn't
+   resolved yet when the modal opened — same visual form, no layout
+   change.
+7. Added a real `UNAVAILABLE` session status (for a `PENDING` request
+   whose window lapsed unactioned) and a real `Notify` action for
+   `APPROVED` sessions (reminds both learner and lecturer/hoster).
+   Also removed the PATCH route's unrestricted fallback branch, which
+   let any field be updated with zero status guard — a real gap, not a
+   used feature.
+8. Add New User's Role dropdown now fetches real roles from
+   `GET /api/roles` instead of a hardcoded `KNOWN_ROLES` array.
+
+### Needs human input — real Stripe test-mode keys required
+
+`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` placeholder key
+**names** (no values) were added to `.env`. Everything up to the
+actual live Stripe API call is built and verified (schema, the
+`lib/stripe.ts` wrapper, `/api/course-orders`'s Stripe branch, the
+`/api/webhooks/stripe` route, the checkout modal's "Pay with Card"
+button) — but calling it will fail at runtime until a human supplies
+real Stripe test-mode keys from their own Stripe dashboard. The
+PayPack rail needs no such setup and is fully live today (same real,
+no-sandbox PayPack account already used for Resource purchases).
+
+Also flagged, not built: the admin Course create/edit form has no
+`price` field in its UI yet (the schema/API already accept one) — an
+admin can set a course's price via a direct PATCH today, but there's
+no dashboard form control for it. Left out of this batch's scope
+(member-facing payment flow, not the admin course-authoring form).
+
+## Admin↔member messaging + live notification delivery (branch enhance/auto-wip) — Completed
+
+Closed the messaging API's deliberately-deferred auth gap
+(`app/api/channels/route.ts`, `app/api/messages/route.ts`,
+`app/api/messages/[id]/route.ts` were built with zero auth ahead of
+real sessions existing, per their own docstrings — real sessions exist
+now, so channel reads/message sends/message actions are all
+ownership-checked). Added a real admin-side messaging inbox at
+`/dashboard/messages`, reusing `MessagesView` unchanged — DM channels
+are keyed by real `participantIds` and already work for any real user,
+admin included, unlike course channels (correctly left without an
+admin view, since they're matched by `lecturerRoster` names an admin
+has no entry in).
+
+Added real live notification delivery via Server-Sent Events:
+`lib/sse-hub.ts` (in-memory per-user subscriber map),
+`app/api/notifications/stream/route.ts` (real-auth-gated stream, one
+per signed-in user), `lib/notify.ts`'s `notifyUser()` now broadcasts a
+signal on that user's stream after creating the real `Notification`
+row, and `use-member-notifications.ts` subscribes via `EventSource`
+and refetches on signal — the member topbar's bell badge now updates
+live, with zero polling.
+
+### Known limitation — in-memory SSE hub is single-process only
+
+`lib/sse-hub.ts` holds subscriber connections in a plain module-level
+`Map`, scoped to whichever Node process handled the request. This is
+correct on local dev and any single, always-on Node server. **It is
+NOT guaranteed correct if this app is deployed across multiple
+serverless instances** (e.g. Vercel functions) — a `broadcast()` call
+and a subscriber's open connection can land on different instances
+with no shared state between them, so a notification created on one
+instance could silently never reach a browser whose SSE connection is
+held open on another. If/when this app moves to a multi-instance
+deployment target, live delivery will need a real pub/sub backend
+(Redis or similar) fanning broadcasts across instances instead of the
+current in-process `Map` — not built here, explicitly flagged per the
+user's own accepted tradeoff when this was scoped.
+
+## Real email notifications everywhere + real per-category preferences (branch enhance/auto-wip) — Completed
+
+User asked whether email notification was actually working and asked
+for it "at every angle of the project." Found and fixed a real,
+pre-existing bug first: `lib/mailer.ts` read `NODEMAILER_USER`/
+`NODEMAILER_PASS`, but `.env` has never had those keys — it has
+`GOOGLE_EMAIL`/`GOOGLE_PASSWORD` instead (a real configured Gmail
+account). Every `notifyUser()` email call had been silently failing
+(caught, not crashing, but never delivered) since the mailer was
+built. Fixed by reading the vars that are actually set; `.env.example`
+updated to match. Verified directly: before the fix, `sendMail` threw
+a clean "not configured" error; after, it correctly reads the real
+vars and attempts a genuine SMTP connection (this session's own sandbox
+network has a TLS-intercepting proxy blocking outbound Gmail SMTP, so
+a full real send couldn't be confirmed end-to-end here — but the
+credential-reading and connection-attempt path is confirmed correct).
+
+**Wired real email onto every gap found**: borrow approved/rejected/
+returned, reservation created, course enrollment, course payment
+success/failure, publication submitted (new `notifyAllStaff()` helper
+— the first multi-recipient notification path in this codebase, for
+the admin review-queue broadcast), session unavailable, session
+reminders (learner + lecturer), and assessment graded. Each reuses the
+existing `baseEmail()` template helper in `lib/email-templates.ts` — no
+new styling.
+
+**`notifyUser()` gained a required `category` field** (19 fine-grained
+categories — see `NotificationCategory` in `lib/notify.ts`) independent
+of the coarse in-app `type` bucket, so e.g. "session approved" and
+"session unavailable" can be toggled independently rather than
+collapsing into one bucket. Per-category preference resolution: an
+explicit category setting wins, falls back to the old coarse `email`
+flag if that category was never set, defaults to enabled — additive,
+doesn't break preference data saved before this existed.
+
+**Made the previously-fake Notification Preferences UI real**: the
+member profile's 6-category toggle list was pure `useState`, never
+fetched, never saved, never actually gated any email. Expanded to all
+19 real categories (grouped: Borrowing/Reservations/Courses &
+Sessions/Publications/Payments), wired to a real `GET`/`PATCH
+/api/users/[id]` round-trip via a new `useNotificationPreferences`
+hook. `/api/users/[id]`'s `PATCH` was staff-only for every field; a
+`notificationPreferences`-only update is now allowed via
+`requireOwnerOrStaff` so a member can self-service this without staff
+privileges — merges into the existing preferences JSON rather than
+replacing it. Verified end-to-end against the real database: merges
+correctly accumulate across saves, and `notifyUser()` genuinely skips
+the email send (confirmed via direct log output, not just a no-op
+parameter) when a category is set `false`, while other categories
+still attempt to send normally.
+
+Also removed the unrestricted PATCH fallback branches in
+`app/api/borrowings/[id]/route.ts` and
+`app/api/assessment-attempts/[id]/route.ts` (any unrecognized action
+let arbitrary fields through with zero validation) — the same class of
+gap already closed earlier this session for `session-requests` and
+`enrollments`.
+
+### Known limitation — email delivery not confirmed end-to-end in this sandbox
+
+The Gmail SMTP credential-reading fix is verified correct (right vars,
+right connection attempt), but this development sandbox's network
+blocks outbound SMTP to Gmail behind a TLS-intercepting proxy, so a
+real end-to-end send could not be confirmed from within this session.
+Recommend a human confirm one real email arrives in a real inbox after
+deploying/running this outside the sandbox, since "the code is
+correct" and "an email actually arrived" are different claims.
+

@@ -14,6 +14,7 @@ export interface CourseEnrollment {
   completedLessonIds: string[]
   totalLessons: number
   assessmentPassed: boolean
+  paid: boolean
 }
 
 /**
@@ -85,5 +86,17 @@ export async function markLessonComplete(enrollmentId: string, lessonId: string)
   })
   const json = await res.json()
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not mark lesson complete')
+  return json.data
+}
+
+/** Real unenroll via PATCH /api/enrollments/[id] — sets status to DROPPED (the enum value already existed, just never had a UI path to reach it). */
+export async function unenrollFromCourse(enrollmentId: string): Promise<CourseEnrollment> {
+  const res = await fetch(`/api/enrollments/${enrollmentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'unenroll' }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not unenroll from this course')
   return json.data
 }

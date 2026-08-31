@@ -20,8 +20,11 @@ import { useResources } from "@/app/dashboard/library/_components/use-resources"
 import { sectionIcons } from "./_components/section-icons";
 import { ResourceCard, ResourceListItem } from "./_components/resource-card";
 import { ContinueReadingSection } from "./_components/continue-reading-section";
+import { ScrollPagination } from "./_components/scroll-pagination";
 
 type SortMode = "newest" | "rating" | "price-asc" | "price-desc";
+
+const PAGE_SIZE = 12;
 
 /** Resources filed directly under this category, or (for a root pillar) under any of its child scrolls too — matches resourceCountFor's own root-includes-children rule. */
 function resourcesInSection<T extends { categoryId: string }>(
@@ -50,6 +53,7 @@ export default function MemberLibraryPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [sort, setSort] = useState<SortMode>("newest");
   const [showAbout, setShowAbout] = useState(true);
+  const [page, setPage] = useState(1);
   const { loading: categoriesLoading, error: categoriesError } =
     useCategories();
   const {
@@ -85,6 +89,15 @@ export default function MemberLibraryPage() {
     else if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
     return sorted;
   }, [resources, activeSection, search, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const goToPage = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (loading) {
     return (
@@ -249,7 +262,10 @@ export default function MemberLibraryPage() {
         <input
           placeholder="Search resources by title or author..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           aria-label="Search resources by title or author"
           style={{
             width: "100%",
@@ -275,7 +291,10 @@ export default function MemberLibraryPage() {
       >
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
           <button
-            onClick={() => setActiveSection("All")}
+            onClick={() => {
+              setActiveSection("All");
+              setPage(1);
+            }}
             style={{
               padding: "6px 12px",
               borderRadius: 6,
@@ -294,7 +313,10 @@ export default function MemberLibraryPage() {
           {rootSections.map((s) => (
             <button
               key={s.id}
-              onClick={() => setActiveSection(s.id)}
+              onClick={() => {
+                setActiveSection(s.id);
+                setPage(1);
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -320,7 +342,10 @@ export default function MemberLibraryPage() {
         </div>
         <select
           value={sort}
-          onChange={(e) => setSort(e.target.value as SortMode)}
+          onChange={(e) => {
+            setSort(e.target.value as SortMode);
+            setPage(1);
+          }}
           aria-label="Sort resources"
           style={{
             padding: "7px 10px",
@@ -351,31 +376,36 @@ export default function MemberLibraryPage() {
           }
           style={{ color: "var(--text-secondary)" }}
         />
-      ) : view === "grid" ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {filtered.map((r) => (
-            <ResourceCard key={r.id} resource={r} />
-          ))}
-        </div>
       ) : (
-        <div
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            overflow: "hidden",
-          }}
-        >
-          {filtered.map((r) => (
-            <ResourceListItem key={r.id} resource={r} />
-          ))}
-        </div>
+        <>
+          {view === "grid" ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: 16,
+              }}
+            >
+              {paged.map((r) => (
+                <ResourceCard key={r.id} resource={r} />
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                overflow: "hidden",
+              }}
+            >
+              {paged.map((r) => (
+                <ResourceListItem key={r.id} resource={r} />
+              ))}
+            </div>
+          )}
+          <ScrollPagination page={currentPage} totalPages={pageCount} onPage={goToPage} />
+        </>
       )}
     </div>
   );

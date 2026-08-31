@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireAuth, requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Message API, replacing lib/messaging/use-messages.ts's
  * useSyncExternalStore mock (senderName/readBy/reactedBy were all free
- * text, zero real ids). This surface stays UNWIRED from the live
- * member-facing UI for now (see PROGRESS.md's Phase 7 entry) — the
- * member Messages page presents itself as "your own inbox" with no
- * real session behind "who you are," the same class of gap Phase 3/4/5
- * already declined to paper over. Built and verified for real so a
- * genuine auth-aware caller can use it once real sessions exist.
+ * text, zero real ids). Auth was deliberately deferred when this was
+ * first built, ahead of real sessions existing — now that real sessions
+ * exist, a channel's messages are only readable by a real participant
+ * (or staff), and a message can only ever be sent as the caller's own
+ * real identity.
  */
 function serializeMessage(m: {
   id: string
@@ -41,6 +41,20 @@ export async function GET(request: NextRequest) {
   if (!channelId) {
     return NextResponse.json({ data: null, message: 'Missing required query param: channelId', code: 'error', status: 400 }, { status: 400 })
   }
+
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
+  const channel = await prisma.channel.findUnique({ where: { id: channelId } })
+  if (!channel) {
+    return NextResponse.json({ data: null, message: 'Channel not found', code: 'error', status: 404 }, { status: 404 })
+  }
+  const { userId, role } = auth.session
+  const isStaff = role === 'admin' || role === 'manager' || role === 'staff'
+  if (!channel.participantIds.includes(userId) && !isStaff) {
+    return NextResponse.json({ data: null, message: "You don't have permission to do this.", code: 'error', status: 403 }, { status: 403 })
+  }
+
   const messages = await prisma.message.findMany({ where: { channelId }, orderBy: { sentAt: 'asc' } })
   return NextResponse.json({ data: messages.map(serializeMessage), message: 'Messages fetched successfully', code: 'success', status: 200 })
 }
@@ -59,6 +73,9 @@ export const POST = withErrorHandling('/api/messages', 'POST', async (request: N
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.senderId)
+  if (auth.response) return auth.response
 
   const sender = await prisma.user.findUnique({ where: { id: body.senderId } })
   if (!sender) throw new ApiError('The specified sender does not exist', 400)

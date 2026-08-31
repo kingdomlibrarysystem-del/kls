@@ -57,7 +57,21 @@ export function QuizzesView() {
   const allAssessments = Object.values(catalog)
 
   if (allAssessments.length === 0) {
-    return <EmptyState icon={ClipboardList} title="No quizzes or exams yet" description="Add a quiz or exam to a course to see it appear here." />
+    return (
+      <div>
+        <EmptyState
+          icon={ClipboardList}
+          title="No quizzes or exams yet"
+          description="Add a quiz or exam to a course to see it appear here."
+          action={
+            <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
+              <PlusCircle size={15} /> Add Quiz / Exam
+            </ElegantButton>
+          }
+        />
+        <AddQuizModal open={adding} onClose={() => setAdding(false)} />
+      </div>
+    )
   }
 
   const tableData = kindFilter === 'all' ? allAssessments : allAssessments.filter((a) => a.kind === kindFilter)

@@ -3,6 +3,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireAuth } from '@/lib/auth/require-role'
 import { createLiveKitToken, isLiveKitConfigured } from '@/lib/livekit'
+import { isHostPresent } from '@/lib/sessions/host-presence'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -17,6 +18,15 @@ interface RouteParams {
  * enforces. Returns a clear 503 (not a 500) when LiveKit isn't
  * configured yet, so the room UI can fall back to the local-only mock
  * instead of a raw error.
+ *
+ * For a SCHEDULED session, a learner is gated behind the hoster
+ * (lecturer or staff) actually being present in the room first — real,
+ * server-side enforcement via SessionPresence, not just a client-side
+ * check that could be bypassed by hitting this route directly. INSTANT
+ * sessions skip this gate: the lecturer creates them by starting the
+ * session themselves, so they're already present by construction. The
+ * hoster's own token request is never gated, since they need a token to
+ * become present in the first place.
  */
 export const GET = withErrorHandling('/api/session-requests/[id]/livekit-token', 'GET', async (request: NextRequest, { params }: RouteParams) => {
   if (!isLiveKitConfigured()) {
@@ -29,6 +39,15 @@ export const GET = withErrorHandling('/api/session-requests/[id]/livekit-token',
   const { id } = await params
   const sessionRequest = await prisma.sessionRequest.findUnique({ where: { id } })
   if (!sessionRequest) throw new ApiError('Session request not found', 404)
+
+  const { userId, role } = auth.session
+  const isHoster = userId === sessionRequest.lecturerId || role === 'admin' || role === 'manager' || role === 'staff'
+  if (sessionRequest.mode === 'SCHEDULED' && !isHoster) {
+    const hostPresent = await isHostPresent(id)
+    if (!hostPresent) {
+      return NextResponse.json({ data: null, message: 'Waiting for the host to join.', code: 'error', reason: 'host-not-present', status: 503 }, { status: 503 })
+    }
+  }
 
   const { searchParams } = new URL(request.url)
   const displayName = searchParams.get('displayName')?.trim() || 'Participant'

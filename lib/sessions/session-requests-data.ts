@@ -1,5 +1,5 @@
 /** Live-session booking request, per the confirmed Phase 3 design doc. */
-export type SessionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED'
+export type SessionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'UNAVAILABLE'
 
 /**
  * SCHEDULED is the original propose-a-future-time flow (PENDING → lecturer
@@ -42,5 +42,6 @@ export const sessionStatusConfig: Record<SessionStatus, { label: string; cls: st
   APPROVED:  { label: 'Approved',  cls: 'bg-green-50  text-green-800  border-green-200',  bg: 'var(--green-dim)',  color: 'var(--green)',   border: 'var(--green)'  },
   REJECTED:  { label: 'Rejected',  cls: 'bg-red-50    text-red-800    border-red-200',    bg: 'var(--red-dim)',    color: 'var(--red)',     border: 'var(--red)'    },
   COMPLETED: { label: 'Completed', cls: 'bg-w-100      text-w-800      border-w-300',     bg: 'var(--bg-section)', color: 'var(--text-secondary)', border: 'var(--border)' },
+  UNAVAILABLE: { label: 'Unavailable', cls: 'bg-gray-100 text-gray-600 border-gray-300', bg: 'var(--bg-section)', color: 'var(--text-muted)', border: 'var(--border)' },
 }
 

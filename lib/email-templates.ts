@@ -112,3 +112,84 @@ export function certificateIssuedEmailHtml(firstName: string, courseTitle: strin
     'View Certificate'
   )
 }
+
+export function sessionUnavailableEmailHtml(firstName: string, courseTitle: string, sessionUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Your session request for <strong>${courseTitle}</strong> is no longer available.</p>`,
+    sessionUrl,
+    'View Details'
+  )
+}
+
+export function sessionReminderEmailHtml(firstName: string, courseTitle: string, scheduledAt: string | null, sessionUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Reminder: your session for <strong>${courseTitle}</strong>${scheduledAt ? ` is scheduled for <strong>${scheduledAt}</strong>` : ' is coming up'}.</p>`,
+    sessionUrl,
+    'View Session'
+  )
+}
+
+export function borrowApprovedEmailHtml(firstName: string, resourceTitle: string, dueDate: string, borrowUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Your borrow request for <strong>${resourceTitle}</strong> has been approved. Please return it by <strong>${dueDate}</strong>.</p>`,
+    borrowUrl,
+    'View Borrowing'
+  )
+}
+
+export function borrowRejectedEmailHtml(firstName: string, resourceTitle: string, borrowUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Your borrow request for <strong>${resourceTitle}</strong> was not approved this time.</p>`,
+    borrowUrl,
+    'View Details'
+  )
+}
+
+export function borrowReturnedEmailHtml(firstName: string, resourceTitle: string, fineAmount: number | null, borrowUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Thanks for returning <strong>${resourceTitle}</strong>.${fineAmount ? ` A fine of <strong>${fineAmount.toLocaleString('en-RW')} RWF</strong> applies for the late return.` : ''}</p>`,
+    borrowUrl,
+    'View Borrowing'
+  )
+}
+
+export function reservationCreatedEmailHtml(firstName: string, resourceTitle: string, queuePosition: number, reservationUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Your reservation for <strong>${resourceTitle}</strong> has been placed. You're currently <strong>#${queuePosition}</strong> in the queue — we'll email you once it's ready to claim.</p>`,
+    reservationUrl,
+    'View Reservation'
+  )
+}
+
+export function enrollmentConfirmedEmailHtml(firstName: string, courseTitle: string, coursesUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>You're enrolled in <strong>${courseTitle}</strong>. Head to your courses to get started.</p>`,
+    coursesUrl,
+    'Go to My Courses'
+  )
+}
+
+export function publicationSubmittedEmailHtml(firstName: string, title: string, publicationUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Your submission <strong>${title}</strong> has been received and is now awaiting review.</p>`,
+    publicationUrl,
+    'View Submission'
+  )
+}
+
+export function assessmentGradedEmailHtml(firstName: string, assessmentTitle: string, passed: boolean, coursesUrl: string): string {
+  return baseEmail(
+    firstName,
+    `<p>Your assessment <strong>${assessmentTitle}</strong> has been graded — result: <strong>${passed ? 'Passed' : 'Failed'}</strong>.</p>`,
+    coursesUrl,
+    'View Course'
+  )
+}

@@ -107,6 +107,7 @@ model User {
   userSessions              UserSession[]
   twoFactorSecret           TwoFactorSecret?
   orders                    Order[]
+  courseOrders              CourseOrder[]
   cart                      Cart?
   reviews                   Review[]
 
@@ -448,6 +449,49 @@ enum OrderStatus {
   CANCELLED
 }
 
+/// Real course-enrollment payment order — kept as a model parallel to
+/// Order rather than making Order itself polymorphic. Order's resourceId
+/// is a hard-required FK and every existing consumer (its serializer, the
+/// PayPack webhook, admin Sales views, BuyConfirmModal) already assumes a
+/// Resource is present; retrofitting nullability onto that field to also
+/// allow a Course would touch all of those call sites for no real benefit,
+/// since course and resource purchases never need to live in one unified
+/// table for this feature. Reuses the exact same PayPack/Stripe
+/// integration (lib/paypack.ts, lib/stripe.ts) and OrderStatus lifecycle
+/// as Order, just against a Course instead of a Resource.
+model CourseOrder {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String        @db.ObjectId
+  user            User          @relation(fields: [userId], references: [id])
+  buyerName       String
+  buyerEmail      String
+  buyerPhone      String
+  courseId        String        @db.ObjectId
+  course          Course        @relation(fields: [courseId], references: [id])
+  courseTitle     String
+  method          PaymentMethod
+  amountRwf       Float
+  status          OrderStatus   @default(PENDING)
+  /// Same sparse-index reasoning as Order.paypackRef/stripeSessionId —
+  /// not `@unique` here; a real sparse unique index is created out-of-band
+  /// via scripts/create-course-order-sparse-indexes.mjs.
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
+  stripeSessionId String?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+enum PaymentMethod {
+  PAYPACK
+  STRIPE
+}
+
 /// Real shopping cart — one per member, replacing the previous
 /// one-resource-per-checkout-modal-invocation flow (BuyConfirmModal)
 /// with genuine "add several books, review, then check out once."
@@ -710,12 +754,18 @@ model Course {
   image           String?
   duration        String?
   rating          String?
+  /// RWF, mirrors Resource.price's convention. 0 (the default) means
+  /// free — enrolling stays an immediate, unconditional POST /api/enrollments
+  /// exactly as before this field existed. A priced course instead
+  /// creates the Enrollment as unpaid until a real CourseOrder settles.
+  price           Float            @default(0)
   lessons         Lesson[]
   enrollments     Enrollment[]
   assessments     Assessment[]
   certificates    Certificate[]
   sessionRequests SessionRequest[]
   channels        Channel[]
+  orders          CourseOrder[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -779,6 +829,14 @@ model Enrollment {
   completedLessonIds String[]
   totalLessons       Int
   assessmentPassed   Boolean          @default(false)
+  /// True for every free-course enrollment (the overwhelming default,
+  /// since price defaults to 0) and for a paid course once its
+  /// CourseOrder settles PAID. False only for an enrollment created
+  /// against a priced course while payment is still pending — the
+  /// learner can view course details but course-content write paths
+  /// (completing lessons, etc.) are expected to check this like any
+  /// other real entitlement gate.
+  paid               Boolean          @default(true)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -940,6 +998,11 @@ enum SessionRequestStatus {
   APPROVED
   REJECTED
   COMPLETED
+  /// A PENDING request whose window has passed unactioned, or one an admin
+  /// explicitly marks unavailable (e.g. the lecturer can no longer make
+  /// it) — a distinct terminal state from REJECTED, which implies an
+  /// active decision was made rather than an opportunity simply lapsing.
+  UNAVAILABLE
 }
 
 enum SessionRequestMode {

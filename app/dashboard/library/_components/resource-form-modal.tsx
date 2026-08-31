@@ -88,7 +88,11 @@ export function ResourceFormModal({
       );
       setSubmitError("");
     }
-  }, [open, editing, reset]);
+    // leafCategories.length: re-run once real categories have loaded, so a
+    // new resource's default categoryId isn't silently stuck at "" from
+    // opening the modal before the categories fetch resolved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing, reset, leafCategories.length]);
 
   const onSubmit = (data: ResourceFormData) => {
     try {

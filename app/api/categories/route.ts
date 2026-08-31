@@ -103,7 +103,20 @@ const createCategorySchema = z.object({
     fr: z.string().trim().optional(),
     rw: z.string().trim().optional(),
   }),
-  parentId: z.string().optional(),
+  parentId: z.string().nullable().optional(),
+  // Root-only content fields — nullable/optional either way (see
+  // Category's own schema.prisma doc comments); not hard-coupled to
+  // parentId being absent, since over-constraining this server-side
+  // risks rejecting a legitimate future case.
+  code: z.string().trim().optional(),
+  subtitle: z.string().trim().optional(),
+  range: z.string().trim().optional(),
+  theme: z.string().trim().optional(),
+  description: z.string().trim().optional(),
+  detail: z.string().trim().optional(),
+  heroImage: z.string().trim().optional(),
+  // Leaf/scroll-only lifecycle field.
+  status: z.enum(['AVAILABLE', 'ARCHIVED', 'OUT_OF_STOCK']).optional(),
 })
 
 export const POST = withErrorHandling('/api/categories', 'POST', async (request: NextRequest) => {
@@ -133,6 +146,14 @@ export const POST = withErrorHandling('/api/categories', 'POST', async (request:
       nameFr: body.name.fr ?? body.name.en,
       nameRw: body.name.rw ?? body.name.en,
       parentId: body.parentId ?? null,
+      ...(body.code !== undefined && { code: body.code }),
+      ...(body.subtitle !== undefined && { subtitle: body.subtitle }),
+      ...(body.range !== undefined && { range: body.range }),
+      ...(body.theme !== undefined && { theme: body.theme }),
+      ...(body.description !== undefined && { description: body.description }),
+      ...(body.detail !== undefined && { detail: body.detail }),
+      ...(body.heroImage !== undefined && { heroImage: body.heroImage }),
+      ...(body.status !== undefined && { status: body.status }),
     },
   })
 

@@ -6,42 +6,54 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EMPTY_CATEGORY_FORM, toSlug, resourceCountFor, type Category, type CategoryFormState } from '@/lib/kcs-taxonomy'
 import { useCategories, addCategory, updateCategory, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { CategoryFormPanel } from './manage-categories/category-form-panel'
-import { CategoriesTable } from './manage-categories/categories-table'
+import { ManageCategoriesTabs, type ManageCategoriesTab } from './manage-categories/manage-categories-tabs'
+import { RootCategoriesPanel } from './manage-categories/root-categories-panel'
+import { SubcategoriesPanel } from './manage-categories/subcategories-panel'
 import { DeleteCategoryModal } from './manage-categories/delete-category-modal'
 import { CategoriesStats } from './manage-categories/categories-stats'
 
 /**
- * Full Categories CRUD (create/edit/delete a KCS category, live resource-
- * count-gated delete guard), absorbed into the KCS Map page as its own
- * distinct section below the browse/analytics UI — replaces the former
- * standalone `/dashboard/library/categories` admin page, which is deleted
- * once this section covers everything it did.
- *
- * All CRUD logic and every sub-component (`CategoryFormPanel`,
- * `CategoriesTable`, `CategoryDetailModal`, `DeleteCategoryModal`,
- * `CategoriesStats`) are reused verbatim from that former page rather than
- * rewritten — they're dialect-agnostic Tailwind primitives already treated
- * as safe to use inside a Dialect-B page elsewhere in this app (same
- * precedent as `FormInput`/`Modal`/`DataTable`), so no restyling was needed
- * to drop them into this otherwise CSS-variable-inline-style page. The
- * section itself gets a `card`-style Dialect-B wrapper + heading so it
- * reads as a clearly separate management area, not a continuation of the
- * browsing UI above it.
+ * Full Categories CRUD, absorbed into the KCS Map page as its own distinct
+ * section below the browse/analytics UI. Split into two tabs — Root
+ * Categories (the 8 KCS pillars) and Subcategories (their scrolls) — since
+ * each has a materially different form shape (pillar detail fields vs. a
+ * required Parent Category + Status), rather than one form that toggles
+ * fields based on whether Parent Category is empty.
  */
 export function ManageCategoriesSection() {
   const { data: categories, loading: categoriesLoading } = useCategories()
   const { data: resources, loading: resourcesLoading } = useResources()
+  const [tab, setTab] = useState<ManageCategoriesTab>('root')
   const [form, setForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
   const [errors, setErrors] = useState<Partial<CategoryFormState>>({})
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Category | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3500)
+  }
+
+  const resetForm = () => {
+    setFormOpen(false)
+    setEditTarget(null)
+    setForm(EMPTY_CATEGORY_FORM)
+    setErrors({})
+  }
+
+  const handleTabChange = (next: ManageCategoriesTab) => {
+    setTab(next)
+    resetForm()
+  }
+
+  const handleAddNew = () => {
+    setEditTarget(null)
+    setForm(EMPTY_CATEGORY_FORM)
+    setErrors({})
+    setFormOpen(true)
   }
 
   const handleNameEn = (value: string) => {
@@ -55,6 +67,7 @@ export function ManageCategoriesSection() {
     if (!form.slug.trim()) e.slug = 'Slug is required'
     const slugExists = categories.some((c) => c.slug === form.slug && c.id !== editTarget?.id)
     if (slugExists) e.slug = 'Slug already exists'
+    if (tab === 'sub' && !form.parentId) e.parentId = 'A parent category is required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -65,23 +78,30 @@ export function ManageCategoriesSection() {
     setSubmitting(true)
 
     try {
+      const parentId = tab === 'root' ? null : form.parentId
+      const extraFields =
+        tab === 'root'
+          ? { code: form.code, subtitle: form.subtitle, range: form.range, theme: form.theme, description: form.description, detail: form.detail, heroImage: form.heroImage }
+          : { status: form.status || undefined }
+
       if (editTarget) {
         await updateCategory(editTarget.id, {
           slug: form.slug,
           name: { en: form.nameEn, fr: form.nameFr, rw: form.nameRw },
-          parentId: form.parentId || null,
+          parentId,
+          ...extraFields,
         })
         showToast(`Category "${form.nameEn}" updated.`)
-        setEditTarget(null)
       } else {
         await addCategory({
           slug: form.slug,
           name: { en: form.nameEn, fr: form.nameFr || form.nameEn, rw: form.nameRw || form.nameEn },
-          parentId: form.parentId || null,
+          parentId,
+          ...extraFields,
         })
         showToast(`Category "${form.nameEn}" created.`)
       }
-      setForm(EMPTY_CATEGORY_FORM)
+      resetForm()
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Could not save this category — please try again.', 'error')
     } finally {
@@ -91,14 +111,13 @@ export function ManageCategoriesSection() {
 
   const handleEdit = (cat: Category) => {
     setEditTarget(cat)
-    setForm({ nameEn: cat.name.en, nameFr: cat.name.fr, nameRw: cat.name.rw, slug: cat.slug, parentId: cat.parentId ?? '' })
+    setForm({
+      nameEn: cat.name.en, nameFr: cat.name.fr, nameRw: cat.name.rw, slug: cat.slug, parentId: cat.parentId ?? '',
+      code: cat.code ?? '', subtitle: cat.subtitle ?? '', range: cat.range ?? '', theme: cat.theme ?? '',
+      description: cat.description ?? '', detail: cat.detail ?? '', heroImage: cat.heroImage ?? '', status: cat.status ?? '',
+    })
     setErrors({})
-  }
-
-  const handleCancelEdit = () => {
-    setEditTarget(null)
-    setForm(EMPTY_CATEGORY_FORM)
-    setErrors({})
+    setFormOpen(true)
   }
 
   const handleDelete = async () => {
@@ -119,7 +138,16 @@ export function ManageCategoriesSection() {
     }
   }
 
-  const parentOptions = categories.filter((c) => !c.parentId && c.id !== editTarget?.id)
+  const panelProps = {
+    categories, resources, form, errors, submitting, formOpen, editTarget,
+    onAddNew: handleAddNew,
+    onNameEnChange: handleNameEn,
+    onFieldChange: (patch: Partial<CategoryFormState>) => { setForm((f) => ({ ...f, ...patch })); setErrors((err) => ({ ...err, ...(patch.slug !== undefined ? { slug: '' } : {}), ...(patch.parentId !== undefined ? { parentId: '' } : {}) })) },
+    onSubmit: handleSubmit,
+    onCancelEdit: resetForm,
+    onEdit: handleEdit,
+    onDelete: setDeleteTarget,
+  }
 
   return (
     <div className="card" style={{ marginTop: 24 }}>
@@ -128,7 +156,7 @@ export function ManageCategoriesSection() {
         <h2 className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Manage Categories</h2>
       </div>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}>
-        Create, edit, or delete KCS categories — the same 8 root pillars and their scrolls shown above.
+        Create, edit, or delete KCS root categories and their subcategories — the same 8 root pillars and their scrolls shown above.
       </p>
 
       {(categoriesLoading || resourcesLoading) && (
@@ -153,26 +181,14 @@ export function ManageCategoriesSection() {
         <>
           <CategoriesStats categories={categories} resources={resources} />
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-lato text-xs text-w-600 dark:text-white/50 uppercase tracking-wider font-semibold">{categories.length} categories total</p>
-              </div>
-              <CategoriesTable categories={categories} resources={resources} onEdit={handleEdit} onDelete={setDeleteTarget} />
-            </div>
+          <ManageCategoriesTabs
+            active={tab}
+            rootCount={categories.filter((c) => !c.parentId).length}
+            subCount={categories.filter((c) => c.parentId).length}
+            onChange={handleTabChange}
+          />
 
-            <CategoryFormPanel
-              form={form}
-              errors={errors}
-              submitting={submitting}
-              editTarget={editTarget}
-              parentOptions={parentOptions}
-              onNameEnChange={handleNameEn}
-              onFieldChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((e) => ({ ...e, ...(patch.slug !== undefined ? { slug: '' } : {}) })) }}
-              onSubmit={handleSubmit}
-              onCancelEdit={handleCancelEdit}
-            />
-          </div>
+          {tab === 'root' ? <RootCategoriesPanel {...panelProps} /> : <SubcategoriesPanel {...panelProps} />}
 
           <DeleteCategoryModal category={deleteTarget} resourceCount={deleteTarget ? resourceCountFor(deleteTarget.id, resources) : 0} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
         </>

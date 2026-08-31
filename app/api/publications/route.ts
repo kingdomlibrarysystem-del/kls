@@ -3,6 +3,9 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { notifyUser, notifyAllStaff } from '@/lib/notify'
+import { publicationSubmittedEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /**
  * Real Publication API, replacing the already-unified mock store at
@@ -146,6 +149,28 @@ export const POST = withErrorHandling('/api/publications', 'POST', async (reques
     },
     include: REVENUE_INCLUDE,
   })
+
+  if (publication.status === 'SUBMITTED') {
+    const contributorName = publication.contributorName
+    const publicationUrl = `${appBaseUrl()}/dashboard/publishing/review`
+    await notifyUser({
+      userId: body.contributorId,
+      type: 'PUBLICATION',
+      category: 'publication-submitted',
+      title: 'Submission received',
+      message: `Your submission "${publication.title}" has been received and is now awaiting review.`,
+      href: '/dashboard/publishing',
+      email: { subject: 'Your submission is under review', html: publicationSubmittedEmailHtml(contributorName, publication.title, publicationUrl) },
+    })
+
+    await notifyAllStaff({
+      type: 'PUBLICATION',
+      category: 'publication-submitted',
+      title: 'New submission for review',
+      message: `${contributorName} submitted "${publication.title}" for review.`,
+      href: '/dashboard/publishing/review',
+    })
+  }
 
   return NextResponse.json({ data: serializePublication(publication), message: 'Publication created successfully', code: 'success', status: 201 }, { status: 201 })
 })

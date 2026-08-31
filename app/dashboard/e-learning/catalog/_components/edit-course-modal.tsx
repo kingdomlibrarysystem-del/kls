@@ -16,7 +16,7 @@ import {
   type CourseFormData,
 } from '../../add/_components/course-form-schema'
 import { updateCourseInCatalog } from '../../_shared/use-course-catalog'
-import { lecturerRoster } from '@/lib/identity/lecturer-identity'
+import { useUsers } from '@/app/dashboard/users/_components/use-users'
 import type { CourseCatalogEntry } from './catalog-config'
 
 interface EditCourseModalProps {
@@ -26,6 +26,7 @@ interface EditCourseModalProps {
 
 /** Edit modal for an existing catalog course — reuses the Add-Course schema/fields. */
 export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
+  const { users } = useUsers()
   const {
     register,
     handleSubmit,
@@ -120,7 +121,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
             {...register('lecturerId')}
           >
             <option value="">No assigned instructor</option>
-            {lecturerRoster.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
 

@@ -121,6 +121,7 @@ export const POST = withErrorHandling('/api/certificates', 'POST', async (reques
   await notifyUser({
     userId: body.userId,
     type: 'COURSE',
+    category: 'certificate-issued',
     title: 'Certificate issued',
     message: `You've earned a certificate for completing "${body.courseTitle}".`,
     href: `/member/certificates/${certificate.id}`,

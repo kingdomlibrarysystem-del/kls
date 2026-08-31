@@ -116,7 +116,7 @@ export function StartSessionMenu() {
         </div>
       </Modal>
 
-      <RequestSessionModal course={scheduleCourse} onClose={() => setScheduleCourse(null)} />
+      <RequestSessionModal course={scheduleCourse} onClose={() => setScheduleCourse(null)} availableCourses={myCourses} />
 
       {inviteHref && (
         <InviteLinkModal open onClose={() => setInviteHref(null)} roomHref={inviteHref} />

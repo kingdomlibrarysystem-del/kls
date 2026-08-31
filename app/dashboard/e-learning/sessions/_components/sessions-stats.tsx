@@ -17,6 +17,7 @@ export function SessionsStats({ data }: SessionsStatsProps) {
     APPROVED: 'text-green-700',
     REJECTED: 'text-red-700',
     COMPLETED: 'text-w-600',
+    UNAVAILABLE: 'text-gray-600',
   }
 
   const stats = [
@@ -25,7 +26,7 @@ export function SessionsStats({ data }: SessionsStatsProps) {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
       {stats.map((s) => (
         <div key={s.label} className="bg-form-highlight border border-w-300 rounded-lg p-4 text-center">
           <p className={`font-cinzel text-2xl font-bold ${s.color}`}>{s.value}</p>

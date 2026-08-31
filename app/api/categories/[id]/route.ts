@@ -73,6 +73,14 @@ const updateCategorySchema = z.object({
     rw: z.string().trim().optional(),
   }).optional(),
   parentId: z.string().nullable().optional(),
+  code: z.string().trim().optional(),
+  subtitle: z.string().trim().optional(),
+  range: z.string().trim().optional(),
+  theme: z.string().trim().optional(),
+  description: z.string().trim().optional(),
+  detail: z.string().trim().optional(),
+  heroImage: z.string().trim().optional(),
+  status: z.enum(['AVAILABLE', 'ARCHIVED', 'OUT_OF_STOCK']).optional(),
 })
 
 export const PATCH = withErrorHandling('/api/categories/[id]', 'PATCH', async (request: NextRequest, { params }: RouteParams) => {
@@ -102,6 +110,14 @@ export const PATCH = withErrorHandling('/api/categories/[id]', 'PATCH', async (r
       ...(body.name?.fr !== undefined && { nameFr: body.name.fr }),
       ...(body.name?.rw !== undefined && { nameRw: body.name.rw }),
       ...(body.parentId !== undefined && { parentId: body.parentId }),
+      ...(body.code !== undefined && { code: body.code }),
+      ...(body.subtitle !== undefined && { subtitle: body.subtitle }),
+      ...(body.range !== undefined && { range: body.range }),
+      ...(body.theme !== undefined && { theme: body.theme }),
+      ...(body.description !== undefined && { description: body.description }),
+      ...(body.detail !== undefined && { detail: body.detail }),
+      ...(body.heroImage !== undefined && { heroImage: body.heroImage }),
+      ...(body.status !== undefined && { status: body.status }),
     },
   })
 

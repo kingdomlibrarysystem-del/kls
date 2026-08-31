@@ -26,6 +26,7 @@ function serializeCourse(c: {
   image: string | null
   duration: string | null
   rating: string | null
+  price: number
   createdAt: Date
   _count?: { lessons: number; enrollments: number }
 }) {
@@ -45,6 +46,7 @@ function serializeCourse(c: {
     image: c.image ?? undefined,
     duration: c.duration ?? undefined,
     rating: c.rating ?? undefined,
+    price: c.price,
     lessons: c._count?.lessons ?? 0,
     students: c._count?.enrollments ?? 0,
     createdAt: c.createdAt.toISOString().split('T')[0],
@@ -115,6 +117,7 @@ const createCourseSchema = z.object({
   image: z.string().optional(),
   duration: z.string().optional(),
   rating: z.string().optional(),
+  price: z.number().min(0).optional(),
 })
 
 export const POST = withErrorHandling('/api/courses', 'POST', async (request: NextRequest) => {
@@ -144,6 +147,7 @@ export const POST = withErrorHandling('/api/courses', 'POST', async (request: Ne
       image: body.image ?? null,
       duration: body.duration ?? null,
       rating: body.rating ?? null,
+      price: body.price ?? 0,
     },
     include: LECTURER_SELECT,
   })

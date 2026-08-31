@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Map } from "lucide-react";
 import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
 import { getRootCategories, getCategoryById } from "@/lib/kcs-taxonomy";
 import { KcsPillarView } from "./kcs-pillar-view";
@@ -54,7 +54,13 @@ export function KcsMapView() {
     router.replace(`/dashboard/kcs?pillar=${next}`, { scroll: false });
   };
 
-  if (loading || !pillarSlug) {
+  // Only the genuinely-in-flight fetch shows the skeleton — a resolved
+  // fetch with zero categories must NOT fall into this branch (it
+  // previously did, since `pillarSlug` also starts `null` and stays
+  // `null` forever when there's no root category to default to,
+  // producing an infinite-looking loading state for a real empty
+  // taxonomy, not an actual bug in useCategories()/the API).
+  if (loading) {
     return (
       <div className="space-y-4" aria-label="Loading KCS Map">
         <Skeleton className="h-40 w-full rounded-lg" />
@@ -70,6 +76,24 @@ export function KcsMapView() {
         title="Couldn't load the KCS taxonomy"
         description={error}
       />
+    );
+  }
+
+  // A real empty taxonomy (zero categories) has no pillar to default to
+  // — render a real empty state instead of the loading skeleton, and
+  // still surface Manage Categories so an admin can create the first
+  // root category. Without this, an empty database was a genuine dead
+  // end: the only UI that creates a category lived below the old gate.
+  if (!pillarSlug) {
+    return (
+      <div>
+        <EmptyState
+          icon={Map}
+          title="No KCS categories yet"
+          description="Create the first root category below to get started."
+        />
+        <ManageCategoriesSection />
+      </div>
     );
   }
 

@@ -24,6 +24,8 @@ export interface CatalogCourse {
   students: number
   image: string
   description: string
+  /** RWF; 0 means free. */
+  price: number
 }
 
 interface ApiCourse {
@@ -37,6 +39,7 @@ interface ApiCourse {
   image?: string
   duration?: string
   rating?: string
+  price: number
   lessons: number
   students: number
 }
@@ -54,6 +57,7 @@ function toCatalogCourse(c: ApiCourse): CatalogCourse {
     students: c.students,
     image: c.image ?? '',
     description: c.description,
+    price: c.price,
   }
 }
 

@@ -61,7 +61,19 @@ export function LessonsView() {
 
   if (allRows.length === 0) {
     return (
-      <EmptyState icon={Video} title="No lessons yet" description="Add a lesson to a course to see it appear here." />
+      <div>
+        <EmptyState
+          icon={Video}
+          title="No lessons yet"
+          description="Add a lesson to a course to see it appear here."
+          action={
+            <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
+              <PlusCircle size={15} /> Add Lesson
+            </ElegantButton>
+          }
+        />
+        <AddLessonModal open={adding} onClose={() => setAdding(false)} />
+      </div>
     )
   }
 

@@ -36,6 +36,7 @@ export function ResourceFormBasics({ register, errors, leafCategories, rootCateg
             className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
             {...register('categoryId')}
           >
+            <option value="" disabled>Select a category…</option>
             {rootCategories.map((root) => (
               <optgroup key={root.id} label={`${root.name.en} (${root.code})`}>
                 {leafCategories.filter((c) => c.parentId === root.id).map((c) => (

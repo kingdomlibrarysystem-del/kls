@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 
 function serializeMessage(m: {
   id: string
@@ -38,6 +39,9 @@ export const PATCH = withErrorHandling('/api/messages/[id]', 'PATCH', async (req
     throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   }
   const body = parsed.data
+
+  const auth = await requireOwnerOrStaff(body.userId)
+  if (auth.response) return auth.response
 
   const existing = await prisma.message.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Message not found', 404)

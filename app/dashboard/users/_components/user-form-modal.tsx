@@ -9,7 +9,8 @@ import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { KNOWN_ROLES, type PlatformUser, type UserStatus } from './users-data'
+import { type PlatformUser, type UserStatus } from './users-data'
+import { useRoles } from './use-roles'
 
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -31,6 +32,7 @@ interface UserFormModalProps {
 /** Create/Edit modal for a platform user — pre-fills from `editing` when editing, blank when creating. */
 export function UserFormModal({ open, editing, onClose, onSave }: UserFormModalProps) {
   const [submitError, setSubmitError] = useState('')
+  const { roles } = useRoles()
   const {
     register,
     handleSubmit,
@@ -79,7 +81,7 @@ export function UserFormModal({ open, editing, onClose, onSave }: UserFormModalP
           <div>
             <FieldLabel htmlFor="role" required>Role</FieldLabel>
             <select id="role" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('role')}>
-              {KNOWN_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
             </select>
           </div>
           <div>

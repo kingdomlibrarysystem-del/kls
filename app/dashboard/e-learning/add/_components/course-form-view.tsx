@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, AlertCircle, UploadCloud } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { FormSection } from '@/components/ui/form-section'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
+import { useAuth } from '@/contexts/auth-context'
 import { addCourseToCatalog } from '../../_shared/use-course-catalog'
-import { lecturerRoster } from '@/lib/identity/lecturer-identity'
+import { useUsers } from '@/app/dashboard/users/_components/use-users'
 import {
   courseSchema,
   courseCategories,
@@ -19,9 +21,6 @@ import {
   languageLabels,
   type CourseFormData,
 } from './course-form-schema'
-
-/** Author attributed to courses created from this form — the same recurring contributor persona used across contributor mock data. */
-const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
 
 /**
  * Add/Edit Course form. On submit, appends the new course to the shared
@@ -38,6 +37,8 @@ const SUBMITTING_AUTHOR = 'Pastor Emmanuel Rugamba'
  */
 export function CourseFormView() {
   const router = useRouter()
+  const { user } = useAuth()
+  const { users } = useUsers()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -46,11 +47,14 @@ export function CourseFormView() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
-    defaultValues: { language: 'en', status: 'DRAFT' },
+    defaultValues: { language: 'en', status: 'DRAFT', image: '' },
   })
+  const coverImage = watch('image') ?? ''
 
   const onSubmit = async (data: CourseFormData) => {
     setSubmitting(true)
@@ -58,17 +62,19 @@ export function CourseFormView() {
     setSubmitSuccess(false)
     try {
       if (!data.title.trim()) throw new Error('Title cannot be empty')
+      const authorName = user ? `${user.firstName} ${user.lastName}`.trim() : undefined
       await addCourseToCatalog({
         title: data.title,
         description: data.description,
         category: data.category,
         language: data.language,
         status: data.status,
-        author: SUBMITTING_AUTHOR,
+        author: authorName || 'Kingdom Library System',
         lecturerId: data.lecturerId || undefined,
+        image: data.image || undefined,
       })
       setSubmitSuccess(true)
-      reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT', lecturerId: '' })
+      reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT', lecturerId: '', image: '' })
       setTimeout(() => router.push('/dashboard/e-learning/catalog'), 1200)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to save course')
@@ -140,13 +146,15 @@ export function CourseFormView() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <FieldLabel htmlFor="coverImage">Cover Image</FieldLabel>
-              <label
-                htmlFor="coverImage"
-                className="flex items-center gap-2 px-4 py-3 font-lato text-sm border border-dashed border-w-400 bg-form-bg rounded cursor-pointer text-w-700 hover:border-w-600 transition-colors"
-              >
-                <UploadCloud size={16} /> Choose file…
-                <input id="coverImage" type="file" accept="image/*" className="hidden" aria-label="Upload cover image" />
-              </label>
+              <CloudinaryUploadField
+                id="coverImage"
+                accept="image/*"
+                label="Upload cover image"
+                kind="image"
+                value={coverImage}
+                onUploaded={(result) => setValue('image', result.url)}
+                onClear={() => setValue('image', '')}
+              />
             </div>
 
             <div>
@@ -169,7 +177,7 @@ export function CourseFormView() {
               {...register('lecturerId')}
             >
               <option value="">No assigned instructor</option>
-              {lecturerRoster.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           </div>
 

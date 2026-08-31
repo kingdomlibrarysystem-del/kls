@@ -5,8 +5,9 @@ import { PlayCircle, Clock, Star, Search, CheckCircle2, GraduationCap } from "lu
 import { RemoteImage } from "@/components/ui/remote-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
-import { useCourses } from "../_shared/use-courses";
+import { useCourses, type CatalogCourse } from "../_shared/use-courses";
 import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
+import { CourseCheckoutModal } from "../courses/_components/course-checkout-modal";
 
 /** Courses shown per page — keeps a large catalog from rendering unbounded. */
 const PAGE_SIZE = 9;
@@ -17,6 +18,7 @@ export default function ELearningPage() {
   const [page, setPage] = useState(1);
   const [enrollError, setEnrollError] = useState("");
   const [enrolling, setEnrolling] = useState<string | null>(null);
+  const [checkoutCourse, setCheckoutCourse] = useState<CatalogCourse | null>(null);
   const { user } = useAuth();
   const { data: courseCatalog, loading: coursesLoading } = useCourses();
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments();
@@ -33,12 +35,16 @@ export default function ELearningPage() {
   const currentPage = Math.min(page, totalPages);
   const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const handleEnroll = async (courseId: string) => {
+  const handleEnroll = async (course: CatalogCourse) => {
     if (!user) return;
+    if (course.price > 0) {
+      setCheckoutCourse(course);
+      return;
+    }
     setEnrollError("");
-    setEnrolling(courseId);
+    setEnrolling(course.id);
     try {
-      await enrollInCourse(user.id, courseId);
+      await enrollInCourse(user.id, course.id);
       await refetch();
     } catch (error) {
       setEnrollError(error instanceof Error ? error.message : "Could not enroll in this course");
@@ -157,9 +163,9 @@ export default function ELearningPage() {
                     </Link>
                   ) : (
                     <button
-                      onClick={() => handleEnroll(course.id)}
+                      onClick={() => handleEnroll(course)}
                       disabled={enrolling === course.id}
-                      aria-label={`Enroll in ${course.title}`}
+                      aria-label={course.price > 0 ? `Pay to enroll in ${course.title}` : `Enroll in ${course.title}`}
                       style={{
                         display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
                         background: "var(--teal-light)", color: "#fff",
@@ -167,7 +173,7 @@ export default function ELearningPage() {
                         opacity: enrolling === course.id ? 0.7 : 1,
                       }}
                     >
-                      {enrolling === course.id ? "Enrolling…" : "Enroll"}
+                      {enrolling === course.id ? "Enrolling…" : course.price > 0 ? `Pay ${course.price.toLocaleString()} RWF` : "Enroll"}
                     </button>
                   )}
                 </div>
@@ -202,6 +208,12 @@ export default function ELearningPage() {
           </button>
         </div>
       )}
+
+      <CourseCheckoutModal
+        course={checkoutCourse}
+        onClose={() => setCheckoutCourse(null)}
+        onPaid={() => { refetch(); setCheckoutCourse(null); }}
+      />
     </div>
   );
 }

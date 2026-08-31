@@ -1,11 +1,33 @@
 import prisma from '@/prisma/client'
 import { sendMail } from '@/lib/mailer'
+import { broadcast } from '@/lib/sse-hub'
 
 type NotificationType = 'BORROW' | 'RESERVATION' | 'COURSE' | 'PUBLICATION' | 'DUE' | 'SYSTEM'
+
+/**
+ * Fine-grained email category — independent of `NotificationType` (the
+ * coarse bucket the in-app Notification row/list still uses unchanged).
+ * This is the real per-category gate notification-preferences-section.tsx
+ * toggles against, so "session approved" and "session unavailable" (both
+ * would otherwise collapse into one SESSION bucket) can be turned on/off
+ * independently. Keep this list in sync with
+ * app/member/profile/_components/notification-preferences-data.ts.
+ */
+export type NotificationCategory =
+  | 'borrow-approved' | 'borrow-rejected' | 'borrow-returned'
+  | 'reservation-created' | 'reservation-ready'
+  | 'course-enrollment' | 'course-payment-success' | 'course-payment-failed'
+  | 'publication-submitted' | 'publication-approved' | 'publication-rejected'
+  | 'session-approved' | 'session-rejected' | 'session-unavailable' | 'session-reminder'
+  | 'certificate-issued'
+  | 'order-payment-success' | 'order-payment-failed'
+  | 'assessment-graded'
 
 interface NotifyUserInput {
   userId: string
   type: NotificationType
+  /** Which real event this is, for per-category email preference filtering — see NotificationCategory's docstring. */
+  category: NotificationCategory
   title: string
   message: string
   href: string
@@ -45,10 +67,16 @@ export async function notifyUser(input: NotifyUserInput): Promise<void> {
     console.error('Failed to create notification:', error)
   })
 
+  broadcast(input.userId, { type: 'notification' })
+
   if (!input.email) return
 
-  const prefs = user.notificationPreferences as { email?: boolean } | null
-  const emailEnabled = prefs?.email !== false
+  // An explicit per-category preference wins; if this category was
+  // never set, fall back to the old coarse `email` flag (so preference
+  // data saved before per-category filtering existed keeps working);
+  // if neither exists, default to enabled.
+  const prefs = user.notificationPreferences as Partial<Record<NotificationCategory, boolean>> & { email?: boolean } | null
+  const emailEnabled = prefs?.[input.category] ?? prefs?.email ?? true
   if (!emailEnabled) return
 
   try {
@@ -56,4 +84,22 @@ export async function notifyUser(input: NotifyUserInput): Promise<void> {
   } catch (error) {
     console.error('Failed to send notification email:', error)
   }
+}
+
+const STAFF_ROLE_NAMES = ['Admin', 'Manager', 'Staff']
+
+/**
+ * Broadcasts one notification to every real admin/manager/staff user —
+ * the only multi-recipient path in this codebase; every other
+ * notification is single-recipient. Reused wherever an event needs
+ * staff attention rather than one specific person's (e.g. a new
+ * publication submitted for review).
+ */
+export async function notifyAllStaff(input: Omit<NotifyUserInput, 'userId'>): Promise<void> {
+  const staff = await prisma.user.findMany({
+    where: { role: { name: { in: STAFF_ROLE_NAMES } } },
+    select: { id: true },
+  }).catch(() => [])
+
+  await Promise.all(staff.map((s) => notifyUser({ ...input, userId: s.id })))
 }

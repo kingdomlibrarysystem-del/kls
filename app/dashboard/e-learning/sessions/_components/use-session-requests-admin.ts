@@ -90,3 +90,9 @@ export function rejectSessionAdmin(id: string, notes: string) {
 export function completeSessionAdmin(id: string) {
   return patchSessionRequest(id, { action: 'complete' })
 }
+export function markSessionUnavailable(id: string) {
+  return patchSessionRequest(id, { action: 'mark-unavailable' })
+}
+export function notifySessionParticipants(id: string) {
+  return patchSessionRequest(id, { action: 'notify' })
+}

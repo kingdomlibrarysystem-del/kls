@@ -46,15 +46,31 @@ export interface Category {
   createdAt: string
 }
 
-/** Form state for the admin Categories create/edit panel. */
+/**
+ * Form state for the admin Categories create/edit panel. `code` through
+ * `heroImage` are only meaningful for a root category (empty
+ * `parentId`); `status` is only meaningful for a child/scroll category
+ * — the form component shows/hides each group based on `parentId`, but
+ * the state shape itself always carries all fields so switching
+ * "Parent Category" back and forth doesn't lose already-typed values.
+ */
 export interface CategoryFormState {
   nameEn: string
   nameFr: string
   nameRw: string
   slug: string
   parentId: string
+  code: string
+  subtitle: string
+  range: string
+  theme: string
+  description: string
+  detail: string
+  heroImage: string
+  status: CategoryStatus | ''
 }
 
 export const EMPTY_CATEGORY_FORM: CategoryFormState = {
   nameEn: '', nameFr: '', nameRw: '', slug: '', parentId: '',
+  code: '', subtitle: '', range: '', theme: '', description: '', detail: '', heroImage: '', status: '',
 }

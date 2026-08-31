@@ -1,5 +1,6 @@
-import type { NextAuthOptions } from 'next-auth'
+import type { NextAuthOptions, Account, Profile } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
 import { authenticator } from 'otplib'
@@ -21,10 +22,11 @@ function logLoginAttempt(fields: { userId: string | null; email: string; ip: str
  * login() (which matched against 4 hardcoded mock personas and fell
  * back to a fake "member" identity on any unrecognized email — no
  * password check ever happened). JWT session strategy — no Prisma
- * adapter needed since Credentials doesn't do OAuth account linking;
- * the Account/Session/VerificationToken models already in schema.prisma
- * are unused by this config but harmless to leave (built for a future
- * OAuth provider, not removed here since that's out of this task's scope).
+ * adapter is wired even now that a real GoogleProvider exists below
+ * (see the `signIn` callback), since a database-session adapter would
+ * conflict with the revocable-JWT design documented next; the
+ * Account/Session/VerificationToken models already in schema.prisma
+ * stay unused by this config but harmless to leave.
  *
  * Session revocation: NextAuth v4 throws UnsupportedStrategy if
  * session.strategy is "database" with only a Credentials provider (a
@@ -112,8 +114,74 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        })]
+      : []),
   ],
   callbacks: {
+    /**
+     * Only runs for the google provider (credentials' own authorize()
+     * already returns null on failure, which next-auth treats as a
+     * rejected sign-in before this callback is even reached — this
+     * callback's real job here is Google-only). No PrismaAdapter is
+     * wired (this app stays JWT-only, per this file's original design
+     * doc above), so NextAuth will NOT create a User/Account row for
+     * us — a first-time Google sign-in must be turned into a real
+     * account here, exactly like /api/auth/register does for
+     * email/password: upsert a "Member" Role, create the User (email
+     * pre-verified, since Google already verified it), and mutate the
+     * `user` object in place so the existing `jwt` callback below picks
+     * up the same firstName/lastName/roleName/sessionId fields it
+     * already expects from Credentials' authorize() — no changes
+     * needed there.
+     */
+    async signIn({ user, account, profile }: { user: { id: string; email?: string | null; name?: string | null; image?: string | null }; account: Account | null; profile?: Profile }) {
+      if (account?.provider !== 'google') return true
+      if (!user.email) return false
+
+      const memberRole = await prisma.role.upsert({
+        where: { name: 'Member' },
+        update: {},
+        create: { name: 'Member', description: 'Default role for self-registered members', permissions: [] },
+      })
+
+      const googleName = profile?.name ?? user.name ?? ''
+      const [firstName, ...rest] = googleName.split(/\s+/)
+
+      const dbUser = await prisma.user.upsert({
+        where: { email: user.email },
+        update: { image: user.image ?? undefined },
+        create: {
+          email: user.email,
+          name: googleName || undefined,
+          firstName: firstName || googleName || undefined,
+          lastName: rest.join(' ') || undefined,
+          image: user.image ?? undefined,
+          emailVerified: new Date(),
+          roleId: memberRole.id,
+        },
+        include: { role: { select: { name: true } } },
+      })
+
+      const sessionId = randomUUID()
+      await prisma.userSession.create({ data: { jti: sessionId, userId: dbUser.id, userAgent: 'google-oauth', ip: 'unknown' } })
+
+      // Same custom fields Credentials' authorize() returns — the `jwt`
+      // callback below reads these off `user` unchanged regardless of
+      // which provider produced them.
+      user.id = dbUser.id
+      Object.assign(user, {
+        firstName: dbUser.firstName ?? '',
+        lastName: dbUser.lastName ?? '',
+        roleName: dbUser.role?.name ?? 'Member',
+        sessionId,
+      })
+
+      return true
+    },
     async jwt({ token, user }) {
       if (user) {
         // Fresh sign-in: the UserSession row was just created in
