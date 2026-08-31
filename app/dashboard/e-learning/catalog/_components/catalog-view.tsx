@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { BookOpen, Eye, Pencil, Archive, PlusCircle, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,6 +9,7 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useCourseCatalog, archiveCourseInCatalog } from '../../_shared/use-course-catalog'
 import { languageLabels } from '../../add/_components/course-form-schema'
+import { AddCourseModal } from './add-course-modal'
 import { EditCourseModal } from './edit-course-modal'
 import { ArchiveCourseModal } from './archive-course-modal'
 import { statusConfig, type CourseCatalogEntry, type CourseStatus } from './catalog-config'
@@ -33,6 +33,7 @@ function LoadingSkeleton() {
 export function CatalogView() {
   const [statusFilter, setStatusFilter] = useState<CourseStatus | 'all'>('all')
   const [authorFilter, setAuthorFilter] = useState('all')
+  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<CourseCatalogEntry | null>(null)
   const [archiving, setArchiving] = useState<CourseCatalogEntry | null>(null)
 
@@ -46,11 +47,19 @@ export function CatalogView() {
 
   if (catalog.length === 0) {
     return (
-      <EmptyState
-        icon={BookOpen}
-        title="No courses yet"
-        description="Add your first course to see it appear in the catalog."
-      />
+      <div>
+        <EmptyState
+          icon={BookOpen}
+          title="No courses yet"
+          description="Add your first course to see it appear in the catalog."
+          action={
+            <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
+              <PlusCircle size={15} /> Add Course
+            </ElegantButton>
+          }
+        />
+        <AddCourseModal open={adding} onClose={() => setAdding(false)} />
+      </div>
     )
   }
 
@@ -133,11 +142,9 @@ export function CatalogView() {
       <CatalogStats />
 
       <div className="flex justify-end mb-3">
-        <Link href="/dashboard/e-learning/add" aria-label="Add a new course">
-          <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm">
-            <PlusCircle size={15} /> Add Course
-          </ElegantButton>
-        </Link>
+        <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
+          <PlusCircle size={15} /> Add Course
+        </ElegantButton>
       </div>
 
       <DataTable<CourseCatalogEntry>
@@ -150,6 +157,7 @@ export function CatalogView() {
         emptyMessage="No courses match your filters."
       />
 
+      <AddCourseModal open={adding} onClose={() => setAdding(false)} />
       <EditCourseModal course={editing} onClose={() => setEditing(null)} />
       <ArchiveCourseModal
         course={archiving}
