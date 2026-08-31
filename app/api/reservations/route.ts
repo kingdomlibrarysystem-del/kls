@@ -3,9 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-import { notifyUser } from '@/lib/notify'
-import { reservationCreatedEmailHtml } from '@/lib/email-templates'
-import { appBaseUrl } from '@/lib/mailer'
+import { createReservationRecord } from './create-reservation'
 
 const createReservationSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -133,61 +131,12 @@ export const POST = withErrorHandling('/api/reservations', 'POST', async (reques
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  const [user, resource] = await Promise.all([
-    prisma.user.findUnique({ where: { id: body.userId } }),
-    prisma.resource.findUnique({ where: { id: body.resourceId } }),
-  ])
-  if (!user) throw new ApiError('The specified user does not exist', 400)
-  if (!resource) throw new ApiError('The specified resource does not exist', 400)
-
-  const existing = await prisma.reservation.findFirst({
-    where: { userId: body.userId, resourceId: body.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },
-  })
-  if (existing) {
-    throw new ApiError('You already have an active reservation for this resource', 409)
+  const settings = await prisma.settings.findFirst()
+  if (settings && settings.reservationFee > 0) {
+    throw new ApiError('This library charges a reservation fee — use /api/access-orders to pay and reserve', 400)
   }
 
-  /**
-   * A plain count()-then-create() is a read-then-write race: two
-   * concurrent reservations for the same resource could both read
-   * queueAhead=0 and both land at queuePosition 1 — confirmed by a
-   * failing concurrency test even when wrapped in $transaction, since
-   * Prisma's MongoDB transactions don't serialize concurrent
-   * transactions against each other the way a SQL SERIALIZABLE
-   * transaction would. Resource.reservationQueueCounter is instead
-   * incremented atomically (MongoDB guarantees single-document writes
-   * are atomic, with or without a transaction) and the returned
-   * post-increment value used directly as this reservation's queue
-   * position — no read-then-decide step for two requests to race on.
-   */
-  const updatedResource = await prisma.resource.update({
-    where: { id: body.resourceId },
-    data: { reservationQueueCounter: { increment: 1 } },
-    select: { reservationQueueCounter: true },
-  })
-
-  const reservation = await prisma.reservation.create({
-    data: {
-      userId: body.userId,
-      memberName: body.memberName,
-      memberEmail: body.memberEmail,
-      resourceId: body.resourceId,
-      queuePosition: updatedResource.reservationQueueCounter,
-      status: 'PENDING',
-    },
-    include: RESOURCE_INCLUDE,
-  })
-
-  const reservationUrl = `${appBaseUrl()}/member/reservations/${reservation.id}`
-  await notifyUser({
-    userId: body.userId,
-    type: 'RESERVATION',
-    category: 'reservation-created',
-    title: 'Reservation placed',
-    message: `Your reservation for "${reservation.resource.title}" has been placed.`,
-    href: `/member/reservations/${reservation.id}`,
-    email: { subject: 'Your reservation has been placed', html: reservationCreatedEmailHtml(body.memberName, reservation.resource.title, reservation.queuePosition, reservationUrl) },
-  })
+  const reservation = await createReservationRecord(body)
 
   return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation created successfully', code: 'success', status: 201 }, { status: 201 })
 })

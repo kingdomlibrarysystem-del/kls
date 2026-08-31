@@ -108,6 +108,7 @@ model User {
   twoFactorSecret           TwoFactorSecret?
   orders                    Order[]
   courseOrders              CourseOrder[]
+  accessOrders              AccessOrder[]
   cart                      Cart?
   reviews                   Review[]
 
@@ -200,6 +201,14 @@ model Settings {
   maxRenewals                 Int      @default(2)
   reservationClaimWindowHours Int      @default(48)
   maxConcurrentBorrows        Int      @default(3)
+  /// RWF flat fee charged to place a Borrow request, distinct from
+  /// Resource.price (the sale/rental price) — 0 means Borrow stays free
+  /// and POST /api/borrowings creates the Borrow directly as before; > 0
+  /// routes the member through AccessOrder/checkout first, mirroring
+  /// Course.price's free-vs-paid split for enrollment.
+  borrowingFee                Float    @default(0)
+  /// Same as borrowingFee, for placing a Reservation.
+  reservationFee              Float    @default(0)
   updatedAt                   DateTime @updatedAt
 }
 
@@ -340,6 +349,7 @@ model Resource {
   chapters                Chapter[]
   readingProgress         ReadingProgress[]
   orders                  Order[]
+  accessOrders            AccessOrder[]
   cartItems               CartItem[]
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
@@ -490,6 +500,55 @@ model CourseOrder {
 enum PaymentMethod {
   PAYPACK
   STRIPE
+}
+
+/// Real payment order for a paid Borrow or Reservation request — parallel
+/// to CourseOrder (same reasoning: a hard-required resourceId FK plus
+/// every existing Borrow/Reservation consumer already assuming a real
+/// Resource, so this stays its own model rather than making Order
+/// polymorphic). Reuses the exact same PayPack/Stripe integration and
+/// OrderStatus lifecycle. Settling PAID (see settleAccessOrder in
+/// app/api/access-orders/settle.ts) is what actually creates the Borrow
+/// or Reservation row — unlike a free request, which POST /api/borrowings
+/// or POST /api/reservations still creates directly when
+/// Settings.borrowingFee/reservationFee is 0.
+model AccessOrder {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String          @db.ObjectId
+  user            User            @relation(fields: [userId], references: [id])
+  buyerName       String
+  buyerEmail      String
+  buyerPhone      String
+  resourceId      String          @db.ObjectId
+  resource        Resource        @relation(fields: [resourceId], references: [id])
+  resourceTitle   String
+  kind            AccessOrderKind
+  method          PaymentMethod
+  amountRwf       Float
+  status          OrderStatus     @default(PENDING)
+  /// Set once settlement succeeds and the real Borrow/Reservation row is
+  /// created — lets the client/poll route resolve straight to it without
+  /// a second lookup, and makes settlement idempotent (a re-settle finds
+  /// this already set and skips re-creating the row).
+  createdRecordId String?
+  /// Same sparse-index reasoning as Order.paypackRef/stripeSessionId —
+  /// not `@unique` here; a real sparse unique index is created out-of-band
+  /// via scripts/create-access-order-sparse-indexes.mjs.
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
+  stripeSessionId String?
+  paidAt          DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([resourceId])
+}
+
+enum AccessOrderKind {
+  BORROW
+  RESERVATION
 }
 
 /// Real shopping cart — one per member, replacing the previous

@@ -5,6 +5,7 @@ import { notifyUser } from '@/lib/notify'
 import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
 import { settleCourseOrder } from '@/app/api/course-orders/settle'
+import { settleAccessOrder } from '@/app/api/access-orders/settle'
 
 /**
  * Real PayPack webhook receiver — fires on the `transaction:processed`
@@ -42,10 +43,15 @@ export async function POST(request: NextRequest) {
   const order = await prisma.order.findFirst({ where: { paypackRef: ref } })
   if (!order) {
     const courseOrder = await prisma.courseOrder.findFirst({ where: { paypackRef: ref } })
-    if (!courseOrder) {
+    if (courseOrder) {
+      await settleCourseOrder(courseOrder.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
+      return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
+    }
+    const accessOrder = await prisma.accessOrder.findFirst({ where: { paypackRef: ref } })
+    if (!accessOrder) {
       return NextResponse.json({ data: null, message: 'No matching order for this transaction', code: 'success', status: 200 })
     }
-    await settleCourseOrder(courseOrder.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
+    await settleAccessOrder(accessOrder.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
     return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
   }
 
