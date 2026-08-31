@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { RelatedResourceCard } from '@/components/ui/related-resource-card'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
-import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
+import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
 import { getCategoryById, getChildCategories, type CategoryStatus } from '@/lib/kcs-taxonomy'
 import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 import { KcsViewToggle, type KcsContentView } from '../../../_components/kcs-view-toggle'
@@ -31,8 +31,9 @@ interface ScrollDetailViewProps {
  * Real click-through detail page for a single KCS scroll — identity
  * (title/code/section/status, unchanged from the card) plus a genuine
  * Related Resources section sourced from the canonical Resource store by
- * a real `categoryId` FK match, with a real Borrow action when a matching
- * resource has stock. A scroll with no matching resource (archived/
+ * a real `categoryId` FK match, with a real Borrow action (adds a real
+ * RENTAL charge to the cart) when a matching resource has stock. A
+ * scroll with no matching resource (archived/
  * apocryphal titles with no catalog entry) correctly shows EmptyState
  * rather than fabricated content — the underlying scroll model still has
  * no content/body field, so this page adds a real relationship, not
@@ -50,12 +51,23 @@ interface ScrollDetailViewProps {
  * would be worse than admitting the relationship doesn't exist yet.
  */
 export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewProps) {
-  const [action, setAction] = useState<BorrowReserveAction>(null)
   const [view, setView] = useState<KcsContentView>('table')
   const [showAnalytics, setShowAnalytics] = useState(true)
-  const { isAuthenticated } = useAuth()
+  const [addingId, setAddingId] = useState<string | null>(null)
+  const { isAuthenticated, user } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
+  useCart(user?.id)
+
+  const handleAddToCart = async (resourceId: string) => {
+    if (!user) return
+    setAddingId(resourceId)
+    try {
+      await addToCart(user.id, resourceId, 'RENTAL')
+    } finally {
+      setAddingId(null)
+    }
+  }
 
   const loading = resourcesLoading || categoriesLoading
   const error = categoriesError ?? resourcesError
@@ -81,7 +93,6 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
   }
 
   const matches = findResourcesForScroll(scroll.id, resources)
-  const borrowable = matches.find((r) => r.availableQty > 0)
   const status = scroll.status ?? 'AVAILABLE'
 
   return (
@@ -139,13 +150,14 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
                   resource={resource}
                   style={{}}
                   action={
-                    resource.availableQty > 0 && isAuthenticated ? (
+                    resource.availableQty > 0 && isAuthenticated && resource.price > 0 ? (
                       <button
-                        onClick={() => setAction('borrow')}
+                        onClick={() => handleAddToCart(resource.id)}
+                        disabled={isInCart(resource.id, 'RENTAL') || addingId === resource.id}
                         aria-label={`Borrow ${resource.title}`}
                         style={{ padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
                       >
-                        Borrow this resource
+                        {isInCart(resource.id, 'RENTAL') ? 'In Cart' : 'Borrow this resource'}
                       </button>
                     ) : undefined
                   }
@@ -166,9 +178,6 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
         />
       </div>
 
-      {borrowable && (
-        <BorrowReserveConfirmModal action={action} resourceId={borrowable.id} bookTitle={borrowable.title} bookAuthor={borrowable.author} onClose={() => setAction(null)} />
-      )}
     </div>
   )
 }

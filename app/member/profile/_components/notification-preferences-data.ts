@@ -59,10 +59,8 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
   {
     section: 'Payments',
     categories: [
-      { id: 'order-payment-success', label: 'Order Payment Success', description: 'Confirmation for a successful resource purchase' },
-      { id: 'order-payment-failed', label: 'Order Payment Failed', description: 'Alerts when a resource purchase payment fails' },
-      { id: 'access-payment-success', label: 'Borrow/Reservation Payment Success', description: 'Confirmation for a successful borrowing or reservation fee payment' },
-      { id: 'access-payment-failed', label: 'Borrow/Reservation Payment Failed', description: 'Alerts when a borrowing or reservation fee payment fails' },
+      { id: 'order-payment-success', label: 'Order Payment Success', description: 'Confirmation for a successful Reserve or Borrow payment' },
+      { id: 'order-payment-failed', label: 'Order Payment Failed', description: 'Alerts when a Reserve or Borrow payment fails' },
     ],
   },
 ]

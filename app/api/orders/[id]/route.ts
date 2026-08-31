@@ -3,6 +3,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { findTransaction } from '@/lib/paypack'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
+import { settleOrder } from '../settle'
 
 /**
  * Status-refresh endpoint — a member polls this after requesting a
@@ -23,16 +24,7 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
     try {
       const remote = await findTransaction(order.paypackRef)
       if (remote.status !== order.paypackStatus) {
-        const isSuccessful = remote.status === 'successful'
-        const isFailed = remote.status === 'failed'
-        const updated = await prisma.order.update({
-          where: { id },
-          data: {
-            paypackStatus: remote.status,
-            ...(isSuccessful && { status: 'PAID', paidAt: new Date() }),
-            ...(isFailed && { status: 'FAILED' }),
-          },
-        })
+        const updated = await settleOrder(order.id, { paypackStatus: remote.status, providerStatus: remote.status })
         return NextResponse.json({ data: serialize(updated), message: 'Order status refreshed', code: 'success', status: 200 })
       }
     } catch {

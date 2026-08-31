@@ -14,6 +14,8 @@ interface BuyConfirmModalProps {
   bookTitle: string
   priceRwf: number
   onClose: () => void
+  /** Called once, the moment the Order settles PAID — e.g. so a cart-triggered checkout can remove the now-fulfilled cart line. Optional: the public library's direct Reserve/Borrow buttons don't need it, since there's no cart row to clean up. */
+  onPaid?: () => void
 }
 
 type Stage = 'form' | 'pending' | 'paid' | 'failed'
@@ -22,14 +24,17 @@ const POLL_INTERVAL_MS = 4000
 const POLL_TIMEOUT_MS = 3 * 60_000
 
 /**
- * Real PayPack purchase/rental flow — requests an actual mobile-money
- * charge (moves real RWF the moment "Confirm" is pressed; there is no
- * PayPack sandbox). After the request is sent, polls GET /api/orders/:id
- * every few seconds until the member approves/declines the prompt on
- * their phone, since payment confirmation is asynchronous and never
- * guaranteed by the initial request alone.
+ * Real PayPack Reserve (SALE)/Borrow (RENTAL) checkout — requests an
+ * actual mobile-money charge (moves real RWF the moment "Confirm" is
+ * pressed; there is no PayPack sandbox). After the request is sent,
+ * polls GET /api/orders/:id every few seconds until the member
+ * approves/declines the prompt on their phone, since payment
+ * confirmation is asynchronous and never guaranteed by the initial
+ * request alone. Once the Order settles PAID, settleOrder
+ * (app/api/orders/settle.ts) creates the real Reservation/Borrow row —
+ * this modal only starts the payment, it never creates that row itself.
  */
-export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClose }: BuyConfirmModalProps) {
+export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClose, onPaid }: BuyConfirmModalProps) {
   const { user } = useAuth()
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
@@ -46,7 +51,7 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
 
   if (!action) return null
 
-  const verb = action === 'SALE' ? 'Buy' : 'Rent'
+  const verb = action === 'SALE' ? 'Reserve' : 'Borrow'
 
   const startPolling = (id: string) => {
     const startedAt = Date.now()
@@ -63,6 +68,7 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
         if (json.data?.status === 'paid') {
           if (pollTimer.current) clearInterval(pollTimer.current)
           setStage('paid')
+          onPaid?.()
         } else if (json.data?.status === 'failed') {
           if (pollTimer.current) clearInterval(pollTimer.current)
           setStage('failed')

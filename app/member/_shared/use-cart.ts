@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
-export type CartItemType = 'SALE' | 'RENTAL' | 'BORROW' | 'RESERVE'
+/** SALE is shown to members as "Reserve"; RENTAL is shown as "Borrow" — see CartItemType's schema docstring. */
+export type CartItemType = 'SALE' | 'RENTAL'
 
 export interface CartItem {
   id: string
@@ -86,16 +87,6 @@ export async function removeFromCart(itemId: string, userId: string): Promise<vo
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to remove from cart')
   hasFetched = false
   await loadCart(userId)
-}
-
-/** Resolves a BORROW/RESERVE cart item into a real Borrow/Reservation row (see /api/cart/[itemId]/confirm) and removes it from the cart on success. Returns the created Borrow/Reservation's own serialized data. */
-export async function confirmCartItem(itemId: string, userId: string): Promise<unknown> {
-  const res = await fetch(`/api/cart/${itemId}/confirm`, { method: 'POST' })
-  const json = await res.json()
-  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not confirm this request')
-  hasFetched = false
-  await loadCart(userId)
-  return json.data
 }
 
 /** Live-subscribes to the shared cart store, loading it from the real API for the signed-in user. */

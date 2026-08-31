@@ -7,9 +7,8 @@ import { UniversalButton } from '@/components/ui/universal-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 import { getCategoryById } from '@/lib/kcs-taxonomy'
-import { BorrowReserveConfirmModal } from './borrow-reserve-confirm-modal'
 import { BookCard } from './book-card'
 
 const formats = ['All', ...Object.values(mediaTypeLabels)]
@@ -28,7 +27,6 @@ export function LibraryBrowser() {
   const [category, setCategory] = useState('All')
   const [format, setFormat] = useState('All')
   const [showFilters, setShowFilters] = useState(!!initialQuery)
-  const [pending, setPending] = useState<{ book: Resource; action: 'borrow' | 'reserve' } | null>(null)
 
   // Real category display names resolved from the canonical taxonomy, not a raw free-text field.
   const categories = ['All', ...Array.from(new Set(books.map((b) => getCategoryById(b.categoryId)?.name.en).filter((n): n is string => !!n)))]
@@ -111,7 +109,7 @@ export function LibraryBrowser() {
 
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {filtered.map((book) => <BookCard key={book.id} book={book} onAction={(b, action) => setPending({ book: b, action })} />)}
+          {filtered.map((book) => <BookCard key={book.id} book={book} />)}
         </div>
       ) : (
         <div className="text-center py-16">
@@ -122,15 +120,6 @@ export function LibraryBrowser() {
           </UniversalButton>
         </div>
       )}
-
-      <BorrowReserveConfirmModal
-        action={pending?.action ?? null}
-        resourceId={pending?.book.id ?? ''}
-        bookTitle={pending?.book.title ?? ''}
-        bookAuthor={pending?.book.author ?? ''}
-        availableQty={pending?.book.availableQty}
-        onClose={() => setPending(null)}
-      />
     </>
   )
 }

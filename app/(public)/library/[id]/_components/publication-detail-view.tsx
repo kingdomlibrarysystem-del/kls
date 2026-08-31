@@ -13,9 +13,7 @@ import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_com
 import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
 import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
-import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
-import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
-import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
+import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 
 interface PublicationDetailViewProps {
   id: string
@@ -30,9 +28,7 @@ interface PublicationDetailViewProps {
  * other.
  */
 export function PublicationDetailView({ id }: PublicationDetailViewProps) {
-  const [action, setAction] = useState<BorrowReserveAction>(null)
-  const [buyAction, setBuyAction] = useState<BuyAction>(null)
-  const [addingToCart, setAddingToCart] = useState(false)
+  const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   const { user, isAuthenticated } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
@@ -104,18 +100,19 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const quantity = resource ? resource.availableQty : catalogBook!.quantity
   const available = resource ? resource.availableQty > 0 && resource.status !== 'archived' : !!catalogBook?.available
   const language = catalogBook ? languageBadgeLabels[catalogBook.language] : resource!.language
-  const inCart = resource ? isInCart(resource.id, 'SALE') : false
+  const inCartRental = resource ? isInCart(resource.id, 'RENTAL') : false
+  const inCartSale = resource ? isInCart(resource.id, 'SALE') : false
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (type: CartItemType) => {
     if (!user || !resource) return
-    setAddingToCart(true)
+    setAddingType(type)
     setCartError('')
     try {
-      await addToCart(user.id, resource.id, 'SALE')
+      await addToCart(user.id, resource.id, type)
     } catch (err) {
       setCartError(err instanceof Error ? err.message : 'Could not add to cart')
     } finally {
-      setAddingToCart(false)
+      setAddingType(null)
     }
   }
 
@@ -186,48 +183,33 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           )}
 
           {isAuthenticated && resource ? (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <UniversalButton
-                  variant={isReadable ? 'outline' : 'primary'}
-                  disabled={!available}
-                  onClick={() => setAction('borrow')}
-                  className="flex-1 sm:flex-none"
-                >
-                  Borrow
-                </UniversalButton>
-                <UniversalButton
-                  variant="outline"
-                  onClick={() => setAction('reserve')}
-                  className="flex-1 sm:flex-none"
-                >
-                  Reserve
-                </UniversalButton>
-              </div>
-              {price > 0 && (
-                <>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <UniversalButton variant="primary" onClick={() => setBuyAction('SALE')} className="flex-1 sm:flex-none">
-                      Buy — {price.toLocaleString()} RWF
-                    </UniversalButton>
-                    <UniversalButton variant="outline" onClick={() => setBuyAction('RENTAL')} className="flex-1 sm:flex-none">
-                      Rent
-                    </UniversalButton>
-                  </div>
+            price > 0 && (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <UniversalButton
-                    variant="outline"
-                    disabled={inCart}
-                    loading={addingToCart}
-                    icon={inCart ? <Check size={15} /> : <ShoppingCart size={15} />}
-                    onClick={handleAddToCart}
+                    variant={isReadable ? 'outline' : 'primary'}
+                    disabled={!available || inCartRental}
+                    loading={addingType === 'RENTAL'}
+                    icon={inCartRental ? <Check size={15} /> : <ShoppingCart size={15} />}
+                    onClick={() => handleAddToCart('RENTAL')}
                     className="flex-1 sm:flex-none"
                   >
-                    {inCart ? 'In Cart' : 'Add to Cart'}
+                    {inCartRental ? 'In Cart' : `Borrow — ${price.toLocaleString()} RWF`}
                   </UniversalButton>
-                  {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
-                </>
-              )}
-            </div>
+                  <UniversalButton
+                    variant="outline"
+                    disabled={inCartSale}
+                    loading={addingType === 'SALE'}
+                    icon={inCartSale ? <Check size={15} /> : <ShoppingCart size={15} />}
+                    onClick={() => handleAddToCart('SALE')}
+                    className="flex-1 sm:flex-none"
+                  >
+                    {inCartSale ? 'In Cart' : `Reserve — ${price.toLocaleString()} RWF`}
+                  </UniversalButton>
+                </div>
+                {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
+              </div>
+            )
           ) : isAuthenticated ? null : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -258,8 +240,6 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={action} resourceId={resource?.id ?? ''} bookTitle={title} bookAuthor={author} availableQty={quantity} onClose={() => setAction(null)} />
-      <BuyConfirmModal action={buyAction} resourceId={resource?.id ?? ''} bookTitle={title} priceRwf={price} onClose={() => setBuyAction(null)} />
     </div>
   )
 }

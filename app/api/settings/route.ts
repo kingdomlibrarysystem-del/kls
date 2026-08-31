@@ -8,10 +8,8 @@ import { requireAdmin } from '@/lib/auth/require-role'
  * Single-row settings — there is only ever one Settings document. GET
  * upserts a default row on first read so this never 404s; PATCH updates
  * that same row. No id is ever passed by the client — it always means
- * "the one settings row." GET stays public/unauthenticated: it's read by
- * the member-facing borrow/reserve confirm modal to show real borrow-
- * period policy before checkout, not just the admin settings page — the
- * values (borrow period, renewal caps) aren't sensitive. PATCH (actually
+ * "the one settings row." GET stays public/unauthenticated: the values
+ * (borrow period, renewal caps) aren't sensitive. PATCH (actually
  * changing policy) is admin-only.
  */
 const settingsSchema = z.object({
@@ -19,8 +17,6 @@ const settingsSchema = z.object({
   maxRenewals: z.number().int().min(0).max(10),
   reservationClaimWindowHours: z.number().int().min(1).max(168),
   maxConcurrentBorrows: z.number().int().min(1).max(20),
-  borrowingFee: z.number().min(0).max(1000000),
-  reservationFee: z.number().min(0).max(1000000),
 })
 
 async function getOrCreateSettings() {

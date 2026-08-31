@@ -7,9 +7,8 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
-import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
+import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
-import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
 import type { Resource } from '@/app/dashboard/library/_components/resources-data'
 
 interface ResourceCardProps {
@@ -67,46 +66,45 @@ function ResourceCover({ resource, liked, height }: { resource: Resource; liked:
 
 function useResourceCardState(resource: Resource) {
   const { user, isAuthenticated } = useAuth()
-  const [action, setAction] = useState<BorrowReserveAction>(null)
-  const [addingToCart, setAddingToCart] = useState(false)
+  const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   const readableContent = useReadableContent()
   useCart(user?.id)
   const liked = useIsFavorited(resource.id)
   const isReadable = !!readableContent[resource.id] || !!resource.documentUrl
   const outOfStock = resource.availableQty === 0
-  const inCart = isInCart(resource.id, 'SALE')
+  const inCartRental = isInCart(resource.id, 'RENTAL')
+  const inCartSale = isInCart(resource.id, 'SALE')
   const loginHref = `/auth/login?redirect=${encodeURIComponent(`/member/library/resource/${resource.id}`)}`
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (type: CartItemType) => {
     if (!user) return
-    setAddingToCart(true)
+    setAddingType(type)
     setCartError('')
     try {
-      await addToCart(user.id, resource.id, 'SALE')
+      await addToCart(user.id, resource.id, type)
     } catch (err) {
       setCartError(err instanceof Error ? err.message : 'Could not add to cart')
     } finally {
-      setAddingToCart(false)
+      setAddingType(null)
     }
   }
 
-  return { isAuthenticated, action, setAction, addingToCart, cartError, liked, isReadable, outOfStock, inCart, loginHref, handleAddToCart }
+  return { isAuthenticated, addingType, cartError, liked, isReadable, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart }
 }
 
 /**
  * Resource-first card for the member library — cover, real star rating
  * (Resource.avgRating/reviewCount, recomputed from Review rows), price,
- * and four real actions: Preview/Read (if any Chapter rows or a
- * documentUrl exist), Borrow, Reserve, and View Details. Add to Cart is
- * a fifth, secondary action for a priced resource (SALE only — renting
- * via cart isn't offered on the grid card, matching the reference
- * mockups' single "Add to Cart" button; RENTAL is still available from
- * the detail page). Modeled on ScrollCard's Dialect B styling since this
- * is a /member/* route.
+ * and real actions: Preview/Read (if any Chapter rows or a documentUrl
+ * exist), Borrow (RENTAL), Reserve (SALE), and View Details. Borrow/
+ * Reserve are real charges added straight to the cart — there is no
+ * separate free confirm flow; payment happens on the Cart page.
+ * Modeled on ScrollCard's Dialect B styling since this is a /member/*
+ * route.
  */
 export function ResourceCard({ resource }: ResourceCardProps) {
-  const { isAuthenticated, action, setAction, addingToCart, cartError, liked, isReadable, outOfStock, inCart, loginHref, handleAddToCart } = useResourceCardState(resource)
+  const { isAuthenticated, addingType, cartError, liked, isReadable, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
 
   return (
     <div
@@ -138,36 +136,31 @@ export function ResourceCard({ resource }: ResourceCardProps) {
             )}
           </div>
 
-          {isAuthenticated ? (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={() => setAction('borrow')} disabled={outOfStock} aria-label={`Borrow ${resource.title}`} style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}>
-                Borrow
-              </button>
-              <button onClick={() => setAction('reserve')} aria-label={`Reserve ${resource.title}`} style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Reserve
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <Link href={loginHref} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Borrow</Link>
-              <Link href={loginHref} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Reserve</Link>
-            </div>
-          )}
-
           {resource.price > 0 && (
             isAuthenticated ? (
-              <button
-                onClick={handleAddToCart}
-                disabled={inCart || addingToCart}
-                aria-label={inCart ? `${resource.title} is in your cart` : `Add ${resource.title} to cart`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: inCart || addingToCart ? 'default' : 'pointer', opacity: addingToCart ? 0.7 : 1 }}
-              >
-                {inCart ? <Check size={14} /> : <ShoppingCart size={14} />} {inCart ? 'In Cart' : 'Add to Cart'}
-              </button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => handleAddToCart('RENTAL')}
+                  disabled={outOfStock || inCartRental || addingType === 'RENTAL'}
+                  aria-label={inCartRental ? `${resource.title} (Borrow) is in your cart` : `Borrow ${resource.title}`}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}
+                >
+                  {inCartRental ? <Check size={13} /> : <ShoppingCart size={13} />} {inCartRental ? 'In Cart' : 'Borrow'}
+                </button>
+                <button
+                  onClick={() => handleAddToCart('SALE')}
+                  disabled={inCartSale || addingType === 'SALE'}
+                  aria-label={inCartSale ? `${resource.title} (Reserve) is in your cart` : `Reserve ${resource.title}`}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {inCartSale ? <Check size={13} /> : <ShoppingCart size={13} />} {inCartSale ? 'In Cart' : 'Reserve'}
+                </button>
+              </div>
             ) : (
-              <Link href={loginHref} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 0', borderRadius: 7, background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-                <ShoppingCart size={14} /> Add to Cart
-              </Link>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <Link href={loginHref} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Borrow</Link>
+                <Link href={loginHref} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Reserve</Link>
+              </div>
             )
           )}
           {cartError && <p style={{ fontSize: 11, color: 'var(--red-light)' }}>{cartError}</p>}
@@ -177,15 +170,13 @@ export function ResourceCard({ resource }: ResourceCardProps) {
           </Link>
         </div>
       </div>
-
-      <BorrowReserveConfirmModal action={action} resourceId={resource.id} bookTitle={resource.title} bookAuthor={resource.author} availableQty={resource.availableQty} onClose={() => setAction(null)} />
     </div>
   )
 }
 
 /** List-view resource row — same actions as the card, arranged horizontally per the reference "list" mockup. */
 export function ResourceListItem({ resource }: { resource: Resource }) {
-  const { isAuthenticated, action, setAction, addingToCart, cartError, liked, isReadable, outOfStock, inCart, loginHref, handleAddToCart } = useResourceCardState(resource)
+  const { isAuthenticated, addingType, cartError, liked, isReadable, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
 
   return (
     <div style={{ display: 'flex', gap: 14, padding: 14, borderBottom: '1px solid var(--border-light)' }}>
@@ -209,32 +200,35 @@ export function ResourceListItem({ resource }: { resource: Resource }) {
               <BookOpenCheck size={13} /> Preview
             </Link>
           )}
-          {isAuthenticated ? (
-            <>
-              <button onClick={() => setAction('borrow')} disabled={outOfStock} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}>Borrow</button>
-              <button onClick={() => setAction('reserve')} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Reserve</button>
-              {resource.price > 0 && (
+          {resource.price > 0 && (
+            isAuthenticated ? (
+              <>
                 <button
-                  onClick={handleAddToCart}
-                  disabled={inCart || addingToCart}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: inCart || addingToCart ? 'default' : 'pointer' }}
+                  onClick={() => handleAddToCart('RENTAL')}
+                  disabled={outOfStock || inCartRental || addingType === 'RENTAL'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}
                 >
-                  {inCart ? <Check size={13} /> : <ShoppingCart size={13} />} {inCart ? 'In Cart' : 'Add to Cart'}
+                  {inCartRental ? <Check size={13} /> : <ShoppingCart size={13} />} {inCartRental ? 'In Cart' : 'Borrow'}
                 </button>
-              )}
-            </>
-          ) : (
-            <>
-              <Link href={loginHref} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Borrow</Link>
-              <Link href={loginHref} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--gold)', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Reserve</Link>
-            </>
+                <button
+                  onClick={() => handleAddToCart('SALE')}
+                  disabled={inCartSale || addingType === 'SALE'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {inCartSale ? <Check size={13} /> : <ShoppingCart size={13} />} {inCartSale ? 'In Cart' : 'Reserve'}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href={loginHref} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Borrow</Link>
+                <Link href={loginHref} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--gold)', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Reserve</Link>
+              </>
+            )
           )}
           <Link href={`/member/library/resource/${resource.id}`} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, textDecoration: 'none' }}>View Details</Link>
         </div>
         {cartError && <p style={{ fontSize: 11, color: 'var(--red-light)' }}>{cartError}</p>}
       </div>
-
-      <BorrowReserveConfirmModal action={action} resourceId={resource.id} bookTitle={resource.title} bookAuthor={resource.author} availableQty={resource.availableQty} onClose={() => setAction(null)} />
     </div>
   )
 }

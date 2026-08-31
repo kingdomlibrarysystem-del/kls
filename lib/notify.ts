@@ -21,7 +21,6 @@ export type NotificationCategory =
   | 'session-approved' | 'session-rejected' | 'session-unavailable' | 'session-reminder'
   | 'certificate-issued'
   | 'order-payment-success' | 'order-payment-failed'
-  | 'access-payment-success' | 'access-payment-failed'
   | 'assessment-graded'
 
 interface NotifyUserInput {
