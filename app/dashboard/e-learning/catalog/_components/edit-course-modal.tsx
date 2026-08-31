@@ -9,13 +9,13 @@ import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import {
   courseSchema,
-  courseCategories,
   courseLanguages,
   courseStatuses,
   languageLabels,
   type CourseFormData,
 } from '../../add/_components/course-form-schema'
 import { updateCourseInCatalog } from '../../_shared/use-course-catalog'
+import { useCourseCategories } from '../../_shared/use-course-categories'
 import { useUsers } from '@/app/dashboard/users/_components/use-users'
 import type { CourseCatalogEntry } from './catalog-config'
 
@@ -27,6 +27,7 @@ interface EditCourseModalProps {
 /** Edit modal for an existing catalog course — reuses the Add-Course schema/fields. */
 export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
   const { users } = useUsers()
+  const { data: courseCategories } = useCourseCategories()
   const {
     register,
     handleSubmit,
@@ -86,7 +87,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
               className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
               {...register('category')}
             >
-              {courseCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+              {courseCategories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
             </select>
           </div>
 

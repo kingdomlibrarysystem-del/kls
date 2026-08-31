@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { GraduationCap, BookOpen, ClipboardList, Award, BarChart2, Video, PlusCircle } from 'lucide-react'
+import { GraduationCap, BookOpen, ClipboardList, Award, BarChart2, Video } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { useCourseCatalog } from './_shared/use-course-catalog'
 import { useEnrollmentsAdmin } from './enrollments/_components/use-enrollments-admin'
@@ -16,8 +16,7 @@ interface ELearningSection {
 }
 
 const sections: ELearningSection[] = [
-  { icon: <PlusCircle size={20} />,     title: 'Add / Edit Course',    desc: 'Create or update a course in the KLS e-learning catalog.',                href: '/dashboard/e-learning/add' },
-  { icon: <BookOpen size={20} />,       title: 'Course Catalog',       desc: 'Explore, edit, and archive every course across categories and languages.', href: '/dashboard/e-learning/catalog' },
+  { icon: <BookOpen size={20} />,       title: 'Course Catalog',       desc: 'Explore, add, edit, and archive every course across categories and languages.', href: '/dashboard/e-learning/catalog' },
   { icon: <GraduationCap size={20} />,  title: 'Enrollments',          desc: 'Track member enrollments, status, and course progress.',                  href: '/dashboard/e-learning/enrollments' },
   { icon: <Video size={20} />,          title: 'Lessons',              desc: 'Manage text, video, and file-based lesson content per course.',           href: '/dashboard/e-learning/lessons' },
   { icon: <ClipboardList size={20} />,  title: 'Quizzes & Exams',      desc: 'Manage quizzes and formal examinations linked to courses.',               href: '/dashboard/e-learning/quizzes' },

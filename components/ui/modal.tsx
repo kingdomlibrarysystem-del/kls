@@ -42,14 +42,11 @@ export function Modal({
   if (!open) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-w-950/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-w-950/50" onClick={onClose} />
       <div
-        className={`bg-white rounded-lg border border-w-300 w-full ${sizeMap[size]} shadow-xl flex flex-col max-h-[90vh]`}
+        className={`relative z-[10000] bg-white rounded-lg border border-w-300 w-full ${sizeMap[size]} shadow-xl flex flex-col max-h-[90vh]`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-w-300 shrink-0">

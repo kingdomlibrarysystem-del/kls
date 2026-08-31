@@ -9,6 +9,13 @@ export const courseStatuses = ['DRAFT', 'PUBLISHED'] as const
 export const courseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
+  /**
+   * Free-text course category name — sourced from the admin-managed
+   * CourseCategory collection (see use-course-categories.ts), not a
+   * hardcoded list. Kept as a String rather than a FK so existing courses
+   * with legacy free-text values don't break and no data migration is
+   * needed; the dropdown only offers real CourseCategory names.
+   */
   category: z.string().min(1, 'Category is required'),
   language: z.enum(courseLanguages, { message: 'Select a language' }),
   status: z.enum(courseStatuses, { message: 'Select a status' }),
@@ -19,15 +26,6 @@ export const courseSchema = z.object({
 })
 
 export type CourseFormData = z.infer<typeof courseSchema>
-
-export const courseCategories = [
-  'Theology',
-  'Discipleship',
-  'Leadership',
-  'Family & Marriage',
-  'Youth Ministry',
-  'Missions',
-] as const
 
 export const languageLabels: Record<(typeof courseLanguages)[number], string> = {
   en: 'English',

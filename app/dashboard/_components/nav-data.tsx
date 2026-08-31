@@ -33,6 +33,7 @@ import {
   Settings,
   Shield,
   MessageSquare,
+  Tag,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -71,7 +72,7 @@ export const adminMainNav: NavItem[] = [
     subItems: [
       { icon: <BookOpen size={12} />,     label: "Overview",        href: "/dashboard/e-learning" },
       { icon: <BookCopy size={12} />,     label: "Course Catalog",  href: "/dashboard/e-learning/catalog" },
-      { icon: <ScrollText size={12} />,   label: "Add Course",      href: "/dashboard/e-learning/add" },
+      { icon: <Tag size={12} />,          label: "Categories",      href: "/dashboard/e-learning/categories" },
       { icon: <Video size={12} />,        label: "Lessons",         href: "/dashboard/e-learning/lessons" },
       { icon: <ClipboardCheck size={12} />, label: "Quizzes & Exams", href: "/dashboard/e-learning/quizzes" },
       { icon: <ClipboardList size={12} />, label: "Enrollments",    href: "/dashboard/e-learning/enrollments" },
