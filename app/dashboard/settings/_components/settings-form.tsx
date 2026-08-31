@@ -10,7 +10,7 @@ import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { systemSettingsSchema, defaultSystemSettings, type SystemSettingsFormData } from './settings-schema'
 
-/** System-wide borrowing/reservation policy form — reads and writes the real, single-row Settings collection via /api/settings. defaultBorrowPeriodDays genuinely drives /api/borrowings' due-date calculation; borrowingFee/reservationFee genuinely gate whether POST /api/borrowings and /api/reservations create their record directly or require an AccessOrder payment first. */
+/** System-wide borrowing/reservation policy form — reads and writes the real, single-row Settings collection via /api/settings. defaultBorrowPeriodDays genuinely drives /api/borrowings' due-date calculation. */
 export function SettingsForm() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -37,8 +37,6 @@ export function SettingsForm() {
             maxRenewals: json.data.maxRenewals,
             reservationClaimWindowHours: json.data.reservationClaimWindowHours,
             maxConcurrentBorrows: json.data.maxConcurrentBorrows,
-            borrowingFee: json.data.borrowingFee,
-            reservationFee: json.data.reservationFee,
           })
         }
       })
@@ -130,39 +128,6 @@ export function SettingsForm() {
                   max={20}
                   error={errors.maxConcurrentBorrows?.message}
                   {...register('maxConcurrentBorrows', { valueAsNumber: true })}
-                />
-              </div>
-            </div>
-          </div>
-        </FormSection>
-
-        <FormSection title="Borrow & Reservation Fees">
-          <div className="space-y-4">
-            <p className="font-lato text-xs text-w-600">
-              A flat RWF fee charged before a member can place a Borrow or Reservation request. Leave at 0 to keep it free — the request is created immediately on confirm, no payment step. Set above 0 and the member must pay first (PayPack or Stripe); the request is only created once payment settles.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <FieldLabel htmlFor="borrowingFee">Borrowing Fee (RWF)</FieldLabel>
-                <FormInput
-                  id="borrowingFee"
-                  type="number"
-                  min={0}
-                  step={100}
-                  error={errors.borrowingFee?.message}
-                  {...register('borrowingFee', { valueAsNumber: true })}
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor="reservationFee">Reservation Fee (RWF)</FieldLabel>
-                <FormInput
-                  id="reservationFee"
-                  type="number"
-                  min={0}
-                  step={100}
-                  error={errors.reservationFee?.message}
-                  {...register('reservationFee', { valueAsNumber: true })}
                 />
               </div>
             </div>

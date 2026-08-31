@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { RelatedResourceCard } from '@/components/ui/related-resource-card'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
-import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
+import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { getCategoryById, getChildCategories } from '@/lib/kcs-taxonomy'
@@ -21,22 +21,24 @@ interface ScrollDetailViewProps {
 /**
  * Real click-through detail page for a single KCS scroll on the member
  * side — same relationship and shared components as the admin KCS Map
- * detail page (RelatedResourceCard, findResourcesForScroll,
- * BorrowReserveConfirmModal), not a duplicated implementation. Adds the
- * real favorites toggle already established for this module.
+ * detail page (RelatedResourceCard, findResourcesForScroll), not a
+ * duplicated implementation. Adds the real favorites toggle already
+ * established for this module. Borrow/Reserve add straight to the cart
+ * — both are real charges, no separate free confirm flow.
  *
  * `scrollId` is looked up directly against the canonical taxonomy (it is
  * that scroll's own stable id) rather than via the old `library-data.tsx`
  * flattened list, which has been folded into `lib/kcs-taxonomy` and removed.
  */
 export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
-  const [action, setAction] = useState<BorrowReserveAction>(null)
-  const [actionTarget, setActionTarget] = useState<{ id: string; title: string; author: string } | null>(null)
+  const [addingId, setAddingId] = useState<string | null>(null)
+  const [cartError, setCartError] = useState('')
   const { isAuthenticated, user } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
   const favorites = useFavorites(user?.id)
   const readableContent = useReadableContent()
+  useCart(user?.id)
 
   const loading = resourcesLoading || categoriesLoading
   const error = categoriesError ?? resourcesError
@@ -64,9 +66,17 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
 
   const matches = findResourcesForScroll(scroll.id, resources)
 
-  const startAction = (verb: BorrowReserveAction, resource: { id: string; title: string; author: string }) => {
-    setAction(verb)
-    setActionTarget(resource)
+  const handleAddToCart = async (resourceId: string, type: CartItemType) => {
+    if (!user) return
+    setAddingId(`${resourceId}:${type}`)
+    setCartError('')
+    try {
+      await addToCart(user.id, resourceId, type)
+    } catch (err) {
+      setCartError(err instanceof Error ? err.message : 'Could not add to cart')
+    } finally {
+      setAddingId(null)
+    }
   }
 
   return (
@@ -113,7 +123,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
               resource={resource}
               style={{}}
               action={
-                isAuthenticated ? (
+                isAuthenticated && resource.price > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {!!readableContent[resource.id] && (
                       <Link
@@ -127,19 +137,21 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
                     <div style={{ display: 'flex', gap: 6 }}>
                       {resource.availableQty > 0 && (
                         <button
-                          onClick={() => startAction('borrow', resource)}
+                          onClick={() => handleAddToCart(resource.id, 'RENTAL')}
+                          disabled={isInCart(resource.id, 'RENTAL') || addingId === `${resource.id}:RENTAL`}
                           aria-label={`Borrow ${resource.title}`}
                           style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                         >
-                          Borrow
+                          {isInCart(resource.id, 'RENTAL') ? 'In Cart' : 'Borrow'}
                         </button>
                       )}
                       <button
-                        onClick={() => startAction('reserve', resource)}
+                        onClick={() => handleAddToCart(resource.id, 'SALE')}
+                        disabled={isInCart(resource.id, 'SALE') || addingId === `${resource.id}:SALE`}
                         aria-label={`Reserve ${resource.title}`}
                         style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                       >
-                        Reserve
+                        {isInCart(resource.id, 'SALE') ? 'In Cart' : 'Reserve'}
                       </button>
                     </div>
                   </div>
@@ -150,9 +162,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
         </div>
       )}
 
-      {actionTarget && (
-        <BorrowReserveConfirmModal action={action} resourceId={actionTarget.id} bookTitle={actionTarget.title} bookAuthor={actionTarget.author} onClose={() => { setAction(null); setActionTarget(null) }} />
-      )}
+      {cartError && <p style={{ fontSize: 12, color: 'var(--red-light)' }}>{cartError}</p>}
     </div>
   )
 }

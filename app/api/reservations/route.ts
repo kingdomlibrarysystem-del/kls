@@ -131,11 +131,6 @@ export const POST = withErrorHandling('/api/reservations', 'POST', async (reques
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  const settings = await prisma.settings.findFirst()
-  if (settings && settings.reservationFee > 0) {
-    throw new ApiError('This library charges a reservation fee — use /api/access-orders to pay and reserve', 400)
-  }
-
   const reservation = await createReservationRecord(body)
 
   return NextResponse.json({ data: serializeReservation(reservation), message: 'Reservation created successfully', code: 'success', status: 201 }, { status: 201 })

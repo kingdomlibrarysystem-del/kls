@@ -85,6 +85,29 @@ describe('isEntitled', () => {
     await prisma.order.delete({ where: { id: pendingOrder.id } })
     testOrderId = ''
   })
+
+  it('is false for a PAID RENTAL (Borrow) Order alone — reading access follows the created Borrow row\'s own status, not the payment itself', async () => {
+    const rentalOrder = await prisma.order.create({
+      data: {
+        userId: testUserId, buyerName: 'Vitest', buyerEmail: TEST_EMAIL, buyerPhone: '0780000000',
+        resourceId: testResourceId, resourceTitle: 'Test', resourceFormat: 'TEXT', type: 'RENTAL',
+        amountRwf: 5000, status: 'PAID', ...nextOrderRefs(),
+      },
+    })
+    expect(await isEntitled(testUserId, testResourceId)).toBe(false)
+    await prisma.order.delete({ where: { id: rentalOrder.id } })
+  })
+
+  it('is true once that Borrow (created by settling the RENTAL Order) is ACTIVE', async () => {
+    const borrow = await prisma.borrow.create({
+      data: {
+        userId: testUserId, memberName: 'Vitest', memberEmail: TEST_EMAIL, resourceId: testResourceId,
+        borrowDate: new Date(), dueDate: new Date(Date.now() + 14 * 86400000), status: 'ACTIVE',
+      },
+    })
+    expect(await isEntitled(testUserId, testResourceId)).toBe(true)
+    await prisma.borrow.delete({ where: { id: borrow.id } })
+  })
 })
 
 describe('gateChapters', () => {

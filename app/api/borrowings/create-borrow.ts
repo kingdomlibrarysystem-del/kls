@@ -14,11 +14,11 @@ const BORROW_RESOURCE_INCLUDE = { resource: { select: { title: true, type: true,
 
 /**
  * The real Borrow-row creation logic — shared by POST /api/borrowings
- * (free path, Settings.borrowingFee === 0) and settleAccessOrder (paid
- * path, called once payment settles). Kept as a plain function rather
- * than only living inside the POST handler so both callers get the exact
- * same duplicate-guard/transaction semantics, not two independently
- * maintained copies.
+ * (a staff/admin-facing direct-create path) and settleOrder (the real
+ * member-facing path: a RENTAL Order settling PAID). Kept as a plain
+ * function rather than only living inside the POST handler so both
+ * callers get the exact same duplicate-guard/transaction semantics, not
+ * two independently maintained copies.
  */
 export async function createBorrowRecord(input: CreateBorrowInput) {
   const [user, resource] = await Promise.all([

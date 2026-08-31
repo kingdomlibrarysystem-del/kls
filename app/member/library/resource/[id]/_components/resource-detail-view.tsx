@@ -10,11 +10,9 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
-import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
+import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
-import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
-import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 import { ResourceReviews } from './resource-reviews'
 
 interface ResourceDetailViewProps {
@@ -35,9 +33,7 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
   const { data: resources, loading, error } = useResources()
   const readableContent = useReadableContent()
   const favorites = useFavorites(user?.id)
-  const [borrowReserveAction, setBorrowReserveAction] = useState<BorrowReserveAction>(null)
-  const [buyAction, setBuyAction] = useState<BuyAction>(null)
-  const [addingToCart, setAddingToCart] = useState(false)
+  const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   useCart(user?.id)
 
@@ -62,19 +58,20 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
   const liked = favorites.some((f) => f.id === resource.id)
   const isReadable = !!readableContent[resource.id] || !!resource.documentUrl
   const outOfStock = resource.availableQty === 0
-  const inCart = isInCart(resource.id, 'SALE')
+  const inCartRental = isInCart(resource.id, 'RENTAL')
+  const inCartSale = isInCart(resource.id, 'SALE')
   const loginHref = `/auth/login?redirect=${encodeURIComponent(`/member/library/resource/${resource.id}`)}`
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (type: CartItemType) => {
     if (!user) return
-    setAddingToCart(true)
+    setAddingType(type)
     setCartError('')
     try {
-      await addToCart(user.id, resource.id, 'SALE')
+      await addToCart(user.id, resource.id, type)
     } catch (err) {
       setCartError(err instanceof Error ? err.message : 'Could not add to cart')
     } finally {
-      setAddingToCart(false)
+      setAddingType(null)
     }
   }
 
@@ -124,23 +121,24 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
               </Link>
             )}
             {isAuthenticated ? (
-              <>
-                <button onClick={() => setBorrowReserveAction('borrow')} disabled={outOfStock} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}>Borrow</button>
-                <button onClick={() => setBorrowReserveAction('reserve')} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Reserve</button>
-                {resource.price > 0 && (
-                  <>
-                    <button onClick={() => setBuyAction('SALE')} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Buy</button>
-                    <button onClick={() => setBuyAction('RENTAL')} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Rent</button>
-                    <button
-                      onClick={handleAddToCart}
-                      disabled={inCart || addingToCart}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, cursor: inCart || addingToCart ? 'default' : 'pointer' }}
-                    >
-                      {inCart ? <Check size={14} /> : <ShoppingCart size={14} />} {inCart ? 'In Cart' : 'Add to Cart'}
-                    </button>
-                  </>
-                )}
-              </>
+              resource.price > 0 && (
+                <>
+                  <button
+                    onClick={() => handleAddToCart('RENTAL')}
+                    disabled={outOfStock || inCartRental || addingType === 'RENTAL'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}
+                  >
+                    {inCartRental ? <Check size={14} /> : <ShoppingCart size={14} />} {inCartRental ? 'In Cart' : 'Borrow'}
+                  </button>
+                  <button
+                    onClick={() => handleAddToCart('SALE')}
+                    disabled={inCartSale || addingType === 'SALE'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {inCartSale ? <Check size={14} /> : <ShoppingCart size={14} />} {inCartSale ? 'In Cart' : 'Reserve'}
+                  </button>
+                </>
+              )
             ) : (
               <Link href={loginHref} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Sign in for more actions</Link>
             )}
@@ -191,8 +189,6 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
         </div>
       </div>
 
-      <BorrowReserveConfirmModal action={borrowReserveAction} resourceId={resource.id} bookTitle={resource.title} bookAuthor={resource.author} availableQty={resource.availableQty} onClose={() => setBorrowReserveAction(null)} />
-      <BuyConfirmModal action={buyAction} resourceId={resource.id} bookTitle={resource.title} priceRwf={resource.price} onClose={() => setBuyAction(null)} />
     </div>
   )
 }

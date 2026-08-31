@@ -13,10 +13,11 @@ interface RouteParams {
 /**
  * Tells the PDF reader, before it requests the actual document bytes,
  * whether the current viewer is entitled to the full file (free
- * resource, staff, or a real PAID Order / active Borrow / claimed
- * Reservation) or only the free-preview page count — so the UI can
- * decide up front whether to show the full viewer or the locked
- * preview + Buy/Rent CTA, same gating rule as /api/chapters.
+ * resource, staff, or a real PAID Reserve Order / active Borrow /
+ * claimed Reservation — see isEntitled) or only the free-preview page
+ * count — so the UI can decide up front whether to show the full
+ * viewer or the locked preview + Reserve/Borrow CTA, same gating rule
+ * as /api/chapters.
  */
 export const GET = withErrorHandling('/api/resources/[id]/entitlement', 'GET', async (request: NextRequest, { params }: RouteParams) => {
   const { id } = await params

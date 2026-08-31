@@ -125,11 +125,6 @@ export const POST = withErrorHandling('/api/borrowings', 'POST', async (request:
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  const settings = await prisma.settings.findFirst()
-  if (settings && settings.borrowingFee > 0) {
-    throw new ApiError('This library charges a borrowing fee — use /api/access-orders to pay and borrow', 400)
-  }
-
   const borrow = await createBorrowRecord(body)
 
   return NextResponse.json({ data: serializeBorrow(borrow), message: 'Borrowing created successfully', code: 'success', status: 201 }, { status: 201 })

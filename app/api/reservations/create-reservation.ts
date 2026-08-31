@@ -15,11 +15,11 @@ const RESERVATION_RESOURCE_INCLUDE = { resource: { select: { title: true, author
 
 /**
  * The real Reservation-row creation logic — shared by POST
- * /api/reservations (free path, Settings.reservationFee === 0) and
- * settleAccessOrder (paid path, called once payment settles). Keeps the
- * atomic reservationQueueCounter increment as the sole source of queue
- * position for both callers rather than two independently maintained
- * copies of that concurrency-sensitive logic.
+ * /api/reservations (a staff/admin-facing direct-create path) and
+ * settleOrder (the real member-facing path: a SALE Order settling
+ * PAID). Keeps the atomic reservationQueueCounter increment as the sole
+ * source of queue position for both callers rather than two
+ * independently maintained copies of that concurrency-sensitive logic.
  */
 export async function createReservationRecord(input: CreateReservationInput) {
   const [user, resource] = await Promise.all([

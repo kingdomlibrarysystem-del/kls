@@ -8,7 +8,7 @@ import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { bindingTypeLabels, mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
-import { useCart, addToCart, isInCart } from '@/app/member/_shared/use-cart'
+import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
 
 /**
@@ -19,11 +19,14 @@ import { getCategoryName } from '@/lib/kcs-taxonomy'
  * or a real `<Link>` (signed-out state) never ends up nested inside another
  * `<a>`, which HTML disallows — same reasoning `scroll-card.tsx` uses,
  * just via sibling placement here instead of `stopPropagation` since none
- * of the actions need to happen "through" the link area.
+ * of the actions need to happen "through" the link area. Borrow/Reserve
+ * are real charges (RENTAL/SALE) added straight to the cart — there is no
+ * separate free confirm flow; the member pays and completes the request
+ * from the Cart page.
  */
-export function BookCard({ book, onAction }: { book: Resource; onAction: (book: Resource, action: 'borrow' | 'reserve') => void }) {
+export function BookCard({ book }: { book: Resource }) {
   const [showSummary, setShowSummary] = useState(false)
-  const [addingToCart, setAddingToCart] = useState(false)
+  const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   const { user, isAuthenticated } = useAuth()
   const readableContent = useReadableContent()
@@ -33,18 +36,19 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
   const detailHref = `/library/${book.id}`
   const loginHref = `/auth/login?redirect=${encodeURIComponent(detailHref)}`
   const readHref = `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${book.id}`)}`
-  const inCart = isInCart(book.id, 'SALE')
+  const inCartRental = isInCart(book.id, 'RENTAL')
+  const inCartSale = isInCart(book.id, 'SALE')
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (type: CartItemType) => {
     if (!user) return
-    setAddingToCart(true)
+    setAddingType(type)
     setCartError('')
     try {
-      await addToCart(user.id, book.id, 'SALE')
+      await addToCart(user.id, book.id, type)
     } catch (err) {
       setCartError(err instanceof Error ? err.message : 'Could not add to cart')
     } finally {
-      setAddingToCart(false)
+      setAddingType(null)
     }
   }
 
@@ -109,36 +113,37 @@ export function BookCard({ book, onAction }: { book: Resource; onAction: (book: 
               </UniversalButton>
             )
           )}
-          <div className="flex gap-2">
-            {isAuthenticated ? (
-              <>
-                <UniversalButton variant={isReadable ? 'outline' : 'primary'} size="sm" disabled={outOfStock} className="flex-1" onClick={() => onAction(book, 'borrow')}>Borrow</UniversalButton>
-                <UniversalButton variant="outline" size="sm" className="flex-1" onClick={() => onAction(book, 'reserve')}>Reserve</UniversalButton>
-              </>
-            ) : (
-              <>
-                <UniversalButton href={loginHref} variant={isReadable ? 'outline' : 'primary'} size="sm" className="flex-1">Borrow</UniversalButton>
-                <UniversalButton href={loginHref} variant="outline" size="sm" className="flex-1">Reserve</UniversalButton>
-              </>
-            )}
-          </div>
           {book.price > 0 && (
             isAuthenticated ? (
-              <UniversalButton
-                variant="outline"
-                size="sm"
-                fullWidth
-                disabled={inCart}
-                loading={addingToCart}
-                icon={inCart ? <Check size={13} /> : <ShoppingCart size={13} />}
-                onClick={handleAddToCart}
-              >
-                {inCart ? 'In Cart' : 'Add to Cart'}
-              </UniversalButton>
+              <div className="flex gap-2">
+                <UniversalButton
+                  variant={isReadable ? 'outline' : 'primary'}
+                  size="sm"
+                  disabled={outOfStock || inCartRental}
+                  loading={addingType === 'RENTAL'}
+                  icon={inCartRental ? <Check size={13} /> : <ShoppingCart size={13} />}
+                  className="flex-1"
+                  onClick={() => handleAddToCart('RENTAL')}
+                >
+                  {inCartRental ? 'In Cart' : 'Borrow'}
+                </UniversalButton>
+                <UniversalButton
+                  variant="outline"
+                  size="sm"
+                  disabled={inCartSale}
+                  loading={addingType === 'SALE'}
+                  icon={inCartSale ? <Check size={13} /> : <ShoppingCart size={13} />}
+                  className="flex-1"
+                  onClick={() => handleAddToCart('SALE')}
+                >
+                  {inCartSale ? 'In Cart' : 'Reserve'}
+                </UniversalButton>
+              </div>
             ) : (
-              <UniversalButton href={loginHref} variant="outline" size="sm" fullWidth icon={<ShoppingCart size={13} />}>
-                Sign In to Add to Cart
-              </UniversalButton>
+              <div className="flex gap-2">
+                <UniversalButton href={loginHref} variant={isReadable ? 'outline' : 'primary'} size="sm" className="flex-1">Borrow</UniversalButton>
+                <UniversalButton href={loginHref} variant="outline" size="sm" className="flex-1">Reserve</UniversalButton>
+              </div>
             )
           )}
           {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}

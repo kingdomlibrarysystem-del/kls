@@ -14,24 +14,21 @@ interface SettleInput {
 
 /**
  * Single settlement path shared by the PayPack webhook, the Stripe
- * webhook, and a GET status-poll route — whichever one learns an
- * AccessOrder settled PAID also creates the real Borrow or Reservation
- * row, so "pay to borrow/reserve" resolves the same way regardless of
- * which rail confirmed it first. Idempotent via createdRecordId: once
- * set, a re-settle (e.g. both the webhook and a poll racing) skips
- * re-creating the row — a duplicate createBorrowRecord/
- * createReservationRecord call would otherwise 409 on the same guard
- * those functions already apply, but checking createdRecordId first
- * avoids even attempting it.
+ * webhook, and a GET status-poll route — whichever one learns an Order
+ * settled PAID also creates the real Borrow (RENTAL) or Reservation
+ * (SALE) row, so "pay to reserve/borrow" resolves the same way
+ * regardless of which rail confirmed it first. Idempotent via
+ * createdRecordId: once set, a re-settle (e.g. the webhook and a poll
+ * racing) skips re-creating the row.
  */
-export async function settleAccessOrder(orderId: string, input: SettleInput) {
-  const order = await prisma.accessOrder.findUnique({ where: { id: orderId } })
-  if (!order) throw new Error('AccessOrder not found')
+export async function settleOrder(orderId: string, input: SettleInput) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } })
+  if (!order) throw new Error('Order not found')
 
   const isSuccessful = input.providerStatus === 'successful'
   const isFailed = input.providerStatus === 'failed'
 
-  const updated = await prisma.accessOrder.update({
+  const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
       ...(input.paypackStatus && { paypackStatus: input.paypackStatus }),
@@ -41,35 +38,35 @@ export async function settleAccessOrder(orderId: string, input: SettleInput) {
     },
   })
 
-  const verb = order.kind === 'BORROW' ? 'borrow' : 'reservation'
+  const verb = order.type === 'RENTAL' ? 'borrow' : 'reservation'
 
   if (isSuccessful && !order.createdRecordId) {
-    const record = order.kind === 'BORROW'
+    const record = order.type === 'RENTAL'
       ? await createBorrowRecord({ userId: order.userId, resourceId: order.resourceId, memberName: order.buyerName, memberEmail: order.buyerEmail })
       : await createReservationRecord({ userId: order.userId, resourceId: order.resourceId, memberName: order.buyerName, memberEmail: order.buyerEmail })
 
-    await prisma.accessOrder.update({ where: { id: orderId }, data: { createdRecordId: record.id } })
+    await prisma.order.update({ where: { id: orderId }, data: { createdRecordId: record.id } })
 
-    const destinationUrl = `${appBaseUrl()}/member/${order.kind === 'BORROW' ? 'borrowings' : 'reservations'}/${record.id}`
+    const destinationUrl = `${appBaseUrl()}/member/${order.type === 'RENTAL' ? 'borrowings' : 'reservations'}/${record.id}`
     await notifyUser({
       userId: order.userId,
-      type: order.kind === 'BORROW' ? 'BORROW' : 'RESERVATION',
-      category: 'access-payment-success',
+      type: order.type === 'RENTAL' ? 'BORROW' : 'RESERVATION',
+      category: 'order-payment-success',
       title: 'Payment confirmed',
       message: `Your payment for "${order.resourceTitle}" was successful — your ${verb} has been placed.`,
       href: destinationUrl,
-      email: { subject: 'Your payment is confirmed', html: orderPaidEmailHtml(order.buyerName, order.resourceTitle, order.amountRwf, destinationUrl) },
+      email: { subject: 'Your order is confirmed', html: orderPaidEmailHtml(order.buyerName, order.resourceTitle, order.amountRwf, destinationUrl) },
     })
   } else if (isFailed && order.status !== 'FAILED') {
-    const libraryUrl = `${appBaseUrl()}/member/library`
+    const orderUrl = `${appBaseUrl()}/member/orders/${order.id}`
     await notifyUser({
       userId: order.userId,
       type: 'SYSTEM',
-      category: 'access-payment-failed',
+      category: 'order-payment-failed',
       title: 'Payment failed',
       message: `Your payment for "${order.resourceTitle}" could not be completed.`,
-      href: libraryUrl,
-      email: { subject: 'Your payment failed', html: orderFailedEmailHtml(order.buyerName, order.resourceTitle, libraryUrl) },
+      href: orderUrl,
+      email: { subject: 'Your order payment failed', html: orderFailedEmailHtml(order.buyerName, order.resourceTitle, orderUrl) },
     })
   }
 

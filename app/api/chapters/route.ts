@@ -26,22 +26,26 @@ interface ChapterRow {
  * regardless of price): a free resource (price === 0) stays fully
  * open. A priced resource with no free preview shows nothing past the
  * first `freePreviewChapterCount` chapters unless the requesting
- * session's user has a PAID Order, an active (not yet returned) Borrow,
- * or a claimed Reservation for that resource — locked chapters are
- * still listed (title/order) so the reader can show a real "Chapter N
- * — locked" row, just without `body`.
+ * session's user is entitled — either a PAID Reserve (SALE) Order
+ * (permanent access), an active/overdue Borrow (a paid Borrow's
+ * settlement creates this row PENDING, same as a staff-created one — a
+ * PAID RENTAL Order alone does NOT grant access; it must actually be
+ * ACTIVE, matching the exact rule a free borrow already follows, not a
+ * payment-only shortcut), or a claimed Reservation — locked chapters
+ * are still listed (title/order) so the reader can show a real
+ * "Chapter N — locked" row, just without `body`.
  */
 export function serializeChapter(c: ChapterRow, locked: boolean) {
   return { id: c.id, title: c.title, order: c.order, locked, body: locked ? undefined : c.body }
 }
 
 export async function isEntitled(userId: string, resourceId: string): Promise<boolean> {
-  const [paidOrder, activeBorrow, claimedReservation] = await Promise.all([
-    prisma.order.findFirst({ where: { userId, resourceId, status: 'PAID' } }),
+  const [paidSaleOrder, activeBorrow, claimedReservation] = await Promise.all([
+    prisma.order.findFirst({ where: { userId, resourceId, status: 'PAID', type: 'SALE' } }),
     prisma.borrow.findFirst({ where: { userId, resourceId, status: { in: ['ACTIVE', 'OVERDUE'] } } }),
     prisma.reservation.findFirst({ where: { userId, resourceId, status: 'CLAIMED' } }),
   ])
-  return !!(paidOrder || activeBorrow || claimedReservation)
+  return !!(paidSaleOrder || activeBorrow || claimedReservation)
 }
 
 /**

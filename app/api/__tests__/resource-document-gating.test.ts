@@ -89,7 +89,7 @@ describe('GET /api/resources/[id]/entitlement', () => {
     mockRoleName = 'Member'
   })
 
-  it('grants canDownload only for a PAID SALE order, not a RENTAL', async () => {
+  it('a PAID RENTAL order alone grants neither reading entitlement nor canDownload — reading follows the real Borrow row it settles into, not the payment itself', async () => {
     const rental = await prisma.order.create({
       data: {
         userId: testUserId, buyerName: 'Vitest', buyerEmail: TEST_EMAIL, buyerPhone: '0780000000',
@@ -99,9 +99,23 @@ describe('GET /api/resources/[id]/entitlement', () => {
     })
     const res = await getEntitlement(getRequest(`http://localhost/api/resources/${testResourceId}/entitlement`), { params: Promise.resolve({ id: testResourceId }) })
     const json = await res.json()
-    expect(json.data.entitled).toBe(true)
+    expect(json.data.entitled).toBe(false)
     expect(json.data.canDownload).toBe(false)
     await prisma.order.delete({ where: { id: rental.id } })
+  })
+
+  it('grants entitled once the settled RENTAL Order\'s Borrow is ACTIVE, but still not canDownload', async () => {
+    const borrow = await prisma.borrow.create({
+      data: {
+        userId: testUserId, memberName: 'Vitest', memberEmail: TEST_EMAIL, resourceId: testResourceId,
+        borrowDate: new Date(), dueDate: new Date(Date.now() + 14 * 86400000), status: 'ACTIVE',
+      },
+    })
+    const res = await getEntitlement(getRequest(`http://localhost/api/resources/${testResourceId}/entitlement`), { params: Promise.resolve({ id: testResourceId }) })
+    const json = await res.json()
+    expect(json.data.entitled).toBe(true)
+    expect(json.data.canDownload).toBe(false)
+    await prisma.borrow.delete({ where: { id: borrow.id } })
   })
 })
 

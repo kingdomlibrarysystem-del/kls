@@ -10,7 +10,7 @@ import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_c
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { getParentName, getScrollImage, type Category } from '@/lib/kcs-taxonomy'
-import { BorrowReserveConfirmModal, type BorrowReserveAction } from '@/app/(public)/library/_components/borrow-reserve-confirm-modal'
+import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 
 interface ScrollProps {
   /** A leaf/scroll-level Category row from the canonical KCS taxonomy. */
@@ -48,13 +48,30 @@ function useReadingPercent(resourceId: string | undefined): number | undefined {
  * page, which made the reading path easy to miss entirely.
  */
 export function ScrollCard({ scroll }: ScrollProps) {
-  const { isAuthenticated } = useAuth()
-  const [action, setAction] = useState<BorrowReserveAction>(null)
+  const { user, isAuthenticated } = useAuth()
+  const [addingType, setAddingType] = useState<CartItemType | null>(null)
+  const [cartError, setCartError] = useState('')
   const liked = useIsFavorited(scroll.id)
   const readableResource = useReadableResource(scroll.id)
   const readingPercent = useReadingPercent(readableResource?.id)
   const sectionName = getParentName(scroll) ?? ''
   const image = getScrollImage(scroll)
+  useCart(user?.id)
+  const inCartRental = readableResource ? isInCart(readableResource.id, 'RENTAL') : false
+  const inCartSale = readableResource ? isInCart(readableResource.id, 'SALE') : false
+
+  const handleAddToCart = async (type: CartItemType) => {
+    if (!user || !readableResource) return
+    setAddingType(type)
+    setCartError('')
+    try {
+      await addToCart(user.id, readableResource.id, type)
+    } catch (err) {
+      setCartError(err instanceof Error ? err.message : 'Could not add to cart')
+    } finally {
+      setAddingType(null)
+    }
+  }
 
   return (
     <div
@@ -129,26 +146,29 @@ export function ScrollCard({ scroll }: ScrollProps) {
               >
                 <BookOpenCheck size={14} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
               </Link>
-              {isAuthenticated && (
+              {isAuthenticated && readableResource.price > 0 && (
                 <div style={{ display: 'flex', gap: 6 }}>
                   {readableResource.availableQty > 0 && (
                     <button
-                      onClick={() => setAction('borrow')}
-                      aria-label={`Borrow ${readableResource.title}`}
+                      onClick={() => handleAddToCart('RENTAL')}
+                      disabled={inCartRental || addingType === 'RENTAL'}
+                      aria-label={inCartRental ? `${readableResource.title} (Borrow) is in your cart` : `Borrow ${readableResource.title}`}
                       style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                     >
-                      Borrow
+                      {inCartRental ? 'In Cart' : 'Borrow'}
                     </button>
                   )}
                   <button
-                    onClick={() => setAction('reserve')}
-                    aria-label={`Reserve ${readableResource.title}`}
+                    onClick={() => handleAddToCart('SALE')}
+                    disabled={inCartSale || addingType === 'SALE'}
+                    aria-label={inCartSale ? `${readableResource.title} (Reserve) is in your cart` : `Reserve ${readableResource.title}`}
                     style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                   >
-                    Reserve
+                    {inCartSale ? 'In Cart' : 'Reserve'}
                   </button>
                 </div>
               )}
+              {cartError && <p style={{ fontSize: 11, color: 'var(--red-light)' }}>{cartError}</p>}
             </>
           )}
           <Link
@@ -166,16 +186,6 @@ export function ScrollCard({ scroll }: ScrollProps) {
         </div>
       </div>
 
-      {readableResource && (
-        <BorrowReserveConfirmModal
-          action={action}
-          resourceId={readableResource.id}
-          bookTitle={readableResource.title}
-          bookAuthor={readableResource.author}
-          availableQty={readableResource.availableQty}
-          onClose={() => setAction(null)}
-        />
-      )}
     </div>
   )
 }
