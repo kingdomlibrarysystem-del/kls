@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import { defaultSystemSettings } from '@/app/dashboard/settings/_components/settings-schema'
+import { AccessOrderCheckoutModal } from './access-order-checkout-modal'
 
 export type BorrowReserveAction = 'borrow' | 'reserve' | null
 
@@ -32,10 +33,14 @@ function dueDateLabel(periodDays: number): string {
 }
 
 /**
- * Confirms a real Borrow/Reserve action for the signed-in member — posts to
- * the real /api/borrowings or /api/reservations with the real session
- * userId, so the record is immediately visible on /member/borrowings or
- * /member/reservations. Only rendered when the caller has already
+ * Confirms a real Borrow/Reserve action for the signed-in member. Reads
+ * the real Settings.borrowingFee/reservationFee first: if it's 0 (the
+ * default), posts directly to /api/borrowings or /api/reservations with
+ * the real session userId, exactly as before — the record is immediately
+ * visible on /member/borrowings or /member/reservations. If a fee is
+ * set, hands off to AccessOrderCheckoutModal instead, which requires
+ * real payment before the Borrow/Reservation row is created (see
+ * settleAccessOrder). Only rendered when the caller has already
  * confirmed the visitor is authenticated (see library-browser.tsx and
  * publication-detail-view.tsx, which gate on useAuth() before opening this).
  */
@@ -46,18 +51,45 @@ export function BorrowReserveConfirmModal({ action, resourceId, bookTitle, bookA
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [borrowPeriodDays, setBorrowPeriodDays] = useState(defaultSystemSettings.defaultBorrowPeriodDays)
+  const [fee, setFee] = useState<number | null>(null)
 
   useEffect(() => {
-    if (action !== 'borrow') return
+    if (!action) return
     fetch('/api/settings')
       .then((res) => res.json())
-      .then((json) => { if (json.data?.defaultBorrowPeriodDays) setBorrowPeriodDays(json.data.defaultBorrowPeriodDays) })
-      .catch(() => {})
+      .then((json) => {
+        if (!json.data) return
+        if (json.data.defaultBorrowPeriodDays) setBorrowPeriodDays(json.data.defaultBorrowPeriodDays)
+        setFee(action === 'borrow' ? json.data.borrowingFee ?? 0 : json.data.reservationFee ?? 0)
+      })
+      .catch(() => setFee(0))
   }, [action])
 
   if (!action) return null
 
   const verb = action === 'borrow' ? 'Borrow' : 'Reserve'
+
+  // Fee not yet known (still fetching /api/settings) — show a quiet loading state rather than briefly flashing the free-path UI, which could otherwise be confirmed before the real fee is known.
+  if (fee === null) {
+    return (
+      <Modal open onClose={onClose} title={`${verb} Request`} size="sm">
+        <div className="text-center py-6 font-lato text-sm text-w-600">Loading…</div>
+      </Modal>
+    )
+  }
+
+  if (fee > 0) {
+    return (
+      <AccessOrderCheckoutModal
+        kind={action === 'borrow' ? 'BORROW' : 'RESERVATION'}
+        resourceId={resourceId}
+        bookTitle={bookTitle}
+        feeRwf={fee}
+        onClose={onClose}
+        onSettled={() => {}}
+      />
+    )
+  }
 
   const handleConfirm = async () => {
     if (!user) return

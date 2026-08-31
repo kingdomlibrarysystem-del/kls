@@ -19,6 +19,8 @@ const settingsSchema = z.object({
   maxRenewals: z.number().int().min(0).max(10),
   reservationClaimWindowHours: z.number().int().min(1).max(168),
   maxConcurrentBorrows: z.number().int().min(1).max(20),
+  borrowingFee: z.number().min(0).max(1000000),
+  reservationFee: z.number().min(0).max(1000000),
 })
 
 async function getOrCreateSettings() {

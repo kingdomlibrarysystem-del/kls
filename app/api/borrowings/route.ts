@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { createBorrowRecord } from './create-borrow'
 
 const createBorrowSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -124,50 +125,12 @@ export const POST = withErrorHandling('/api/borrowings', 'POST', async (request:
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  const [user, resource] = await Promise.all([
-    prisma.user.findUnique({ where: { id: body.userId } }),
-    prisma.resource.findUnique({ where: { id: body.resourceId } }),
-  ])
-  if (!user) throw new ApiError('The specified user does not exist', 400)
-  if (!resource) throw new ApiError('The specified resource does not exist', 400)
-
-  const borrowDate = body.borrowDate ? new Date(body.borrowDate) : new Date()
-  let dueDate: Date
-  if (body.dueDate) {
-    dueDate = new Date(body.dueDate)
-  } else {
-    const settings = await prisma.settings.findFirst()
-    const periodDays = settings?.defaultBorrowPeriodDays ?? 14
-    dueDate = new Date(borrowDate.getTime() + periodDays * 86400000)
+  const settings = await prisma.settings.findFirst()
+  if (settings && settings.borrowingFee > 0) {
+    throw new ApiError('This library charges a borrowing fee — use /api/access-orders to pay and borrow', 400)
   }
 
-  /**
-   * Guards against a double-submitted borrow request (e.g. a doubled
-   * click or a retried request) creating two PENDING/ACTIVE rows for
-   * the same user+resource. The existence check and the create run
-   * inside one transaction so two near-simultaneous requests can't
-   * both pass the check before either has committed its create.
-   */
-  const borrow = await prisma.$transaction(async (tx) => {
-    const existing = await tx.borrow.findFirst({
-      where: { userId: body.userId, resourceId: body.resourceId, status: { in: ['PENDING', 'ACTIVE'] } },
-    })
-    if (existing) {
-      throw new ApiError('You already have a pending or active borrow request for this resource', 409)
-    }
-    return tx.borrow.create({
-      data: {
-        userId: body.userId,
-        memberName: body.memberName,
-        memberEmail: body.memberEmail,
-        resourceId: body.resourceId,
-        borrowDate,
-        dueDate,
-        status: 'PENDING',
-      },
-      include: { resource: { select: { title: true, type: true, isbn: true } } },
-    })
-  })
+  const borrow = await createBorrowRecord(body)
 
   return NextResponse.json({ data: serializeBorrow(borrow), message: 'Borrowing created successfully', code: 'success', status: 201 }, { status: 201 })
 })

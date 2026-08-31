@@ -8,26 +8,29 @@ import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { appBaseUrl } from '@/lib/mailer'
 
 /**
- * Real course-enrollment payment order API, parallel to /api/orders (see
- * CourseOrder's docstring in prisma/schema.prisma for why this is a
- * separate model rather than a polymorphic Order). Two real payment
- * rails: PayPack (immediately requests a real mobile-money cashin, same
- * as /api/orders) and Stripe (creates a real Checkout Session and
- * returns its URL for client-side redirect — settlement always happens
- * via the webhook or a status poll, never trusted from this response
- * alone).
+ * Real payment order API for a paid Borrow/Reservation request, parallel
+ * to /api/course-orders (see AccessOrder's docstring in
+ * prisma/schema.prisma for why this is a separate model rather than a
+ * polymorphic Order). Two real payment rails: PayPack (immediately
+ * requests a real mobile-money cashin) and Stripe (creates a real
+ * Checkout Session and returns its URL for client-side redirect) —
+ * settlement always happens via a webhook or a status poll, never
+ * trusted from this response alone. The Borrow/Reservation row itself is
+ * only created once settlement confirms payment (see settle.ts).
  */
-function serializeCourseOrder(o: {
+function serializeAccessOrder(o: {
   id: string
   userId: string
   buyerName: string
   buyerEmail: string
   buyerPhone: string
-  courseId: string
-  courseTitle: string
+  resourceId: string
+  resourceTitle: string
+  kind: string
   method: string
   amountRwf: number
   status: string
+  createdRecordId: string | null
   paypackRef: string | null
   paypackStatus: string | null
   stripeSessionId: string | null
@@ -40,11 +43,13 @@ function serializeCourseOrder(o: {
     buyerName: o.buyerName,
     buyerEmail: o.buyerEmail,
     buyerPhone: o.buyerPhone,
-    courseId: o.courseId,
-    courseTitle: o.courseTitle,
+    resourceId: o.resourceId,
+    resourceTitle: o.resourceTitle,
+    kind: o.kind.toLowerCase(),
     method: o.method.toLowerCase(),
     amount: o.amountRwf,
     status: o.status.toLowerCase(),
+    createdRecordId: o.createdRecordId,
     paypackRef: o.paypackRef,
     paypackStatus: o.paypackStatus,
     stripeSessionId: o.stripeSessionId,
@@ -53,9 +58,10 @@ function serializeCourseOrder(o: {
   }
 }
 
-const createCourseOrderSchema = z.object({
+const createAccessOrderSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
-  courseId: z.string().min(1, 'courseId is required'),
+  resourceId: z.string().min(1, 'resourceId is required'),
+  kind: z.enum(['BORROW', 'RESERVATION']),
   buyerName: z.string().trim().min(1, 'buyerName is required'),
   buyerEmail: z.string().trim().email('buyerEmail must be a valid email'),
   buyerPhone: z.string().trim().min(1, 'buyerPhone is required'),
@@ -78,32 +84,35 @@ export async function GET(request: NextRequest) {
   }
 
   const [totalItems, orders] = await Promise.all([
-    prisma.courseOrder.count({ where }),
-    prisma.courseOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.accessOrder.count({ where }),
+    prisma.accessOrder.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
   ])
 
   const totalPages = Math.ceil(totalItems / pageSize)
 
   return NextResponse.json({
-    data: orders.map(serializeCourseOrder),
-    message: 'Course orders fetched successfully',
+    data: orders.map(serializeAccessOrder),
+    message: 'Access orders fetched successfully',
     code: 'success',
     status: 200,
     pagination: { page, pageSize, totalItems, totalPages, hasNext: page < totalPages, hasPrevious: page > 1 },
   })
 }
 
-export const POST = withErrorHandling('/api/course-orders', 'POST', async (request: NextRequest) => {
-  const parsed = createCourseOrderSchema.safeParse(await request.json())
+export const POST = withErrorHandling('/api/access-orders', 'POST', async (request: NextRequest) => {
+  const parsed = createAccessOrderSchema.safeParse(await request.json())
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   const body = parsed.data
 
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  const course = await prisma.course.findUnique({ where: { id: body.courseId } })
-  if (!course) throw new ApiError('Course not found', 404)
-  if (!course.price || course.price <= 0) throw new ApiError('This course has no price set', 400)
+  const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
+  if (!resource) throw new ApiError('Resource not found', 404)
+
+  const settings = await prisma.settings.findFirst()
+  const fee = body.kind === 'BORROW' ? settings?.borrowingFee ?? 0 : settings?.reservationFee ?? 0
+  if (!fee || fee <= 0) throw new ApiError(`No ${body.kind === 'BORROW' ? 'borrowing' : 'reservation'} fee is currently set`, 400)
 
   if (body.method === 'PAYPACK') {
     if (!isValidPaypackPhone(body.buyerPhone)) throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
@@ -111,30 +120,33 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
     throw new ApiError('Card payment is not configured for this environment yet.', 503)
   }
 
-  const order = await prisma.courseOrder.create({
+  const order = await prisma.accessOrder.create({
     data: {
       userId: body.userId,
       buyerName: body.buyerName,
       buyerEmail: body.buyerEmail,
       buyerPhone: body.buyerPhone,
-      courseId: body.courseId,
-      courseTitle: course.title,
+      resourceId: body.resourceId,
+      resourceTitle: resource.title,
+      kind: body.kind,
       method: body.method,
-      amountRwf: course.price,
+      amountRwf: fee,
       status: 'PENDING',
     },
   })
 
+  const verb = body.kind === 'BORROW' ? 'borrow' : 'reserve'
+
   if (body.method === 'PAYPACK') {
     try {
-      const cashin = await requestCashin({ amountRwf: course.price, phone: body.buyerPhone, idempotencyKey: order.id })
-      const updated = await prisma.courseOrder.update({ where: { id: order.id }, data: { paypackRef: cashin.ref, paypackStatus: cashin.status } })
+      const cashin = await requestCashin({ amountRwf: fee, phone: body.buyerPhone, idempotencyKey: order.id })
+      const updated = await prisma.accessOrder.update({ where: { id: order.id }, data: { paypackRef: cashin.ref, paypackStatus: cashin.status } })
       return NextResponse.json(
-        { data: serializeCourseOrder(updated), message: 'Payment request sent — approve it on your phone to complete enrollment.', code: 'success', status: 201 },
+        { data: serializeAccessOrder(updated), message: `Payment request sent — approve it on your phone to ${verb} this resource.`, code: 'success', status: 201 },
         { status: 201 }
       )
     } catch (error) {
-      await prisma.courseOrder.update({ where: { id: order.id }, data: { status: 'FAILED' } })
+      await prisma.accessOrder.update({ where: { id: order.id }, data: { status: 'FAILED' } })
       throw new ApiError(error instanceof Error ? error.message : 'Failed to request payment', 502)
     }
   }
@@ -142,20 +154,20 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
   try {
     const base = appBaseUrl()
     const session = await createCheckoutSession({
-      metadataKey: 'courseOrderId',
+      metadataKey: 'accessOrderId',
       orderId: order.id,
-      title: course.title,
-      amountRwf: course.price,
-      successUrl: `${base}/member/courses?checkout=success`,
-      cancelUrl: `${base}/member/courses?checkout=cancelled`,
+      title: resource.title,
+      amountRwf: fee,
+      successUrl: `${base}/member/library?checkout=success`,
+      cancelUrl: `${base}/member/library?checkout=cancelled`,
     })
-    const updated = await prisma.courseOrder.update({ where: { id: order.id }, data: { stripeSessionId: session.id } })
+    const updated = await prisma.accessOrder.update({ where: { id: order.id }, data: { stripeSessionId: session.id } })
     return NextResponse.json(
-      { data: { ...serializeCourseOrder(updated), checkoutUrl: session.url }, message: 'Redirecting to checkout…', code: 'success', status: 201 },
+      { data: { ...serializeAccessOrder(updated), checkoutUrl: session.url }, message: 'Redirecting to checkout…', code: 'success', status: 201 },
       { status: 201 }
     )
   } catch (error) {
-    await prisma.courseOrder.update({ where: { id: order.id }, data: { status: 'FAILED' } })
+    await prisma.accessOrder.update({ where: { id: order.id }, data: { status: 'FAILED' } })
     throw new ApiError(error instanceof Error ? error.message : 'Failed to start checkout', 502)
   }
 })
