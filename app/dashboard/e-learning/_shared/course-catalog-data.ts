@@ -1,7 +1,4 @@
-import { courseCategories, courseLanguages, courseStatuses } from '../add/_components/course-form-schema'
-
-/** Course category, per `course-form-schema.ts`'s admin-facing category list. */
-export type CourseCategory = (typeof courseCategories)[number]
+import { courseLanguages, courseStatuses } from '../add/_components/course-form-schema'
 
 /** Course authoring language, per APP_DOC Phase 9 (en/fr/rw). */
 export type CourseLanguage = (typeof courseLanguages)[number]
@@ -19,7 +16,8 @@ export interface CourseCatalogEntry {
   id: string
   title: string
   description: string
-  category: CourseCategory | string
+  /** Admin-managed free-text category name (sourced from the CourseCategory collection). */
+  category: string
   language: CourseLanguage
   status: CourseStatus
   enrolledCount: number

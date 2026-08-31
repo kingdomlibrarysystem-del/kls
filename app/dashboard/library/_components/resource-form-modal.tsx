@@ -129,6 +129,8 @@ export function ResourceFormModal({
           errors={errors}
           leafCategories={leafCategories}
           rootCategories={rootCategories}
+          setValue={setValue}
+          categoryId={watch('categoryId')}
         />
 
         <ResourceFormDetails

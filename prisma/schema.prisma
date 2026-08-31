@@ -784,6 +784,23 @@ model RevenueShare {
   updatedAt        DateTime    @updatedAt
 }
 
+/// Admin-managed course category (Theology, Discipleship, Leadership, etc.)
+/// — replaces the hardcoded `courseCategories` const tuple in
+/// course-form-schema.ts with a real, CRUD-backed collection so an admin
+/// can add/rename/remove categories without a code deploy. The Course
+/// model keeps `category` as a plain String (the category name) rather
+/// than a FK, so existing courses with free-text category values don't
+/// break and no data migration is needed — the FK-style integrity lives
+/// in the admin UI (the dropdown only offers real CourseCategory names),
+/// not in the schema.
+model CourseCategory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 /// Real course, consolidating THREE previously-unreconciled mock catalogs
 /// found in the Phase 5 re-verification:
 /// app/dashboard/e-learning/_shared/course-catalog-data.ts (admin
