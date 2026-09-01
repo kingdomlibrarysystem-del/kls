@@ -14,6 +14,7 @@ import { mediaTypeLabels } from "@/app/dashboard/library/_components/resources-d
 const sliceColors: Record<string, string> = {
   TEXT: "#d4a843",
   VIDEO: "#8b5cf6",
+  AUDIO: "#f43f5e",
   DOCUMENT: "#0ea5e9",
   COMBINATION: "#22c55e",
 };

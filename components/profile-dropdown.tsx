@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "@/components/theme-provider"
@@ -14,7 +14,6 @@ import {
   Settings,
   Bell,
   LogOut,
-  ChevronDown,
   Sun,
   Moon,
 } from "lucide-react"
@@ -28,41 +27,46 @@ import {
  * (the real favorited-scrolls/resources list) replaces it as an honest
  * equivalent instead.
  */
-const menuLinks = [
-  {
-    label: "My Borrowings",
-    href: "/member/borrowings",
-    icon: <BookOpen size={16} />,
-  },
-  {
-    label: "My Courses",
-    href: "/member/courses",
-    icon: <GraduationCap size={16} />,
-  },
-  {
-    label: "Favorites",
-    href: "/member/favorites",
-    icon: <Heart size={16} />,
-  },
-]
+const menuLinksByRole: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
+  member: [
+    { label: "My Borrowings", href: "/member/borrowings", icon: <BookOpen size={16} /> },
+    { label: "My Courses", href: "/member/courses", icon: <GraduationCap size={16} /> },
+    { label: "Favorites", href: "/member/favorites", icon: <Heart size={16} /> },
+  ],
+  admin: [
+    { label: "Dashboard", href: "/dashboard", icon: <BookOpen size={16} /> },
+    { label: "Manage Users", href: "/dashboard/users", icon: <User size={16} /> },
+    { label: "Audit Log", href: "/dashboard/audit-log", icon: <Bell size={16} /> },
+  ],
+  manager: [
+    { label: "Dashboard", href: "/dashboard", icon: <BookOpen size={16} /> },
+    { label: "Manage Users", href: "/dashboard/users", icon: <User size={16} /> },
+  ],
+  staff: [
+    { label: "Dashboard", href: "/dashboard", icon: <BookOpen size={16} /> },
+  ],
+}
 
-const bottomLinks = [
-  {
-    label: "My Profile",
-    href: "/member/profile",
-    icon: <User size={16} />,
-  },
-  {
-    label: "Notifications",
-    href: "/dashboard/notifications",
-    icon: <Bell size={16} />,
-  },
-  {
-    label: "Settings",
-    href: "/member/profile",
-    icon: <Settings size={16} />,
-  },
-]
+const bottomLinksByRole: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
+  member: [
+    { label: "My Profile", href: "/member/profile", icon: <User size={16} /> },
+    { label: "Notifications", href: "/dashboard/notifications", icon: <Bell size={16} /> },
+    { label: "Settings", href: "/member/profile", icon: <Settings size={16} /> },
+  ],
+  admin: [
+    { label: "My Profile", href: "/member/profile", icon: <User size={16} /> },
+    { label: "Notifications", href: "/dashboard/notifications", icon: <Bell size={16} /> },
+    { label: "Settings", href: "/member/profile", icon: <Settings size={16} /> },
+  ],
+  manager: [
+    { label: "My Profile", href: "/member/profile", icon: <User size={16} /> },
+    { label: "Settings", href: "/member/profile", icon: <Settings size={16} /> },
+  ],
+  staff: [
+    { label: "My Profile", href: "/member/profile", icon: <User size={16} /> },
+    { label: "Settings", href: "/member/profile", icon: <Settings size={16} /> },
+  ],
+}
 
 export function ProfileDropdown() {
   const [open, setOpen] = useState(false)
@@ -87,10 +91,22 @@ export function ProfileDropdown() {
     router.push("/")
   }
 
+  const handleIconClick = () => {
+    if (!isAuthenticated) {
+      router.push("/auth/login")
+      return
+    }
+    setOpen(!open)
+  }
+
+  const role = user?.roleName?.toLowerCase() ?? "member"
+  const menuLinks = menuLinksByRole[role] ?? menuLinksByRole.member
+  const bottomLinks = bottomLinksByRole[role] ?? bottomLinksByRole.member
+
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleIconClick}
         className="flex items-center gap-2 hover:text-w-600 dark:hover:text-amber-400 transition cursor-pointer"
       >
         <div className="w-8 h-8 rounded-full bg-w-600 text-white flex items-center justify-center text-sm font-bold">
@@ -100,17 +116,17 @@ export function ProfileDropdown() {
 
       {open && (
         <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#161e30] border border-w-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-          {/* User info — reflects real auth state, not a permanent "Guest" placeholder */}
+          {/* User info */}
           <div className="px-4 py-3 border-b border-w-100 dark:border-gray-700">
             <p className="font-cinzel font-semibold text-sm text-w-950 dark:text-white">
-              {isAuthenticated && user ? `${user.firstName} ${user.lastName}` : "Guest User"}
+              {user!.firstName} {user!.lastName}
             </p>
             <p className="text-xs text-w-600 dark:text-amber-400 mt-0.5">
-              {isAuthenticated && user ? user.roleName : "Sign in to access features"}
+              {user!.roleName}
             </p>
           </div>
 
-          {/* Menu links */}
+          {/* Menu links — role-based */}
           <div className="py-1">
             {menuLinks.map((item) => (
               <Link
@@ -130,7 +146,7 @@ export function ProfileDropdown() {
           {/* Divider */}
           <div className="border-t border-w-100 dark:border-gray-700" />
 
-          {/* Account links */}
+          {/* Account links — role-based */}
           <div className="py-1">
             {bottomLinks.map((item) => (
               <Link
@@ -163,30 +179,17 @@ export function ProfileDropdown() {
           {/* Divider */}
           <div className="border-t border-w-100 dark:border-gray-700" />
 
-          {/* Auth links — real logout when signed in, Login/Register when not */}
+          {/* Logout */}
           <div className="py-1">
-            {isAuthenticated ? (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-w-100 dark:hover:bg-gray-700/50 transition font-lato w-full text-left"
-              >
-                <span className="text-red-500">
-                  <LogOut size={16} />
-                </span>
-                Log Out
-              </button>
-            ) : (
-              <Link
-                href="/auth/login"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-w-100 dark:hover:bg-gray-700/50 transition font-lato"
-              >
-                <span className="text-red-500">
-                  <LogOut size={16} />
-                </span>
-                Login / Register
-              </Link>
-            )}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-w-100 dark:hover:bg-gray-700/50 transition font-lato w-full text-left"
+            >
+              <span className="text-red-500">
+                <LogOut size={16} />
+              </span>
+              Log Out
+            </button>
           </div>
         </div>
       )}

@@ -10,6 +10,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
+import { useLanguage } from '@/contexts/language-context'
 
 const editProfileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -36,6 +37,7 @@ interface EditProfileModalProps {
  */
 export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
   const { user, updateUser } = useAuth()
+  const { t } = useLanguage()
   const {
     register,
     handleSubmit,
@@ -55,32 +57,32 @@ export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Edit Profile" size="sm">
+    <Modal open={open} onClose={onClose} title={t("m_profile.edit_profile")} size="sm">
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isSubmitSuccessful && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--green-dim)', color: 'var(--green-light)', borderRadius: 6, padding: '8px 12px', fontSize: 13 }}>
-            <CheckCircle2 size={15} /> Profile updated.
+            <CheckCircle2 size={15} /> {t("m_profile.profile_updated")}
           </div>
         )}
 
         <div>
-          <FieldLabel htmlFor="edit-profile-first-name" required>First Name</FieldLabel>
+          <FieldLabel htmlFor="edit-profile-first-name" required>{t("m_profile.first_name")}</FieldLabel>
           <FormInput id="edit-profile-first-name" type="text" error={errors.firstName?.message} {...register('firstName')} />
         </div>
 
         <div>
-          <FieldLabel htmlFor="edit-profile-last-name" required>Last Name</FieldLabel>
+          <FieldLabel htmlFor="edit-profile-last-name" required>{t("m_profile.last_name")}</FieldLabel>
           <FormInput id="edit-profile-last-name" type="text" error={errors.lastName?.message} {...register('lastName')} />
         </div>
 
         <div>
-          <FieldLabel htmlFor="edit-profile-email" required>Email Address</FieldLabel>
+          <FieldLabel htmlFor="edit-profile-email" required>{t("m_profile.email")}</FieldLabel>
           <FormInput id="edit-profile-email" type="email" error={errors.email?.message} {...register('email')} />
         </div>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-          <ElegantButton type="button" variant="outline" onClick={onClose}>Cancel</ElegantButton>
-          <ElegantButton type="submit" variant="primary">Save Changes</ElegantButton>
+          <ElegantButton type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</ElegantButton>
+          <ElegantButton type="submit" variant="primary">{t("common.save_changes")}</ElegantButton>
         </div>
       </form>
     </Modal>

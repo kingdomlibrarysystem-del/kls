@@ -2,6 +2,7 @@
 
 import { BookOpen, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
 import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_shared/use-reading-progress";
 
@@ -14,6 +15,7 @@ import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_sha
  */
 export default function CurrentlyReading() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { data: resources } = useResources();
   const progress = useReadingProgress(user?.id);
 
@@ -26,13 +28,13 @@ export default function CurrentlyReading() {
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <BookOpen size={18} color="var(--gold)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Currently Reading</span>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>{rows.length} {rows.length === 1 ? "book" : "books"}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_reading.currently_reading")}</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>{rows.length} {rows.length === 1 ? t("m_reading.book") : t("m_reading.books")}</span>
       </div>
       {rows.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          Not reading anything yet.{" "}
-          <a href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>Browse the library</a>
+          {t("m_reading.not_reading")}{" "}
+          <a href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>{t("m_reading.browse_library")}</a>
         </div>
       ) : (
         rows.map(({ entry, resource }) => {
@@ -58,7 +60,7 @@ export default function CurrentlyReading() {
         })
       )}
       <a href="/member/library" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
-        Go to Kingdom Library <ChevronRight size={14} />
+        {t("m_reading.go_kingdom_library")} <ChevronRight size={14} />
       </a>
     </div>
   );

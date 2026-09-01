@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
 import { mediaTypeLabels } from "@/app/dashboard/library/_components/resources-data";
 
-const tabFilters = ["All", "TEXT", "VIDEO", "DOCUMENT", "COMBINATION"] as const;
+const tabFilters = ["All", "TEXT", "VIDEO", "AUDIO", "DOCUMENT", "COMBINATION"] as const;
 
 /** Real search + real per-mediaType collection counts, both from the /api/resources-backed hook. */
 export default function WelcomeSection() {

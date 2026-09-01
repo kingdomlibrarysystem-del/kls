@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
+import { useLanguage } from '@/contexts/language-context'
 
 interface CourseCheckoutModalProps {
   course: CatalogCourse | null
@@ -30,6 +31,7 @@ const POLL_TIMEOUT_MS = 3 * 60_000
  */
 export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutModalProps) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -50,7 +52,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
       if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
         if (pollTimer.current) clearInterval(pollTimer.current)
         setStage('failed')
-        setError("We haven't received confirmation yet. Check back later — it may still complete.")
+        setError(t("m_courses.payment_timeout_error"))
         return
       }
       try {
@@ -63,7 +65,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
         } else if (json.data?.status === 'failed') {
           if (pollTimer.current) clearInterval(pollTimer.current)
           setStage('failed')
-          setError('The payment was declined or failed.')
+          setError(t("m_courses.payment_declined_error"))
         }
       } catch {
         // Transient network error — let the next poll tick try again.
@@ -98,7 +100,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
       setStage('pending')
       startPolling(json.data.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start checkout. Please try again.')
+      setError(err instanceof Error ? err.message : t("m_courses.could_not_start_checkout"))
     } finally {
       setSubmitting(false)
     }
@@ -113,16 +115,16 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
   }
 
   return (
-    <Modal open onClose={handleClose} title={`Pay to enroll — "${course.title}"`} size="sm">
+    <Modal open onClose={handleClose} title={`${t("m_courses.pay_to_enroll")} — "${course.title}"`} size="sm">
       <div className="text-center py-2">
         {stage === 'form' && (
           <>
             <p className="font-lato text-sm text-w-950 mb-4">
-              Enroll in <span className="font-semibold">&ldquo;{course.title}&rdquo;</span> for <span className="font-semibold">{course.price.toLocaleString()} RWF</span>
+              {t("m_courses.enroll_in_for")} <span className="font-semibold">&ldquo;{course.title}&rdquo;</span> {t("m_request.for_word")} <span className="font-semibold">{course.price.toLocaleString()} RWF</span>
             </p>
 
             <div className="text-left mb-4">
-              <label htmlFor="course-checkout-phone" className="block font-lato text-xs font-semibold text-w-700 mb-1">Mobile Money Number (for PayPack)</label>
+              <label htmlFor="course-checkout-phone" className="block font-lato text-xs font-semibold text-w-700 mb-1">{t("m_courses.mobile_money_label")}</label>
               <div className="relative">
                 <Smartphone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-w-500" />
                 <input
@@ -146,10 +148,10 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
 
             <div className="flex flex-col gap-2">
               <ElegantButton variant="primary" loading={submitting} onClick={() => startCheckout('PAYPACK')} disabled={!phone.trim()} className="w-full text-sm py-2">
-                <Smartphone size={14} className="inline mr-1" /> Pay with Mobile Money
+                <Smartphone size={14} className="inline mr-1" /> {t("m_courses.pay_with_mobile_money")}
               </ElegantButton>
               <ElegantButton variant="outline" loading={submitting} onClick={() => startCheckout('STRIPE')} className="w-full text-sm py-2">
-                <CreditCard size={14} className="inline mr-1" /> Pay with Card
+                <CreditCard size={14} className="inline mr-1" /> {t("m_courses.pay_with_card")}
               </ElegantButton>
             </div>
           </>
@@ -158,12 +160,12 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
         {stage === 'pending' && (
           <>
             <Loader2 size={32} className="mx-auto text-w-600 mb-3 animate-spin" />
-            <p className="font-lato text-sm text-w-950 mb-1">Check your phone</p>
+            <p className="font-lato text-sm text-w-950 mb-1">{t("m_courses.check_your_phone")}</p>
             <p className="font-lato text-xs text-w-600 mb-4">
-              Approve the mobile money prompt sent to {phone} to complete enrollment.
+              {t("m_courses.approve_mobile_money_prompt").replace("{phone}", phone)}
             </p>
             <ElegantButton variant="outline" onClick={handleClose} className="w-full text-sm py-2">
-              Close and check later
+              {t("m_courses.close_check_later")}
             </ElegantButton>
           </>
         )}
@@ -171,12 +173,12 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
         {stage === 'paid' && (
           <>
             <CheckCircle2 size={32} className="mx-auto text-green-600 mb-3" />
-            <p className="font-lato text-sm text-w-950 mb-1">Payment confirmed</p>
+            <p className="font-lato text-sm text-w-950 mb-1">{t("m_courses.payment_confirmed")}</p>
             <p className="font-lato text-xs text-w-600 mb-4">
-              You&apos;re enrolled in <span className="font-semibold">&ldquo;{course.title}&rdquo;</span>.
+              {t("m_courses.youre_enrolled_in")} <span className="font-semibold">&ldquo;{course.title}&rdquo;</span>.
             </p>
             <ElegantButton variant="primary" onClick={handleClose} className="w-full text-sm py-2">
-              Done
+              {t("common.done")}
             </ElegantButton>
           </>
         )}
@@ -184,10 +186,10 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
         {stage === 'failed' && (
           <>
             <XCircle size={32} className="mx-auto text-red-600 mb-3" />
-            <p className="font-lato text-sm text-w-950 mb-1">Payment not completed</p>
+            <p className="font-lato text-sm text-w-950 mb-1">{t("m_courses.payment_not_completed")}</p>
             {error && <p className="font-lato text-xs text-w-600 mb-4">{error}</p>}
             <ElegantButton variant="outline" onClick={handleClose} className="w-full text-sm py-2">
-              Close
+              {t("common.close")}
             </ElegantButton>
           </>
         )}

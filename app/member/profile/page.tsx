@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { useLanguage } from "@/contexts/language-context";
 import { User, Mail, Phone, MapPin, Award, BookOpen, GraduationCap, CreditCard, Calendar, Shield, Edit2, Star, Heart } from "lucide-react";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
@@ -15,6 +16,7 @@ import { EditProfileModal } from "./_components/edit-profile-modal";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [editingProfile, setEditingProfile] = useState(false);
   const { data: borrowings } = useBorrowings();
   const favorites = useFavorites(user?.id);
@@ -30,22 +32,22 @@ export default function ProfilePage() {
     : 0;
 
   const stats = [
-    { icon: <BookOpen size={18} />, label: "Books Read", value: String(booksRead), color: "var(--gold)" },
-    { icon: <Heart size={18} />, label: "Favorites", value: String(favorites.length), color: "var(--red-light)" },
-    { icon: <GraduationCap size={18} />, label: "Courses Enrolled", value: String(enrollments.length), color: "var(--teal-light)" },
-    { icon: <Award size={18} />, label: "Certificates", value: String(memberCertificates), color: "var(--purple-light)" },
-    { icon: <Star size={18} />, label: "Avg Quiz Score", value: `${avgScore}%`, color: "var(--gold)" },
-    { icon: <CreditCard size={18} />, label: "Payments", value: "2", color: "var(--green-light)" },
+    { icon: <BookOpen size={18} />, label: t("m_profile.books_read"), value: String(booksRead), color: "var(--gold)" },
+    { icon: <Heart size={18} />, label: t("m_profile.favorites"), value: String(favorites.length), color: "var(--red-light)" },
+    { icon: <GraduationCap size={18} />, label: t("m_profile.courses_enrolled"), value: String(enrollments.length), color: "var(--teal-light)" },
+    { icon: <Award size={18} />, label: t("m_profile.certificates"), value: String(memberCertificates), color: "var(--purple-light)" },
+    { icon: <Star size={18} />, label: t("m_profile.avg_quiz"), value: `${avgScore}%`, color: "var(--gold)" },
+    { icon: <CreditCard size={18} />, label: t("m_profile.payments"), value: "2", color: "var(--green-light)" },
   ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
-          My Profile
+          {t("m_profile.title")}
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-          Manage your personal information and view your activity
+          {t("m_profile.subtitle")}
         </div>
       </div>
 
@@ -68,15 +70,15 @@ export default function ProfilePage() {
                 {user?.firstName || "Guest"} {user?.lastName || ""}
               </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                <Shield size={12} /> Member since June 2026
+                <Shield size={12} /> {t("m_profile.member_since")} June 2026
               </div>
             </div>
             <button
               onClick={() => setEditingProfile(true)}
-              aria-label="Edit profile"
+              aria-label={t("m_profile.edit_profile")}
               style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
             >
-              <Edit2 size={14} /> Edit Profile
+              <Edit2 size={14} /> {t("m_profile.edit_profile")}
             </button>
           </div>
 
@@ -105,23 +107,23 @@ export default function ProfilePage() {
       {/* Payment info */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
         <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-          <CreditCard size={16} color="var(--green-light)" /> Payment Information
+          <CreditCard size={16} color="var(--green-light)" /> {t("m_profile.payment_info")}
         </div>
         <div style={{ padding: "12px 14px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Membership Plan</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Premium Annual</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t("m_profile.membership_plan")}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("m_profile.premium_annual")}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green-light)" }}>Active</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Renews Jul 2027</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green-light)" }}>{t("m_profile.active")}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("m_profile.renews")} Jul 2027</div>
             </div>
           </div>
           <div style={{ height: 1, background: "var(--border-light)", margin: "8px 0" }} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Payment Method</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t("m_profile.payment_method")}</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>**** 4242 • Expires 12/28</div>
             </div>
             <CreditCard size={20} color="var(--text-muted)" />

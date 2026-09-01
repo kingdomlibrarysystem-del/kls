@@ -24,7 +24,7 @@ export const resourceSchema = z.object({
   /** How many of this resource's chapters (once seeded) are readable free before the reader shows a real "Buy to Continue" paywall — see /api/chapters. Ignored while price is 0. */
   freePreviewChapterCount: z.number().int().min(0, 'Must be 0 or more'),
   bindingType: z.enum(['SOFT', 'HARD']),
-  mediaType: z.enum(['VIDEO', 'DOCUMENT', 'TEXT', 'COMBINATION']),
+  mediaType: z.enum(['VIDEO', 'AUDIO', 'DOCUMENT', 'TEXT', 'COMBINATION']),
   /** Comma-separated in the UI, parsed to string[] on submit — see tag-input.tsx. */
   tags: z.array(z.string()),
   /** Real Cloudinary secure_url (or a typed-in remote URL) — see CloudinaryUploadField. */

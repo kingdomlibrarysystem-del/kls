@@ -9,6 +9,7 @@ import { requestSession } from '@/lib/sessions/use-session-requests'
 import { addNotification } from '@/app/dashboard/notifications/_components/use-notifications'
 import { lecturerRoster } from '@/lib/identity/lecturer-identity'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
+import { useLanguage } from '@/contexts/language-context'
 
 interface RequestSessionModalProps {
   course: CatalogCourse | null
@@ -32,6 +33,7 @@ interface RequestSessionModalProps {
  */
 export function RequestSessionModal({ course, onClose, availableCourses }: RequestSessionModalProps) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [courseId, setCourseId] = useState(course?.id ?? '')
   const [proposedTime, setProposedTime] = useState('')
   const [notes, setNotes] = useState('')
@@ -49,7 +51,7 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
     e.preventDefault()
     setError('')
     if (!user) return
-    if (!proposedTime) { setError('Choose a proposed date and time'); return }
+    if (!proposedTime) { setError(t("m_request.choose_time")); return }
 
     setSubmitting(true)
     try {
@@ -64,8 +66,11 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
       if (selectedCourse.lecturerId) {
         addNotification({
           type: 'course',
-          title: 'Session Requested',
-          message: `${currentMemberName} requested a live session for "${selectedCourse.title}" with ${selectedCourse.instructor}.`,
+          title: t("m_request.session_requested"),
+          message: t("m_request.session_requested_msg")
+            .replace("{name}", currentMemberName)
+            .replace("{course}", selectedCourse.title)
+            .replace("{instructor}", selectedCourse.instructor),
           href: '/dashboard/e-learning/sessions',
           recipientRole: 'admin',
         }).catch(() => {})
@@ -75,8 +80,10 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
           lecturerRoster.map((l) =>
             addNotification({
               type: 'course',
-              title: 'Unassigned Session Request',
-              message: `${currentMemberName} requested a live session for "${selectedCourse.title}" — no lecturer assigned yet. Approve it to claim it.`,
+              title: t("m_request.unassigned_session_request"),
+              message: t("m_request.unassigned_session_msg")
+                .replace("{name}", currentMemberName)
+                .replace("{course}", selectedCourse.title),
               href: '/dashboard/e-learning/sessions',
               recipientRole: 'lecturer',
               recipientId: l.id,
@@ -85,8 +92,10 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
         ).catch(() => {})
         addNotification({
           type: 'course',
-          title: 'Unassigned Session Request',
-          message: `${currentMemberName} requested a live session for "${selectedCourse.title}" — no lecturer assigned yet.`,
+          title: t("m_request.unassigned_session_request"),
+          message: t("m_request.unassigned_session_admin_msg")
+            .replace("{name}", currentMemberName)
+            .replace("{course}", selectedCourse.title),
           href: '/dashboard/e-learning/sessions',
           recipientRole: 'admin',
         }).catch(() => {})
@@ -96,17 +105,17 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
       setNotes('')
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not submit this request')
+      setError(err instanceof Error ? err.message : t("m_request.could_not_submit"))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Modal open onClose={onClose} title="Request a Live Session" size="sm">
+    <Modal open onClose={onClose} title={t("m_request.title")} size="sm">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-          Request a live Q&amp;A session with {selectedCourse.instructor} for &ldquo;{selectedCourse.title}&rdquo;.
+          {t("m_request.desc")} {selectedCourse.instructor} {t("m_request.for_word")} &ldquo;{selectedCourse.title}&rdquo;.
         </p>
 
         {error && (
@@ -117,7 +126,7 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
 
         {pickable && (
           <div>
-            <FieldLabel htmlFor="request-session-course" required>Course</FieldLabel>
+            <FieldLabel htmlFor="request-session-course" required>{t("m_sessions.course")}</FieldLabel>
             <select
               id="request-session-course"
               value={courseId}
@@ -130,7 +139,7 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
         )}
 
         <div>
-          <FieldLabel htmlFor="proposed-time" required>Proposed Date &amp; Time</FieldLabel>
+          <FieldLabel htmlFor="proposed-time" required>{t("m_request.proposed_time")}</FieldLabel>
           <input
             id="proposed-time"
             type="datetime-local"
@@ -141,20 +150,20 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
         </div>
 
         <div>
-          <FieldLabel htmlFor="session-notes">What would you like to cover?</FieldLabel>
+          <FieldLabel htmlFor="session-notes">{t("m_request.what_cover")}</FieldLabel>
           <textarea
             id="session-notes"
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Optional — topics or questions for this session…"
+            placeholder={t("m_request.notes_placeholder")}
             className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
           />
         </div>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-          <ElegantButton type="button" variant="outline" onClick={onClose}>Cancel</ElegantButton>
-          <ElegantButton type="submit" variant="primary" loading={submitting}>Send Request</ElegantButton>
+          <ElegantButton type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</ElegantButton>
+          <ElegantButton type="submit" variant="primary" loading={submitting}>{t("m_request.send_request")}</ElegantButton>
         </div>
       </form>
     </Modal>

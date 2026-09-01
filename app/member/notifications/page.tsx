@@ -7,6 +7,7 @@ import { PageTransition } from '@/components/ui/page-transition'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
+import { useLanguage } from '@/contexts/language-context'
 import type { NotificationType } from '@/app/dashboard/notifications/_components/notifications-data'
 import { useMemberNotifications, markMemberNotificationRead } from '@/app/member/_shared/use-member-notifications'
 
@@ -28,6 +29,7 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
  */
 export default function MemberNotificationsPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const { data: notifications, loading, error, refetch } = useMemberNotifications(user?.id)
   const unread = notifications.filter((n) => !n.read).length
 
@@ -43,8 +45,8 @@ export default function MemberNotificationsPage() {
   if (loading) {
     return (
       <PageTransition>
-        <PageHeader title="Notifications" subtitle="Loading…" />
-        <div className="space-y-2" aria-label="Loading notifications">
+        <PageHeader title={t('m_notif_page.title')} subtitle={t('common.loading')} />
+        <div className="space-y-2" aria-label={t('m_notif_page.title')}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full rounded-lg" />
           ))}
@@ -56,8 +58,8 @@ export default function MemberNotificationsPage() {
   if (error) {
     return (
       <PageTransition>
-        <PageHeader title="Notifications" subtitle="" />
-        <EmptyState icon={AlertTriangle} title="Couldn't load notifications" description={error} />
+        <PageHeader title={t('m_notif_page.title')} subtitle="" />
+        <EmptyState icon={AlertTriangle} title={t('m_notif_page.could_not_load')} description={error} />
       </PageTransition>
     )
   }
@@ -65,8 +67,8 @@ export default function MemberNotificationsPage() {
   if (notifications.length === 0) {
     return (
       <PageTransition>
-        <PageHeader title="Notifications" subtitle="All caught up" />
-        <EmptyState icon={Bell} title="No notifications yet" description="You'll see updates about your orders, sessions, and borrowings here." />
+        <PageHeader title={t('m_notif_page.title')} subtitle={t('m_notif_page.all_caught_up')} />
+        <EmptyState icon={Bell} title={t('m_notif_page.no_notifications')} description={t('m_notif_page.no_notifications_desc')} />
       </PageTransition>
     )
   }
@@ -74,8 +76,8 @@ export default function MemberNotificationsPage() {
   return (
     <PageTransition>
       <PageHeader
-        title="Notifications"
-        subtitle={unread > 0 ? `${unread} unread notification${unread > 1 ? 's' : ''}` : 'All caught up'}
+        title={t('m_notif_page.title')}
+        subtitle={unread > 0 ? `${unread} ${unread === 1 ? t('m_notif_page.unread') : t('m_notif_page.unread_plural')}` : t('m_notif_page.all_caught_up')}
       />
 
       <div className="space-y-2">

@@ -17,6 +17,7 @@ import {
 } from "@/lib/kcs-taxonomy";
 import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
+import { useLanguage } from "@/contexts/language-context";
 import { sectionIcons } from "./_components/section-icons";
 import { ResourceCard, ResourceListItem } from "./_components/resource-card";
 import { ContinueReadingSection } from "./_components/continue-reading-section";
@@ -48,6 +49,7 @@ function resourcesInSection<T extends { categoryId: string }>(
  * attached yet.
  */
 export default function MemberLibraryPage() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState("All");
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -153,8 +155,7 @@ export default function MemberLibraryPage() {
               lineHeight: 1.5,
             }}
           >
-            {resources.length} resources across {rootSections.length} sections
-            under the Kingdom Classification System (KCS).
+            {resources.length} {t("m_library.resources")} {t("m_library.across")} {rootSections.length} {t("m_library.sections")}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -260,13 +261,13 @@ export default function MemberLibraryPage() {
           }}
         />
         <input
-          placeholder="Search resources by title or author..."
+          placeholder={t("m_library.search_placeholder")}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
             setPage(1);
           }}
-          aria-label="Search resources by title or author"
+          aria-label={t("m_library.search_placeholder")}
           style={{
             width: "100%",
             padding: "10px 14px 10px 36px",

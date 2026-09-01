@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronRight } from 'lucide-react'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import type { Lesson } from '../../../../../_shared/lesson-data'
+import { useLanguage } from '@/contexts/language-context'
 
 interface LessonContentPaneProps {
   lesson: Lesson
@@ -35,12 +36,13 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
  * existed and never migrated.
  */
 export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, nextLesson, courseId }: LessonContentPaneProps) {
+  const { t } = useLanguage()
   return (
     <div className="card">
       <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
         {lesson.title}
       </h1>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} min</p>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} {t("m_courses.min")}</p>
 
       {lesson.contentMarkdown ? (
         <div style={{ marginBottom: 16 }}>
@@ -76,7 +78,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
           {lesson.contentType === 'FILE' && (
             <div style={{ background: 'var(--bg-section)', borderRadius: 8, padding: 18, marginBottom: 16 }}>
               <p className="flex items-center gap-1.5" style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1, marginBottom: 12, display: 'flex' }}>
-                <BookOpen size={15} /> STUDY GUIDE
+                <BookOpen size={15} /> {t("m_courses.study_guide")}
               </p>
               {lesson.content.split('\n\n').map((paragraph, i) => {
                 const isHeading = /^[IVX]+\.\s/.test(paragraph)
@@ -115,17 +117,17 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
           className={completed ? 'btn btn-outline-dim btn-sm' : 'btn btn-gold btn-sm'}
           style={completed ? { cursor: 'default' } : undefined}
         >
-          <CheckCircle2 size={15} /> {completed ? 'Completed' : 'Mark Complete'}
+          <CheckCircle2 size={15} /> {completed ? t("common.completed") : t("m_courses.mark_complete")}
         </button>
 
         {nextLesson && (
           <Link
             href={`/member/courses/${courseId}/lessons/${nextLesson.id}`}
             className="btn btn-outline-dim btn-sm"
-            aria-label={`Go to next lesson: ${nextLesson.title}`}
+            aria-label={`${t("m_courses.go_to_next_lesson")}: ${nextLesson.title}`}
             style={{ marginLeft: 'auto', textDecoration: 'none' }}
           >
-            Next Lesson <ChevronRight size={15} />
+            {t("m_courses.next_lesson")} <ChevronRight size={15} />
           </Link>
         )}
       </div>
@@ -134,10 +136,10 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>
           <ClipboardList size={18} color="#7a5c00" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 14, color: '#3a2e00', flex: 1 }}>
-            You&apos;ve completed all lessons — take <strong>{courseCompleteAssessmentTitle}</strong> to finish the course.
+            {t("m_courses.all_lessons_complete_take")} <strong>{courseCompleteAssessmentTitle}</strong> {t("m_courses.to_finish_course")}
           </span>
           <Link href="/member/assessments" className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
-            Take Assessment
+            {t("m_courses.take_assessment")}
           </Link>
         </div>
       )}

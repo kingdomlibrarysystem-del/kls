@@ -11,8 +11,10 @@ import { CompletedCoursesSection } from "./_components/completed-courses-section
 import { RequestSessionModal } from "./_components/request-session-modal";
 import { CourseCheckoutModal } from "./_components/course-checkout-modal";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function MyCoursesPage() {
+  const { t } = useLanguage();
   const [requesting, setRequesting] = useState<CatalogCourse | null>(null);
   const [checkoutCourse, setCheckoutCourse] = useState<CatalogCourse | null>(null);
   const { data: enrollments, loading: enrollmentsLoading, refetch: refetchEnrollments } = useEnrollments();
@@ -31,7 +33,7 @@ export default function MyCoursesPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-label="Loading your courses">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-label={t("m_courses.loading_courses")}>
         <Skeleton style={{ height: 68, borderRadius: 8 }} />
         <Skeleton style={{ height: 140, borderRadius: 8 }} />
       </div>
@@ -42,8 +44,8 @@ export default function MyCoursesPage() {
     return (
       <EmptyState
         icon={BookX}
-        title="No courses yet"
-        description="Enroll in a course from the catalog to start learning."
+        title={t("m_courses.no_courses")}
+        description={t("m_courses.no_courses_desc")}
         style={{ color: "var(--text-secondary)" }}
       />
     );
@@ -62,10 +64,10 @@ export default function MyCoursesPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
-          My Courses
+          {t("m_courses.title")}
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-          Track your enrolled courses and continue learning
+          {t("m_courses.subtitle")}
         </div>
       </div>
 
@@ -77,8 +79,8 @@ export default function MyCoursesPage() {
           </div>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>Overall Progress</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{completed.length} of {rows.length} courses completed</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_courses.overall_progress")}</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{completed.length} of {rows.length} {t("m_courses.of_completed")}</div>
         </div>
         <Award size={24} color="var(--gold)" />
       </div>
@@ -93,11 +95,11 @@ export default function MyCoursesPage() {
             <Sparkles size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
             <div style={{ flex: 1, fontSize: 13, color: "var(--text-primary)" }}>
               {eligibleForCertificate.length === 1
-                ? `Your certificate for "${eligibleForCertificate[0].course.title}" is ready.`
-                : `Your certificates are ready for ${eligibleForCertificate.length} courses.`}
+                ? <>{t("m_courses.cert_ready_for")} &ldquo;{eligibleForCertificate[0].course.title}&rdquo;.</>
+                : <>{t("m_courses.certs_ready")} {eligibleForCertificate.length} {t("m_courses.courses_word")}.</>}
             </div>
-            <Link href={singleCert ? `/member/certificates/${singleCert.id}` : "/member/certificates"} className="btn btn-gold btn-sm" aria-label="View certificate">
-              View Certificate{eligibleForCertificate.length === 1 ? "" : "s"}
+            <Link href={singleCert ? `/member/certificates/${singleCert.id}` : "/member/certificates"} className="btn btn-gold btn-sm" aria-label={eligibleForCertificate.length === 1 ? t("m_courses.view_cert") : t("m_courses.view_certs")}>
+              {eligibleForCertificate.length === 1 ? t("m_courses.view_cert") : t("m_courses.view_certs")}
             </Link>
           </div>
         );
@@ -111,7 +113,7 @@ export default function MyCoursesPage() {
 
       <div style={{ textAlign: "center" }}>
         <Link href="/member/e-learning" style={{ fontSize: 13, fontWeight: 600, color: "var(--teal-light)", textDecoration: "none" }}>
-          Browse more courses →
+          {t("m_courses.browse_more")}
         </Link>
       </div>
 

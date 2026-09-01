@@ -2,6 +2,7 @@
 
 import { BookOpen, Heart, GraduationCap, Award, Star, CreditCard } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
 import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enrollments";
@@ -18,6 +19,7 @@ import { useCertificates } from "@/app/member/_shared/use-certificates";
  */
 export default function DashboardStats() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { data: borrowings } = useBorrowings();
   const favorites = useFavorites(user?.id);
   const { data: enrollments } = useEnrollments();
@@ -36,12 +38,12 @@ export default function DashboardStats() {
     : 0;
 
   const stats = [
-    { icon: <BookOpen size={20} />, label: "Books Read", value: String(booksRead), color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
-    { icon: <Heart size={20} />, label: "Books Liked", value: String(booksLiked), color: "var(--red-light)", bg: "rgba(239,68,68,0.1)" },
-    { icon: <GraduationCap size={20} />, label: "E-Learning Progress", value: `${avgProgress}%`, color: "var(--teal-light)", bg: "rgba(45,212,191,0.1)" },
-    { icon: <Award size={20} />, label: "Certificates", value: String(memberCertificates), color: "var(--purple-light)", bg: "rgba(168,85,247,0.1)" },
-    { icon: <Star size={20} />, label: "Avg Assessment Score", value: `${avgScore}%`, color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
-    { icon: <CreditCard size={20} />, label: "Payments", value: "Premium", color: "var(--green-light)", bg: "rgba(34,197,94,0.1)" },
+    { icon: <BookOpen size={20} />, label: t("m_stats.books_read"), value: String(booksRead), color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
+    { icon: <Heart size={20} />, label: t("m_stats.books_liked"), value: String(booksLiked), color: "var(--red-light)", bg: "rgba(239,68,68,0.1)" },
+    { icon: <GraduationCap size={20} />, label: t("m_stats.elearning_progress"), value: `${avgProgress}%`, color: "var(--teal-light)", bg: "rgba(45,212,191,0.1)" },
+    { icon: <Award size={20} />, label: t("m_stats.certificates"), value: String(memberCertificates), color: "var(--purple-light)", bg: "rgba(168,85,247,0.1)" },
+    { icon: <Star size={20} />, label: t("m_stats.avg_score"), value: `${avgScore}%`, color: "var(--gold)", bg: "rgba(212,168,67,0.1)" },
+    { icon: <CreditCard size={20} />, label: t("m_stats.payments"), value: t("m_stats.premium"), color: "var(--green-light)", bg: "rgba(34,197,94,0.1)" },
   ];
 
   return (

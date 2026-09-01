@@ -186,7 +186,7 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       status: 'AVAILABLE',
       coverImages: body.coverImages ?? [],
       bindingType: (body.bindingType as 'SOFT' | 'HARD') ?? 'SOFT',
-      mediaType: (body.mediaType as 'VIDEO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION') ?? 'TEXT',
+      mediaType: (body.mediaType as 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION') ?? 'TEXT',
       description: body.description ?? '',
       tags: body.tags ?? [],
       documentUrl: body.documentUrl ?? null,

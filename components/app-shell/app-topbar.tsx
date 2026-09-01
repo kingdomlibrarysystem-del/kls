@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Bell, ShoppingCart, LogOut } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useAuth } from '@/contexts/auth-context'
+import { useLanguage } from '@/contexts/language-context'
 import { useMemberNotifications } from '@/app/member/_shared/use-member-notifications'
 import { useCart } from '@/app/member/_shared/use-cart'
 
@@ -33,9 +34,10 @@ interface AppTopbarProps {
  * of the admin dashboard's role-broadcast-only store, which has no
  * concept of "this specific person's" notifications.
  */
-export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTopbarProps) {
+export function AppTopbar({ profileHref, showCart = false }: AppTopbarProps) {
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { t } = useLanguage()
   const { data: notifications } = useMemberNotifications(user?.id)
   const notificationCount = notifications.filter((n) => !n.read).length
   const { data: cart } = useCart(showCart ? user?.id : undefined)
@@ -58,7 +60,7 @@ export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTop
         className="cinzel hidden sm:inline"
         style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1 }}
       >
-        {portalLabel}
+        {t('member.portal')}
       </span>
 
       <div className="flex items-center" style={{ gap: 16, marginLeft: 'auto' }}>
@@ -67,7 +69,7 @@ export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTop
         {showCart && (
           <Link
             href="/member/cart"
-            aria-label={cartCount > 0 ? `My Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}` : 'My Cart'}
+            aria-label={cartCount > 0 ? `${t('m_cart.title')}, ${cartCount}` : t('m_cart.title')}
             style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
           >
             <ShoppingCart size={20} />
@@ -87,7 +89,7 @@ export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTop
 
         <Link
           href="/member/notifications"
-          aria-label={notificationCount > 0 ? `Notifications, ${notificationCount} unread` : 'Notifications'}
+          aria-label={notificationCount > 0 ? `${t('m_notif_page.title')}, ${notificationCount} ${t('m_notif_page.unread')}` : t('m_notif_page.title')}
           style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
         >
           <Bell size={20} />
@@ -106,7 +108,7 @@ export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTop
 
         <Link
           href={profileHref}
-          aria-label="Go to profile"
+          aria-label={t('m_profile.title')}
           style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
         >
           <div
@@ -121,17 +123,17 @@ export function AppTopbar({ portalLabel, profileHref, showCart = false }: AppTop
           </div>
           <div className="hidden sm:block">
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-              {user ? `${user.firstName} ${user.lastName}` : 'Guest User'}
+              {user ? `${user.firstName} ${user.lastName}` : t('m_welcome.guest')}
             </div>
             <div style={{ fontSize: 11, color: 'var(--gold)', lineHeight: 1.2 }}>
-              {user ? user.roleName : 'Not signed in'}
+              {user ? user.roleName : t('auth.not_signed_in')}
             </div>
           </div>
         </Link>
 
         <button
           onClick={() => { logout(); router.push('/') }}
-          aria-label="Log out"
+          aria-label={t('auth.log_out')}
           style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           <LogOut size={20} />

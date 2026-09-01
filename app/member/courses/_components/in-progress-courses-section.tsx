@@ -7,6 +7,7 @@ import { getProgressPercent, getNextLessonId, type CourseEnrollment } from '@/ap
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 import { EnrollmentActionButton } from './enrollment-action-button'
+import { useLanguage } from '@/contexts/language-context'
 
 interface InProgressCoursesSectionProps {
   inProgress: { enrollment: CourseEnrollment; course: CatalogCourse }[]
@@ -24,13 +25,14 @@ interface InProgressCoursesSectionProps {
  * the same unrestricted requestSession() call).
  */
 export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenroll, onPay }: InProgressCoursesSectionProps) {
+  const { t } = useLanguage()
   const { data: lessonsByCourse } = useLessonsByCourse()
   if (inProgress.length === 0) return null
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <PlayCircle size={16} color="var(--teal-light)" /> Continue Learning
+        <PlayCircle size={16} color="var(--teal-light)" /> {t("m_courses.continue_learning")}
       </div>
       {inProgress.map(({ enrollment, course }) => {
         const progress = getProgressPercent(enrollment)
@@ -42,7 +44,7 @@ export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenr
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{course.title}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{course.instructor} • {enrollment.completedLessonIds.length}/{enrollment.totalLessons} lessons</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{course.instructor} • {enrollment.completedLessonIds.length}/{enrollment.totalLessons} {t("m_courses.lessons_label")}</div>
               <div style={{ width: '100%', height: 4, background: 'var(--bg-section)', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{ width: `${progress}%`, height: '100%', background: 'var(--teal-light)', borderRadius: 2, transition: 'width 0.3s' }} />
               </div>
@@ -52,7 +54,7 @@ export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenr
               aria-label={`Request a live session with ${course.instructor} for ${course.title}`}
               style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
-              <CalendarPlus size={14} /> Request Session
+              <CalendarPlus size={14} /> {t("m_courses.request_session")}
             </button>
             <EnrollmentActionButton enrollment={enrollment} course={course} onUnenroll={onUnenroll} onPay={onPay} />
             {nextLessonId ? (
@@ -61,10 +63,10 @@ export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenr
                 aria-label={`Resume ${course.title}`}
                 style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
               >
-                Resume
+                {t("m_courses.resume")}
               </Link>
             ) : (
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>No lessons available</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t("m_courses.no_lessons")}</span>
             )}
           </div>
         )
