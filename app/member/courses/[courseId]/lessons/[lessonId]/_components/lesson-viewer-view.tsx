@@ -9,6 +9,7 @@ import { LessonContentPane } from './lesson-content-pane'
 import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
 import { useLessonsByCourse } from '../../../../../_shared/use-lessons'
 import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
+import { useLanguage } from '@/contexts/language-context'
 
 interface LessonViewerViewProps {
   courseId: string
@@ -22,6 +23,7 @@ interface LessonViewerViewProps {
  * immediately reflected on My Courses once the enrollment is refetched.
  */
 export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) {
+  const { t } = useLanguage()
   const [markError, setMarkError] = useState('')
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments()
   const { data: lessonsByCourse, loading: lessonsLoading } = useLessonsByCourse()
@@ -42,12 +44,12 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const handleMarkComplete = async () => {
     setMarkError('')
     try {
-      if (!lesson) throw new Error('Lesson not found')
-      if (!enrollment) throw new Error('You are not enrolled in this course')
+      if (!lesson) throw new Error(t("m_courses.lesson_not_found"))
+      if (!enrollment) throw new Error(t("m_courses.not_enrolled"))
       await markLessonComplete(enrollment.id, lesson.id)
       await refetch()
     } catch (error) {
-      setMarkError(error instanceof Error ? error.message : 'Could not mark lesson complete')
+      setMarkError(error instanceof Error ? error.message : t("m_courses.could_not_mark_complete"))
     }
   }
 
@@ -64,8 +66,8 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
     return (
       <EmptyState
         icon={BookX}
-        title="Lesson not found"
-        description="This course or lesson doesn't exist in the catalog."
+        title={t("m_courses.lesson_not_found")}
+        description={t("m_courses.lesson_not_found_desc")}
         style={{ color: 'var(--text-secondary)' }}
       />
     )

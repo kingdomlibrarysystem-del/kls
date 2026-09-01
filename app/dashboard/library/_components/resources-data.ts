@@ -2,7 +2,7 @@
 export type BindingType = 'SOFT' | 'HARD'
 
 /** Media type per the canonical Book shape — matches APP_DOC's resource-type concept (Prisma ResourceType/ResourceFormat). */
-export type MediaType = 'VIDEO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION'
+export type MediaType = 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION'
 
 /** Digital library resource — a "scroll" categorized under a KCS section. Also the canonical Book shape read by the public library browse/detail pages. */
 export interface Resource {
@@ -55,6 +55,7 @@ export const bindingTypeLabels: Record<BindingType, string> = {
 
 export const mediaTypeLabels: Record<MediaType, string> = {
   VIDEO: 'Video',
+  AUDIO: 'Audio',
   DOCUMENT: 'Document',
   TEXT: 'Text',
   COMBINATION: 'Combination',

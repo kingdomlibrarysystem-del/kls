@@ -3,19 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Home, BookOpen, GraduationCap, Award, User } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface BottomNavItem {
   icon: React.ReactNode;
-  label: string;
+  key: string;
   href: string;
 }
 
 const items: BottomNavItem[] = [
-  { icon: <Home size={20} />, label: "Dashboard", href: "/member" },
-  { icon: <BookOpen size={20} />, label: "Library", href: "/member/library" },
-  { icon: <GraduationCap size={20} />, label: "Learning", href: "/member/e-learning" },
-  { icon: <Award size={20} />, label: "Certificates", href: "/member/certificates" },
-  { icon: <User size={20} />, label: "Profile", href: "/member/profile" },
+  { icon: <Home size={20} />, key: "dashboard", href: "/member" },
+  { icon: <BookOpen size={20} />, key: "library", href: "/member/library" },
+  { icon: <GraduationCap size={20} />, key: "learning", href: "/member/e-learning" },
+  { icon: <Award size={20} />, key: "certificates", href: "/member/certificates" },
+  { icon: <User size={20} />, key: "profile", href: "/member/profile" },
 ];
 
 /**
@@ -25,6 +26,7 @@ const items: BottomNavItem[] = [
  * untouched.
  */
 export default function MemberMobileBottomNav() {
+  const { t } = useLanguage();
   const [currentRoute, setCurrentRoute] = useState("");
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function MemberMobileBottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            aria-label={item.label}
+            aria-label={t(`member.${item.key}`)}
             style={{
               flex: 1,
               display: "flex",
@@ -65,7 +67,7 @@ export default function MemberMobileBottomNav() {
             }}
           >
             {item.icon}
-            <span>{item.label}</span>
+            <span>{t(`member.${item.key}`)}</span>
           </Link>
         );
       })}

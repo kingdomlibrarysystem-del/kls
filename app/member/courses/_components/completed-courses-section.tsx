@@ -7,6 +7,7 @@ import { isCertificateEligible, type CourseEnrollment } from '@/app/member/_shar
 import type { CatalogCourse } from '@/app/member/_shared/use-courses'
 import type { Certificate } from '@/app/member/_shared/use-certificates'
 import { EnrollmentActionButton } from './enrollment-action-button'
+import { useLanguage } from '@/contexts/language-context'
 
 interface CompletedCoursesSectionProps {
   completed: { enrollment: CourseEnrollment; course: CatalogCourse }[]
@@ -25,12 +26,13 @@ interface CompletedCoursesSectionProps {
  * action on courses still in progress).
  */
 export function CompletedCoursesSection({ completed, onRequestSession, certificates, onUnenroll, onPay }: CompletedCoursesSectionProps) {
+  const { t } = useLanguage()
   if (completed.length === 0) return null
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Award size={16} color="var(--gold)" /> Completed
+        <Award size={16} color="var(--gold)" /> {t("m_courses.completed")}
       </div>
       {completed.map(({ enrollment, course }) => {
         const lecturerName = course.instructor
@@ -43,8 +45,8 @@ export function CompletedCoursesSection({ completed, onRequestSession, certifica
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{course.title}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {course.lessons} lessons • Completed
-                {!isCertificateEligible(enrollment) && ' • Pass the assessment for a certificate'}
+                {course.lessons} {t("m_courses.lessons_label")} • {t("m_courses.completed")}
+                {!isCertificateEligible(enrollment) && <> • {t("m_courses.pass_for_cert")}</>}
               </div>
             </div>
             <button
@@ -52,7 +54,7 @@ export function CompletedCoursesSection({ completed, onRequestSession, certifica
               aria-label={`Request a live session with ${lecturerName ?? 'the lecturer'} for ${course.title}`}
               style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
-              <CalendarPlus size={14} /> Request Session
+              <CalendarPlus size={14} /> {t("m_courses.request_session")}
             </button>
             <EnrollmentActionButton enrollment={enrollment} course={course} onUnenroll={onUnenroll} onPay={onPay} />
             {certificate ? (

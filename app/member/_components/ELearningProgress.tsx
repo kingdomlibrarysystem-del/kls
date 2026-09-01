@@ -2,6 +2,7 @@
 
 import { GraduationCap, ChevronRight, Award } from "lucide-react";
 import { RankingBarChart } from "@/components/ui/ranking-bar-chart";
+import { useLanguage } from "@/contexts/language-context";
 import { useCourses } from "@/app/member/_shared/use-courses";
 import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enrollments";
 
@@ -12,6 +13,7 @@ import { useEnrollments, getProgressPercent } from "@/app/member/_shared/use-enr
  * instead of stacked flat progress bars.
  */
 export default function ELearningProgress() {
+  const { t } = useLanguage();
   const { data: enrollments } = useEnrollments();
   const { data: courseCatalog } = useCourses();
 
@@ -31,15 +33,15 @@ export default function ELearningProgress() {
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <GraduationCap size={18} color="var(--teal-light)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>E-Learning Progress</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_ewidget.title")}</span>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
-          <Award size={14} /> {totalProgress}% overall
+          <Award size={14} /> {t("m_ewidget.overall").replace("%", String(totalProgress))}
         </span>
       </div>
       {rows.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          Not enrolled in any courses yet.{" "}
-          <a href="/member/e-learning" style={{ color: "var(--gold)", textDecoration: "underline" }}>Explore courses</a>
+          {t("m_ewidget.not_enrolled")}{" "}
+          <a href="/member/e-learning" style={{ color: "var(--gold)", textDecoration: "underline" }}>{t("m_ewidget.explore_courses")}</a>
         </div>
       ) : (
         <RankingBarChart
@@ -49,7 +51,7 @@ export default function ELearningProgress() {
         />
       )}
       <a href="/member/courses" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
-        View all courses <ChevronRight size={14} />
+        {t("m_ewidget.view_all")} <ChevronRight size={14} />
       </a>
     </div>
   );

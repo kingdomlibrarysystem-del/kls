@@ -25,111 +25,67 @@ import {
   Bell,
 } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/language-context";
 
 interface NavItem {
   icon: React.ReactNode;
-  label: string;
+  key: string;
   href: string;
 }
 
 interface NavSection {
-  title: string;
+  key: string;
   icon: React.ReactNode;
   items: NavItem[];
 }
 
-const navSections: NavSection[] = [
-  {
-    title: "Library",
-    icon: <BookOpen size={16} />,
-    items: [
-      {
-        icon: <BookOpen size={14} />,
-        label: "Browse Books",
-        href: "/member/library",
-      },
-      {
-        icon: <Bookmark size={14} />,
-        label: "My Borrowings",
-        href: "/member/borrowings",
-      },
-      {
-        icon: <CalendarDays size={14} />,
-        label: "Reservations",
-        href: "/member/reservations",
-      },
-      {
-        icon: <ShoppingCart size={14} />,
-        label: "My Cart",
-        href: "/member/cart",
-      },
-      {
-        icon: <ShoppingBag size={14} />,
-        label: "My Orders",
-        href: "/member/orders",
-      },
-    ],
-  },
-  {
-    title: "E-Learning",
-    icon: <GraduationCap size={16} />,
-    items: [
-      {
-        icon: <GraduationCap size={14} />,
-        label: "Browse Courses",
-        href: "/member/e-learning",
-      },
-      {
-        icon: <CheckSquare size={14} />,
-        label: "My Courses",
-        href: "/member/courses",
-      },
-      {
-        icon: <ClipboardList size={14} />,
-        label: "Assessments",
-        href: "/member/assessments",
-      },
-      {
-        icon: <Award size={14} />,
-        label: "Certificates",
-        href: "/member/certificates",
-      },
-      {
-        icon: <CalendarClock size={14} />,
-        label: "My Sessions",
-        href: "/member/sessions",
-      },
-    ],
-  },
-];
+function buildNavSections(t: (k: string) => string): NavSection[] {
+  return [
+    {
+      key: "library",
+      icon: <BookOpen size={16} />,
+      items: [
+        { icon: <BookOpen size={14} />, key: "browse_books", href: "/member/library" },
+        { icon: <Bookmark size={14} />, key: "my_borrowings", href: "/member/borrowings" },
+        { icon: <CalendarDays size={14} />, key: "reservations", href: "/member/reservations" },
+        { icon: <ShoppingCart size={14} />, key: "my_cart", href: "/member/cart" },
+        { icon: <ShoppingBag size={14} />, key: "my_orders", href: "/member/orders" },
+      ],
+    },
+    {
+      key: "elearning",
+      icon: <GraduationCap size={16} />,
+      items: [
+        { icon: <GraduationCap size={14} />, key: "browse_courses", href: "/member/e-learning" },
+        { icon: <CheckSquare size={14} />, key: "my_courses", href: "/member/courses" },
+        { icon: <ClipboardList size={14} />, key: "assessments", href: "/member/assessments" },
+        { icon: <Award size={14} />, key: "certificates", href: "/member/certificates" },
+        { icon: <CalendarClock size={14} />, key: "my_sessions", href: "/member/sessions" },
+      ],
+    },
+  ]
+}
 
-const singleItems: NavItem[] = [
-  {
-    icon: <Bell size={16} />,
-    label: "Notifications",
-    href: "/member/notifications",
-  },
-  {
-    icon: <MessageSquare size={16} />,
-    label: "Messages",
-    href: "/member/messages",
-  },
-  { icon: <Heart size={16} />, label: "Favorites", href: "/member/favorites" },
-  {
-    icon: <Trophy size={16} />,
-    label: "Leaderboard",
-    href: "/member/leaderboard",
-  },
-  { icon: <User size={16} />, label: "My Profile", href: "/member/profile" },
-];
+function buildSingleItems(t: (k: string) => string): NavItem[] {
+  return [
+    { icon: <Bell size={16} />, key: "notifications", href: "/member/notifications" },
+    { icon: <MessageSquare size={16} />, key: "messages", href: "/member/messages" },
+    { icon: <Heart size={16} />, key: "favorites", href: "/member/favorites" },
+    { icon: <Trophy size={16} />, key: "leaderboard", href: "/member/leaderboard" },
+    { icon: <User size={16} />, key: "my_profile", href: "/member/profile" },
+  ]
+}
 
 export default function MemberSidebar() {
+  const { t } = useLanguage();
+  const navSections = buildNavSections(t);
+  const singleItems = buildSingleItems(t);
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({
-    Library: true,
-    "E-Learning": false,
+    library: true,
+    elearning: false,
   });
   const currentRoute = usePathname();
 
@@ -213,7 +169,7 @@ export default function MemberSidebar() {
                 letterSpacing: 1,
               }}
             >
-              MEMBER PORTAL
+              {t("member.portal")}
             </div>
           </div>
         )}
@@ -244,15 +200,15 @@ export default function MemberSidebar() {
           }}
         >
           <Home size={16} />
-          {!collapsed && <span>Dashboard</span>}
+          {!collapsed && <span>{t("member.dashboard")}</span>}
         </Link>
 
         {/* Nav sections */}
         {!collapsed &&
           navSections.map((section) => (
-            <div key={section.title}>
+            <div key={section.key}>
               <div
-                onClick={() => toggleSection(section.title)}
+                onClick={() => toggleSection(section.key)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -273,17 +229,17 @@ export default function MemberSidebar() {
                 }
               >
                 {section.icon}
-                <span style={{ flex: 1 }}>{section.title}</span>
-                {expandedSections[section.title] ? (
+                <span style={{ flex: 1 }}>{t(`member.section_${section.key}`)}</span>
+                {expandedSections[section.key] ? (
                   <ChevronDown size={14} />
                 ) : (
                   <ChevronLeft size={14} />
                 )}
               </div>
-              {expandedSections[section.title] &&
+              {expandedSections[section.key] &&
                 section.items.map((item) => (
                   <Link
-                    key={item.label}
+                    key={item.key}
                     href={item.href}
                     style={{
                       display: "flex",
@@ -310,7 +266,7 @@ export default function MemberSidebar() {
                     }}
                   >
                     {item.icon}
-                    <span>{item.label}</span>
+                    <span>{t(`member.${item.key}`)}</span>
                   </Link>
                 ))}
             </div>
@@ -328,7 +284,7 @@ export default function MemberSidebar() {
         )}
         {singleItems.map((item) => (
           <Link
-            key={item.label}
+            key={item.key}
             href={item.href}
             style={{
               display: "flex",
@@ -358,7 +314,7 @@ export default function MemberSidebar() {
             }}
           >
             {item.icon}
-            {!collapsed && <span>{item.label}</span>}
+            {!collapsed && <span>{t(`member.${item.key}`)}</span>}
           </Link>
         ))}
       </div>

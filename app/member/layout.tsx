@@ -1,6 +1,7 @@
 import { AppTopbar } from "@/components/app-shell/app-topbar";
 import MemberSidebar from "./_components/member-sidebar";
 import MemberMobileBottomNav from "./_components/mobile-bottom-nav";
+import { WhatsAppSupportButton } from "@/components/whatsapp-support";
 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
           {children}
         </main>
       </div>
+      <WhatsAppSupportButton />
       <MemberMobileBottomNav />
     </div>
   );

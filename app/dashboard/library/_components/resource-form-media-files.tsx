@@ -84,7 +84,7 @@ function MediaField({ control, id, kind, urlName, nameName, accept, label, onUpl
 export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, isCreating }: ResourceFormMediaFilesProps) {
   const showMarkdown = isCreating && mediaType === 'TEXT'
   const showDocument = mediaType === 'DOCUMENT' || mediaType === 'COMBINATION'
-  const showAudio = mediaType === 'VIDEO' || mediaType === 'COMBINATION'
+  const showAudio = mediaType === 'VIDEO' || mediaType === 'COMBINATION' || mediaType === 'AUDIO'
   const showVideo = mediaType === 'VIDEO' || mediaType === 'COMBINATION'
   const documentUrl = watch('documentUrl')
 

@@ -2,22 +2,24 @@
 
 import { Heart, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
 
 /** Dashboard-home widget for favorited items, reading from the shared favorites store — the same one the library page's heart toggle and the Favorites page's Remove action write to. */
 export default function FavoriteBooks() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const favorites = useFavorites(user?.id);
 
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <Heart size={18} color="var(--red-light)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Favorite Books</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_fav_widget.title")}</span>
       </div>
       {favorites.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          No favorites yet. Start adding books you love!
+          {t("m_fav_widget.no_favorites")}
         </div>
       ) : (
         favorites.map((f) => (
@@ -33,7 +35,7 @@ export default function FavoriteBooks() {
         ))
       )}
       <a href="/member/library" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
-        Browse library <ChevronRight size={14} />
+        {t("m_fav_widget.browse_library")} <ChevronRight size={14} />
       </a>
     </div>
   );

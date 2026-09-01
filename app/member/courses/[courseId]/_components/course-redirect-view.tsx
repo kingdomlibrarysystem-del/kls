@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useCourses } from '@/app/member/_shared/use-courses'
 import { enrollInCourse, getNextLessonId, useEnrollments } from '@/app/member/_shared/use-enrollments'
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
+import { useLanguage } from '@/contexts/language-context'
 
 interface CourseRedirectViewProps {
   courseId: string
@@ -26,6 +27,7 @@ interface CourseRedirectViewProps {
 export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
   const router = useRouter()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [error, setError] = useState('')
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments()
   const { data: courseCatalog, loading: coursesLoading } = useCourses()
@@ -48,7 +50,7 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
         const nextLessonId = getNextLessonId(enrollment, lessons)
         router.replace(nextLessonId ? `/member/courses/${courseId}/lessons/${nextLessonId}` : '/member/courses')
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not open this course')
+        setError(err instanceof Error ? err.message : t("m_courses.could_not_open_course"))
       }
     }
     redirect()
@@ -61,8 +63,8 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
     return (
       <EmptyState
         icon={BookX}
-        title="Course not found"
-        description="This course doesn't exist in the catalog."
+        title={t("m_courses.course_not_found")}
+        description={t("m_courses.course_not_found_desc")}
         style={{ color: 'var(--text-secondary)' }}
       />
     )
@@ -72,7 +74,7 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
     return (
       <EmptyState
         icon={BookX}
-        title="Could not open this course"
+        title={t("m_courses.could_not_open_course")}
         description={error}
         style={{ color: 'var(--text-secondary)' }}
       />
@@ -80,7 +82,7 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label={`Opening ${course?.title ?? 'course'}`}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} aria-label={`${t("m_courses.opening_course")} ${course?.title ?? t("m_courses.course_word")}`}>
       <Skeleton style={{ height: 24, width: '40%', borderRadius: 6 }} />
       <Skeleton style={{ height: 160, borderRadius: 8 }} />
     </div>
