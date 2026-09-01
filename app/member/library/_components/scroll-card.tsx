@@ -146,27 +146,34 @@ export function ScrollCard({ scroll }: ScrollProps) {
               >
                 <BookOpenCheck size={14} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
               </Link>
-              {isAuthenticated && readableResource.price > 0 && (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {readableResource.availableQty > 0 && (
-                    <button
-                      onClick={() => handleAddToCart('RENTAL')}
-                      disabled={inCartRental || addingType === 'RENTAL'}
-                      aria-label={inCartRental ? `${readableResource.title} (Borrow) is in your cart` : `Borrow ${readableResource.title}`}
-                      style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      {inCartRental ? 'In Cart' : 'Borrow'}
-                    </button>
+              {isAuthenticated && (
+                <>
+                  {(inCartRental || inCartSale) && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: 'var(--gold-dim, rgba(184,134,11,0.12))', color: 'var(--gold)', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 6 }}>
+                      {inCartRental && inCartSale ? 'Borrow & Reserve in cart' : inCartRental ? 'Borrow in cart' : 'Reserve in cart'}
+                    </div>
                   )}
-                  <button
-                    onClick={() => handleAddToCart('SALE')}
-                    disabled={inCartSale || addingType === 'SALE'}
-                    aria-label={inCartSale ? `${readableResource.title} (Reserve) is in your cart` : `Reserve ${readableResource.title}`}
-                    style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    {inCartSale ? 'In Cart' : 'Reserve'}
-                  </button>
-                </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {readableResource.availableQty > 0 && (
+                      <button
+                        onClick={() => handleAddToCart('RENTAL')}
+                        disabled={inCartRental || addingType === 'RENTAL'}
+                        aria-label={inCartRental ? `${readableResource.title} (Borrow) is already in your cart` : `Borrow ${readableResource.title}`}
+                        style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: inCartRental ? 'not-allowed' : 'pointer', opacity: inCartRental ? 0.6 : 1 }}
+                      >
+                        Borrow
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleAddToCart('SALE')}
+                      disabled={inCartSale || addingType === 'SALE'}
+                      aria-label={inCartSale ? `${readableResource.title} (Reserve) is already in your cart` : `Reserve ${readableResource.title}`}
+                      style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: inCartSale ? 'not-allowed' : 'pointer', opacity: inCartSale ? 0.6 : 1 }}
+                    >
+                      Reserve
+                    </button>
+                  </div>
+                </>
               )}
               {cartError && <p style={{ fontSize: 11, color: 'var(--red-light)' }}>{cartError}</p>}
             </>

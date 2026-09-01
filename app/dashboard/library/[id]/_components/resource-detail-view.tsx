@@ -137,7 +137,8 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
           <div>
             <h1 className="font-cinzel text-lg font-semibold text-w-950 leading-snug">{resource.title}</h1>
             <p className="font-lato text-sm text-w-700 mt-0.5">by {resource.author}</p>
-            <p className="font-cinzel text-base font-bold text-w-600 mt-1">{resource.price.toLocaleString()} RWF</p>
+            <p className="font-cinzel text-base font-bold text-w-600 mt-1">{resource.price.toLocaleString()} RWF <span className="font-lato text-xs font-semibold text-w-500">to reserve</span></p>
+            <p className="font-lato text-xs text-w-600">{resource.borrowPrice.toLocaleString()} RWF to borrow · {resource.borrowDurationDays} days</p>
           </div>
 
           <div className="bg-form-highlight border border-w-300 rounded p-3">

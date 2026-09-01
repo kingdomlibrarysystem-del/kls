@@ -10,6 +10,11 @@ import { createBorrowRecord } from '@/app/api/borrowings/create-borrow'
 import { createReservationRecord } from '@/app/api/reservations/create-reservation'
 import { serializeCheckout } from './serialize'
 
+/** RENTAL (Borrow) charges resource.borrowPrice; SALE (Reserve) charges resource.price — the two products have independent pricing. */
+function unitPriceFor(item: { type: string; resource: { price: number; borrowPrice: number } }): number {
+  return item.type === 'RENTAL' ? item.resource.borrowPrice : item.resource.price
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
@@ -82,11 +87,20 @@ export const POST = withErrorHandling('/api/checkout', 'POST', async (request: N
     include: { resource: true },
   })
   if (cartItems.length !== body.cartItemIds.length) throw new ApiError('One or more selected cart items were not found', 404)
+  // SALE (Reserve) always requires a real price; RENTAL (Borrow) may be
+  // free (borrowPrice defaults to 0), so only SALE items are checked.
   for (const item of cartItems) {
-    if (!item.resource.price || item.resource.price <= 0) throw new ApiError(`"${item.resource.title}" has no price set`, 400)
+    if (item.type === 'SALE' && (!item.resource.price || item.resource.price <= 0)) {
+      throw new ApiError(`"${item.resource.title}" has no price set`, 400)
+    }
   }
 
-  const amountRwf = cartItems.reduce((sum, item) => sum + item.resource.price * item.quantity, 0)
+  const amountRwf = cartItems.reduce((sum, item) => sum + unitPriceFor(item) * item.quantity, 0)
+  // A free-borrow-only selection has nothing to charge — the checkout
+  // flow exists to collect a real payment, so route a zero-total
+  // selection back to the caller rather than let PayPack's own 100 RWF
+  // minimum (lib/paypack.ts) or an empty Stripe session fail unclearly.
+  if (amountRwf <= 0) throw new ApiError('These items are free — nothing to pay. Confirm them directly instead of checking out.', 400)
 
   const checkout = await prisma.checkout.create({
     data: {
@@ -111,7 +125,7 @@ export const POST = withErrorHandling('/api/checkout', 'POST', async (request: N
       resourceFormat: item.resource.mediaType,
       resourceCover: item.resource.coverImages[0] ?? null,
       type: item.type,
-      amountRwf: item.resource.price * item.quantity,
+      amountRwf: unitPriceFor(item) * item.quantity,
       status: 'PENDING' as const,
       checkoutId: checkout.id,
     })),
@@ -161,7 +175,7 @@ export const POST = withErrorHandling('/api/checkout', 'POST', async (request: N
       orderId: checkout.id,
       items: cartItems.map((item) => ({
         title: item.resource.title,
-        amountRwf: item.resource.price,
+        amountRwf: unitPriceFor(item),
         quantity: item.quantity,
         imageUrl: item.resource.coverImages[0] ?? null,
       })),

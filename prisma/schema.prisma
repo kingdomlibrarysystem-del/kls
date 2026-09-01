@@ -284,7 +284,25 @@ model Resource {
   year                    Int
   pages                   Int
   isbn                    String            @unique
+  /// Reserve (SALE/"Buy") price only, as of the Borrow/Reserve pricing
+  /// split below — Borrow no longer charges this field.
   price                   Float
+  /// Real Borrow (RENTAL) charge, independent from `price` — Reserve and
+  /// Borrow are different products (permanent ownership vs. a timed
+  /// loan) and previously incorrectly charged the exact same amount via
+  /// `price` for both. Defaults to 0 (free borrow) for every resource
+  /// created before this field existed, matching how `price` itself
+  /// defaults conceptually — an admin sets a real value via the resource
+  /// form's new Borrow Price field.
+  borrowPrice             Float             @default(0)
+  /// How many days a Borrow's due date is set from its borrowDate (see
+  /// createBorrowRecord) — real per-resource control replacing the old
+  /// single global Settings.defaultBorrowPeriodDays fallback, which
+  /// applied the exact same period to every resource regardless of its
+  /// real lending policy. Common presets (7/14/30 days) plus a genuine
+  /// custom day count — see BORROW_DURATION_PRESETS in
+  /// resource-form-schema.ts for the UI's exact preset list.
+  borrowDurationDays      Int               @default(14)
   totalQty                Int
   availableQty            Int
   /// Monotonically-increasing counter used to atomically assign each new

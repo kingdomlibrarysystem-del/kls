@@ -29,6 +29,8 @@ function serializeResource(r: {
   pages: number
   isbn: string
   price: number
+  borrowPrice: number
+  borrowDurationDays: number
   freePreviewChapterCount: number
   totalQty: number
   availableQty: number
@@ -61,6 +63,8 @@ function serializeResource(r: {
     pages: r.pages,
     isbn: r.isbn,
     price: r.price,
+    borrowPrice: r.borrowPrice,
+    borrowDurationDays: r.borrowDurationDays,
     freePreviewChapterCount: r.freePreviewChapterCount,
     totalQty: r.totalQty,
     availableQty: r.availableQty,
@@ -139,6 +143,8 @@ const createResourceSchema = z.object({
   year: z.number().int().optional(),
   pages: z.number().int().nonnegative().optional(),
   price: z.number().nonnegative().optional(),
+  borrowPrice: z.number().nonnegative().optional(),
+  borrowDurationDays: z.number().int().positive().optional(),
   freePreviewChapterCount: z.number().int().nonnegative().optional(),
   totalQty: z.number().int().nonnegative().optional(),
   availableQty: z.number().int().nonnegative().optional(),
@@ -180,6 +186,8 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       pages: body.pages ?? 0,
       isbn,
       price: body.price ?? 0,
+      borrowPrice: body.borrowPrice ?? 0,
+      borrowDurationDays: body.borrowDurationDays ?? 14,
       freePreviewChapterCount: body.freePreviewChapterCount ?? 0,
       totalQty: body.totalQty ?? 1,
       availableQty: body.availableQty ?? body.totalQty ?? 1,

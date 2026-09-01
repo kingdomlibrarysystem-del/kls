@@ -127,7 +127,11 @@ export const POST = withErrorHandling('/api/orders', 'POST', async (request: Nex
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
   if (!resource) throw new ApiError('Resource not found', 404)
-  if (!resource.price || resource.price <= 0) throw new ApiError('This resource has no price set', 400)
+  // SALE (Reserve) always requires a real price; RENTAL (Borrow) may be
+  // free (borrowPrice defaults to 0).
+  const amountRwf = body.type === 'RENTAL' ? resource.borrowPrice : resource.price
+  if (body.type === 'SALE' && (!resource.price || resource.price <= 0)) throw new ApiError('This resource has no price set', 400)
+  if (amountRwf <= 0) throw new ApiError('This item is free — nothing to pay.', 400)
 
   const order = await prisma.order.create({
     data: {
@@ -140,7 +144,7 @@ export const POST = withErrorHandling('/api/orders', 'POST', async (request: Nex
       resourceFormat: resource.mediaType,
       resourceCover: resource.coverImages[0] ?? null,
       type: body.type,
-      amountRwf: resource.price,
+      amountRwf,
       status: 'PENDING',
     },
   })
@@ -148,7 +152,7 @@ export const POST = withErrorHandling('/api/orders', 'POST', async (request: Nex
   if (body.method === 'PAYPACK') {
     try {
       const cashin = await requestCashin({
-        amountRwf: resource.price,
+        amountRwf,
         phone: body.buyerPhone,
         idempotencyKey: order.id,
       })
@@ -174,7 +178,7 @@ export const POST = withErrorHandling('/api/orders', 'POST', async (request: Nex
       metadataKey: 'orderId',
       orderId: order.id,
       title: resource.title,
-      amountRwf: resource.price,
+      amountRwf,
       successUrl: `${base}/member/cart?checkout=success`,
       cancelUrl: `${base}/member/cart?checkout=cancelled`,
     })

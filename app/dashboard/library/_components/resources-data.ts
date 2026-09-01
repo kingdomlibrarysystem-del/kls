@@ -18,7 +18,12 @@ export interface Resource {
   year: number
   pages: number
   isbn: string
+  /** Reserve (SALE/"Buy") price only — Borrow uses borrowPrice instead. */
   price: number
+  /** Real Borrow (RENTAL) charge, independent from `price`. */
+  borrowPrice: number
+  /** Days from borrowDate to dueDate for a Borrow of this resource — see Resource.borrowDurationDays's schema docstring. */
+  borrowDurationDays: number
   /** How many of this resource's chapters are readable for free before the reader shows a real paywall (see /api/chapters). Ignored while price is 0. */
   freePreviewChapterCount: number
   /** Renamed conceptually to "quantity" per the canonical shape; totalQty/availableQty split is kept since it's strictly more useful than one combined count. */
