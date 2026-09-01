@@ -45,7 +45,7 @@ async function getOrCreateCart(userId: string) {
   })
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling('/api/cart', 'GET', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
   if (!userId) throw new ApiError('userId is required', 400)
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     code: 'success',
     status: 200,
   })
-}
+})
 
 const addToCartSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
