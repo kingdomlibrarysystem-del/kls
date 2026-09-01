@@ -107,6 +107,7 @@ model User {
   userSessions              UserSession[]
   twoFactorSecret           TwoFactorSecret?
   orders                    Order[]
+  checkouts                 Checkout[]
   courseOrders              CourseOrder[]
   cart                      Cart?
   reviews                   Review[]
@@ -414,9 +415,22 @@ model Order {
   resource        Resource    @relation(fields: [resourceId], references: [id])
   resourceTitle   String
   resourceFormat  String
+  /// Cover image URL, denormalized from Resource.coverImages[0] at order
+  /// creation time — lets My Orders and the checkout page show a
+  /// thumbnail without an extra join, and keeps showing something
+  /// sensible if the resource's cover later changes.
+  resourceCover   String?
   type            OrderType
   amountRwf       Float
   status          OrderStatus @default(PENDING)
+  /// Set when this Order was created as one line of a combined
+  /// multi-item Checkout (see Checkout's docstring) rather than the
+  /// older single-item flow — null for an Order predating combined
+  /// checkout. All Orders sharing a checkoutId are paid together in one
+  /// PayPack cashin or one Stripe Checkout Session, and are settled
+  /// together (see settleOrder in app/api/orders/settle.ts).
+  checkoutId      String?     @db.ObjectId
+  checkout        Checkout?   @relation(fields: [checkoutId], references: [id])
   /// Set once settlement succeeds and the real Borrow/Reservation row is
   /// created — makes settlement idempotent (a re-settle, e.g. the
   /// webhook and a poll racing, finds this already set and skips
@@ -450,6 +464,7 @@ model Order {
 
   @@index([userId])
   @@index([resourceId])
+  @@index([checkoutId])
 }
 
 enum OrderType {
@@ -462,6 +477,54 @@ enum OrderStatus {
   PAID
   FAILED
   CANCELLED
+}
+
+/// Real payment-level record grouping every cart item paid in one
+/// checkout into a single charge — replaces the old one-Order-at-a-time
+/// flow (each cart line had its own "Pay & Reserve/Borrow" button and
+/// its own PayPack cashin/Stripe session) with genuine "review the whole
+/// cart, pay once." One Checkout ties together N Order rows (see
+/// Order.checkoutId) — Order stays the per-item record (still needed so
+/// each item independently creates its own Borrow/Reservation on
+/// settlement, since a Borrow/Reservation is inherently per-resource),
+/// while Checkout is the payment-level record: exactly one PayPack
+/// cashin OR one Stripe Checkout Session (with one line item per Order)
+/// backs the whole group. amountRwf is the summed total actually
+/// charged. Kept as its own collection rather than teaching Order itself
+/// to hold an array of resources — every existing single-item consumer
+/// (PayPack webhook matching by ref, admin Sales views, entitlement
+/// checks reading one Order at a time) already assumes one Order = one
+/// resource, and retrofitting that would touch far more than this
+/// feature needs.
+model Checkout {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String        @db.ObjectId
+  user            User          @relation(fields: [userId], references: [id])
+  buyerName       String
+  buyerEmail      String
+  buyerPhone      String
+  method          PaymentMethod
+  amountRwf       Float
+  status          OrderStatus   @default(PENDING)
+  orders          Order[]
+  /// Same sparse-index reasoning as Order.paypackRef — not `@unique`
+  /// here; a real sparse unique index is created out-of-band via
+  /// scripts/create-checkout-sparse-indexes.mjs.
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
+  stripeSessionId String?
+  /// Incremented each time a member retries a FAILED checkout (see POST
+  /// /api/checkout/[id]/retry) — a fresh PayPack cashin or Stripe
+  /// session is started under the same Checkout row rather than creating
+  /// a new one, so My Orders keeps showing one entry per attempted
+  /// purchase instead of accumulating duplicates per retry.
+  retryCount      Int           @default(0)
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
 }
 
 /// Real course-enrollment payment order — kept as a model parallel to

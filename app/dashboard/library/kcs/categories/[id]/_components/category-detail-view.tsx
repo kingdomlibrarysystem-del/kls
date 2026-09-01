@@ -76,7 +76,7 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
   const handleDelete = async () => {
     if (!category) return
     await removeCategory(category.id)
-    router.push('/dashboard/kcs')
+    router.push('/dashboard/library/kcs')
   }
 
   if (loading) {
@@ -97,7 +97,7 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
         <PageHeader title="Category Details" />
         <EmptyState icon={FolderX} title="Category not found" description={error || 'This category does not exist or was deleted.'} />
         <div className="mt-4">
-          <UniversalButton href="/dashboard/kcs" variant="outline" icon={<ArrowLeft size={14} />}>
+          <UniversalButton href="/dashboard/library/kcs" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to KCS Map
           </UniversalButton>
         </div>
@@ -108,7 +108,7 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
-        <UniversalButton href="/dashboard/kcs" variant="ghost" size="sm" icon={<ArrowLeft size={14} />}>
+        <UniversalButton href="/dashboard/library/kcs" variant="ghost" size="sm" icon={<ArrowLeft size={14} />}>
           Back to KCS Map
         </UniversalButton>
         <div className="flex gap-2">

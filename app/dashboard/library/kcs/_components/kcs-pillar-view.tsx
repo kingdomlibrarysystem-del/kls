@@ -134,7 +134,7 @@ export function KcsPillarView({ pillarSlug, onPillarChange }: KcsPillarViewProps
           {filtered.map((scroll) => (
             <Link
               key={scroll.id}
-              href={`/dashboard/kcs/${pillarSlug}/${encodeURIComponent(scroll.slug)}`}
+              href={`/dashboard/library/kcs/${pillarSlug}/${encodeURIComponent(scroll.slug)}`}
               aria-label={`View details for ${scroll.name.en}`}
               className="card card-hover"
               style={{ display: 'flex', flexDirection: 'column', gap: 6, textDecoration: 'none' }}

@@ -7,12 +7,43 @@ export interface MemberOrder {
   resourceId: string
   resourceTitle: string
   resourceFormat: string
+  resourceCover: string | null
   type: OrderType
   amount: number
   status: OrderStatus
+  checkoutId: string | null
   paypackStatus: string | null
   paidAt: string | null
   createdAt: string
+}
+
+/** One line item inside a combined Checkout — see MemberCheckout. */
+export interface MemberCheckoutItem {
+  id: string
+  resourceId: string
+  resourceTitle: string
+  resourceCover: string | null
+  type: OrderType
+  amount: number
+  status: OrderStatus
+}
+
+/** A member's own combined payment, backed by the real Checkout model — groups one or more Orders paid together in one PayPack cashin or Stripe session. */
+export interface MemberCheckout {
+  id: string
+  buyerName: string
+  buyerEmail: string
+  buyerPhone: string
+  method: 'PAYPACK' | 'STRIPE'
+  amount: number
+  status: OrderStatus
+  paypackRef: string | null
+  paypackStatus: string | null
+  stripeSessionId: string | null
+  retryCount: number
+  paidAt: string | null
+  createdAt: string
+  items: MemberCheckoutItem[]
 }
 
 export const typeConfig: Record<OrderType, { label: string }> = {

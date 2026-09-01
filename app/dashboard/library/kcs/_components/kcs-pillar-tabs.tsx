@@ -7,7 +7,7 @@ interface KcsPillarTabsProps {
   onChange: (pillarSlug: string) => void
 }
 
-/** Tab bar switching between the 8 KCS pillars on the single consolidated /dashboard/kcs page. */
+/** Tab bar switching between the 8 KCS pillars on the KCS Map tab of /dashboard/library. */
 export function KcsPillarTabs({ activeSlug, onChange }: KcsPillarTabsProps) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-4" role="tablist" aria-label="KCS pillars">

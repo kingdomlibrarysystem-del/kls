@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { verifyPaypackSignature, type PaypackWebhookPayload } from '@/lib/paypack'
 import { settleOrder } from '@/app/api/orders/settle'
+import { settleCheckout } from '@/app/api/checkout/settle'
 import { settleCourseOrder } from '@/app/api/course-orders/settle'
 
 /**
@@ -37,6 +38,12 @@ export async function POST(request: NextRequest) {
   // schema.prisma (a real sparse unique index enforces it at the DB level
   // instead; see Order.paypackRef's docstring), so Prisma's generated
   // WhereUniqueInput no longer accepts it alone.
+  const checkout = await prisma.checkout.findFirst({ where: { paypackRef: ref } })
+  if (checkout) {
+    await settleCheckout(checkout.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
+    return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
+  }
+
   const order = await prisma.order.findFirst({ where: { paypackRef: ref } })
   if (order) {
     await settleOrder(order.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
