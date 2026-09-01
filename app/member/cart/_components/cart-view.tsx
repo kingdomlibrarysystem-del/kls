@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
+import { useLanguage } from '@/contexts/language-context'
 import { useCart, removeFromCart, type CartItemType } from '../../_shared/use-cart'
 
 const typeLabel: Record<CartItemType, string> = { SALE: 'Reserve', RENTAL: 'Borrow' }
@@ -22,6 +23,7 @@ const typeLabel: Record<CartItemType, string> = { SALE: 'Reserve', RENTAL: 'Borr
 export function CartView() {
   const router = useRouter()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const { data: cart, loading } = useCart(user?.id)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -70,8 +72,8 @@ export function CartView() {
     return (
       <EmptyState
         icon={ShoppingCart}
-        title="Your cart is empty"
-        description="Add a book from the library to Reserve or Borrow it."
+        title={t('m_cart.empty')}
+        description={t('m_cart.empty_desc')}
         style={{ color: 'var(--text-secondary)' }}
       />
     )

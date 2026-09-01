@@ -1,6 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import { CheckCircle2, Circle, PlayCircle, FileText, BookOpen } from 'lucide-react'
 import type { Lesson, LessonContentType } from '../../../../../_shared/lesson-data'
+import { useLanguage } from '@/contexts/language-context'
 
 interface LessonListSidebarProps {
   courseId: string
@@ -20,8 +23,9 @@ const contentIcon: Record<LessonContentType, React.ReactNode> = {
  * Shows completed/current indicators and links to each lesson.
  */
 export function LessonListSidebar({ courseId, courseTitle, lessons, currentLessonId }: LessonListSidebarProps) {
+  const { t } = useLanguage()
   return (
-    <nav aria-label={`Lessons in ${courseTitle}`} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+    <nav aria-label={`${t("m_courses.lessons_in")} ${courseTitle}`} className="card" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
         {courseTitle}
       </div>

@@ -11,14 +11,16 @@ import { FormContainer } from '@/components/ui/form-container'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useLanguage } from '@/contexts/language-context'
 
 const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(8),
 })
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
 
 function ResetPasswordContent() {
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
@@ -27,17 +29,12 @@ function ResetPasswordContent() {
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ResetPasswordFormData>({ resolver: zodResolver(resetPasswordSchema) })
+  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+  })
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    if (!token || !email) {
-      setSubmitError('This reset link is missing required information')
-      return
-    }
+    if (!token || !email) { setSubmitError('This reset link is missing required information'); return }
     setIsSubmitting(true)
     setSubmitError('')
     try {
@@ -62,7 +59,7 @@ function ResetPasswordContent() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <FormContainer maxWidth="md">
           <div className="text-center">
-            <h2 className="font-cinzel text-2xl font-semibold text-w-950 mb-4">Password Reset</h2>
+            <h2 className="font-cinzel text-2xl font-semibold text-w-950 mb-4">{t('auth.reset_password')}</h2>
             <p className="font-lato text-w-700 mb-6">Your password has been updated. Redirecting you to sign in…</p>
           </div>
         </FormContainer>
@@ -78,7 +75,7 @@ function ResetPasswordContent() {
             <h2 className="font-cinzel text-2xl font-semibold text-w-950 mb-4">Invalid Link</h2>
             <p className="font-lato text-red-600 mb-6">This reset link is missing required information.</p>
             <Link href="/auth/forgot-password">
-              <ElegantButton className="w-full">Request a New Link</ElegantButton>
+              <ElegantButton className="w-full">{t('auth.send_reset')}</ElegantButton>
             </Link>
           </div>
         </FormContainer>
@@ -90,22 +87,25 @@ function ResetPasswordContent() {
     <div className="min-h-screen bg-white py-12 px-4 flex items-center">
       <div className="w-full">
         <div className="max-w-md mx-auto mb-8">
-          <PageHeader title="Reset Password" subtitle="Choose a new password for your account" />
+          <PageHeader title={t('auth.reset_password')} subtitle={t('auth.reset_subtitle')} />
         </div>
-
         <FormContainer maxWidth="md">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {submitError && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{submitError}</div>
             )}
-
             <div>
-              <FieldLabel htmlFor="password" required>New Password</FieldLabel>
-              <FormInput id="password" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
+              <FieldLabel htmlFor="password" required>{t('auth.password')}</FieldLabel>
+              <FormInput
+                id="password"
+                type="password"
+                placeholder={t('auth.password_placeholder')}
+                error={errors.password?.message}
+                {...register('password')}
+              />
             </div>
-
             <ElegantButton type="submit" fullWidth loading={isSubmitting} variant="primary">
-              Reset Password
+              {t('auth.send_reset')}
             </ElegantButton>
           </form>
         </FormContainer>

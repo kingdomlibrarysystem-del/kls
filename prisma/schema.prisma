@@ -628,6 +628,7 @@ enum BindingType {
 
 enum MediaType {
   VIDEO
+  AUDIO
   DOCUMENT
   TEXT
   COMBINATION

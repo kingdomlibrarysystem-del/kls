@@ -5,6 +5,7 @@ import { PlayCircle, Clock, Star, Search, CheckCircle2, GraduationCap } from "lu
 import { RemoteImage } from "@/components/ui/remote-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useCourses, type CatalogCourse } from "../_shared/use-courses";
 import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
 import { CourseCheckoutModal } from "../courses/_components/course-checkout-modal";
@@ -13,6 +14,7 @@ import { CourseCheckoutModal } from "../courses/_components/course-checkout-moda
 const PAGE_SIZE = 9;
 
 export default function ELearningPage() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
   const [page, setPage] = useState(1);
@@ -66,10 +68,10 @@ export default function ELearningPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
-          E-Learning
+          {t("m_elearning.title")}
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-          Expand your knowledge with our course catalog
+          {t("m_elearning.subtitle")}
         </div>
       </div>
 
@@ -83,10 +85,10 @@ export default function ELearningPage() {
       <div style={{ position: "relative" }}>
         <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
         <input
-          placeholder="Search courses..."
+          placeholder={t("m_elearning.search_placeholder")}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          aria-label="Search courses"
+          aria-label={t("m_elearning.search_placeholder")}
           style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 15, outline: "none" }}
         />
       </div>
@@ -149,17 +151,17 @@ export default function ELearningPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <PlayCircle size={16} color="var(--teal-light)" />
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{course.lessons} lessons</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{course.lessons} {t("m_elearning.lessons")}</span>
                   {enrolled ? (
                     <Link
                       href={`/member/courses/${course.id}`}
-                      aria-label={`View ${course.title}`}
+                      aria-label={`${t("m_elearning.view_course")} ${course.title}`}
                       style={{
                         display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
                         background: "var(--teal-light)", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none",
                       }}
                     >
-                      <CheckCircle2 size={13} /> View Course
+                      <CheckCircle2 size={13} /> {t("m_elearning.view_course")}
                     </Link>
                   ) : (
                     <button
@@ -173,7 +175,7 @@ export default function ELearningPage() {
                         opacity: enrolling === course.id ? 0.7 : 1,
                       }}
                     >
-                      {enrolling === course.id ? "Enrolling…" : course.price > 0 ? `Pay ${course.price.toLocaleString()} RWF` : "Enroll"}
+                      {enrolling === course.id ? t("m_elearning.enrolling") : course.price > 0 ? `Pay ${course.price.toLocaleString()} RWF` : t("m_elearning.enroll_free")}
                     </button>
                   )}
                 </div>
@@ -185,7 +187,7 @@ export default function ELearningPage() {
 
       {filtered.length === 0 && (
         <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          No courses match your search.
+          {t("m_elearning.no_courses_match")}
         </div>
       )}
 

@@ -1,9 +1,11 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { cookies } from 'next/headers'
 import { Cinzel, Cormorant_Garamond, Lato } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SessionProvider } from '@/components/session-provider'
 import { AuthProvider } from '@/contexts/auth-context'
+import { LanguageProvider, type Lang } from '@/contexts/language-context'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -59,19 +61,27 @@ export const viewport: Viewport = {
   ],
 }
 
-export default function RootLayout({
+function resolveInitialLang(langValue: string | undefined): Lang {
+  return langValue === 'en' || langValue === 'fr' || langValue === 'rw' ? langValue : 'en'
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const cookieStore = await cookies()
+  const initialLang = resolveInitialLang(cookieStore.get('kls_lang')?.value)
   return (
-    <html lang="en" suppressHydrationWarning className={`${cinzel.variable} ${cormorant.variable} ${lato.variable}`}>
+    <html lang={initialLang} suppressHydrationWarning className={`${cinzel.variable} ${cormorant.variable} ${lato.variable}`}>
       <body suppressHydrationWarning className="bg-white text-w-950 antialiased font-lato font-light">
         <ThemeProvider>
           <SessionProvider>
             <AuthProvider>
-              {children}
-              {process.env.NODE_ENV === 'production' && <Analytics />}
+              <LanguageProvider initialLang={initialLang}>
+                {children}
+                {process.env.NODE_ENV === 'production' && <Analytics />}
+              </LanguageProvider>
             </AuthProvider>
           </SessionProvider>
         </ThemeProvider>

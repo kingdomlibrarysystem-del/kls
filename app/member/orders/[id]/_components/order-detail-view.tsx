@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { RemoteImage } from '@/components/ui/remote-image'
+import { useLanguage } from '@/contexts/language-context'
 import { typeConfig, statusConfig, type MemberOrder } from '../../_components/orders-data'
 
 interface OrderDetailViewProps {
@@ -29,6 +30,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
  * directly, and picks up any PayPack status refresh that endpoint does.
  */
 export function OrderDetailView({ id }: OrderDetailViewProps) {
+  const { t } = useLanguage()
   const [order, setOrder] = useState<MemberOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -65,13 +67,13 @@ export function OrderDetailView({ id }: OrderDetailViewProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <EmptyState
           icon={ShoppingBag}
-          title="Order not found"
-          description={error || 'This order does not exist or was removed.'}
+          title={t('m_orders.not_found')}
+          description={error || t('m_orders.not_found_desc')}
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>
           <UniversalButton href="/member/orders" variant="gold-outline" icon={<ArrowLeft size={16} />}>
-            Back to My Orders
+            {t('m_orders.back')}
           </UniversalButton>
         </div>
       </div>
@@ -81,7 +83,7 @@ export function OrderDetailView({ id }: OrderDetailViewProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <UniversalButton href="/member/orders" variant="dim-outline" size="sm" icon={<ArrowLeft size={16} />}>
-        Back to My Orders
+        {t('m_orders.back')}
       </UniversalButton>
 
       <div className="card space-y-4" style={{ maxWidth: 560 }}>
@@ -100,11 +102,11 @@ export function OrderDetailView({ id }: OrderDetailViewProps) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-          <DetailRow icon={<Tag size={15} />} label="Type" value={typeConfig[order.type].label} />
-          <DetailRow icon={<Coins size={15} />} label="Amount" value={`${order.amount.toLocaleString()} RWF`} />
-          <DetailRow icon={<Calendar size={15} />} label="Ordered" value={order.createdAt} />
-          {order.paidAt && <DetailRow icon={<CheckCircle2 size={15} />} label="Paid" value={order.paidAt.split('T')[0]} />}
-          <DetailRow icon={<Hash size={15} />} label="Order ID" value={order.id} />
+          <DetailRow icon={<Tag size={15} />} label={t('m_orders.type')} value={typeConfig[order.type].label} />
+          <DetailRow icon={<Coins size={15} />} label={t('m_orders.amount')} value={`${order.amount.toLocaleString()} RWF`} />
+          <DetailRow icon={<Calendar size={15} />} label={t('m_orders.ordered')} value={order.createdAt} />
+          {order.paidAt && <DetailRow icon={<CheckCircle2 size={15} />} label={t('m_orders.paid')} value={order.paidAt.split('T')[0]} />}
+          <DetailRow icon={<Hash size={15} />} label={t('m_orders.order_id')} value={order.id} />
         </div>
       </div>
     </div>
