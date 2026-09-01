@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { CheckCircle2, AlertCircle, Smartphone, XCircle, Loader2 } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Smartphone, CreditCard, XCircle, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
@@ -24,15 +24,12 @@ const POLL_INTERVAL_MS = 4000
 const POLL_TIMEOUT_MS = 3 * 60_000
 
 /**
- * Real PayPack Reserve (SALE)/Borrow (RENTAL) checkout — requests an
- * actual mobile-money charge (moves real RWF the moment "Confirm" is
- * pressed; there is no PayPack sandbox). After the request is sent,
- * polls GET /api/orders/:id every few seconds until the member
- * approves/declines the prompt on their phone, since payment
- * confirmation is asynchronous and never guaranteed by the initial
- * request alone. Once the Order settles PAID, settleOrder
- * (app/api/orders/settle.ts) creates the real Reservation/Borrow row —
- * this modal only starts the payment, it never creates that row itself.
+ * Real Reserve (SALE)/Borrow (RENTAL) checkout — two real payment rails,
+ * same shape as CourseCheckoutModal: PayPack (a real mobile-money
+ * charge, no sandbox) or Stripe (redirects to a real Checkout Session).
+ * Polls GET /api/orders/:id until the PayPack prompt is approved/
+ * declined. settleOrder (app/api/orders/settle.ts) creates the real
+ * Reservation/Borrow row once PAID — this modal only starts payment.
  */
 export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClose, onPaid }: BuyConfirmModalProps) {
   const { user } = useAuth()
@@ -40,7 +37,6 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [stage, setStage] = useState<Stage>('form')
-  const [orderId, setOrderId] = useState<string | null>(null)
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -80,7 +76,7 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
     }, POLL_INTERVAL_MS)
   }
 
-  const handleConfirm = async () => {
+  const startCheckout = async (method: 'PAYPACK' | 'STRIPE') => {
     if (!user) return
     setError('')
     setSubmitting(true)
@@ -95,11 +91,16 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
           buyerEmail: user.email,
           buyerPhone: phone,
           type: action,
+          method,
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.message ?? 'Could not start the payment request.')
-      setOrderId(json.data.id)
+
+      if (method === 'STRIPE' && json.data.checkoutUrl) {
+        window.location.assign(json.data.checkoutUrl)
+        return
+      }
       setStage('pending')
       startPolling(json.data.id)
     } catch (err) {
@@ -114,7 +115,6 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
     setStage('form')
     setPhone('')
     setError('')
-    setOrderId(null)
     onClose()
   }
 
@@ -123,11 +123,8 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
       <div className="text-center py-2">
         {stage === 'form' && (
           <>
-            <p className="font-lato text-sm text-w-950 mb-1">
+            <p className="font-lato text-sm text-w-950 mb-4">
               {verb} <span className="font-semibold">&ldquo;{bookTitle}&rdquo;</span> for <span className="font-semibold">{priceRwf.toLocaleString()} RWF</span>
-            </p>
-            <p className="font-lato text-xs text-w-600 mb-4">
-              Enter your MTN or Airtel mobile money number — you&apos;ll get a payment prompt on your phone to approve.
             </p>
 
             <div className="text-left mb-4">
@@ -135,11 +132,7 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
               <div className="relative">
                 <Smartphone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-w-500" />
                 <input
-                  id="buy-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="078xxxxxxx"
-                  value={phone}
+                  id="buy-phone" type="tel" inputMode="numeric" placeholder="078xxxxxxx" value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 font-lato text-sm border border-w-400 rounded focus:border-w-600 focus:outline-none"
                 />
@@ -153,9 +146,14 @@ export function BuyConfirmModal({ action, resourceId, bookTitle, priceRwf, onClo
               </div>
             )}
 
-            <ElegantButton variant="primary" loading={submitting} onClick={handleConfirm} disabled={!phone.trim()} className="w-full text-sm py-2">
-              Send Payment Request
-            </ElegantButton>
+            <div className="flex flex-col gap-2">
+              <ElegantButton variant="primary" loading={submitting} onClick={() => startCheckout('PAYPACK')} disabled={!phone.trim()} className="w-full text-sm py-2">
+                <Smartphone size={14} className="inline mr-1" /> Pay with Mobile Money
+              </ElegantButton>
+              <ElegantButton variant="outline" loading={submitting} onClick={() => startCheckout('STRIPE')} className="w-full text-sm py-2">
+                <CreditCard size={14} className="inline mr-1" /> Pay with Card
+              </ElegantButton>
+            </div>
           </>
         )}
 

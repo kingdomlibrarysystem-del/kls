@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ShoppingCart, Trash2, Tag, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useCart, removeFromCart, type CartItemType, type CartItem } from '../../_shared/use-cart'
 import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
@@ -78,13 +79,15 @@ export function CartView() {
             key={item.id}
             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '1px solid var(--border-light)' }}
           >
-            <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0, overflow: 'hidden' }}>
-              {item.resourceCover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.resourceCover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <ShoppingCart size={20} />
-              )}
+            <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg-section)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0, overflow: 'hidden' }}>
+              <RemoteImage
+                src={item.resourceCover}
+                alt={item.resourceTitle}
+                fill
+                sizes="44px"
+                className="object-cover"
+                fallback={<ShoppingCart size={20} />}
+              />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.resourceTitle}</div>

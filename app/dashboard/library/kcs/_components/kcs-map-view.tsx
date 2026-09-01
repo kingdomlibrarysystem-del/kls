@@ -51,7 +51,7 @@ export function KcsMapView() {
 
   const handlePillarChange = (next: string) => {
     setPillarSlug(next);
-    router.replace(`/dashboard/kcs?pillar=${next}`, { scroll: false });
+    router.replace(`/dashboard/library/kcs?pillar=${next}`, { scroll: false });
   };
 
   // Only the genuinely-in-flight fetch shows the skeleton — a resolved

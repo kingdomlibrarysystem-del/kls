@@ -24,7 +24,7 @@ export function KcsScrollsList({ scrolls, pillarSlug }: KcsScrollsListProps) {
         return (
           <Link
             key={scroll.id}
-            href={`/dashboard/kcs/${pillarSlug}/${encodeURIComponent(scroll.slug)}`}
+            href={`/dashboard/library/kcs/${pillarSlug}/${encodeURIComponent(scroll.slug)}`}
             aria-label={`View details for ${scroll.name.en}`}
             style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',

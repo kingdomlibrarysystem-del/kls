@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { findTransaction } from '@/lib/paypack'
+import { retrieveCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { settleOrder } from '../settle'
 
 /**
- * Status-refresh endpoint — a member polls this after requesting a
- * cashin (e.g. while waiting on their phone) as a fallback for when
- * PayPack's webhook hasn't arrived yet. Re-checks PayPack directly via
- * the real /transactions/find/{ref} endpoint rather than only trusting
- * whatever this Order row currently says.
+ * Status-refresh endpoint — a member polls this while waiting on either
+ * rail's async confirmation (a PayPack phone prompt, or a Stripe
+ * redirect that hasn't triggered its webhook yet). Re-checks the real
+ * provider directly rather than only trusting this row's last-known
+ * state. Which rail an Order used is inferred from which of
+ * paypackRef/stripeSessionId is set — Order has no separate `method`
+ * field the way CourseOrder does, since exactly one of the two is ever
+ * populated per Order (see Order's schema docstring).
  */
 export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
@@ -20,7 +24,11 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
   const auth = await requireOwnerOrStaff(order.userId)
   if (auth.response) return auth.response
 
-  if (order.status === 'PENDING' && order.paypackRef) {
+  if (order.status !== 'PENDING') {
+    return NextResponse.json({ data: serialize(order), message: 'Order fetched', code: 'success', status: 200 })
+  }
+
+  if (order.paypackRef) {
     try {
       const remote = await findTransaction(order.paypackRef)
       if (remote.status !== order.paypackStatus) {
@@ -29,6 +37,17 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
       }
     } catch {
       // PayPack lookup failed — fall through and return the order's last known state rather than blocking the poll.
+    }
+  } else if (order.stripeSessionId) {
+    try {
+      const session = await retrieveCheckoutSession(order.stripeSessionId)
+      const providerStatus = session.payment_status === 'paid' ? 'successful' : session.status === 'expired' ? 'failed' : 'pending'
+      if (providerStatus !== 'pending') {
+        const updated = await settleOrder(order.id, { providerStatus })
+        return NextResponse.json({ data: serialize(updated), message: 'Order status refreshed', code: 'success', status: 200 })
+      }
+    } catch {
+      // Stripe lookup failed — fall through and return the order's last known state rather than blocking the poll.
     }
   }
 
@@ -49,6 +68,7 @@ function serialize(o: {
   status: string
   paypackRef: string | null
   paypackStatus: string | null
+  stripeSessionId: string | null
   paidAt: Date | null
   createdAt: Date
 }) {
@@ -66,6 +86,7 @@ function serialize(o: {
     status: o.status.toLowerCase(),
     paypackRef: o.paypackRef,
     paypackStatus: o.paypackStatus,
+    stripeSessionId: o.stripeSessionId,
     paidAt: o.paidAt ? o.paidAt.toISOString() : null,
     createdAt: o.createdAt.toISOString().split('T')[0],
   }

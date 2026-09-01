@@ -22,7 +22,7 @@ const quickActions = [
   { icon: <Plus size={18} />, label: "Add New Item", sub: "Add book, audio, video…", href: "/dashboard/library" },
   { icon: <User size={18} />, label: "Register Member", sub: "Add new library member…", href: "/dashboard/users" },
   { icon: <BarChart3 size={18} />, label: "Generate Report", sub: "View analytics report…", href: "/dashboard/reports" },
-  { icon: <Database size={18} />, label: "Manage Categories", sub: "KCS taxonomy…", href: "/dashboard/kcs" },
+  { icon: <Database size={18} />, label: "Manage Categories", sub: "KCS taxonomy…", href: "/dashboard/library/kcs" },
 ];
 
 /** Real inventory breakdown by mediaType, quick actions linking to real pages, and the 4 most recently added resources — all from the real /api/resources-backed hook. */

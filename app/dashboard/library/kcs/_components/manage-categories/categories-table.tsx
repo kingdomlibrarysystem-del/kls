@@ -64,7 +64,7 @@ export function CategoriesTable({ categories, resources, onEdit, onDelete }: Cat
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5">
           <UniversalButton
-            href={`/dashboard/kcs/categories/${c.id}`}
+            href={`/dashboard/library/kcs/categories/${c.id}`}
             aria-label={`View ${c.name.en}`}
             variant="ghost"
             size="sm"

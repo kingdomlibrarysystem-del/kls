@@ -19,7 +19,7 @@ interface KcsScrollsTableProps {
 /**
  * Table view of a pillar's scrolls, reusing the shared `DataTable` primitive
  * (search/sort/paginate already built-in) instead of a new bespoke table.
- * Row click destination matches the Cards view: `/dashboard/kcs/{pillarSlug}/{scrollSlug}`.
+ * Row click destination matches the Cards view: `/dashboard/library/kcs/{pillarSlug}/{scrollSlug}`.
  */
 export function KcsScrollsTable({ scrolls, pillarSlug, pillarName }: KcsScrollsTableProps) {
   const columns: Column<Category>[] = [
@@ -35,7 +35,7 @@ export function KcsScrollsTable({ scrolls, pillarSlug, pillarName }: KcsScrollsT
       sortable: true,
       render: (s) => (
         <Link
-          href={`/dashboard/kcs/${pillarSlug}/${encodeURIComponent(s.slug)}`}
+          href={`/dashboard/library/kcs/${pillarSlug}/${encodeURIComponent(s.slug)}`}
           aria-label={`View details for ${s.name.en}`}
           style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none' }}
         >
