@@ -21,6 +21,8 @@ interface CreateCheckoutSessionInput {
   amountRwf: number
   successUrl: string
   cancelUrl: string
+  /** Real product photo shown on the Stripe-hosted page next to this line item — omitted (not an empty array) when the item has no cover, since Stripe rejects an empty images array. */
+  imageUrl?: string | null
 }
 
 /**
@@ -31,7 +33,7 @@ interface CreateCheckoutSessionInput {
  * unit_amount — keeps pricing in the same unit PayPack already uses
  * instead of introducing a second currency convention alongside it.
  */
-export async function createCheckoutSession({ metadataKey, orderId, title, amountRwf, successUrl, cancelUrl }: CreateCheckoutSessionInput): Promise<{ id: string; url: string }> {
+export async function createCheckoutSession({ metadataKey, orderId, title, amountRwf, successUrl, cancelUrl, imageUrl }: CreateCheckoutSessionInput): Promise<{ id: string; url: string }> {
   const stripe = getClient()
   const metadata = { [metadataKey]: orderId }
   const session = await stripe.checkout.sessions.create({
@@ -40,10 +42,55 @@ export async function createCheckoutSession({ metadataKey, orderId, title, amoun
       price_data: {
         currency: 'rwf',
         unit_amount: Math.round(amountRwf),
-        product_data: { name: title },
+        product_data: { name: title, ...(imageUrl && { images: [imageUrl] }) },
       },
       quantity: 1,
     }],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata,
+    payment_intent_data: { metadata },
+  })
+  if (!session.url) throw new Error('Stripe did not return a checkout URL')
+  return { id: session.id, url: session.url }
+}
+
+interface CheckoutLineItem {
+  title: string
+  amountRwf: number
+  quantity: number
+  imageUrl?: string | null
+}
+
+interface CreateMultiItemCheckoutSessionInput {
+  metadataKey: string
+  orderId: string
+  items: CheckoutLineItem[]
+  successUrl: string
+  cancelUrl: string
+}
+
+/**
+ * Multi-item sibling of createCheckoutSession — one real Stripe Checkout
+ * Session with one line_items entry per cart item, for the combined
+ * "pay the whole cart at once" checkout (see app/api/checkout/route.ts).
+ * Each item carries its own real cover image, so Stripe's hosted page
+ * shows every book/resource being paid for, not just a single summed
+ * amount.
+ */
+export async function createMultiItemCheckoutSession({ metadataKey, orderId, items, successUrl, cancelUrl }: CreateMultiItemCheckoutSessionInput): Promise<{ id: string; url: string }> {
+  const stripe = getClient()
+  const metadata = { [metadataKey]: orderId }
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: items.map((item) => ({
+      price_data: {
+        currency: 'rwf',
+        unit_amount: Math.round(item.amountRwf),
+        product_data: { name: item.title, ...(item.imageUrl && { images: [item.imageUrl] }) },
+      },
+      quantity: item.quantity,
+    })),
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata,

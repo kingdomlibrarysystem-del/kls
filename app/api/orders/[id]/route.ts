@@ -63,9 +63,11 @@ function serialize(o: {
   resourceId: string
   resourceTitle: string
   resourceFormat: string
+  resourceCover: string | null
   type: string
   amountRwf: number
   status: string
+  checkoutId: string | null
   paypackRef: string | null
   paypackStatus: string | null
   stripeSessionId: string | null
@@ -81,9 +83,11 @@ function serialize(o: {
     resourceId: o.resourceId,
     resourceTitle: o.resourceTitle,
     resourceFormat: o.resourceFormat,
+    resourceCover: o.resourceCover,
     type: o.type,
     amount: o.amountRwf,
     status: o.status.toLowerCase(),
+    checkoutId: o.checkoutId,
     paypackRef: o.paypackRef,
     paypackStatus: o.paypackStatus,
     stripeSessionId: o.stripeSessionId,

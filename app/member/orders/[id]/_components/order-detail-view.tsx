@@ -5,6 +5,7 @@ import { ArrowLeft, ShoppingBag, Tag, Coins, Calendar, CheckCircle2, Hash } from
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { typeConfig, statusConfig, type MemberOrder } from '../../_components/orders-data'
 
 interface OrderDetailViewProps {
@@ -84,13 +85,18 @@ export function OrderDetailView({ id }: OrderDetailViewProps) {
       </UniversalButton>
 
       <div className="card space-y-4" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            {order.resourceTitle}
-          </h1>
-          <span style={{ fontSize: 13, fontWeight: 700, color: statusConfig[order.status].color, flexShrink: 0 }}>
-            {statusConfig[order.status].label}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 8, background: 'var(--bg-section)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', flexShrink: 0, overflow: 'hidden' }}>
+            <RemoteImage src={order.resourceCover} alt={order.resourceTitle} fill sizes="48px" className="object-cover" fallback={<ShoppingBag size={20} />} />
+          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {order.resourceTitle}
+            </h1>
+            <span style={{ fontSize: 13, fontWeight: 700, color: statusConfig[order.status].color, flexShrink: 0 }}>
+              {statusConfig[order.status].label}
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
