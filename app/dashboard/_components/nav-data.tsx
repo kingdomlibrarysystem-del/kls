@@ -44,6 +44,7 @@ import {
   Star,
   MessageCircle,
   ShieldCheck,
+  TrendingUp,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -140,7 +141,18 @@ export const adminMainNav: NavItem[] = [
       { icon: <ShieldCheck size={12} />,   label: "Admin: Sessions", href: "/dashboard/counseling/admin" },
     ],
   },
-  { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "/dashboard/rehabilitation" },
+  {
+    icon: <RefreshCcw size={14} />, label: "Rehabilitation",
+    subItems: [
+      { icon: <RefreshCcw size={12} />,    label: "Overview",        href: "/dashboard/rehabilitation" },
+      { icon: <ClipboardList size={12} />, label: "Intake",          href: "/dashboard/rehabilitation/intake" },
+      { icon: <CalendarCheck size={12} />, label: "Schedule",        href: "/dashboard/rehabilitation/schedule" },
+      { icon: <TrendingUp size={12} />,    label: "Progress",        href: "/dashboard/rehabilitation/progress" },
+      { icon: <Users size={12} />,         label: "Support Groups",  href: "/dashboard/rehabilitation/groups" },
+      { icon: <ClipboardCheck size={12} />, label: "Admin: Intake",  href: "/dashboard/rehabilitation/admin/intake" },
+      { icon: <CalendarCheck size={12} />, label: "Admin: Schedule", href: "/dashboard/rehabilitation/admin/schedule" },
+    ],
+  },
   { icon: <Download size={14} />,   label: "Download Center",          href: "/dashboard/downloads" },
 ];
 

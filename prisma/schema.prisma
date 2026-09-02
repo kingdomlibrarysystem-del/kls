@@ -117,6 +117,13 @@ model User {
   counselingNotes           CounselingNote[]    @relation("CounselingNoteSubject")
   counselingNotesAuthored   CounselingNote[]    @relation("CounselingNoteAuthor")
   counselingConsent         CounselingConsent?
+  rehabIntakes              RehabIntake[]       @relation("RehabIntakeSubject")
+  rehabIntakesReviewed      RehabIntake[]       @relation("RehabIntakeReviewer")
+  rehabSessions             RehabSession[]      @relation("RehabSessionSubject")
+  rehabSessionsFacilitated  RehabSession[]      @relation("RehabSessionFacilitator")
+  rehabMilestones           RehabMilestone[]    @relation("RehabMilestoneSubject")
+  rehabMilestonesRecorded   RehabMilestone[]    @relation("RehabMilestoneRecorder")
+  rehabGroupMemberships     RehabGroupMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
@@ -1735,4 +1742,118 @@ model CounselingConsent {
   emergencyContactName  String?
   emergencyContactPhone String?
   updatedAt             DateTime @updatedAt
+}
+
+/// Real support-group directory — the provider/service-directory
+/// collection for Rehabilitation. No separate "coach directory" exists
+/// since the module's own hints describe groups + staff-run programs,
+/// not individual coaches — RehabSession.facilitatorId covers
+/// per-session staffing instead.
+model SupportGroup {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  focus          String
+  description    String
+  meetingCadence String
+  image          String
+  members        RehabGroupMember[]
+  sessions       RehabSession[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+/// Join row for group membership — a member can join/leave a support
+/// group independent of any specific session, modeled as a real join
+/// collection (same reasoning as ProjectMember).
+model RehabGroupMember {
+  id       String       @id @default(auto()) @map("_id") @db.ObjectId
+  groupId  String       @db.ObjectId
+  group    SupportGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String       @db.ObjectId
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime     @default(now())
+
+  @@unique([groupId, userId])
+}
+
+/// Real intake assessment — a one-time (or low-frequency,
+/// re-submittable) assessment, distinct from RehabSession since intake
+/// has its own genuine staff-review step ("submitted" -> "under
+/// review" -> "plan created") that a scheduled session doesn't.
+model RehabIntake {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String            @db.ObjectId
+  user         User              @relation("RehabIntakeSubject", fields: [userId], references: [id], onDelete: Cascade)
+  concernArea  String
+  history      String
+  goals        String
+  status       RehabIntakeStatus @default(SUBMITTED)
+  reviewedById String?           @db.ObjectId
+  reviewedBy   User?             @relation("RehabIntakeReviewer", fields: [reviewedById], references: [id])
+  reviewNotes  String?
+  submittedAt  DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+enum RehabIntakeStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  PLAN_CREATED
+  DECLINED
+}
+
+/// Real scheduled program session — the appointment-equivalent
+/// collection, modeled on Appointment. Deliberately staff-scheduled
+/// (POST is requireStaff() only, see /api/rehabilitation/schedule),
+/// not member-initiated, per the module's own "with staff support"/
+/// "facilitated by program staff" hints — a genuine divergence from
+/// Beauty/Counseling's member-initiated booking.
+model RehabSession {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String             @db.ObjectId
+  user          User               @relation("RehabSessionSubject", fields: [userId], references: [id], onDelete: Cascade)
+  groupId       String?            @db.ObjectId
+  group         SupportGroup?      @relation(fields: [groupId], references: [id])
+  facilitatorId String?            @db.ObjectId
+  facilitator   User?              @relation("RehabSessionFacilitator", fields: [facilitatorId], references: [id])
+  dateTime      DateTime
+  focus         String
+  status        RehabSessionStatus @default(SCHEDULED)
+  milestones    RehabMilestone[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([groupId])
+}
+
+enum RehabSessionStatus {
+  SCHEDULED
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+/// Real "Progress Tracking" record — a recovery milestone, directly
+/// analogous to HealthRecord: staff-authored, per-user, read-mostly
+/// from the member side. Kept independent of RehabSession (nullable
+/// sessionId) since a milestone can be logged standalone by staff, not
+/// only as a session's byproduct.
+model RehabMilestone {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String        @db.ObjectId
+  user         User          @relation("RehabMilestoneSubject", fields: [userId], references: [id], onDelete: Cascade)
+  sessionId    String?       @db.ObjectId
+  session      RehabSession? @relation(fields: [sessionId], references: [id])
+  recordedById String        @db.ObjectId
+  recordedBy   User          @relation("RehabMilestoneRecorder", fields: [recordedById], references: [id])
+  title        String
+  description  String
+  achievedAt   DateTime      @default(now())
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
 }
