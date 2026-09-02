@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Room, RoomEvent, Track, type RemoteParticipant, type LocalParticipant } from 'livekit-client'
+import { Room, Track, type RemoteParticipant, type LocalParticipant } from 'livekit-client'
 import type { ActivityKind } from './use-session-activity'
+import { wireLiveKitRoomEvents } from './wire-livekit-room-events'
 
 export interface RemoteParticipantState {
   identity: string
@@ -33,26 +34,20 @@ interface UseLiveKitRoomInput {
 /**
  * Real WebRTC room connection via LiveKit Cloud — replaces
  * use-media-stream.ts's local-only getUserMedia/getDisplayMedia with
- * genuine publish/subscribe: the local user's camera/mic/screen are
- * published as real tracks other participants' browsers actually
- * receive, and every remote participant's own published tracks are
- * exposed here as real MediaStreamTracks ready to attach to <video>/
- * <audio> elements. Room name is the SessionRequest id (see
+ * genuine publish/subscribe. Room name is the SessionRequest id (see
  * /api/session-requests/[id]/livekit-token), so everyone hitting the
- * same /room route joins the same real room.
+ * same /room route joins the same real room. Event wiring lives in
+ * wire-livekit-room-events.ts (kept separate to stay under the 200-line cap).
  */
 export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onParticipantConnected, onParticipantDisconnected }: UseLiveKitRoomInput) {
   const roomRef = useRef<Room | null>(null)
-  const onDataRef = useRef(onData)
-  onDataRef.current = onData
-  const onConnectedRef = useRef(onParticipantConnected)
-  onConnectedRef.current = onParticipantConnected
-  const onDisconnectedRef = useRef(onParticipantDisconnected)
-  onDisconnectedRef.current = onParticipantDisconnected
+  const onDataRef = useRef(onData); onDataRef.current = onData
+  const onConnectedRef = useRef(onParticipantConnected); onConnectedRef.current = onParticipantConnected
+  const onDisconnectedRef = useRef(onParticipantDisconnected); onDisconnectedRef.current = onParticipantDisconnected
 
   const [connected, setConnected] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
-  /** True specifically when the token route rejected the join because the host isn't present yet (see the livekit-token route's `reason: 'host-not-present'`) — distinct from a real connect failure, so the UI can render a real waiting state instead of an error banner. */
+  // True when the token route rejected the join because the host isn't present yet (livekit-token route's reason: 'host-not-present') — distinct from a real connect failure.
   const [waitingForHost, setWaitingForHost] = useState(false)
   const [cameraOn, setCameraOn] = useState(false)
   const [micOn, setMicOn] = useState(false)
@@ -85,29 +80,18 @@ export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onPart
     const room = new Room()
     roomRef.current = room
 
-    room
-      .on(RoomEvent.TrackSubscribed, (_track, _pub, participant) => updateRemote(participant))
-      .on(RoomEvent.TrackUnsubscribed, (_track, _pub, participant) => updateRemote(participant))
-      .on(RoomEvent.TrackMuted, (_pub, participant) => { if (participant !== room.localParticipant) updateRemote(participant as RemoteParticipant) })
-      .on(RoomEvent.TrackUnmuted, (_pub, participant) => { if (participant !== room.localParticipant) updateRemote(participant as RemoteParticipant) })
-      .on(RoomEvent.ParticipantConnected, (participant) => { onConnectedRef.current?.(participant) })
-      .on(RoomEvent.ParticipantDisconnected, (participant) => {
-        setRemoteParticipants((prev) => {
-          const next = new Map(prev)
-          next.delete(participant.identity)
-          return next
-        })
-        onDisconnectedRef.current?.(participant)
-      })
-      .on(RoomEvent.DataReceived, (payload, participant) => {
-        if (!participant) return
-        try {
-          const message = JSON.parse(new TextDecoder().decode(payload)) as LiveKitDataMessage
-          onDataRef.current?.(message)
-        } catch {
-          // Ignore malformed payloads rather than crashing the room.
-        }
-      })
+    wireLiveKitRoomEvents({
+      room,
+      updateRemote,
+      removeRemote: (identity) => setRemoteParticipants((prev) => {
+        const next = new Map(prev)
+        next.delete(identity)
+        return next
+      }),
+      onData: (message) => onDataRef.current?.(message),
+      onParticipantConnected: (participant) => onConnectedRef.current?.(participant),
+      onParticipantDisconnected: (participant) => onDisconnectedRef.current?.(participant),
+    })
 
     let retryTimer: ReturnType<typeof setInterval> | undefined
 
@@ -132,10 +116,7 @@ export function useLiveKitRoom({ sessionId, displayName, enabled, onData, onPart
     }
 
     attemptJoin()
-    // While waiting for the host, re-check on the same cadence the presence
-    // roster itself polls (see use-session-presence.ts's ROSTER_POLL_MS) —
-    // once the host's own presence row appears, the next attempt succeeds
-    // and this interval is cleared, no manual refresh needed.
+    // Re-check on the same cadence use-session-presence.ts's ROSTER_POLL_MS polls — once the host's own presence row appears, the next attempt succeeds and this interval is cleared.
     retryTimer = setInterval(attemptJoin, 8_000)
 
     return () => {
