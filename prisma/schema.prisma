@@ -126,6 +126,8 @@ model User {
   rehabGroupMemberships     RehabGroupMember[]
   newsArticles              NewsArticle[]
   newsSubscriptions         NewsSubscription[]
+  donationCampaigns         DonationCampaign[]
+  donations                 Donation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
@@ -375,6 +377,7 @@ model Resource {
   readingProgress         ReadingProgress[]
   orders                  Order[]
   cartItems               CartItem[]
+  donations               Donation[]
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 }
@@ -1929,4 +1932,90 @@ model NewsSubscription {
   createdAt DateTime @default(now())
 
   @@unique([userId, category])
+}
+
+/// Real fundraising campaign — admin-created target for general
+/// giving, replacing donations/page.tsx's "Active Campaigns"
+/// placeholder card. `raisedRwf` is a denormalized running total,
+/// recomputed via an atomic increment at the one real settlement
+/// write path (settleDonation), never live-summed on render — same
+/// convention as Resource.availableQty/avgRating.
+model DonationCampaign {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  coverImage  String?
+  /// Free-text category ("Library Fund", "Publishing Fund") — same
+  /// judgment call as Publication.category/NewsArticle.category, not
+  /// the KCS Bible taxonomy.
+  category    String
+  goalRwf     Float
+  raisedRwf   Float          @default(0)
+  status      CampaignStatus @default(ACTIVE)
+  startDate   DateTime       @default(now())
+  endDate     DateTime?
+  featured    Boolean        @default(false)
+  createdById String         @db.ObjectId
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  donations   Donation[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status])
+}
+
+enum CampaignStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+/// Real donation/sponsorship payment record — reuses the exact
+/// PENDING/PAID/FAILED/CANCELLED lifecycle and paypack*/
+/// stripeSessionId provider-reference fields as Order/Checkout
+/// (see those models' docstrings) rather than inventing a new payment
+/// vocabulary. A donation is either campaign-targeted general giving
+/// OR resource-sponsorship-targeted (donations/page.tsx's separate
+/// "Sponsor a Resource" flow) — campaignId/resourceId are both
+/// optional and mutually exclusive (exactly one set), enforced at the
+/// API layer since Mongo has no CHECK-constraint equivalent. Kept as
+/// ONE model rather than a separate Sponsorship model since both
+/// flows produce an identical payment record shape — the only real
+/// difference is which target FK is populated.
+model Donation {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  user            User              @relation(fields: [userId], references: [id])
+  donorName       String
+  donorEmail      String
+  donorPhone      String
+  /// Set for a general/campaign donation; null for a resource sponsorship.
+  campaignId      String?           @db.ObjectId
+  campaign        DonationCampaign? @relation(fields: [campaignId], references: [id])
+  /// Set for a "sponsor a specific resource" donation; null for a
+  /// campaign donation.
+  resourceId      String?           @db.ObjectId
+  resource        Resource?         @relation(fields: [resourceId], references: [id])
+  /// Optional public dedication/note ("In memory of...").
+  message         String?
+  /// True hides donorName from any future public/donor-wall display —
+  /// display flag only, the record itself stays fully attributed.
+  isAnonymous     Boolean           @default(false)
+  method          PaymentMethod
+  amountRwf       Float
+  status          OrderStatus       @default(PENDING)
+  /// Same three fields, same sparse-index reasoning, as Order/Checkout's
+  /// paypack* — a real sparse unique index is created out-of-band via
+  /// scripts/create-donation-sparse-indexes.mjs.
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
+  stripeSessionId String?
+  paidAt          DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([resourceId])
 }

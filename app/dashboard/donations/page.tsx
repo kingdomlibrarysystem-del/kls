@@ -1,42 +1,56 @@
-import { Gift, HandHeart, Receipt, Target } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
+'use client'
 
-const sections = [
-  { icon: <HandHeart size={20} />, title: 'Make a Donation',    desc: 'Contribute to the library, publishing fund, or a specific campaign.',     status: 'coming' },
-  { icon: <Target size={20} />,    title: 'Active Campaigns',   desc: 'Browse ongoing fundraising campaigns and their progress toward goal.',     status: 'coming' },
-  { icon: <Receipt size={20} />,   title: 'Donation History',   desc: 'View your past contributions and download giving receipts.',              status: 'coming' },
-  { icon: <Gift size={20} />,      title: 'Sponsor a Resource', desc: 'Sponsor the acquisition of a specific book, course, or research project.', status: 'coming' },
+import Link from 'next/link'
+import { Target, Receipt } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header'
+import { useCampaigns } from './_shared/use-campaigns'
+
+interface DonationsSection {
+  icon: React.ReactNode
+  title: string
+  desc: string
+  href: string
+}
+
+const sections: DonationsSection[] = [
+  { icon: <Target size={20} />,  title: 'Campaigns', desc: 'Create and manage fundraising campaigns toward a real goal.', href: '/dashboard/donations/campaigns' },
+  { icon: <Receipt size={20} />, title: 'History',   desc: 'View every real donation, its payment status, and receipts.', href: '/dashboard/donations/history' },
 ]
 
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-form-highlight border border-w-300 rounded-lg p-4 text-center">
+      <p className="font-cinzel text-2xl font-bold text-w-950">{value}</p>
+      <p className="font-lato text-xs text-w-700 mt-1 leading-tight">{label}</p>
+    </div>
+  )
+}
+
+/** Real Donations overview — replaces the "Coming Soon" placeholder. Pulls live totals from the same campaign store the sub-pages use. */
 export default function DonationsPage() {
+  const { data: campaigns } = useCampaigns()
+
+  const active = campaigns.filter((c) => c.status === 'ACTIVE').length
+  const totalRaised = campaigns.reduce((sum, c) => sum + c.raisedRwf, 0)
+
   return (
     <div>
       <PageHeader title="Donations" subtitle="Campaigns, giving history, and sponsorships" />
 
-      <div className="bg-w-100 border border-w-300 rounded-lg px-5 py-4 mb-8 font-lato text-sm text-w-700">
-        This module is planned for a future phase of the Kingdom Knowledge Hub — no donations can be processed yet.
+      <div className="grid grid-cols-2 gap-3 mb-8">
+        <StatCard label="Active Campaigns" value={String(active)} />
+        <StatCard label="Total Raised (RWF)" value={totalRaised.toLocaleString()} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sections.map((s) => (
-          <div key={s.title} className="bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2">
+          <Link key={s.title} href={s.href} className="bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 hover:border-w-600 transition-colors">
             <div className="flex items-center gap-2 text-w-600">{s.icon}
               <h3 className="font-cinzel text-sm font-semibold text-w-950">{s.title}</h3>
             </div>
             <p className="font-lato text-xs text-w-700 leading-relaxed">{s.desc}</p>
-            <span className="inline-block mt-auto px-2 py-0.5 bg-w-200 text-w-700 rounded text-xs font-lato w-fit">Coming Soon</span>
-          </div>
+          </Link>
         ))}
-      </div>
-
-      <div className="mt-8 bg-form-section border border-w-400 rounded-lg p-5">
-        <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
-        <ul className="font-lato text-xs text-w-700 space-y-1">
-          <li>GET /api/donations/campaigns — active fundraising campaigns</li>
-          <li>POST /api/donations — make a donation (Mobile Money, Card, Bank)</li>
-          <li>GET /api/donations/my — member's donation history and receipts</li>
-          <li>POST /api/donations/sponsor — sponsor a specific resource</li>
-        </ul>
       </div>
     </div>
   )

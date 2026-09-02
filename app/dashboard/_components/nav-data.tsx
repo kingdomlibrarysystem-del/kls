@@ -45,6 +45,8 @@ import {
   MessageCircle,
   ShieldCheck,
   TrendingUp,
+  Target,
+  Receipt,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -168,7 +170,14 @@ export const adminMgmtNav: NavItem[] = [
       { icon: <BookOpen size={12} />,      label: "Editions",     href: "/dashboard/news/editions" },
     ],
   },
-  { icon: <Gift size={14} />,     label: "Donations",          href: "/dashboard/donations" },
+  {
+    icon: <Gift size={14} />, label: "Donations",
+    subItems: [
+      { icon: <Target size={12} />,  label: "Overview",  href: "/dashboard/donations" },
+      { icon: <Gift size={12} />,    label: "Campaigns", href: "/dashboard/donations/campaigns" },
+      { icon: <Receipt size={12} />, label: "History",   href: "/dashboard/donations/history" },
+    ],
+  },
   { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={14} />,     label: "Notifications",       href: "/dashboard/notifications" },
