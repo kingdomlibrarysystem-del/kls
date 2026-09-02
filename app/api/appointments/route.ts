@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requireOwnerOrStaff } from '@/lib/auth/require-role'
+import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 
 /**
  * Real Appointment API, replacing health-data.ts's initialAppointments
@@ -10,41 +10,85 @@ import { requireOwnerOrStaff } from '@/lib/auth/require-role'
  */
 function serializeAppointment(a: {
   id: string
+  userId: string
   clinicId: string
   dateTime: Date
   reason: string
   status: string
+  clinic?: { name: string }
+  user?: { name: string | null; firstName: string | null; lastName: string | null }
 }) {
   return {
     id: a.id,
+    userId: a.userId,
     clinicId: a.clinicId,
+    clinicName: a.clinic?.name,
+    memberName: a.user ? (a.user.name ?? `${a.user.firstName ?? ''} ${a.user.lastName ?? ''}`.trim()) : undefined,
     dateTime: a.dateTime.toISOString(),
     reason: a.reason,
     status: a.status,
   }
 }
 
+const LIST_INCLUDE = { clinic: { select: { name: true } }, user: { select: { name: true, firstName: true, lastName: true } } } as const
+const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']
+
+/**
+ * With ?userId=, returns that member's own appointments (owner-or-staff),
+ * unpaginated — the existing member-facing shape, unchanged. Without it,
+ * returns a paginated admin-wide list (staff only) for the new admin
+ * oversight page — mirrors /api/borrowings' own userId-present-vs-absent
+ * branching exactly.
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
 
-  if (!userId) {
-    return NextResponse.json({ data: null, message: 'userId is required', code: 'error', status: 400 }, { status: 400 })
+  if (userId) {
+    const auth = await requireOwnerOrStaff(userId)
+    if (auth.response) return auth.response
+
+    const appointments = await prisma.appointment.findMany({
+      where: { userId },
+      include: LIST_INCLUDE,
+      orderBy: { dateTime: 'desc' },
+    })
+
+    return NextResponse.json({
+      data: appointments.map(serializeAppointment),
+      message: 'Appointments fetched successfully',
+      code: 'success',
+      status: 200,
+    })
   }
 
-  const auth = await requireOwnerOrStaff(userId)
+  const auth = await requireStaff()
   if (auth.response) return auth.response
 
-  const appointments = await prisma.appointment.findMany({
-    where: { userId },
-    orderBy: { dateTime: 'desc' },
-  })
+  const page = parseInt(searchParams.get('page') || '1')
+  const pageSize = parseInt(searchParams.get('pageSize') || '50')
+  const status = searchParams.get('status')
+
+  const where = {
+    ...(status && status !== 'all' && VALID_STATUSES.includes(status) && { status: status as 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' }),
+  }
+
+  const [totalItems, appointments] = await Promise.all([
+    prisma.appointment.count({ where }),
+    prisma.appointment.findMany({
+      where, include: LIST_INCLUDE, orderBy: { dateTime: 'desc' },
+      skip: (page - 1) * pageSize, take: pageSize,
+    }),
+  ])
+
+  const totalPages = Math.ceil(totalItems / pageSize)
 
   return NextResponse.json({
     data: appointments.map(serializeAppointment),
     message: 'Appointments fetched successfully',
     code: 'success',
     status: 200,
+    pagination: { page, pageSize, totalItems, totalPages, hasNext: page < totalPages, hasPrevious: page > 1 },
   })
 }
 
