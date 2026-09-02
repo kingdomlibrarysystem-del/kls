@@ -159,7 +159,15 @@ export const adminMainNav: NavItem[] = [
 /** "Platform Management" section — admin/staff only, rendered below `adminMainNav`. */
 export const adminMgmtNav: NavItem[] = [
   { icon: <Users size={14} />,    label: "Members",           href: "/dashboard/users" },
-  { icon: <Newspaper size={14} />, label: "News & Newspapers", href: "/dashboard/news" },
+  {
+    icon: <Newspaper size={14} />, label: "News & Newspapers",
+    subItems: [
+      { icon: <Newspaper size={12} />,     label: "Overview",     href: "/dashboard/news" },
+      { icon: <ScrollText size={12} />,    label: "Articles",     href: "/dashboard/news/articles" },
+      { icon: <ClipboardList size={12} />, label: "Review Queue", href: "/dashboard/news/review" },
+      { icon: <BookOpen size={12} />,      label: "Editions",     href: "/dashboard/news/editions" },
+    ],
+  },
   { icon: <Gift size={14} />,     label: "Donations",          href: "/dashboard/donations" },
   { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },

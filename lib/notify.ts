@@ -2,7 +2,7 @@ import prisma from '@/prisma/client'
 import { sendMail } from '@/lib/mailer'
 import { broadcast } from '@/lib/sse-hub'
 
-type NotificationType = 'BORROW' | 'RESERVATION' | 'COURSE' | 'PUBLICATION' | 'DUE' | 'SYSTEM'
+type NotificationType = 'BORROW' | 'RESERVATION' | 'COURSE' | 'PUBLICATION' | 'DUE' | 'SYSTEM' | 'NEWS'
 
 /**
  * Fine-grained email category — independent of `NotificationType` (the
@@ -22,6 +22,7 @@ export type NotificationCategory =
   | 'certificate-issued'
   | 'order-payment-success' | 'order-payment-failed'
   | 'assessment-graded'
+  | 'news-article-published'
 
 interface NotifyUserInput {
   userId: string

@@ -124,6 +124,8 @@ model User {
   rehabMilestones           RehabMilestone[]    @relation("RehabMilestoneSubject")
   rehabMilestonesRecorded   RehabMilestone[]    @relation("RehabMilestoneRecorder")
   rehabGroupMemberships     RehabGroupMember[]
+  newsArticles              NewsArticle[]
+  newsSubscriptions         NewsSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
@@ -1307,6 +1309,7 @@ enum NotificationType {
   PUBLICATION
   DUE
   SYSTEM
+  NEWS
 }
 
 /// Real favorite, replacing app/member/_shared/favorites-data.ts's mock
@@ -1333,6 +1336,7 @@ model Favorite {
 enum FavoriteType {
   RESOURCE
   COURSE
+  ARTICLE
 }
 
 /// Real login event, per APP_DOC Task 1.7 — replacing both
@@ -1856,4 +1860,73 @@ model RehabMilestone {
   createdAt    DateTime      @default(now())
 
   @@index([userId])
+}
+
+/// Real news article/edition — mirrors Publication's exact submit ->
+/// review -> publish lifecycle rather than inventing a new editorial
+/// workflow, but is admin/editor-authored (no non-staff "owner"
+/// branch anywhere — unlike Publication, there is no contributor role
+/// here). Kept as its own model rather than a reuse of Publication
+/// itself, since the consuming shape genuinely differs: Publication
+/// becomes a purchasable Resource on approval; a NewsArticle never
+/// does — it has a `content` body field Publication has no
+/// equivalent of, and a `category` feed/filter concept.
+model NewsArticle {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  /// Free text body — the article/edition content itself.
+  content     String
+  /// Short teaser shown on feed/list views without loading full content.
+  summary     String
+  coverImage  String?
+  /// Free-text category ("Ministry Updates", "Community", "Events") —
+  /// same free-text judgment call as Publication.category (not the KCS
+  /// Bible taxonomy).
+  category    String
+  language    PublicationLanguage @default(EN)
+  authorId    String              @db.ObjectId
+  author      User                @relation(fields: [authorId], references: [id])
+  authorName  String
+  status      NewsArticleStatus   @default(DRAFT)
+  /// Set once PUBLISHED — null for every earlier status.
+  publishedAt DateTime?
+  /// True marks this row as a full "Edition" (a full newsletter/
+  /// newspaper issue) vs. a single standalone Article — both share
+  /// this one model/table since "Latest Editions" and the
+  /// per-category article feed browse the exact same underlying rows
+  /// filtered differently, not two different resources.
+  isEdition   Boolean             @default(false)
+  featured    Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([publishedAt])
+}
+
+enum NewsArticleStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+/// Category-level alert subscription ("Publication Alerts" in the
+/// module's own in-page hint). A row means "notify this user whenever
+/// a NewsArticle in this category (or, if category is null, ANY
+/// category) is published." Delivery reuses the existing Notification
+/// system (see lib/notify.ts's notifyUser) — this table is only the
+/// subscription list, not a second notification/inbox model.
+model NewsSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Null subscribes to every category; set subscribes to one category only.
+  category  String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, category])
 }
