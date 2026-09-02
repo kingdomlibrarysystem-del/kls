@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeft, BookOpen, BookText, Calendar, CalendarCheck, Hash } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, BookOpen, BookText, Calendar, CalendarCheck, Hash, Package, Tag, User } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { statusConfig, type Borrowing } from '@/app/dashboard/library/borrowings/_components/borrowings-data'
 
 interface BorrowingDetailViewProps {
@@ -82,28 +84,52 @@ export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
         Back to My Borrowings
       </UniversalButton>
 
-      <div className="card space-y-4" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-            {borrowing.resourceTitle}
-          </h1>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
-            {statusConfig[borrowing.status].label}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-          <DetailRow icon={<BookText size={15} />} label="Type" value={borrowing.resourceType} />
-          <DetailRow icon={<Calendar size={15} />} label="Borrowed" value={borrowing.borrowDate} />
-          <DetailRow
-            icon={<CalendarCheck size={15} />}
-            label={borrowing.status === 'returned' ? 'Was Due' : 'Due'}
-            value={borrowing.dueDate}
-          />
-          {borrowing.returnDate && (
-            <DetailRow icon={<CalendarCheck size={15} />} label="Returned" value={borrowing.returnDate} />
+      <div className="card" style={{ display: 'flex', gap: 20, padding: 20, flexWrap: 'wrap', maxWidth: 680 }}>
+        <Link
+          href={`/member/library/resource/${borrowing.resourceId}`}
+          style={{ width: 110, flexShrink: 0, position: 'relative', height: 154, borderRadius: 8, overflow: 'hidden', boxShadow: '0 6px 18px rgba(0,0,0,0.18)' }}
+        >
+          {borrowing.resourceCover ? (
+            <RemoteImage
+              src={borrowing.resourceCover}
+              alt={borrowing.resourceTitle}
+              fill
+              sizes="110px"
+              className="object-cover"
+              fallback={<div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-section)' }}><Package size={28} color="var(--text-muted)" /></div>}
+            />
+          ) : (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-section)' }}><Package size={28} color="var(--text-muted)" /></div>
           )}
-          <DetailRow icon={<Hash size={15} />} label="ISBN" value={borrowing.isbn} />
+        </Link>
+
+        <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <Link href={`/member/library/resource/${borrowing.resourceId}`} style={{ textDecoration: 'none' }}>
+              <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {borrowing.resourceTitle}
+              </h1>
+            </Link>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
+              {statusConfig[borrowing.status].label}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+            {borrowing.resourceAuthor && <DetailRow icon={<User size={15} />} label="Author" value={borrowing.resourceAuthor} />}
+            {borrowing.resourceCategory && <DetailRow icon={<Tag size={15} />} label="Category" value={borrowing.resourceCategory} />}
+            <DetailRow icon={<BookText size={15} />} label="Type" value={borrowing.resourceType} />
+            <DetailRow icon={<Calendar size={15} />} label="Borrowed" value={borrowing.borrowDate} />
+            <DetailRow
+              icon={<CalendarCheck size={15} />}
+              label={borrowing.status === 'returned' ? 'Was Due' : 'Due'}
+              value={borrowing.dueDate}
+            />
+            {borrowing.returnDate && (
+              <DetailRow icon={<CalendarCheck size={15} />} label="Returned" value={borrowing.returnDate} />
+            )}
+            <DetailRow icon={<Hash size={15} />} label="ISBN" value={borrowing.isbn} />
+          </div>
         </div>
       </div>
     </div>
