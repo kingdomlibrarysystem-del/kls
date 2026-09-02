@@ -9,6 +9,8 @@ export interface Reservation {
   resourceTitle: string
   resourceAuthor: string
   resourceType: string
+  resourceCover?: string | null
+  resourceCategory?: string | null
   totalCopies: number
   borrowedCopies: number
   queuePosition: number

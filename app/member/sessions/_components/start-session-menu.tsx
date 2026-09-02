@@ -102,7 +102,7 @@ export function StartSessionMenu() {
             <select
               id="instant-course"
               value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
+              onChange={(e) => { setCourseId(e.target.value); setInstantError('') }}
               className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
             >
               {myCourses.map((c) => <option key={c.id} value={c.id}>{c.title} — {c.instructor}</option>)}

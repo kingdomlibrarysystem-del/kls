@@ -7,6 +7,7 @@ import { useCourseCatalog } from './_shared/use-course-catalog'
 import { useEnrollmentsAdmin } from './enrollments/_components/use-enrollments-admin'
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { useCertificatesAdmin } from './certificates/_components/use-certificates-admin'
+import { ElearningTabs } from './_components/elearning-tabs'
 
 interface ELearningSection {
   icon: React.ReactNode
@@ -52,6 +53,7 @@ export default function ELearningPage() {
   return (
     <div>
       <PageHeader title="E-Learning" subtitle="Courses, lessons, quizzes, and certificates" />
+      <ElearningTabs active="overview" />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <StatCard label="Published Courses" value={publishedCourses} />

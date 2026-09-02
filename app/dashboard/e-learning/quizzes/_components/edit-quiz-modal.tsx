@@ -57,6 +57,16 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
     }
   }, [assessment, reset])
 
+  // See AddQuizModal's onInvalid for why this is needed — the modal body
+  // scrolls independently, so a validation failure on a question above
+  // the current scroll position gave no visible feedback at all.
+  const onInvalid = () => {
+    requestAnimationFrame(() => {
+      const target = document.querySelector('form .border-red-500, form .text-red-600')
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
+
   const onSubmit = async (data: QuizFormData) => {
     if (!assessment) return
     try {
@@ -87,7 +97,7 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
 
   return (
     <Modal open={!!assessment} onClose={onClose} title="Edit Quiz / Exam" size="lg">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
         <div>
           <FieldLabel htmlFor="edit-quiz-title" required>Title</FieldLabel>
           <FormInput id="edit-quiz-title" type="text" error={errors.title?.message} {...register('title')} />

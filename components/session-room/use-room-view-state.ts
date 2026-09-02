@@ -61,6 +61,7 @@ export function useRoomViewState({
     viewer, youName, you, otherName, otherState, otherJoined: otherPresent,
     adminExtraParticipant, addedNames, addedState: ADDED_PARTICIPANT_STATE, isLecturerName,
     presenceRoster: presence.roster, unmatchedRemotes: guestEntries,
+    liveKitReady, remoteParticipants: liveKit.remoteParticipants,
   })
 
   const handleLeave = () => {

@@ -1,5 +1,6 @@
 import type { ParticipantDeviceState } from './participant-tile'
 import type { PresenceRow } from '@/lib/sessions/use-session-presence'
+import type { RemoteParticipantState } from './use-livekit-room'
 
 export interface RoomParticipantEntry {
   name: string
@@ -27,10 +28,20 @@ interface BuildRoomParticipantsInput {
   presenceRoster: PresenceRow[]
   /** Real LiveKit remote participants whose name/identity didn't match any invited/added row above — someone who joined the room directly without going through this app's own invite flow (e.g. a shared room link). Shown as real "Guest" rows instead of being invisible. */
   unmatchedRemotes: { identity: string; name: string; state: ParticipantDeviceState }[]
+  /** True once LiveKit is connected — when set, LiveKit's own remote-participant list is ground truth for "joined" (see the `joinedFor` helper below), same precedence rule already used for the primary other-party row in use-other-party-state.ts. Without this, a row could show connected on the video grid (LiveKit truth) while its Participants-panel row still read "not joined" from a presence poll that simply hadn't refreshed yet or whose displayName didn't exactly match. */
+  liveKitReady: boolean
+  /** Every real LiveKit remote participant currently in the room, for the same ground-truth check. */
+  remoteParticipants: RemoteParticipantState[]
 }
 
 function presenceIdFor(name: string, roster: PresenceRow[]): string | undefined {
   return roster.find((p) => p.displayName === name && p.present)?.id
+}
+
+/** "Joined" ground truth for one named row: prefer a real LiveKit match once connected, falling back to the polled presence roster only when LiveKit isn't ready — mirrors computeOtherPartyState's own precedence for the primary other-party row. */
+function joinedFor(name: string, presenceRoster: PresenceRow[], liveKitReady: boolean, remoteParticipants: RemoteParticipantState[]): boolean {
+  if (liveKitReady) return remoteParticipants.some((p) => p.name === name)
+  return !!presenceIdFor(name, presenceRoster)
 }
 
 /**
@@ -40,7 +51,7 @@ function presenceIdFor(name: string, roster: PresenceRow[]): string | undefined 
  * `viewer` prop docstring for why admin needs different participant
  * shape (both real parties as named tiles, not one relabeled "you").
  */
-export function buildRoomParticipants({ viewer, youName, you, otherName, otherState, otherJoined, adminExtraParticipant, addedNames, addedState, isLecturerName, presenceRoster, unmatchedRemotes }: BuildRoomParticipantsInput): RoomParticipantEntry[] {
+export function buildRoomParticipants({ viewer, youName, you, otherName, otherState, otherJoined, adminExtraParticipant, addedNames, addedState, isLecturerName, presenceRoster, unmatchedRemotes, liveKitReady, remoteParticipants }: BuildRoomParticipantsInput): RoomParticipantEntry[] {
   const youEntry: RoomParticipantEntry = viewer === 'admin'
     ? { name: youName, role: 'Admin', state: you, joined: true }
     : { name: youName, role: 'Learner', state: you, joined: true }
@@ -51,13 +62,18 @@ export function buildRoomParticipants({ viewer, youName, you, otherName, otherSt
   }
 
   const adminEntry: RoomParticipantEntry[] = adminExtraParticipant
-    ? [{ name: adminExtraParticipant.name, role: 'Lecturer' as const, state: adminExtraParticipant.state, presenceId: presenceIdFor(adminExtraParticipant.name, presenceRoster), joined: !!presenceIdFor(adminExtraParticipant.name, presenceRoster) }]
+    ? [{
+        name: adminExtraParticipant.name, role: 'Lecturer' as const, state: adminExtraParticipant.state,
+        presenceId: presenceIdFor(adminExtraParticipant.name, presenceRoster),
+        joined: joinedFor(adminExtraParticipant.name, presenceRoster, liveKitReady, remoteParticipants),
+      }]
     : []
 
-  const addedEntries: RoomParticipantEntry[] = addedNames.map((name) => {
-    const presenceId = presenceIdFor(name, presenceRoster)
-    return { name, role: isLecturerName(name) ? 'Lecturer' as const : 'Learner' as const, state: addedState, presenceId, joined: !!presenceId }
-  })
+  const addedEntries: RoomParticipantEntry[] = addedNames.map((name) => ({
+    name, role: isLecturerName(name) ? 'Lecturer' as const : 'Learner' as const, state: addedState,
+    presenceId: presenceIdFor(name, presenceRoster),
+    joined: joinedFor(name, presenceRoster, liveKitReady, remoteParticipants),
+  }))
 
   const guestEntries: RoomParticipantEntry[] = unmatchedRemotes.map((r) => ({
     name: r.name || r.identity, role: 'Guest' as const, state: r.state, joined: true,

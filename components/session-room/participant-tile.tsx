@@ -102,7 +102,12 @@ export function ParticipantTile({ name, isYou, state, presenting, videoStream, l
           autoPlay
           playsInline
           muted={isYou}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: presenting ? 'none' : isYou ? 'scaleX(-1)' : 'none' }}
+          // A <video> with no source paints solid black by default — matching
+          // background to the tile's own placeholder gradient avoids a black
+          // flash between this element mounting and its track actually
+          // attaching (a separate effect below, so there's always a one-paint
+          // gap between the two).
+          style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'linear-gradient(135deg, var(--bg-section), var(--bg-card))', transform: presenting ? 'none' : isYou ? 'scaleX(-1)' : 'none' }}
         />
       ) : state.cameraOn ? (
         // isYou + cameraOn with no resolved track yet means the permission prompt is still pending — hold the avatar rather than a blank frame.

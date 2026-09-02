@@ -7,7 +7,10 @@ export interface Borrowing {
   memberEmail: string
   resourceId: string
   resourceTitle: string
+  resourceAuthor?: string | null
   resourceType: string
+  resourceCover?: string | null
+  resourceCategory?: string | null
   isbn: string
   borrowDate: string
   dueDate: string

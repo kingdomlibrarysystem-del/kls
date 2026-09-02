@@ -13,7 +13,7 @@ function serializeReservation(r: {
   memberName: string
   memberEmail: string
   resourceId: string
-  resource: { title: string; author: string; type: string; totalQty: number; availableQty: number }
+  resource: { title: string; author: string; type: string; totalQty: number; availableQty: number; coverImages: string[]; category: { nameEn: string } | null }
   queuePosition: number
   reservationDate: Date
   notifiedAt: Date | null
@@ -29,6 +29,8 @@ function serializeReservation(r: {
     resourceTitle: r.resource.title,
     resourceAuthor: r.resource.author,
     resourceType: r.resource.type,
+    resourceCover: r.resource.coverImages[0] ?? null,
+    resourceCategory: r.resource.category?.nameEn ?? null,
     totalCopies: r.resource.totalQty,
     borrowedCopies: r.resource.totalQty - r.resource.availableQty,
     queuePosition: r.queuePosition,
@@ -39,7 +41,7 @@ function serializeReservation(r: {
   }
 }
 
-const RESOURCE_INCLUDE = { resource: { select: { title: true, author: true, type: true, totalQty: true, availableQty: true } } } as const
+const RESOURCE_INCLUDE = { resource: { select: { title: true, author: true, type: true, totalQty: true, availableQty: true, coverImages: true, category: { select: { nameEn: true } } } } } as const
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -35,6 +35,21 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
 
   const kind = watch('kind')
 
+  // The modal body scrolls independently (Modal's overflow-y-auto panel),
+  // and this form can run several screens tall once a few questions exist
+  // — a validation failure on a question above the current scroll position
+  // previously gave no visible feedback at all (the error text rendered
+  // off-screen, and native focus-triggered scrolling doesn't reliably
+  // reach into a nested scroll container), which looked exactly like the
+  // submit button silently doing nothing. Scrolling the first invalid
+  // field into view makes the failure visible.
+  const onInvalid = () => {
+    requestAnimationFrame(() => {
+      const target = document.querySelector('form .border-red-500, form .text-red-600')
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
+
   const onSubmit = async (data: QuizFormData) => {
     try {
       await addAssessment({
@@ -65,7 +80,7 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
 
   return (
     <Modal open={open} onClose={onClose} title="Add Quiz / Exam" size="lg">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
         <div>
           <FieldLabel htmlFor="add-quiz-title" required>Title</FieldLabel>
           <FormInput id="add-quiz-title" type="text" error={errors.title?.message} {...register('title')} />

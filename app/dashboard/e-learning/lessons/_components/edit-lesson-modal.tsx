@@ -11,6 +11,7 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { updateLesson } from '@/app/member/_shared/use-lessons'
 import { contentTypeLabels } from './lesson-form-schema'
+import { LessonMediaUpload } from './lesson-media-upload'
 import type { LessonRow } from './lessons-config'
 
 const editSchema = z.object({
@@ -35,6 +36,9 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
 
@@ -89,6 +93,13 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
           />
           {errors.content && <p className="text-red-600 text-xs mt-1 font-lato">{errors.content.message}</p>}
         </div>
+
+        <LessonMediaUpload
+          contentType={watch('contentType')}
+          onInsert={(markdownToAppend) =>
+            setValue('contentMarkdown', `${getValues('contentMarkdown') ?? ''}${markdownToAppend}`, { shouldValidate: true })
+          }
+        />
 
         <div>
           <FieldLabel htmlFor="edit-lesson-markdown" required>Lesson Content</FieldLabel>

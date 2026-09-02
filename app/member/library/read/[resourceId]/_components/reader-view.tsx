@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, BookX, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,10 +10,6 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, startReading, markChapterRead, markBookComplete, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
-import { useHighlights, addHighlight, getChapterHighlights } from '@/app/member/_shared/use-highlights'
-import type { Highlight, HighlightColor } from '@/app/member/_shared/highlight-data'
-import { HighlightPicker } from './highlight-picker'
-import { useChapterSelection } from './use-chapter-selection'
 import { NotesPanel } from './notes-panel'
 import { ChapterSearch } from './chapter-search'
 import { HighlightsNotesList } from './highlights-notes-list'
@@ -39,6 +35,15 @@ interface ReaderViewProps {
  * a documentUrl-only resource with no authored chapters. Progress
  * auto-starts/resumes and tracks every chapter actually viewed, resuming
  * at `lastChapterId` unless the URL names one explicitly.
+ *
+ * Creating a NEW highlight by selecting body text is no longer offered —
+ * ChapterBody now renders real markdown (headings/bold/quotes) via
+ * MdPreview, which produces opaque HTML with no way to map a text
+ * selection back to a chapter-relative character offset (the old
+ * plain-text `[data-paragraph-start]` renderer this depended on is gone).
+ * Reviewing/deleting a member's EXISTING highlights and adding chapter-
+ * level notes both still work (HighlightsNotesList, NotesPanel) since
+ * those only read already-stored data, not a live in-body selection.
  */
 export function ReaderView({ resourceId, initialChapterId, forcePreview = false, backHref = '/member/library' }: ReaderViewProps) {
   const { user } = useAuth()
@@ -53,23 +58,24 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
   const resumeChapterId = initialChapterId ?? existingProgress?.lastChapterId
   const startIndex = resumeChapterId ? Math.max(0, chapters.findIndex((c) => c.id === resumeChapterId)) : 0
   const [chapterIndex, setChapterIndex] = useState(startIndex)
-  const initialized = useRef(false)
-  const bodyRef = useRef<HTMLDivElement>(null)
-  const highlightEntries = useHighlights(user?.id)
-  const { pending, captureSelection, clearSelection } = useChapterSelection()
-  const [noteHighlight, setNoteHighlight] = useState<Highlight | null>(null)
   const [buyAction, setBuyAction] = useState<BuyAction>(null)
 
   useEffect(() => {
-    if (initialized.current || chapters.length === 0) return
-    initialized.current = true
+    if (chapters.length === 0) return
     startReading(resourceId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resourceId, chapters.length])
 
   useEffect(() => {
     if (chapters.length === 0) return
     const current = chapters[chapterIndex]
-    if (current) markChapterRead(resourceId, current.id)
+    // A locked chapter renders LockedChapterPaywall, not real content — the
+    // member never actually read anything, so it must not count toward
+    // reading progress. Without this guard, simply landing on a paywalled
+    // chapter (e.g. the free preview's only/last chapter) marked it
+    // complete, which could show 100% progress while 0% of the book had
+    // ever actually been displayed.
+    if (current && !current.locked) markChapterRead(resourceId, current.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resourceId, chapterIndex, chapters.length])
 
@@ -129,18 +135,8 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
     ? chapters.filter((c) => !c.locked && !existingProgress?.completedChapterIds.includes(c.id) && c.id !== chapter.id)
     : []
 
-  const chapterHighlights = getChapterHighlights(resourceId, chapter.id)
-
   const goToChapter = (index: number) => {
-    clearSelection()
-    setNoteHighlight(null)
     setChapterIndex(index)
-  }
-
-  const handlePickColor = (color: HighlightColor) => {
-    if (!pending) return
-    addHighlight({ resourceId, chapterId: chapter.id, startOffset: pending.startOffset, endOffset: pending.endOffset, text: pending.text, color })
-    clearSelection()
   }
 
   return (
@@ -161,21 +157,11 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
         {chapter.locked ? (
           <LockedChapterPaywall bookTitle={resource.title} priceRwf={resource.price} onBuyAction={setBuyAction} />
         ) : (
-          <ChapterBody
-            body={chapter.body ?? ''}
-            bodyRef={bodyRef}
-            highlights={chapterHighlights}
-            onMouseUp={() => captureSelection(bodyRef.current)}
-            onHighlightClick={setNoteHighlight}
-          />
+          <ChapterBody body={chapter.body ?? ''} />
         )}
       </div>
 
-      {noteHighlight ? (
-        <NotesPanel resourceId={resourceId} chapterId={chapter.id} highlight={noteHighlight} onClose={() => setNoteHighlight(null)} />
-      ) : (
-        <NotesPanel resourceId={resourceId} chapterId={chapter.id} />
-      )}
+      <NotesPanel resourceId={resourceId} chapterId={chapter.id} />
 
       <ChapterNavFooter
         chapterTitle={chapter.title}
@@ -197,10 +183,6 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
       )}
 
       <HighlightsNotesList resourceId={resourceId} chapters={chapters} onJump={goToChapter} />
-
-      {pending && (
-        <HighlightPicker position={pending.position} onPick={handlePickColor} onClose={clearSelection} />
-      )}
 
       <BuyConfirmModal action={buyAction} resourceId={resourceId} bookTitle={resource.title} priceRwf={resource.price} onClose={() => setBuyAction(null)} />
     </div>

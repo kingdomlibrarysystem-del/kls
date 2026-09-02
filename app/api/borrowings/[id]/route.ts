@@ -13,7 +13,7 @@ function serializeBorrow(b: {
   memberName: string
   memberEmail: string
   resourceId: string
-  resource: { title: string; type: string; isbn: string }
+  resource: { title: string; author: string; type: string; isbn: string; coverImages: string[]; category: { nameEn: string } | null }
   borrowDate: Date
   dueDate: Date
   returnDate: Date | null
@@ -29,7 +29,10 @@ function serializeBorrow(b: {
     memberEmail: b.memberEmail,
     resourceId: b.resourceId,
     resourceTitle: b.resource.title,
+    resourceAuthor: b.resource.author,
     resourceType: b.resource.type,
+    resourceCover: b.resource.coverImages[0] ?? null,
+    resourceCategory: b.resource.category?.nameEn ?? null,
     isbn: b.resource.isbn,
     borrowDate: b.borrowDate.toISOString().split('T')[0],
     dueDate: b.dueDate.toISOString().split('T')[0],
@@ -41,7 +44,7 @@ function serializeBorrow(b: {
   }
 }
 
-const RESOURCE_INCLUDE = { resource: { select: { title: true, type: true, isbn: true } } } as const
+const RESOURCE_INCLUDE = { resource: { select: { title: true, author: true, type: true, isbn: true, coverImages: true, category: { select: { nameEn: true } } } } } as const
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
