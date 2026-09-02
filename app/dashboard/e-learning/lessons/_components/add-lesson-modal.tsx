@@ -9,6 +9,7 @@ import { ElegantButton } from "@/components/ui/elegant-button";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { useCourseCatalog } from "../../_shared/use-course-catalog";
 import { addLesson } from "@/app/member/_shared/use-lessons";
+import { LessonMediaUpload } from "./lesson-media-upload";
 import {
   lessonSchema,
   contentTypeLabels,
@@ -28,6 +29,9 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
@@ -151,6 +155,13 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
             </p>
           )}
         </div>
+
+        <LessonMediaUpload
+          contentType={watch("contentType")}
+          onInsert={(markdownToAppend) =>
+            setValue("contentMarkdown", `${getValues("contentMarkdown") ?? ""}${markdownToAppend}`, { shouldValidate: true })
+          }
+        />
 
         <div>
           <FieldLabel htmlFor="add-lesson-markdown" required>
