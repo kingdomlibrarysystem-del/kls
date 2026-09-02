@@ -60,3 +60,48 @@ export function useResearchProjects() {
 
   return { data, loading, error }
 }
+
+export async function refetchResearchProjects(): Promise<void> {
+  hasFetched = false
+  await loadProjects()
+}
+
+export interface ProjectInput {
+  title: string
+  description: string
+  status?: string
+  startDate?: string
+  contributorIds?: string[]
+}
+
+export async function addResearchProject(input: ProjectInput): Promise<ResearchProjectSummary> {
+  const res = await fetch('/api/research-projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to create project')
+  await refetchResearchProjects()
+  return json.data
+}
+
+export async function updateResearchProject(id: string, input: Partial<ProjectInput>): Promise<ResearchProjectSummary> {
+  const res = await fetch(`/api/research-projects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update project')
+  await refetchResearchProjects()
+  return json.data
+}
+
+/** Throws the raw API error message unmodified — the 409 "still has papers" guard's exact text is actionable information the caller needs to display, not a generic failure. */
+export async function deleteResearchProject(id: string): Promise<void> {
+  const res = await fetch(`/api/research-projects/${id}`, { method: 'DELETE' })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to delete project')
+  await refetchResearchProjects()
+}

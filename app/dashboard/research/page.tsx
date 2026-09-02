@@ -22,9 +22,7 @@ export default function ResearchPage() {
     <div>
       <PageHeader title="Research Support" subtitle="Projects, papers, and resource discovery" />
 
-      <div className="bg-w-100 border border-w-300 rounded-lg px-5 py-4 mb-8 font-lato text-sm text-w-700">
-        This module is under active development. Researchers can manage projects, submit papers, and discover resources.
-      </div>
+      <p className="font-lato text-sm text-w-700 mb-8">Manage research projects, papers, and contributor collaborations.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map((s) => {
@@ -47,17 +45,6 @@ export default function ResearchPage() {
             <div key={s.title}>{card}</div>
           )
         })}
-      </div>
-
-      <div className="mt-8 bg-form-section border border-w-400 rounded-lg p-5">
-        <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
-        <ul className="font-lato text-xs text-w-700 space-y-1">
-          <li>GET /api/research/projects — list contributor projects</li>
-          <li>POST /api/research/projects — create a research project</li>
-          <li>POST /api/research/papers — submit a paper to a project</li>
-          <li>GET /api/research/repository — public approved papers</li>
-          <li>GET /api/research/search?q= — unified search across all content</li>
-        </ul>
       </div>
     </div>
   )
