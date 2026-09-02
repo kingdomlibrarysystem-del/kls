@@ -72,3 +72,22 @@ export async function addPaperToRepository(entry: { title: string; abstract: str
   await refetchRepository()
   return json.data
 }
+
+export async function updatePaperInRepository(id: string, patch: { title?: string; abstract?: string; keywords?: string[]; status?: string }): Promise<ResearchPaper> {
+  const res = await fetch(`/api/research-papers/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update research paper')
+  await refetchRepository()
+  return json.data
+}
+
+export async function deletePaperFromRepository(id: string): Promise<void> {
+  const res = await fetch(`/api/research-papers/${id}`, { method: 'DELETE' })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to delete research paper')
+  await refetchRepository()
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { Users as UsersIcon, BookOpen, GraduationCap, FileText, FlaskConical, AlertTriangle } from 'lucide-react'
+import { Users as UsersIcon, BookOpen, GraduationCap, FileText, FlaskConical, AlertTriangle, Sparkles, Brain, RefreshCcw, Gift, Newspaper } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useCrossModuleReport } from './use-cross-module-report'
@@ -39,6 +39,11 @@ export function ReportsView() {
     { icon: GraduationCap, label: 'Active Enrollments', value: report.activeEnrollments, color: 'text-purple-700' },
     { icon: FileText, label: 'Publications Pending Review', value: report.pendingPublications, color: 'text-yellow-700' },
     { icon: FlaskConical, label: 'Active Research Projects', value: report.activeResearchProjects, color: 'text-green-700' },
+    { icon: Sparkles, label: 'Upcoming Beauty Appointments', value: report.upcomingBeautyAppointments, color: 'text-pink-700' },
+    { icon: Brain, label: 'Active Counseling Sessions', value: report.activeCounselingSessions, color: 'text-indigo-700' },
+    { icon: RefreshCcw, label: 'Active Rehab Intakes', value: report.activeRehabIntakes, color: 'text-orange-700' },
+    { icon: Gift, label: 'Donations This Month', value: report.totalDonationsThisMonth, color: 'text-emerald-700' },
+    { icon: Newspaper, label: 'Published News Articles', value: report.publishedNewsArticles, color: 'text-cyan-700' },
   ]
 
   const trends = buildModuleTrends(report)

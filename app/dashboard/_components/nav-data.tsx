@@ -34,6 +34,19 @@ import {
   Shield,
   MessageSquare,
   Tag,
+  Stethoscope,
+  CalendarCheck,
+  Syringe,
+  Building2,
+  FileText,
+  Palette,
+  Scissors,
+  Star,
+  MessageCircle,
+  ShieldCheck,
+  TrendingUp,
+  Target,
+  Receipt,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -99,18 +112,72 @@ export const adminMainNav: NavItem[] = [
       { icon: <Users size={12} />,        label: "Collaborations",  href: "/dashboard/research/collaborations" },
     ],
   },
-  { icon: <HeartPulse size={14} />, label: "Health System",          href: "/dashboard/health" },
-  { icon: <Sparkles size={14} />,   label: "Beauty Services",         href: "/dashboard/beauty" },
-  { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "/dashboard/counseling" },
-  { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "/dashboard/rehabilitation" },
+  {
+    icon: <HeartPulse size={14} />, label: "Health System",
+    subItems: [
+      { icon: <Stethoscope size={12} />,   label: "Overview",        href: "/dashboard/health" },
+      { icon: <CalendarCheck size={12} />, label: "Book a Checkup",  href: "/dashboard/health/checkups" },
+      { icon: <FileText size={12} />,      label: "Health Records",  href: "/dashboard/health/records" },
+      { icon: <Syringe size={12} />,       label: "Immunizations",   href: "/dashboard/health/immunizations" },
+      { icon: <Building2 size={12} />,     label: "Clinic Directory", href: "/dashboard/health/clinics" },
+      { icon: <ClipboardCheck size={12} />, label: "Admin: Appointments", href: "/dashboard/health/appointments" },
+    ],
+  },
+  {
+    icon: <Sparkles size={14} />, label: "Beauty Services",
+    subItems: [
+      { icon: <Sparkles size={12} />,      label: "Overview",     href: "/dashboard/beauty" },
+      { icon: <Palette size={12} />,       label: "Providers",    href: "/dashboard/beauty/providers" },
+      { icon: <Scissors size={12} />,      label: "Services",     href: "/dashboard/beauty/services" },
+      { icon: <CalendarCheck size={12} />, label: "Appointments", href: "/dashboard/beauty/appointments" },
+      { icon: <Star size={12} />,          label: "Admin: Bookings", href: "/dashboard/beauty/admin" },
+    ],
+  },
+  {
+    icon: <Brain size={14} />, label: "Consultation & Counseling",
+    subItems: [
+      { icon: <Brain size={12} />,         label: "Overview",        href: "/dashboard/counseling" },
+      { icon: <Users size={12} />,         label: "Counselors",      href: "/dashboard/counseling/counselors" },
+      { icon: <CalendarCheck size={12} />, label: "Sessions",        href: "/dashboard/counseling/sessions" },
+      { icon: <MessageCircle size={12} />, label: "Session History", href: "/dashboard/counseling/history" },
+      { icon: <ShieldCheck size={12} />,   label: "Admin: Sessions", href: "/dashboard/counseling/admin" },
+    ],
+  },
+  {
+    icon: <RefreshCcw size={14} />, label: "Rehabilitation",
+    subItems: [
+      { icon: <RefreshCcw size={12} />,    label: "Overview",        href: "/dashboard/rehabilitation" },
+      { icon: <ClipboardList size={12} />, label: "Intake",          href: "/dashboard/rehabilitation/intake" },
+      { icon: <CalendarCheck size={12} />, label: "Schedule",        href: "/dashboard/rehabilitation/schedule" },
+      { icon: <TrendingUp size={12} />,    label: "Progress",        href: "/dashboard/rehabilitation/progress" },
+      { icon: <Users size={12} />,         label: "Support Groups",  href: "/dashboard/rehabilitation/groups" },
+      { icon: <ClipboardCheck size={12} />, label: "Admin: Intake",  href: "/dashboard/rehabilitation/admin/intake" },
+      { icon: <CalendarCheck size={12} />, label: "Admin: Schedule", href: "/dashboard/rehabilitation/admin/schedule" },
+    ],
+  },
   { icon: <Download size={14} />,   label: "Download Center",          href: "/dashboard/downloads" },
 ];
 
 /** "Platform Management" section — admin/staff only, rendered below `adminMainNav`. */
 export const adminMgmtNav: NavItem[] = [
   { icon: <Users size={14} />,    label: "Members",           href: "/dashboard/users" },
-  { icon: <Newspaper size={14} />, label: "News & Newspapers", href: "/dashboard/news" },
-  { icon: <Gift size={14} />,     label: "Donations",          href: "/dashboard/donations" },
+  {
+    icon: <Newspaper size={14} />, label: "News & Newspapers",
+    subItems: [
+      { icon: <Newspaper size={12} />,     label: "Overview",     href: "/dashboard/news" },
+      { icon: <ScrollText size={12} />,    label: "Articles",     href: "/dashboard/news/articles" },
+      { icon: <ClipboardList size={12} />, label: "Review Queue", href: "/dashboard/news/review" },
+      { icon: <BookOpen size={12} />,      label: "Editions",     href: "/dashboard/news/editions" },
+    ],
+  },
+  {
+    icon: <Gift size={14} />, label: "Donations",
+    subItems: [
+      { icon: <Target size={12} />,  label: "Overview",  href: "/dashboard/donations" },
+      { icon: <Gift size={12} />,    label: "Campaigns", href: "/dashboard/donations/campaigns" },
+      { icon: <Receipt size={12} />, label: "History",   href: "/dashboard/donations/history" },
+    ],
+  },
   { icon: <BarChart3 size={14} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={14} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={14} />,     label: "Notifications",       href: "/dashboard/notifications" },

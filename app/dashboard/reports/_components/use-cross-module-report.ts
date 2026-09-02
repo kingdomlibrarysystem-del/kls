@@ -8,6 +8,11 @@ export interface CrossModuleReport {
   activeEnrollments: number
   pendingPublications: number
   activeResearchProjects: number
+  upcomingBeautyAppointments: number
+  activeCounselingSessions: number
+  activeRehabIntakes: number
+  totalDonationsThisMonth: number
+  publishedNewsArticles: number
 }
 
 /** Real fetch()-backed cross-module report, replacing cross-module-data.ts's mix of one real store and four superseded mocks. */

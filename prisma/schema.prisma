@@ -111,6 +111,23 @@ model User {
   courseOrders              CourseOrder[]
   cart                      Cart?
   reviews                   Review[]
+  beautyAppointments        BeautyAppointment[]
+  beautyReviews             BeautyReview[]
+  counselingSessions        CounselingSession[]
+  counselingNotes           CounselingNote[]    @relation("CounselingNoteSubject")
+  counselingNotesAuthored   CounselingNote[]    @relation("CounselingNoteAuthor")
+  counselingConsent         CounselingConsent?
+  rehabIntakes              RehabIntake[]       @relation("RehabIntakeSubject")
+  rehabIntakesReviewed      RehabIntake[]       @relation("RehabIntakeReviewer")
+  rehabSessions             RehabSession[]      @relation("RehabSessionSubject")
+  rehabSessionsFacilitated  RehabSession[]      @relation("RehabSessionFacilitator")
+  rehabMilestones           RehabMilestone[]    @relation("RehabMilestoneSubject")
+  rehabMilestonesRecorded   RehabMilestone[]    @relation("RehabMilestoneRecorder")
+  rehabGroupMemberships     RehabGroupMember[]
+  newsArticles              NewsArticle[]
+  newsSubscriptions         NewsSubscription[]
+  donationCampaigns         DonationCampaign[]
+  donations                 Donation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
@@ -360,6 +377,7 @@ model Resource {
   readingProgress         ReadingProgress[]
   orders                  Order[]
   cartItems               CartItem[]
+  donations               Donation[]
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 }
@@ -1294,6 +1312,7 @@ enum NotificationType {
   PUBLICATION
   DUE
   SYSTEM
+  NEWS
 }
 
 /// Real favorite, replacing app/member/_shared/favorites-data.ts's mock
@@ -1320,6 +1339,7 @@ model Favorite {
 enum FavoriteType {
   RESOURCE
   COURSE
+  ARTICLE
 }
 
 /// Real login event, per APP_DOC Task 1.7 — replacing both
@@ -1553,4 +1573,450 @@ model TwoFactorSecret {
   recoveryCodes String[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+/// Real accredited beauty-service provider directory, replacing
+/// app/dashboard/beauty/page.tsx's placeholder. Modeled on Clinic —
+/// admin-managed reference data, GET-only this pass (no admin CRUD UI
+/// yet, matches Clinic's own scope). `specialties` is a String[] rather
+/// than Clinic's single `specialty` since a provider can offer more
+/// than one service category.
+model BeautyProvider {
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  specialties  String[]
+  location     String
+  image        String
+  bio          String?
+  /// Denormalized from BeautyReview, same avgRating/reviewCount
+  /// convention as Resource — recomputed on every review write, never
+  /// live-summed on render.
+  avgRating    Float               @default(0)
+  reviewCount  Int                 @default(0)
+  services     BeautyService[]
+  appointments BeautyAppointment[]
+  reviews      BeautyReview[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+/// Real service-catalog entry, scoped to one provider — a provider's
+/// menu of offerings with real pricing.
+model BeautyService {
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  providerId   String              @db.ObjectId
+  provider     BeautyProvider      @relation(fields: [providerId], references: [id])
+  name         String
+  category     String
+  priceRwf     Float
+  durationMins Int
+  description  String?
+  appointments BeautyAppointment[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+/// Real appointment booking, modeled on Appointment — same userId FK,
+/// dateTime/reason/status shape, plus a real serviceId FK since a
+/// beauty appointment is always tied to a specific catalog service.
+model BeautyAppointment {
+  id         String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String                  @db.ObjectId
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId String                  @db.ObjectId
+  provider   BeautyProvider          @relation(fields: [providerId], references: [id])
+  serviceId  String                  @db.ObjectId
+  service    BeautyService           @relation(fields: [serviceId], references: [id])
+  dateTime   DateTime
+  notes      String?
+  status     BeautyAppointmentStatus @default(PENDING)
+  review     BeautyReview?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([providerId])
+}
+
+enum BeautyAppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+/// Real member review, backing the "Reviews & Ratings" placeholder card
+/// — modeled on the Resource/Review pattern (separate collection,
+/// denormalized avg/count on the parent). Tied to a completed
+/// BeautyAppointment (appointmentId required + unique) rather than a
+/// free "review any provider" flow, so a review is always tied to a
+/// real visit.
+model BeautyReview {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId    String            @db.ObjectId
+  provider      BeautyProvider    @relation(fields: [providerId], references: [id])
+  appointmentId String            @unique @db.ObjectId
+  appointment   BeautyAppointment @relation(fields: [appointmentId], references: [id])
+  rating        Int
+  comment       String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([providerId])
+}
+
+/// Real accredited counselor directory, modeled on Clinic/BeautyProvider.
+/// GET-only reference data this pass, no admin CRUD UI yet.
+model Counselor {
+  id        String              @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  specialty String
+  bio       String?
+  image     String
+  sessions  CounselingSession[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+/// Real session request/booking, modeled on Appointment, with a `mode`
+/// field distinguishing in-person/virtual — a real, product-relevant
+/// distinction for a confidential-counseling flow a checkup booking
+/// doesn't need.
+model CounselingSession {
+  id           String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String                  @db.ObjectId
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  counselorId  String                  @db.ObjectId
+  counselor    Counselor               @relation(fields: [counselorId], references: [id])
+  requestedAt  DateTime                @default(now())
+  proposedTime DateTime
+  mode         CounselingSessionMode   @default(IN_PERSON)
+  reason       String
+  status       CounselingSessionStatus @default(PENDING)
+  notes        CounselingNote[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([counselorId])
+}
+
+enum CounselingSessionMode {
+  IN_PERSON
+  VIRTUAL
+}
+
+enum CounselingSessionStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+/// Real "Session History" record — a counseling note, directly
+/// analogous to HealthRecord but tied to a specific CounselingSession.
+/// Staff-authored (authorId, separate from the subject userId) after
+/// the fact — kept a separate collection (not embedded on
+/// CounselingSession) since visibility must be independently gateable
+/// per CounselingConsent.shareNotesWithMember (a real query filter can
+/// redact per-reader; an embedded field can't).
+model CounselingNote {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String            @db.ObjectId
+  session   CounselingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String            @db.ObjectId
+  user      User              @relation("CounselingNoteSubject", fields: [userId], references: [id], onDelete: Cascade)
+  authorId  String            @db.ObjectId
+  author    User              @relation("CounselingNoteAuthor", fields: [authorId], references: [id])
+  summary   String
+  followUp  String?
+  createdAt DateTime          @default(now())
+
+  @@index([userId])
+}
+
+/// Real privacy/consent settings, one row per member (unique userId),
+/// upserted rather than created fresh each time — same single-row-
+/// per-owner convention as Cart/TwoFactorSecret.
+model CounselingConsent {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @unique @db.ObjectId
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareNotesWithMember  Boolean  @default(true)
+  allowStaffContact     Boolean  @default(true)
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  updatedAt             DateTime @updatedAt
+}
+
+/// Real support-group directory — the provider/service-directory
+/// collection for Rehabilitation. No separate "coach directory" exists
+/// since the module's own hints describe groups + staff-run programs,
+/// not individual coaches — RehabSession.facilitatorId covers
+/// per-session staffing instead.
+model SupportGroup {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  focus          String
+  description    String
+  meetingCadence String
+  image          String
+  members        RehabGroupMember[]
+  sessions       RehabSession[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+/// Join row for group membership — a member can join/leave a support
+/// group independent of any specific session, modeled as a real join
+/// collection (same reasoning as ProjectMember).
+model RehabGroupMember {
+  id       String       @id @default(auto()) @map("_id") @db.ObjectId
+  groupId  String       @db.ObjectId
+  group    SupportGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String       @db.ObjectId
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime     @default(now())
+
+  @@unique([groupId, userId])
+}
+
+/// Real intake assessment — a one-time (or low-frequency,
+/// re-submittable) assessment, distinct from RehabSession since intake
+/// has its own genuine staff-review step ("submitted" -> "under
+/// review" -> "plan created") that a scheduled session doesn't.
+model RehabIntake {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String            @db.ObjectId
+  user         User              @relation("RehabIntakeSubject", fields: [userId], references: [id], onDelete: Cascade)
+  concernArea  String
+  history      String
+  goals        String
+  status       RehabIntakeStatus @default(SUBMITTED)
+  reviewedById String?           @db.ObjectId
+  reviewedBy   User?             @relation("RehabIntakeReviewer", fields: [reviewedById], references: [id])
+  reviewNotes  String?
+  submittedAt  DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+enum RehabIntakeStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  PLAN_CREATED
+  DECLINED
+}
+
+/// Real scheduled program session — the appointment-equivalent
+/// collection, modeled on Appointment. Deliberately staff-scheduled
+/// (POST is requireStaff() only, see /api/rehabilitation/schedule),
+/// not member-initiated, per the module's own "with staff support"/
+/// "facilitated by program staff" hints — a genuine divergence from
+/// Beauty/Counseling's member-initiated booking.
+model RehabSession {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String             @db.ObjectId
+  user          User               @relation("RehabSessionSubject", fields: [userId], references: [id], onDelete: Cascade)
+  groupId       String?            @db.ObjectId
+  group         SupportGroup?      @relation(fields: [groupId], references: [id])
+  facilitatorId String?            @db.ObjectId
+  facilitator   User?              @relation("RehabSessionFacilitator", fields: [facilitatorId], references: [id])
+  dateTime      DateTime
+  focus         String
+  status        RehabSessionStatus @default(SCHEDULED)
+  milestones    RehabMilestone[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([groupId])
+}
+
+enum RehabSessionStatus {
+  SCHEDULED
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+/// Real "Progress Tracking" record — a recovery milestone, directly
+/// analogous to HealthRecord: staff-authored, per-user, read-mostly
+/// from the member side. Kept independent of RehabSession (nullable
+/// sessionId) since a milestone can be logged standalone by staff, not
+/// only as a session's byproduct.
+model RehabMilestone {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String        @db.ObjectId
+  user         User          @relation("RehabMilestoneSubject", fields: [userId], references: [id], onDelete: Cascade)
+  sessionId    String?       @db.ObjectId
+  session      RehabSession? @relation(fields: [sessionId], references: [id])
+  recordedById String        @db.ObjectId
+  recordedBy   User          @relation("RehabMilestoneRecorder", fields: [recordedById], references: [id])
+  title        String
+  description  String
+  achievedAt   DateTime      @default(now())
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
+}
+
+/// Real news article/edition — mirrors Publication's exact submit ->
+/// review -> publish lifecycle rather than inventing a new editorial
+/// workflow, but is admin/editor-authored (no non-staff "owner"
+/// branch anywhere — unlike Publication, there is no contributor role
+/// here). Kept as its own model rather than a reuse of Publication
+/// itself, since the consuming shape genuinely differs: Publication
+/// becomes a purchasable Resource on approval; a NewsArticle never
+/// does — it has a `content` body field Publication has no
+/// equivalent of, and a `category` feed/filter concept.
+model NewsArticle {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  /// Free text body — the article/edition content itself.
+  content     String
+  /// Short teaser shown on feed/list views without loading full content.
+  summary     String
+  coverImage  String?
+  /// Free-text category ("Ministry Updates", "Community", "Events") —
+  /// same free-text judgment call as Publication.category (not the KCS
+  /// Bible taxonomy).
+  category    String
+  language    PublicationLanguage @default(EN)
+  authorId    String              @db.ObjectId
+  author      User                @relation(fields: [authorId], references: [id])
+  authorName  String
+  status      NewsArticleStatus   @default(DRAFT)
+  /// Set once PUBLISHED — null for every earlier status.
+  publishedAt DateTime?
+  /// True marks this row as a full "Edition" (a full newsletter/
+  /// newspaper issue) vs. a single standalone Article — both share
+  /// this one model/table since "Latest Editions" and the
+  /// per-category article feed browse the exact same underlying rows
+  /// filtered differently, not two different resources.
+  isEdition   Boolean             @default(false)
+  featured    Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([publishedAt])
+}
+
+enum NewsArticleStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+/// Category-level alert subscription ("Publication Alerts" in the
+/// module's own in-page hint). A row means "notify this user whenever
+/// a NewsArticle in this category (or, if category is null, ANY
+/// category) is published." Delivery reuses the existing Notification
+/// system (see lib/notify.ts's notifyUser) — this table is only the
+/// subscription list, not a second notification/inbox model.
+model NewsSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Null subscribes to every category; set subscribes to one category only.
+  category  String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, category])
+}
+
+/// Real fundraising campaign — admin-created target for general
+/// giving, replacing donations/page.tsx's "Active Campaigns"
+/// placeholder card. `raisedRwf` is a denormalized running total,
+/// recomputed via an atomic increment at the one real settlement
+/// write path (settleDonation), never live-summed on render — same
+/// convention as Resource.availableQty/avgRating.
+model DonationCampaign {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  coverImage  String?
+  /// Free-text category ("Library Fund", "Publishing Fund") — same
+  /// judgment call as Publication.category/NewsArticle.category, not
+  /// the KCS Bible taxonomy.
+  category    String
+  goalRwf     Float
+  raisedRwf   Float          @default(0)
+  status      CampaignStatus @default(ACTIVE)
+  startDate   DateTime       @default(now())
+  endDate     DateTime?
+  featured    Boolean        @default(false)
+  createdById String         @db.ObjectId
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  donations   Donation[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status])
+}
+
+enum CampaignStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+/// Real donation/sponsorship payment record — reuses the exact
+/// PENDING/PAID/FAILED/CANCELLED lifecycle and paypackRef/
+/// paypackStatus/paypackProvider/stripeSessionId provider-reference
+/// fields as Order/Checkout (see those models' docstrings) rather
+/// than inventing a new payment
+/// vocabulary. A donation is either campaign-targeted general giving
+/// OR resource-sponsorship-targeted (donations/page.tsx's separate
+/// "Sponsor a Resource" flow) — campaignId/resourceId are both
+/// optional and mutually exclusive (exactly one set), enforced at the
+/// API layer since Mongo has no CHECK-constraint equivalent. Kept as
+/// ONE model rather than a separate Sponsorship model since both
+/// flows produce an identical payment record shape — the only real
+/// difference is which target FK is populated.
+model Donation {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  user            User              @relation(fields: [userId], references: [id])
+  donorName       String
+  donorEmail      String
+  donorPhone      String
+  /// Set for a general/campaign donation; null for a resource sponsorship.
+  campaignId      String?           @db.ObjectId
+  campaign        DonationCampaign? @relation(fields: [campaignId], references: [id])
+  /// Set for a "sponsor a specific resource" donation; null for a
+  /// campaign donation.
+  resourceId      String?           @db.ObjectId
+  resource        Resource?         @relation(fields: [resourceId], references: [id])
+  /// Optional public dedication/note ("In memory of...").
+  message         String?
+  /// True hides donorName from any future public/donor-wall display —
+  /// display flag only, the record itself stays fully attributed.
+  isAnonymous     Boolean           @default(false)
+  method          PaymentMethod
+  amountRwf       Float
+  status          OrderStatus       @default(PENDING)
+  /// Same three fields, same sparse-index reasoning, as Order/Checkout's
+  /// paypack* — a real sparse unique index is created out-of-band via
+  /// scripts/create-donation-sparse-indexes.mjs.
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
+  stripeSessionId String?
+  paidAt          DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([resourceId])
 }

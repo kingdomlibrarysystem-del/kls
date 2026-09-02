@@ -20,7 +20,11 @@ export interface Clinic {
 
 export interface Appointment {
   id: string
+  userId?: string
   clinicId: string
+  /** Denormalized display fields, only present when the API request included the relations (admin list/detail) — absent on the plain member-facing GET. */
+  clinicName?: string
+  memberName?: string
   /** ISO datetime for the requested/confirmed checkup. */
   dateTime: string
   reason: string

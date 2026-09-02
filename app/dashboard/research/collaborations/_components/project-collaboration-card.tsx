@@ -1,14 +1,16 @@
-import { Calendar, Eye } from 'lucide-react'
+import { Calendar, Eye, Pencil, Trash2 } from 'lucide-react'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { projectStatusConfig, type ResearchProjectSummary } from './collaborations-data'
 import { ContributorAvatar } from './contributor-avatar'
 
 interface ProjectCollaborationCardProps {
   project: ResearchProjectSummary
+  onEdit: (project: ResearchProjectSummary) => void
+  onDelete: (project: ResearchProjectSummary) => void
 }
 
-/** One research project's summary card: title, status, description, contributor avatars, and a Details action. */
-export function ProjectCollaborationCard({ project }: ProjectCollaborationCardProps) {
+/** One research project's summary card: title, status, description, contributor avatars, and View/Edit/Delete actions. */
+export function ProjectCollaborationCard({ project, onEdit, onDelete }: ProjectCollaborationCardProps) {
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
@@ -33,17 +35,24 @@ export function ProjectCollaborationCard({ project }: ProjectCollaborationCardPr
         </div>
       </div>
 
-      <UniversalButton
-        href={`/dashboard/research/collaborations/${project.id}`}
-        variant="secondary"
-        size="sm"
-        fullWidth
-        icon={<Eye size={12} />}
-        aria-label={`View details for ${project.title}`}
-        className="mt-auto"
-      >
-        View Details
-      </UniversalButton>
+      <div className="mt-auto flex items-center gap-1.5">
+        <UniversalButton
+          href={`/dashboard/research/collaborations/${project.id}`}
+          variant="secondary"
+          size="sm"
+          fullWidth
+          icon={<Eye size={12} />}
+          aria-label={`View details for ${project.title}`}
+        >
+          View Details
+        </UniversalButton>
+        <button onClick={() => onEdit(project)} aria-label={`Edit ${project.title}`} className="shrink-0 p-2 bg-w-100 text-w-950 border border-w-300 rounded hover:bg-w-200 transition-colors">
+          <Pencil size={13} />
+        </button>
+        <button onClick={() => onDelete(project)} aria-label={`Delete ${project.title}`} className="shrink-0 p-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 transition-colors">
+          <Trash2 size={13} />
+        </button>
+      </div>
     </div>
   )
 }

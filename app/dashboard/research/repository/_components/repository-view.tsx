@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Eye, AlertTriangle } from 'lucide-react'
+import { FileText, Eye, Pencil, Trash2, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -9,8 +9,10 @@ import { UniversalButton } from '@/components/ui/universal-button'
 import { useRepository } from './use-repository'
 import { paperStatusConfig, type ResearchPaper } from './repository-data'
 import { RepositoryStats } from './repository-stats'
+import { EditPaperModal } from './edit-paper-modal'
+import { DeletePaperModal } from './delete-paper-modal'
 
-function buildColumns(): Column<ResearchPaper>[] {
+function buildColumns(onEdit: (p: ResearchPaper) => void, onDelete: (p: ResearchPaper) => void): Column<ResearchPaper>[] {
   return [
     { key: 'title', label: 'Title', sortable: true, render: (p) => <span className="font-semibold text-w-950 max-w-55 truncate block">{p.title}</span> },
     { key: 'author', label: 'Author', sortable: true, render: (p) => <span className="text-w-700">{p.author}</span> },
@@ -37,16 +39,11 @@ function buildColumns(): Column<ResearchPaper>[] {
     {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (p) => (
-        <UniversalButton
-          href={`/dashboard/research/repository/${p.id}`}
-          aria-label={`View ${p.title}`}
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          icon={<Eye size={12} />}
-        >
-          View
-        </UniversalButton>
+        <div className="flex items-center justify-end gap-1.5">
+          <UniversalButton href={`/dashboard/research/repository/${p.id}`} aria-label={`View ${p.title}`} variant="outline" size="sm" icon={<Eye size={12} />}>View</UniversalButton>
+          <button onClick={() => onEdit(p)} aria-label={`Edit ${p.title}`} className="p-2 bg-w-100 text-w-950 border border-w-300 rounded hover:bg-w-200 transition-colors"><Pencil size={12} /></button>
+          <button onClick={() => onDelete(p)} aria-label={`Delete ${p.title}`} className="p-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 transition-colors"><Trash2 size={12} /></button>
+        </div>
       ),
     },
   ]
@@ -60,6 +57,8 @@ function buildColumns(): Column<ResearchPaper>[] {
  */
 export function RepositoryView() {
   const [authorFilter, setAuthorFilter] = useState('all')
+  const [editing, setEditing] = useState<ResearchPaper | null>(null)
+  const [deleting, setDeleting] = useState<ResearchPaper | null>(null)
   const { data: papers, loading, error } = useRepository()
 
   if (loading) {
@@ -100,7 +99,7 @@ export function RepositoryView() {
       <RepositoryStats />
       <DataTable<ResearchPaper>
         data={tableData}
-        columns={buildColumns()}
+        columns={buildColumns(setEditing, setDeleting)}
         rowKey={(p) => p.id}
         searchPlaceholder="Search title or keyword..."
         searchFilter={(p, q) =>
@@ -111,6 +110,8 @@ export function RepositoryView() {
         filters={authorSelect}
         emptyMessage="No papers match your search."
       />
+      <EditPaperModal paper={editing} onClose={() => setEditing(null)} />
+      <DeletePaperModal paper={deleting} onClose={() => setDeleting(null)} />
     </>
   )
 }
