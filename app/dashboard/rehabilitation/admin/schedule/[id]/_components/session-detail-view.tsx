@@ -6,8 +6,8 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { rehabSessionStatusConfig, type RehabSession } from '../../../_shared/rehab-data'
-import { completeSession, markSessionMissed, cancelSessionAdmin } from '../../../_shared/use-rehab-schedule-admin'
+import { rehabSessionStatusConfig, type RehabSession } from '../../../../_shared/rehab-data'
+import { completeSession, markSessionMissed, cancelSessionAdmin } from '../../../../_shared/use-rehab-schedule-admin'
 import { RecordMilestoneForm } from './record-milestone-form'
 
 interface SessionDetailViewProps {
@@ -43,7 +43,7 @@ export function SessionDetailView({ id }: SessionDetailViewProps) {
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [id])
+  useEffect(() => { Promise.resolve().then(load) }, [id])
 
   if (loading) {
     return (

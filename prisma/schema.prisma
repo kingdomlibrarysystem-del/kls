@@ -1971,9 +1971,10 @@ enum CampaignStatus {
 }
 
 /// Real donation/sponsorship payment record — reuses the exact
-/// PENDING/PAID/FAILED/CANCELLED lifecycle and paypack*/
-/// stripeSessionId provider-reference fields as Order/Checkout
-/// (see those models' docstrings) rather than inventing a new payment
+/// PENDING/PAID/FAILED/CANCELLED lifecycle and paypackRef/
+/// paypackStatus/paypackProvider/stripeSessionId provider-reference
+/// fields as Order/Checkout (see those models' docstrings) rather
+/// than inventing a new payment
 /// vocabulary. A donation is either campaign-targeted general giving
 /// OR resource-sponsorship-targeted (donations/page.tsx's separate
 /// "Sponsor a Resource" flow) — campaignId/resourceId are both

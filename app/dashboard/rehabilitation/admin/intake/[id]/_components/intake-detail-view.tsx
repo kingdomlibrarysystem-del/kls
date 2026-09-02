@@ -6,8 +6,8 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { rehabIntakeStatusConfig, type RehabIntake } from '../../../_shared/rehab-data'
-import { reviewIntake, createPlanFromIntake, declineIntake } from '../../../_shared/use-rehab-intake-admin'
+import { rehabIntakeStatusConfig, type RehabIntake } from '../../../../_shared/rehab-data'
+import { reviewIntake, createPlanFromIntake, declineIntake } from '../../../../_shared/use-rehab-intake-admin'
 
 interface IntakeDetailViewProps {
   id: string
@@ -29,7 +29,7 @@ export function IntakeDetailView({ id }: IntakeDetailViewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const load = () => {
+  function load() {
     setLoading(true)
     fetch(`/api/rehabilitation/intake/${id}`)
       .then((res) => res.json())
@@ -41,7 +41,7 @@ export function IntakeDetailView({ id }: IntakeDetailViewProps) {
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [id])
+  useEffect(() => { Promise.resolve().then(load) }, [id])
 
   if (loading) {
     return (

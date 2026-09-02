@@ -30,8 +30,9 @@ export function useSupportGroups() {
   useEffect(() => {
     const listener = () => setData(groupsCache ?? [])
     groupsListeners.add(listener)
-    if (!groupsCache) loadGroups().finally(() => setLoading(false))
-    else setLoading(false)
+    Promise.resolve()
+      .then(() => (groupsCache ? Promise.resolve() : loadGroups()))
+      .finally(() => setLoading(false))
     return () => { groupsListeners.delete(listener) }
   }, [])
 
@@ -114,7 +115,7 @@ export function useRehabSchedule(userId: string | undefined) {
   const [data, setData] = useState<RehabSession[]>([])
 
   useEffect(() => {
-    if (!userId) { setData([]); return }
+    if (!userId) { Promise.resolve().then(() => setData([])); return }
     fetch(`/api/rehabilitation/schedule?userId=${userId}`)
       .then((res) => res.json())
       .then((json) => setData(json.data ?? []))
@@ -129,7 +130,7 @@ export function useRehabProgress(userId: string | undefined) {
   const [data, setData] = useState<RehabMilestone[]>([])
 
   useEffect(() => {
-    if (!userId) { setData([]); return }
+    if (!userId) { Promise.resolve().then(() => setData([])); return }
     fetch(`/api/rehabilitation/progress?userId=${userId}`)
       .then((res) => res.json())
       .then((json) => setData(json.data ?? []))

@@ -6,8 +6,8 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { rehabSessionStatusConfig, type RehabSession, type RehabSessionStatus } from '../../_shared/rehab-data'
-import { useRehabScheduleAdmin, completeSession, markSessionMissed, cancelSessionAdmin } from '../../_shared/use-rehab-schedule-admin'
+import { rehabSessionStatusConfig, type RehabSession, type RehabSessionStatus } from '../../../_shared/rehab-data'
+import { useRehabScheduleAdmin, completeSession, markSessionMissed, cancelSessionAdmin } from '../../../_shared/use-rehab-schedule-admin'
 import { ScheduleSessionForm } from './schedule-session-form'
 
 function buildColumns(onComplete: (s: RehabSession) => void, onMissed: (s: RehabSession) => void, onCancel: (s: RehabSession) => void): Column<RehabSession>[] {

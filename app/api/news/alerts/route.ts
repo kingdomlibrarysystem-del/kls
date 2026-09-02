@@ -22,11 +22,20 @@ export const POST = withErrorHandling('/api/news/alerts', 'POST', async (request
   const auth = await requireOwnerOrStaff(userId)
   if (auth.response) return auth.response
 
-  const subscription = await prisma.newsSubscription.upsert({
-    where: { userId_category: { userId, category: category ?? null } },
-    update: {},
-    create: { userId, category: category ?? null },
-  })
+  // Prisma's Mongo connector generates the userId_category compound-unique
+  // where-input as { userId: string; category: string } — non-nullable,
+  // even though category itself is nullable — so it can't express "find
+  // the row where category is null" via that compound key. Only the
+  // category-set case can use the real upsert; a null-category ("all
+  // categories") subscription is found/created manually instead.
+  const subscription = category
+    ? await prisma.newsSubscription.upsert({
+        where: { userId_category: { userId, category } },
+        update: {},
+        create: { userId, category },
+      })
+    : await prisma.newsSubscription.findFirst({ where: { userId, category: null } })
+      ?? await prisma.newsSubscription.create({ data: { userId, category: null } })
 
   return NextResponse.json({ data: serializeSubscription(subscription), message: 'Subscribed successfully', code: 'success', status: 201 }, { status: 201 })
 })

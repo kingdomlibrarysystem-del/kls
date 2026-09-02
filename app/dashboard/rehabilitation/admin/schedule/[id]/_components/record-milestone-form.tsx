@@ -6,7 +6,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useAuth } from '@/contexts/auth-context'
-import { recordMilestone } from '../../../_shared/use-rehab-schedule-admin'
+import { recordMilestone } from '../../../../_shared/use-rehab-schedule-admin'
 
 interface RecordMilestoneFormProps {
   userId: string

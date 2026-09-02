@@ -109,7 +109,7 @@ export const POST = withErrorHandling('/api/news/articles', 'POST', async (reque
 
   const author = await prisma.user.findUnique({ where: { id: body.authorId } })
   if (!author) throw new ApiError('The specified author does not exist', 400)
-  const authorName = author.name ?? `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim() || 'Staff'
+  const authorName = author.name ?? (`${author.firstName ?? ''} ${author.lastName ?? ''}`.trim() || 'Staff')
 
   const article = await prisma.newsArticle.create({
     data: {

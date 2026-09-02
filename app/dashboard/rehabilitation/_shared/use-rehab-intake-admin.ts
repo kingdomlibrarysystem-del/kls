@@ -39,13 +39,10 @@ export function useRehabIntakesAdmin() {
   useEffect(() => {
     const listener = () => setData([...cache])
     listeners.add(listener)
-    if (!hasFetched) {
-      loadIntakes()
-        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load intakes'))
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
+    Promise.resolve()
+      .then(() => (hasFetched ? Promise.resolve() : loadIntakes()))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load intakes'))
+      .finally(() => setLoading(false))
     return () => { listeners.delete(listener) }
   }, [])
 

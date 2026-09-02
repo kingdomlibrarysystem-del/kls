@@ -39,13 +39,10 @@ export function useRehabScheduleAdmin() {
   useEffect(() => {
     const listener = () => setData([...cache])
     listeners.add(listener)
-    if (!hasFetched) {
-      loadSchedule()
-        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load schedule'))
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
+    Promise.resolve()
+      .then(() => (hasFetched ? Promise.resolve() : loadSchedule()))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load schedule'))
+      .finally(() => setLoading(false))
     return () => { listeners.delete(listener) }
   }, [])
 

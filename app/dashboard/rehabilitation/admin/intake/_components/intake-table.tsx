@@ -6,8 +6,8 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { rehabIntakeStatusConfig, type RehabIntake, type RehabIntakeStatus } from '../../_shared/rehab-data'
-import { useRehabIntakesAdmin, reviewIntake, createPlanFromIntake, declineIntake } from '../../_shared/use-rehab-intake-admin'
+import { rehabIntakeStatusConfig, type RehabIntake, type RehabIntakeStatus } from '../../../_shared/rehab-data'
+import { useRehabIntakesAdmin, reviewIntake, createPlanFromIntake, declineIntake } from '../../../_shared/use-rehab-intake-admin'
 
 function buildColumns(onReview: (i: RehabIntake) => void, onCreatePlan: (i: RehabIntake) => void, onDecline: (i: RehabIntake) => void): Column<RehabIntake>[] {
   return [
