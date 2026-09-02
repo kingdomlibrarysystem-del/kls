@@ -113,6 +113,10 @@ model User {
   reviews                   Review[]
   beautyAppointments        BeautyAppointment[]
   beautyReviews             BeautyReview[]
+  counselingSessions        CounselingSession[]
+  counselingNotes           CounselingNote[]    @relation("CounselingNoteSubject")
+  counselingNotesAuthored   CounselingNote[]    @relation("CounselingNoteAuthor")
+  counselingConsent         CounselingConsent?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
@@ -1647,4 +1651,88 @@ model BeautyReview {
   updatedAt     DateTime          @updatedAt
 
   @@index([providerId])
+}
+
+/// Real accredited counselor directory, modeled on Clinic/BeautyProvider.
+/// GET-only reference data this pass, no admin CRUD UI yet.
+model Counselor {
+  id        String              @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  specialty String
+  bio       String?
+  image     String
+  sessions  CounselingSession[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+/// Real session request/booking, modeled on Appointment, with a `mode`
+/// field distinguishing in-person/virtual — a real, product-relevant
+/// distinction for a confidential-counseling flow a checkup booking
+/// doesn't need.
+model CounselingSession {
+  id           String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String                  @db.ObjectId
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  counselorId  String                  @db.ObjectId
+  counselor    Counselor               @relation(fields: [counselorId], references: [id])
+  requestedAt  DateTime                @default(now())
+  proposedTime DateTime
+  mode         CounselingSessionMode   @default(IN_PERSON)
+  reason       String
+  status       CounselingSessionStatus @default(PENDING)
+  notes        CounselingNote[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([counselorId])
+}
+
+enum CounselingSessionMode {
+  IN_PERSON
+  VIRTUAL
+}
+
+enum CounselingSessionStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+/// Real "Session History" record — a counseling note, directly
+/// analogous to HealthRecord but tied to a specific CounselingSession.
+/// Staff-authored (authorId, separate from the subject userId) after
+/// the fact — kept a separate collection (not embedded on
+/// CounselingSession) since visibility must be independently gateable
+/// per CounselingConsent.shareNotesWithMember (a real query filter can
+/// redact per-reader; an embedded field can't).
+model CounselingNote {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String            @db.ObjectId
+  session   CounselingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String            @db.ObjectId
+  user      User              @relation("CounselingNoteSubject", fields: [userId], references: [id], onDelete: Cascade)
+  authorId  String            @db.ObjectId
+  author    User              @relation("CounselingNoteAuthor", fields: [authorId], references: [id])
+  summary   String
+  followUp  String?
+  createdAt DateTime          @default(now())
+
+  @@index([userId])
+}
+
+/// Real privacy/consent settings, one row per member (unique userId),
+/// upserted rather than created fresh each time — same single-row-
+/// per-owner convention as Cart/TwoFactorSecret.
+model CounselingConsent {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @unique @db.ObjectId
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareNotesWithMember  Boolean  @default(true)
+  allowStaffContact     Boolean  @default(true)
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  updatedAt             DateTime @updatedAt
 }

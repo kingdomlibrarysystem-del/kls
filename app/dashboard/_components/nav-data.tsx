@@ -42,6 +42,8 @@ import {
   Palette,
   Scissors,
   Star,
+  MessageCircle,
+  ShieldCheck,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -128,7 +130,16 @@ export const adminMainNav: NavItem[] = [
       { icon: <Star size={12} />,          label: "Admin: Bookings", href: "/dashboard/beauty/admin" },
     ],
   },
-  { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "/dashboard/counseling" },
+  {
+    icon: <Brain size={14} />, label: "Consultation & Counseling",
+    subItems: [
+      { icon: <Brain size={12} />,         label: "Overview",        href: "/dashboard/counseling" },
+      { icon: <Users size={12} />,         label: "Counselors",      href: "/dashboard/counseling/counselors" },
+      { icon: <CalendarCheck size={12} />, label: "Sessions",        href: "/dashboard/counseling/sessions" },
+      { icon: <MessageCircle size={12} />, label: "Session History", href: "/dashboard/counseling/history" },
+      { icon: <ShieldCheck size={12} />,   label: "Admin: Sessions", href: "/dashboard/counseling/admin" },
+    ],
+  },
   { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "/dashboard/rehabilitation" },
   { icon: <Download size={14} />,   label: "Download Center",          href: "/dashboard/downloads" },
 ];
