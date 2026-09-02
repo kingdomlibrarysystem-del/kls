@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Pencil, Trash2, Video } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2, Video } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import { useCourseCatalog } from '@/app/dashboard/e-learning/_shared/use-course-catalog'
+import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { EditLessonModal } from '../../_components/edit-lesson-modal'
 import { DeleteLessonModal } from '../../_components/delete-lesson-modal'
 import { contentTypeConfig, type LessonRow } from '../../_components/lessons-config'
@@ -44,6 +45,7 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const { data: courseCatalog } = useCourseCatalog()
+  const { data: lessonsByCourse } = useLessonsByCourse()
 
   useEffect(() => {
     let cancelled = false
@@ -113,6 +115,11 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
     contentMarkdown: lesson.contentMarkdown,
   }
 
+  const siblings = lessonsByCourse[lesson.courseId]?.lessons ?? []
+  const position = siblings.findIndex((l) => l.id === lesson.id)
+  const prevLesson = position > 0 ? siblings[position - 1] : null
+  const nextLesson = position >= 0 && position < siblings.length - 1 ? siblings[position + 1] : null
+
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
@@ -134,7 +141,7 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
         </div>
       </div>
 
-      <div className="max-w-2xl space-y-4">
+      <div className="space-y-5">
         <div>
           <h1 className="font-cinzel text-xl font-semibold text-w-950">{lesson.title}</h1>
           <p className="font-lato text-sm text-w-600 mt-0.5">{courseTitle}</p>
@@ -145,19 +152,41 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
             {contentTypeConfig[lesson.contentType].label}
           </span>
           <span className="font-lato text-xs text-w-600">Order #{lesson.order} &bull; {lesson.durationMinutes} min</span>
+          {siblings.length > 0 && position >= 0 && (
+            <span className="font-lato text-xs text-w-600">&bull; Lesson {position + 1} of {siblings.length}</span>
+          )}
         </div>
 
-        <div className="bg-w-100 border border-w-300 rounded p-3">
-          <p className="font-lato text-xs font-semibold text-w-950 mb-1">Summary</p>
-          <p className="font-lato text-sm text-w-700 whitespace-pre-wrap">{lesson.content}</p>
+        {siblings.length > 0 && (
+          <div className="h-1.5 rounded-full bg-w-200 overflow-hidden max-w-md">
+            <div className="h-full bg-w-600" style={{ width: `${((position + 1) / siblings.length) * 100}%` }} />
+          </div>
+        )}
+
+        <div className="bg-w-100 border border-w-300 rounded-lg p-4">
+          <p className="font-lato text-xs font-semibold text-w-950 mb-2">Summary</p>
+          <p className="font-lato text-sm text-w-700 whitespace-pre-wrap leading-relaxed">{lesson.content}</p>
         </div>
 
         {lesson.contentMarkdown && (
-          <div className="bg-w-100 border border-w-300 rounded p-3 max-h-80 overflow-y-auto">
-            <p className="font-lato text-xs font-semibold text-w-950 mb-2">Lesson Content Preview</p>
+          <div className="bg-w-100 border border-w-300 rounded-lg p-6">
+            <p className="font-lato text-xs font-semibold text-w-950 mb-4">Lesson Content Preview</p>
             <MarkdownContent markdown={lesson.contentMarkdown} />
           </div>
         )}
+
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-w-200">
+          {prevLesson ? (
+            <UniversalButton href={`/dashboard/e-learning/lessons/${prevLesson.id}`} variant="outline" size="sm" icon={<ChevronLeft size={14} />}>
+              {prevLesson.title}
+            </UniversalButton>
+          ) : <span />}
+          {nextLesson && (
+            <UniversalButton href={`/dashboard/e-learning/lessons/${nextLesson.id}`} variant="outline" size="sm">
+              {nextLesson.title} <ChevronRight size={14} />
+            </UniversalButton>
+          )}
+        </div>
       </div>
 
       <EditLessonModal lesson={editing ? row : null} onClose={() => setEditing(false)} />

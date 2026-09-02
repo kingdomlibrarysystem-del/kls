@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Tag, Globe, Users, CalendarDays, FileText, PenLine, GraduationCap, ArrowLeft, Pencil, Archive, BookX } from 'lucide-react'
+import { ArrowLeft, Pencil, Archive, BookX } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { languageLabels } from '../../../add/_components/course-form-schema'
 import { useUsers } from '@/app/dashboard/users/_components/use-users'
 import { EditCourseModal } from '../../_components/edit-course-modal'
 import { ArchiveCourseModal } from '../../_components/archive-course-modal'
 import { archiveCourseInCatalog, refetchCourseCatalog } from '../../../_shared/use-course-catalog'
 import { statusConfig, type CourseCatalogEntry } from '../../_components/catalog-config'
+import { CourseInfoCard } from './course-info-card'
+import { CourseRelatedPanels } from './course-related-panels'
 
 interface CourseDetailViewProps {
   id: string
@@ -50,16 +51,6 @@ async function fetchCourse(id: string): Promise<CourseCatalogEntry | null> {
   const json = await res.json()
   if (json.code !== 'success' || !json.data) return null
   return toCatalogEntry(json.data)
-}
-
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-2">
-      <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
-      <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
-    </div>
-  )
 }
 
 /**
@@ -148,7 +139,7 @@ export function CourseDetailView({ id }: CourseDetailViewProps) {
         </div>
       </div>
 
-      <div className="max-w-2xl space-y-4">
+      <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-cinzel text-xl font-semibold text-w-950">{course.title}</h1>
           <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold shrink-0 ${statusConfig[course.status].cls}`}>
@@ -156,21 +147,14 @@ export function CourseDetailView({ id }: CourseDetailViewProps) {
           </span>
         </div>
 
-        <p className="font-lato text-sm text-w-700 leading-relaxed">{course.description}</p>
+        <p className="font-lato text-sm text-w-700 leading-relaxed max-w-2xl">{course.description}</p>
 
-        <div className="bg-form-highlight border border-w-300 rounded p-4 space-y-3">
-          <DetailRow icon={<Tag size={13} />} label="Category" value={course.category} />
-          <DetailRow icon={<Globe size={13} />} label="Language" value={languageLabels[course.language]} />
-          <DetailRow icon={<PenLine size={13} />} label="Author" value={course.author} />
-          <DetailRow
-            icon={<GraduationCap size={13} />}
-            label="Instructor"
-            value={course.lecturerId ? (users.find((u) => u.id === course.lecturerId)?.name ?? '—') : 'None assigned'}
-          />
-          <DetailRow icon={<Users size={13} />} label="Enrolled" value={String(course.enrolledCount)} />
-          <DetailRow icon={<CalendarDays size={13} />} label="Created" value={course.createdAt} />
-          <DetailRow icon={<FileText size={13} />} label="ID" value={course.id} />
-        </div>
+        <CourseInfoCard
+          course={course}
+          instructorName={course.lecturerId ? (users.find((u) => u.id === course.lecturerId)?.name ?? '—') : 'None assigned'}
+        />
+
+        <CourseRelatedPanels courseId={course.id} />
       </div>
 
       <EditCourseModal
