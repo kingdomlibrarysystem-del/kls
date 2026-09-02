@@ -20,7 +20,12 @@ export const resourceSchema = z.object({
   language: z.string().min(1, 'Language is required'),
   /** Auto-filled from a real extracted PDF page count when a document is uploaded (see /api/uploads); still editable for a resource with no document, or to correct it. */
   pages: z.number().int().min(1, 'Must be at least 1 page'),
+  /** Reserve (SALE/"Buy") price only — Borrow uses borrowPrice/borrowDurationDays below instead. */
   price: z.number().min(0, 'Must be 0 or more'),
+  /** Real Borrow (RENTAL) charge, independent from `price` — Reserve and Borrow are different products with their own pricing. */
+  borrowPrice: z.number().min(0, 'Must be 0 or more'),
+  /** Days from borrowDate to dueDate for a Borrow — set via a preset (7/14/30) or a genuine custom day count, see BORROW_DURATION_PRESETS. */
+  borrowDurationDays: z.number().int().min(1, 'Must be at least 1 day'),
   /** How many of this resource's chapters (once seeded) are readable free before the reader shows a real "Buy to Continue" paywall — see /api/chapters. Ignored while price is 0. */
   freePreviewChapterCount: z.number().int().min(0, 'Must be 0 or more'),
   bindingType: z.enum(['SOFT', 'HARD']),
@@ -58,6 +63,8 @@ export const defaultResourceFormValues: ResourceFormData = {
   language: 'EN',
   pages: 1,
   price: 0,
+  borrowPrice: 0,
+  borrowDurationDays: 14,
   freePreviewChapterCount: 0,
   bindingType: 'SOFT',
   mediaType: 'TEXT',
@@ -85,4 +92,11 @@ export const LANGUAGE_OPTIONS = [
   { code: 'AR', label: 'Arabic' },
   { code: 'PT', label: 'Portuguese' },
   { code: 'ES', label: 'Spanish' },
+] as const
+
+/** Real, common borrow-period presets an admin picks from — "Custom" reveals a plain day-count input instead of one of these fixed values. */
+export const BORROW_DURATION_PRESETS = [
+  { days: 7, label: '7 days' },
+  { days: 14, label: '2 weeks' },
+  { days: 30, label: '1 month' },
 ] as const

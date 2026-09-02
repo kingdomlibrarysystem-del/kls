@@ -17,15 +17,19 @@ function serializeCartItem(item: {
   type: string
   quantity: number
   addedAt: Date
-  resource: { id: string; title: string; author: string; price: number; coverImages: string[] }
+  resource: { id: string; title: string; author: string; price: number; borrowPrice: number; coverImages: string[] }
 }) {
+  // RENTAL (Borrow) charges resource.borrowPrice; SALE (Reserve) charges
+  // resource.price — the two products have their own independent
+  // pricing now, not the same shared field.
+  const unitPriceRwf = item.type === 'RENTAL' ? item.resource.borrowPrice : item.resource.price
   return {
     id: item.id,
     resourceId: item.resourceId,
     resourceTitle: item.resource.title,
     resourceAuthor: item.resource.author,
     resourceCover: item.resource.coverImages[0] ?? null,
-    unitPriceRwf: item.resource.price,
+    unitPriceRwf,
     type: item.type,
     quantity: item.quantity,
     addedAt: item.addedAt.toISOString(),
@@ -37,11 +41,11 @@ async function getOrCreateCart(userId: string) {
     where: { userId },
     update: {},
     create: { userId },
-    include: { items: { include: { resource: { select: { id: true, title: true, author: true, price: true, coverImages: true } } }, orderBy: { addedAt: 'asc' } } },
+    include: { items: { include: { resource: { select: { id: true, title: true, author: true, price: true, borrowPrice: true, coverImages: true } } }, orderBy: { addedAt: 'asc' } } },
   })
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling('/api/cart', 'GET', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
   if (!userId) throw new ApiError('userId is required', 400)
@@ -59,7 +63,7 @@ export async function GET(request: NextRequest) {
     code: 'success',
     status: 200,
   })
-}
+})
 
 const addToCartSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
@@ -77,9 +81,10 @@ export const POST = withErrorHandling('/api/cart', 'POST', async (request: NextR
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
   if (!resource) throw new ApiError('Resource not found', 404)
-  // Every cart item is a real purchase intent (SALE = Reserve, RENTAL =
-  // Borrow) — a free resource has nothing to charge for.
-  if (!resource.price || resource.price <= 0) {
+  // SALE (Reserve) always requires a real price. RENTAL (Borrow) is
+  // allowed to be free (borrowPrice defaults to 0) — its real product
+  // constraint is the return period, not necessarily a charge.
+  if (body.type === 'SALE' && (!resource.price || resource.price <= 0)) {
     throw new ApiError('This resource has no price set', 400)
   }
 

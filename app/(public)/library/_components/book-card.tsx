@@ -80,7 +80,10 @@ export function BookCard({ book }: { book: Resource }) {
           <h3 className="font-cinzel text-base font-semibold text-w-950 leading-snug mb-1">{book.title}</h3>
           <p className="font-lato text-sm text-w-700">by {book.author}</p>
         </Link>
-        <p className="font-cinzel text-lg font-bold text-w-600">{book.price.toLocaleString('en-RW')} RWF</p>
+        <p className="font-cinzel text-lg font-bold text-w-600">
+          {book.price > 0 ? `${book.price.toLocaleString('en-RW')} RWF` : 'Free'} <span className="text-xs font-lato font-semibold text-w-500">to reserve</span>
+        </p>
+        <p className="font-lato text-xs text-w-600">{book.borrowPrice > 0 ? `${book.borrowPrice.toLocaleString('en-RW')} RWF` : 'Free'} to borrow · {book.borrowDurationDays}d</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{getCategoryName(book.categoryId)}</span>
           <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
@@ -113,38 +116,41 @@ export function BookCard({ book }: { book: Resource }) {
               </UniversalButton>
             )
           )}
-          {book.price > 0 && (
-            isAuthenticated ? (
-              <div className="flex gap-2">
-                <UniversalButton
-                  variant={isReadable ? 'outline' : 'primary'}
-                  size="sm"
-                  disabled={outOfStock || inCartRental}
-                  loading={addingType === 'RENTAL'}
-                  icon={inCartRental ? <Check size={13} /> : <ShoppingCart size={13} />}
-                  className="flex-1"
-                  onClick={() => handleAddToCart('RENTAL')}
-                >
-                  {inCartRental ? 'In Cart' : 'Borrow'}
-                </UniversalButton>
-                <UniversalButton
-                  variant="outline"
-                  size="sm"
-                  disabled={inCartSale}
-                  loading={addingType === 'SALE'}
-                  icon={inCartSale ? <Check size={13} /> : <ShoppingCart size={13} />}
-                  className="flex-1"
-                  onClick={() => handleAddToCart('SALE')}
-                >
-                  {inCartSale ? 'In Cart' : 'Reserve'}
-                </UniversalButton>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <UniversalButton href={loginHref} variant={isReadable ? 'outline' : 'primary'} size="sm" className="flex-1">Borrow</UniversalButton>
-                <UniversalButton href={loginHref} variant="outline" size="sm" className="flex-1">Reserve</UniversalButton>
-              </div>
-            )
+          {(inCartRental || inCartSale) && (
+            <div className="flex items-center gap-1.5 bg-w-100 text-w-700 text-xs font-lato font-semibold px-2 py-1 rounded">
+              <Check size={12} /> {inCartRental && inCartSale ? 'Borrow & Reserve in cart' : inCartRental ? 'Borrow in cart' : 'Reserve in cart'}
+            </div>
+          )}
+          {isAuthenticated ? (
+            <div className="flex gap-2">
+              <UniversalButton
+                variant={isReadable ? 'outline' : 'primary'}
+                size="sm"
+                disabled={outOfStock || inCartRental}
+                loading={addingType === 'RENTAL'}
+                icon={<ShoppingCart size={13} />}
+                className="flex-1"
+                onClick={() => handleAddToCart('RENTAL')}
+              >
+                Borrow
+              </UniversalButton>
+              <UniversalButton
+                variant="outline"
+                size="sm"
+                disabled={inCartSale}
+                loading={addingType === 'SALE'}
+                icon={<ShoppingCart size={13} />}
+                className="flex-1"
+                onClick={() => handleAddToCart('SALE')}
+              >
+                Reserve
+              </UniversalButton>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <UniversalButton href={loginHref} variant={isReadable ? 'outline' : 'primary'} size="sm" className="flex-1">Borrow</UniversalButton>
+              <UniversalButton href={loginHref} variant="outline" size="sm" className="flex-1">Reserve</UniversalButton>
+            </div>
           )}
           {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
         </div>

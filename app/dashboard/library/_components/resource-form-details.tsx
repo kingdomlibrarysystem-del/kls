@@ -10,6 +10,7 @@ import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
 import { bindingTypeLabels, mediaTypeLabels, type BindingType, type MediaType } from './resources-data'
 import { TagInput } from './tag-input'
 import { ResourceFormMediaFiles } from './resource-form-media-files'
+import { ResourceFormBorrowFields } from './resource-form-borrow-fields'
 import { LANGUAGE_OPTIONS, type ResourceFormData } from './resource-form-schema'
 
 interface ResourceFormDetailsProps {
@@ -66,10 +67,13 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
           </select>
         </div>
         <div>
-          <FieldLabel htmlFor="price" required>Price (RWF)</FieldLabel>
+          <FieldLabel htmlFor="price" required>Reserve Price (RWF)</FieldLabel>
           <FormInput id="price" type="number" min={0} step={100} error={errors.price?.message} {...register('price', { valueAsNumber: true })} />
+          <p className="font-lato text-xs text-w-600 mt-1">Charged to Reserve (buy) — Borrow has its own price below.</p>
         </div>
       </div>
+
+      <ResourceFormBorrowFields register={register} errors={errors} setValue={setValue} watch={watch} />
 
       <div className="grid grid-cols-3 gap-4">
         <div>

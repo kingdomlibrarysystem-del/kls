@@ -21,6 +21,8 @@ function serializeResource(r: {
   pages: number
   isbn: string
   price: number
+  borrowPrice: number
+  borrowDurationDays: number
   freePreviewChapterCount: number
   totalQty: number
   availableQty: number
@@ -49,6 +51,8 @@ function serializeResource(r: {
     pages: r.pages,
     isbn: r.isbn,
     price: r.price,
+    borrowPrice: r.borrowPrice,
+    borrowDurationDays: r.borrowDurationDays,
     freePreviewChapterCount: r.freePreviewChapterCount,
     totalQty: r.totalQty,
     availableQty: r.availableQty,
@@ -96,6 +100,8 @@ const updateResourceSchema = z.object({
   pages: z.number().int().nonnegative().optional(),
   isbn: z.string().optional(),
   price: z.number().nonnegative().optional(),
+  borrowPrice: z.number().nonnegative().optional(),
+  borrowDurationDays: z.number().int().positive().optional(),
   freePreviewChapterCount: z.number().int().nonnegative().optional(),
   totalQty: z.number().int().nonnegative().optional(),
   availableQty: z.number().int().nonnegative().optional(),
@@ -141,6 +147,8 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
   if (body.pages !== undefined) data.pages = body.pages
   if (body.isbn !== undefined) data.isbn = body.isbn
   if (body.price !== undefined) data.price = body.price
+  if (body.borrowPrice !== undefined) data.borrowPrice = body.borrowPrice
+  if (body.borrowDurationDays !== undefined) data.borrowDurationDays = body.borrowDurationDays
   if (body.freePreviewChapterCount !== undefined) data.freePreviewChapterCount = body.freePreviewChapterCount
   if (body.totalQty !== undefined) data.totalQty = body.totalQty
   if (body.availableQty !== undefined) data.availableQty = body.availableQty

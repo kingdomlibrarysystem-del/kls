@@ -50,6 +50,8 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         bindingType: publication.bindingType ?? 'SOFT',
         mediaType: publication.mediaType ?? 'TEXT',
         price: publication.price ?? 0,
+        borrowPrice: 0,
+        borrowDurationDays: 14,
         quantity: publication.quantity ?? 0,
         available: (publication.quantity ?? 0) > 0,
         language: publication.language,
@@ -97,6 +99,8 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const bindingType = resource?.bindingType ?? catalogBook!.bindingType
   const mediaType = resource?.mediaType ?? catalogBook!.mediaType
   const price = resource?.price ?? catalogBook!.price
+  const borrowPrice = resource?.borrowPrice ?? catalogBook!.borrowPrice
+  const borrowDurationDays = resource?.borrowDurationDays ?? catalogBook!.borrowDurationDays
   const quantity = resource ? resource.availableQty : catalogBook!.quantity
   const available = resource ? resource.availableQty > 0 && resource.status !== 'archived' : !!catalogBook?.available
   const language = catalogBook ? languageBadgeLabels[catalogBook.language] : resource!.language
@@ -157,12 +161,13 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             by <Link href={`/library?contributor=${encodeURIComponent(author)}`} className="text-w-600 hover:text-w-950 underline">{author}</Link>
           </p>
 
-          <div className="flex items-center gap-4 mb-4">
-            <span className="font-cinzel text-lg font-bold text-w-600">{price.toLocaleString()} RWF</span>
+          <div className="flex items-center gap-4 mb-1">
+            <span className="font-cinzel text-lg font-bold text-w-600">{price > 0 ? `${price.toLocaleString()} RWF` : 'Free'} <span className="text-xs font-lato font-semibold text-w-500">to reserve</span></span>
             <span className={`flex items-center gap-1 text-sm font-lato ${quantity === 0 ? 'text-red-700 font-semibold' : 'text-w-700'}`}>
               <Package size={13} /> {quantity} available
             </span>
           </div>
+          <p className="font-lato text-sm text-w-600 mb-4">{borrowPrice > 0 ? `${borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {borrowDurationDays} days</p>
 
           {description && (
             <p className="font-lato text-sm text-w-700 leading-relaxed mb-6">{description}</p>
@@ -183,33 +188,36 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
           )}
 
           {isAuthenticated && resource ? (
-            price > 0 && (
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <UniversalButton
-                    variant={isReadable ? 'outline' : 'primary'}
-                    disabled={!available || inCartRental}
-                    loading={addingType === 'RENTAL'}
-                    icon={inCartRental ? <Check size={15} /> : <ShoppingCart size={15} />}
-                    onClick={() => handleAddToCart('RENTAL')}
-                    className="flex-1 sm:flex-none"
-                  >
-                    {inCartRental ? 'In Cart' : `Borrow — ${price.toLocaleString()} RWF`}
-                  </UniversalButton>
-                  <UniversalButton
-                    variant="outline"
-                    disabled={inCartSale}
-                    loading={addingType === 'SALE'}
-                    icon={inCartSale ? <Check size={15} /> : <ShoppingCart size={15} />}
-                    onClick={() => handleAddToCart('SALE')}
-                    className="flex-1 sm:flex-none"
-                  >
-                    {inCartSale ? 'In Cart' : `Reserve — ${price.toLocaleString()} RWF`}
-                  </UniversalButton>
+            <div className="flex flex-col gap-3">
+              {(inCartRental || inCartSale) && (
+                <div className="flex items-center gap-1.5 bg-w-100 text-w-700 text-xs font-lato font-semibold px-2 py-1 rounded w-fit">
+                  <Check size={12} /> {inCartRental && inCartSale ? 'Borrow & Reserve in cart' : inCartRental ? 'Borrow in cart' : 'Reserve in cart'}
                 </div>
-                {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
+              )}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <UniversalButton
+                  variant={isReadable ? 'outline' : 'primary'}
+                  disabled={!available || inCartRental}
+                  loading={addingType === 'RENTAL'}
+                  icon={<ShoppingCart size={15} />}
+                  onClick={() => handleAddToCart('RENTAL')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Borrow — {borrowPrice > 0 ? `${borrowPrice.toLocaleString()} RWF` : 'Free'}
+                </UniversalButton>
+                <UniversalButton
+                  variant="outline"
+                  disabled={inCartSale}
+                  loading={addingType === 'SALE'}
+                  icon={<ShoppingCart size={15} />}
+                  onClick={() => handleAddToCart('SALE')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Reserve — {price > 0 ? `${price.toLocaleString()} RWF` : 'Free'}
+                </UniversalButton>
               </div>
-            )
+              {cartError && <p className="font-lato text-xs text-red-700">{cartError}</p>}
+            </div>
           ) : isAuthenticated ? null : (
             <div>
               <div className="flex flex-col sm:flex-row gap-3">

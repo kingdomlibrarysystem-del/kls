@@ -29,14 +29,11 @@ export async function createBorrowRecord(input: CreateBorrowInput) {
   if (!resource) throw new ApiError('The specified resource does not exist', 400)
 
   const borrowDate = input.borrowDate ? new Date(input.borrowDate) : new Date()
-  let dueDate: Date
-  if (input.dueDate) {
-    dueDate = new Date(input.dueDate)
-  } else {
-    const settings = await prisma.settings.findFirst()
-    const periodDays = settings?.defaultBorrowPeriodDays ?? 14
-    dueDate = new Date(borrowDate.getTime() + periodDays * 86400000)
-  }
+  // Real per-resource return period (see Resource.borrowDurationDays'
+  // schema docstring) — replaces the old single global
+  // Settings.defaultBorrowPeriodDays fallback that applied the same
+  // period to every resource regardless of its real lending policy.
+  const dueDate = input.dueDate ? new Date(input.dueDate) : new Date(borrowDate.getTime() + resource.borrowDurationDays * 86400000)
 
   return prisma.$transaction(async (tx) => {
     const existing = await tx.borrow.findFirst({

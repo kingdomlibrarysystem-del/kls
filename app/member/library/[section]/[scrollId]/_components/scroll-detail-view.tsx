@@ -134,24 +134,29 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
                         Read Online
                       </Link>
                     )}
+                    {(isInCart(resource.id, 'RENTAL') || isInCart(resource.id, 'SALE')) && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: 'var(--gold-dim, rgba(184,134,11,0.12))', color: 'var(--gold)', fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: 6 }}>
+                        {isInCart(resource.id, 'RENTAL') && isInCart(resource.id, 'SALE') ? 'Borrow & Reserve in cart' : isInCart(resource.id, 'RENTAL') ? 'Borrow in cart' : 'Reserve in cart'}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: 6 }}>
                       {resource.availableQty > 0 && (
                         <button
                           onClick={() => handleAddToCart(resource.id, 'RENTAL')}
                           disabled={isInCart(resource.id, 'RENTAL') || addingId === `${resource.id}:RENTAL`}
-                          aria-label={`Borrow ${resource.title}`}
-                          style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                          aria-label={isInCart(resource.id, 'RENTAL') ? `${resource.title} (Borrow) is already in your cart` : `Borrow ${resource.title}`}
+                          style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: isInCart(resource.id, 'RENTAL') ? 'not-allowed' : 'pointer', opacity: isInCart(resource.id, 'RENTAL') ? 0.6 : 1 }}
                         >
-                          {isInCart(resource.id, 'RENTAL') ? 'In Cart' : 'Borrow'}
+                          Borrow
                         </button>
                       )}
                       <button
                         onClick={() => handleAddToCart(resource.id, 'SALE')}
                         disabled={isInCart(resource.id, 'SALE') || addingId === `${resource.id}:SALE`}
-                        aria-label={`Reserve ${resource.title}`}
-                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                        aria-label={isInCart(resource.id, 'SALE') ? `${resource.title} (Reserve) is already in your cart` : `Reserve ${resource.title}`}
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: isInCart(resource.id, 'SALE') ? 'not-allowed' : 'pointer', opacity: isInCart(resource.id, 'SALE') ? 0.6 : 1 }}
                       >
-                        {isInCart(resource.id, 'SALE') ? 'In Cart' : 'Reserve'}
+                        Reserve
                       </button>
                     </div>
                   </div>

@@ -25,7 +25,7 @@ async function recomputeResourceRating(resourceId: string) {
   })
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling('/api/reviews', 'GET', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const resourceId = searchParams.get('resourceId')
   if (!resourceId) throw new ApiError('resourceId is required', 400)
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     code: 'success',
     status: 200,
   })
-}
+})
 
 const upsertReviewSchema = z.object({
   userId: z.string().min(1, 'userId is required'),

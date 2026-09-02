@@ -95,7 +95,21 @@ export const PATCH = withErrorHandling('/api/courses/[id]', 'PATCH', async (requ
   return NextResponse.json({ data: serializeCourse(updated), message: 'Course updated successfully', code: 'success', status: 200 })
 })
 
-/** Guarded delete: blocks removing a course that still has real enrollments, mirroring the "don't silently orphan learner progress" guard already established for Category deletes in Phase 2. */
+/**
+ * Guarded delete: blocks removing a course that still has real
+ * enrollments, orders, assessments, or session requests attached —
+ * each of those models has a required (non-nullable) courseId FK, so
+ * without this guard Prisma's own foreign-key error would surface as a
+ * raw, unhandled 500 (confirmed by direct reproduction: deleting a
+ * course with a real SessionRequest threw
+ * PrismaClientKnownRequestError "would violate the required relation
+ * 'CourseToSessionRequest'"). Mirrors the "don't silently orphan real
+ * business records" guard already established for enrollments here and
+ * for Category deletes in Phase 2. Lessons are the one child kept as a
+ * real cascade (not a guard) since a lesson has no independent meaning
+ * once its course is gone, unlike an order/assessment/session-request,
+ * each a real historical record of something a person did.
+ */
 export const DELETE = withErrorHandling('/api/courses/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const auth = await requireStaff()
   if (auth.response) return auth.response
@@ -104,8 +118,16 @@ export const DELETE = withErrorHandling('/api/courses/[id]', 'DELETE', async (_r
   const existing = await prisma.course.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Course not found', 404)
 
-  const enrollmentCount = await prisma.enrollment.count({ where: { courseId: id } })
+  const [enrollmentCount, orderCount, assessmentCount, sessionRequestCount] = await Promise.all([
+    prisma.enrollment.count({ where: { courseId: id } }),
+    prisma.courseOrder.count({ where: { courseId: id } }),
+    prisma.assessment.count({ where: { courseId: id } }),
+    prisma.sessionRequest.count({ where: { courseId: id } }),
+  ])
   if (enrollmentCount > 0) throw new ApiError('Cannot delete a course with active enrollments', 409)
+  if (orderCount > 0) throw new ApiError('Cannot delete a course with existing orders', 409)
+  if (assessmentCount > 0) throw new ApiError('Cannot delete a course with existing assessments', 409)
+  if (sessionRequestCount > 0) throw new ApiError('Cannot delete a course with existing session requests', 409)
 
   await prisma.lesson.deleteMany({ where: { courseId: id } })
   await prisma.course.delete({ where: { id } })

@@ -112,7 +112,16 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
             </span>
           </div>
 
-          <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>to reserve</span></span>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{resource.borrowPrice > 0 ? `${resource.borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {resource.borrowDurationDays} days</span>
+          </div>
+
+          {(inCartRental || inCartSale) && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--gold-dim, rgba(184,134,11,0.12))', color: 'var(--gold)', fontSize: 12, fontWeight: 600, padding: '5px 10px', borderRadius: 6, width: 'fit-content' }}>
+              <Check size={13} /> {inCartRental && inCartSale ? 'Borrow & Reserve in cart' : inCartRental ? 'Borrow in cart' : 'Reserve in cart'}
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
             {isReadable && (
@@ -121,24 +130,22 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
               </Link>
             )}
             {isAuthenticated ? (
-              resource.price > 0 && (
-                <>
-                  <button
-                    onClick={() => handleAddToCart('RENTAL')}
-                    disabled={outOfStock || inCartRental || addingType === 'RENTAL'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: outOfStock ? 'not-allowed' : 'pointer' }}
-                  >
-                    {inCartRental ? <Check size={14} /> : <ShoppingCart size={14} />} {inCartRental ? 'In Cart' : 'Borrow'}
-                  </button>
-                  <button
-                    onClick={() => handleAddToCart('SALE')}
-                    disabled={inCartSale || addingType === 'SALE'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    {inCartSale ? <Check size={14} /> : <ShoppingCart size={14} />} {inCartSale ? 'In Cart' : 'Reserve'}
-                  </button>
-                </>
-              )
+              <>
+                <button
+                  onClick={() => handleAddToCart('RENTAL')}
+                  disabled={outOfStock || inCartRental || addingType === 'RENTAL'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: outOfStock || inCartRental ? 'not-allowed' : 'pointer', opacity: inCartRental ? 0.6 : 1 }}
+                >
+                  <ShoppingCart size={14} /> Borrow
+                </button>
+                <button
+                  onClick={() => handleAddToCart('SALE')}
+                  disabled={inCartSale || addingType === 'SALE'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 13, fontWeight: 600, cursor: inCartSale ? 'not-allowed' : 'pointer', opacity: inCartSale ? 0.6 : 1 }}
+                >
+                  <ShoppingCart size={14} /> Reserve
+                </button>
+              </>
             ) : (
               <Link href={loginHref} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Sign in for more actions</Link>
             )}

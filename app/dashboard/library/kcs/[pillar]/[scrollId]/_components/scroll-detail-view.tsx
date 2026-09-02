@@ -150,14 +150,14 @@ export function ScrollDetailView({ pillarSlug, scrollSlug }: ScrollDetailViewPro
                   resource={resource}
                   style={{}}
                   action={
-                    resource.availableQty > 0 && isAuthenticated && resource.price > 0 ? (
+                    resource.availableQty > 0 && isAuthenticated ? (
                       <button
                         onClick={() => handleAddToCart(resource.id)}
                         disabled={isInCart(resource.id, 'RENTAL') || addingId === resource.id}
-                        aria-label={`Borrow ${resource.title}`}
-                        style={{ padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                        aria-label={isInCart(resource.id, 'RENTAL') ? `${resource.title} is already in your cart` : `Borrow ${resource.title}`}
+                        style={{ padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 10, fontWeight: 600, cursor: isInCart(resource.id, 'RENTAL') ? 'not-allowed' : 'pointer', opacity: isInCart(resource.id, 'RENTAL') ? 0.6 : 1 }}
                       >
-                        {isInCart(resource.id, 'RENTAL') ? 'In Cart' : 'Borrow this resource'}
+                        {isInCart(resource.id, 'RENTAL') ? 'In cart · Borrow' : 'Borrow this resource'}
                       </button>
                     ) : undefined
                   }
