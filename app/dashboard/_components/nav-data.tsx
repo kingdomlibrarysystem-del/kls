@@ -34,6 +34,14 @@ import {
   Shield,
   MessageSquare,
   Tag,
+  Stethoscope,
+  CalendarCheck,
+  Syringe,
+  Building2,
+  FileText,
+  Palette,
+  Scissors,
+  Star,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -99,8 +107,27 @@ export const adminMainNav: NavItem[] = [
       { icon: <Users size={12} />,        label: "Collaborations",  href: "/dashboard/research/collaborations" },
     ],
   },
-  { icon: <HeartPulse size={14} />, label: "Health System",          href: "/dashboard/health" },
-  { icon: <Sparkles size={14} />,   label: "Beauty Services",         href: "/dashboard/beauty" },
+  {
+    icon: <HeartPulse size={14} />, label: "Health System",
+    subItems: [
+      { icon: <Stethoscope size={12} />,   label: "Overview",        href: "/dashboard/health" },
+      { icon: <CalendarCheck size={12} />, label: "Book a Checkup",  href: "/dashboard/health/checkups" },
+      { icon: <FileText size={12} />,      label: "Health Records",  href: "/dashboard/health/records" },
+      { icon: <Syringe size={12} />,       label: "Immunizations",   href: "/dashboard/health/immunizations" },
+      { icon: <Building2 size={12} />,     label: "Clinic Directory", href: "/dashboard/health/clinics" },
+      { icon: <ClipboardCheck size={12} />, label: "Admin: Appointments", href: "/dashboard/health/appointments" },
+    ],
+  },
+  {
+    icon: <Sparkles size={14} />, label: "Beauty Services",
+    subItems: [
+      { icon: <Sparkles size={12} />,      label: "Overview",     href: "/dashboard/beauty" },
+      { icon: <Palette size={12} />,       label: "Providers",    href: "/dashboard/beauty/providers" },
+      { icon: <Scissors size={12} />,      label: "Services",     href: "/dashboard/beauty/services" },
+      { icon: <CalendarCheck size={12} />, label: "Appointments", href: "/dashboard/beauty/appointments" },
+      { icon: <Star size={12} />,          label: "Admin: Bookings", href: "/dashboard/beauty/admin" },
+    ],
+  },
   { icon: <Brain size={14} />,      label: "Consultation & Counseling", href: "/dashboard/counseling" },
   { icon: <RefreshCcw size={14} />, label: "Rehabilitation",           href: "/dashboard/rehabilitation" },
   { icon: <Download size={14} />,   label: "Download Center",          href: "/dashboard/downloads" },

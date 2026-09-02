@@ -111,6 +111,8 @@ model User {
   courseOrders              CourseOrder[]
   cart                      Cart?
   reviews                   Review[]
+  beautyAppointments        BeautyAppointment[]
+  beautyReviews             BeautyReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
@@ -1553,4 +1555,96 @@ model TwoFactorSecret {
   recoveryCodes String[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+/// Real accredited beauty-service provider directory, replacing
+/// app/dashboard/beauty/page.tsx's placeholder. Modeled on Clinic —
+/// admin-managed reference data, GET-only this pass (no admin CRUD UI
+/// yet, matches Clinic's own scope). `specialties` is a String[] rather
+/// than Clinic's single `specialty` since a provider can offer more
+/// than one service category.
+model BeautyProvider {
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  specialties  String[]
+  location     String
+  image        String
+  bio          String?
+  /// Denormalized from BeautyReview, same avgRating/reviewCount
+  /// convention as Resource — recomputed on every review write, never
+  /// live-summed on render.
+  avgRating    Float               @default(0)
+  reviewCount  Int                 @default(0)
+  services     BeautyService[]
+  appointments BeautyAppointment[]
+  reviews      BeautyReview[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+/// Real service-catalog entry, scoped to one provider — a provider's
+/// menu of offerings with real pricing.
+model BeautyService {
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  providerId   String              @db.ObjectId
+  provider     BeautyProvider      @relation(fields: [providerId], references: [id])
+  name         String
+  category     String
+  priceRwf     Float
+  durationMins Int
+  description  String?
+  appointments BeautyAppointment[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+/// Real appointment booking, modeled on Appointment — same userId FK,
+/// dateTime/reason/status shape, plus a real serviceId FK since a
+/// beauty appointment is always tied to a specific catalog service.
+model BeautyAppointment {
+  id         String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String                  @db.ObjectId
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId String                  @db.ObjectId
+  provider   BeautyProvider          @relation(fields: [providerId], references: [id])
+  serviceId  String                  @db.ObjectId
+  service    BeautyService           @relation(fields: [serviceId], references: [id])
+  dateTime   DateTime
+  notes      String?
+  status     BeautyAppointmentStatus @default(PENDING)
+  review     BeautyReview?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([providerId])
+}
+
+enum BeautyAppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+/// Real member review, backing the "Reviews & Ratings" placeholder card
+/// — modeled on the Resource/Review pattern (separate collection,
+/// denormalized avg/count on the parent). Tied to a completed
+/// BeautyAppointment (appointmentId required + unique) rather than a
+/// free "review any provider" flow, so a review is always tied to a
+/// real visit.
+model BeautyReview {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId    String            @db.ObjectId
+  provider      BeautyProvider    @relation(fields: [providerId], references: [id])
+  appointmentId String            @unique @db.ObjectId
+  appointment   BeautyAppointment @relation(fields: [appointmentId], references: [id])
+  rating        Int
+  comment       String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([providerId])
 }
