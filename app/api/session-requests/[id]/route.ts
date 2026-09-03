@@ -40,17 +40,18 @@ function serializeSessionRequest(s: {
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Reachable by the learner, the assigned lecturer, or staff — the
+  // session room itself fetches this to check the join window, so both
+  // real participants need access, not just an owner-or-staff single check.
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
   const { id } = await params
   const sessionRequest = await prisma.sessionRequest.findUnique({ where: { id } })
   if (!sessionRequest) {
     return NextResponse.json({ data: null, message: 'Session request not found', code: 'error', status: 404 }, { status: 404 })
   }
 
-  // Reachable by the learner, the assigned lecturer, or staff — the
-  // session room itself fetches this to check the join window, so both
-  // real participants need access, not just an owner-or-staff single check.
-  const auth = await requireAuth()
-  if (auth.response) return auth.response
   const { userId, role } = auth.session
   const isStaff = role === 'admin' || role === 'manager' || role === 'staff'
   const isParticipant = userId === sessionRequest.learnerId || userId === sessionRequest.lecturerId

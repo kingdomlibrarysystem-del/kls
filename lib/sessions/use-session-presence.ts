@@ -21,7 +21,6 @@ interface UseSessionPresenceInput {
   sessionRequestId: string
   userId?: string
   displayName: string
-  role: 'learner' | 'lecturer' | 'admin'
 }
 
 /**
@@ -32,9 +31,11 @@ interface UseSessionPresenceInput {
  * on unmount or an explicit call. Also polls the room's full roster so a
  * host can see real-time who has actually joined and remove someone who
  * has (kick), distinct from someone merely invited who never opened the
- * room at all.
+ * room at all. The room role (learner/lecturer/admin) is resolved
+ * server-side from the caller's real session, not passed here — see
+ * resolvePresenceRole in app/api/session-requests/[id]/presence/route.ts.
  */
-export function useSessionPresence({ sessionRequestId, userId, displayName, role }: UseSessionPresenceInput) {
+export function useSessionPresence({ sessionRequestId, userId, displayName }: UseSessionPresenceInput) {
   const [roster, setRoster] = useState<PresenceRow[]>([])
   const presenceIdRef = useRef<string | null>(null)
   const leftRef = useRef(false)
@@ -48,12 +49,11 @@ export function useSessionPresence({ sessionRequestId, userId, displayName, role
   useEffect(() => {
     leftRef.current = false
     let heartbeatTimer: ReturnType<typeof setInterval> | undefined
-    let rosterTimer: ReturnType<typeof setInterval> | undefined
 
     fetch(`/api/session-requests/${sessionRequestId}/presence`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, displayName, role: role.toUpperCase() }),
+      body: JSON.stringify({ userId, displayName }),
     })
       .then((res) => res.json())
       .then((json) => {
@@ -71,8 +71,8 @@ export function useSessionPresence({ sessionRequestId, userId, displayName, role
       })
       .catch(() => {})
 
-    refetchRoster()
-    rosterTimer = setInterval(refetchRoster, ROSTER_POLL_MS)
+    Promise.resolve().then(refetchRoster)
+    const rosterTimer = setInterval(refetchRoster, ROSTER_POLL_MS)
 
     return () => {
       leftRef.current = true

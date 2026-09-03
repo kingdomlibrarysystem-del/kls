@@ -33,12 +33,36 @@ function serializePresence(p: {
   }
 }
 
-/** GET — real roster of who is currently present in this room (used by the participant panel to distinguish invited-but-never-joined from actually-here). */
+/**
+ * Real role for this caller in this session's room, derived server-side
+ * from SessionRequest.lecturerId and the caller's own account role —
+ * never trusted from client input, since it's the enforcement input for
+ * isHostPresent()'s "wait for host" gate.
+ */
+function resolvePresenceRole(sessionRequest: { lecturerId: string | null }, userId: string, accountRole: string): 'LEARNER' | 'LECTURER' | 'ADMIN' {
+  if (accountRole === 'admin' || accountRole === 'manager' || accountRole === 'staff') return 'ADMIN'
+  if (userId === sessionRequest.lecturerId) return 'LECTURER'
+  return 'LEARNER'
+}
+
+/** GET — real roster of who is currently present in this room (used by the participant panel to distinguish invited-but-never-joined from actually-here). Restricted to the session's own participants/staff, matching GET /api/session-requests/[id]. */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth()
   if (auth.response) return auth.response
 
   const { id } = await params
+  const sessionRequest = await prisma.sessionRequest.findUnique({ where: { id } })
+  if (!sessionRequest) {
+    return NextResponse.json({ data: null, message: 'Session request not found', code: 'error', status: 404 }, { status: 404 })
+  }
+
+  const { userId, role } = auth.session
+  const isStaff = role === 'admin' || role === 'manager' || role === 'staff'
+  const isParticipant = userId === sessionRequest.learnerId || userId === sessionRequest.lecturerId
+  if (!isStaff && !isParticipant) {
+    return NextResponse.json({ data: null, message: "You don't have permission to do this.", code: 'error', status: 403 }, { status: 403 })
+  }
+
   const rows = await prisma.sessionPresence.findMany({ where: { sessionRequestId: id }, orderBy: { joinedAt: 'asc' } })
   return NextResponse.json({ data: rows.map(serializePresence), message: 'Presence fetched successfully', code: 'success', status: 200 })
 }
@@ -46,7 +70,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 const joinSchema = z.object({
   userId: z.string().optional(),
   displayName: z.string().trim().min(1, 'displayName is required'),
-  role: z.enum(['LEARNER', 'LECTURER', 'ADMIN']),
 })
 
 /** POST — a real join event: creates (or revives, if this same user already had a row) a presence record for the room. */
@@ -67,14 +90,16 @@ export const POST = withErrorHandling('/api/session-requests/[id]/presence', 'PO
   const sessionRequest = await prisma.sessionRequest.findUnique({ where: { id } })
   if (!sessionRequest) throw new ApiError('Session request not found', 404)
 
+  const resolvedRole = resolvePresenceRole(sessionRequest, auth.session.userId, auth.session.role)
+
   const existing = body.userId
     ? await prisma.sessionPresence.findFirst({ where: { sessionRequestId: id, userId: body.userId, leftAt: null } })
     : null
 
   const row = existing
-    ? await prisma.sessionPresence.update({ where: { id: existing.id }, data: { lastSeenAt: new Date() } })
+    ? await prisma.sessionPresence.update({ where: { id: existing.id }, data: { lastSeenAt: new Date(), role: resolvedRole } })
     : await prisma.sessionPresence.create({
-        data: { sessionRequestId: id, userId: body.userId ?? null, displayName: body.displayName, role: body.role },
+        data: { sessionRequestId: id, userId: body.userId ?? null, displayName: body.displayName, role: resolvedRole },
       })
 
   return NextResponse.json({ data: serializePresence(row), message: 'Joined session', code: 'success', status: 201 }, { status: existing ? 200 : 201 })
@@ -117,6 +142,20 @@ export const DELETE = withErrorHandling('/api/session-requests/[id]/presence', '
 
   const existing = await prisma.sessionPresence.findUnique({ where: { id: parsed.data.presenceId } })
   if (!existing || existing.sessionRequestId !== id) throw new ApiError('Presence row not found', 404)
+
+  // A caller may always remove their own presence row (leave). Removing
+  // someone else's (kick) requires being this session's real host —
+  // the same lecturerId/staff-role check livekit-token/route.ts uses,
+  // never the client-supplied role the roster itself stores.
+  if (existing.userId !== auth.session.userId) {
+    const sessionRequest = await prisma.sessionRequest.findUnique({ where: { id } })
+    if (!sessionRequest) throw new ApiError('Session request not found', 404)
+    const { userId, role } = auth.session
+    const isHoster = userId === sessionRequest.lecturerId || role === 'admin' || role === 'manager' || role === 'staff'
+    if (!isHoster) {
+      return NextResponse.json({ data: null, message: "You don't have permission to do this.", code: 'error', status: 403 }, { status: 403 })
+    }
+  }
 
   await prisma.sessionPresence.update({ where: { id: existing.id }, data: { leftAt: new Date() } })
   return NextResponse.json({ data: null, message: 'Left session', code: 'success', status: 200 })

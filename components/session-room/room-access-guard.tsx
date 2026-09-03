@@ -1,5 +1,6 @@
 import { CalendarClock } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
 import { getJoinWindowState } from '@/lib/sessions/join-window'
 import type { SessionRequest } from '@/lib/sessions/use-session-requests'
 
@@ -19,7 +20,14 @@ interface RoomAccessGuardProps {
  */
 export function RoomAccessGuard({ loading, request, waitingForHost }: RoomAccessGuardProps) {
   if (!loading && !request) return <EmptyState icon={CalendarClock} title="Session not found" description="This session request doesn't exist." style={{ color: 'var(--text-secondary)' }} />
-  if (!request) return <></>
+  if (!request) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Skeleton style={{ height: 180, width: '100%', borderRadius: 10 }} />
+        <Skeleton style={{ height: 16, width: '40%', borderRadius: 6 }} />
+      </div>
+    )
+  }
 
   const joinWindow = getJoinWindowState(request)
   if (!joinWindow.canJoin) {

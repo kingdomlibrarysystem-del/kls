@@ -14,7 +14,8 @@ const ADDED_PARTICIPANT_STATE: ParticipantDeviceState = { cameraOn: true, micOn:
 interface RoomViewStateInput {
   sessionId: string
   viewer: 'learner' | 'admin'
-  request: SessionRequest
+  /** Undefined while the session request is still loading or blocked by RoomAccessGuard — derivations below fall back to empty/safe defaults so this hook can always be called unconditionally (React's rules of hooks forbid calling it only once `request` resolves). */
+  request: SessionRequest | undefined
   adminDisplayName: string
   handRaised: boolean
   otherHandRaised: boolean
@@ -27,7 +28,6 @@ interface RoomViewStateInput {
   recordingStream: MediaStream | null
   transcript: ReturnType<typeof useLiveTranscript>
   activity: ReturnType<typeof useRoomActivityLogging>
-  backHref: string
   onLeft: () => void
 }
 
@@ -39,11 +39,11 @@ interface RoomViewStateInput {
  */
 export function useRoomViewState({
   sessionId, viewer, request, adminDisplayName, handRaised, otherHandRaised, addedNames,
-  media, liveKit, liveKitReady, presence, recording, recordingStream, transcript, activity, backHref, onLeft,
+  media, liveKit, liveKitReady, presence, recording, recordingStream, transcript, activity, onLeft,
 }: RoomViewStateInput) {
-  const youName = viewer === 'learner' ? request.learnerName : adminDisplayName
-  const otherName = viewer === 'admin' ? request.learnerName : (request.lecturerName ?? 'No lecturer assigned yet')
-  const adminExtraParticipant = viewer === 'admin' && request.lecturerName ? { name: request.lecturerName, state: OTHER_PARTY_STATE } : null
+  const youName = viewer === 'learner' ? (request?.learnerName ?? 'You') : adminDisplayName
+  const otherName = viewer === 'admin' ? (request?.learnerName ?? 'Learner') : (request?.lecturerName ?? 'No lecturer assigned yet')
+  const adminExtraParticipant = viewer === 'admin' && request?.lecturerName ? { name: request.lecturerName, state: OTHER_PARTY_STATE } : null
   const isLecturerName = (name: string) => lecturerRoster.some((l) => l.name === name)
   const you: ParticipantDeviceState = { cameraOn: media.cameraOn, micOn: media.micOn, handRaised }
   const knownNames = new Set([otherName, ...(adminExtraParticipant ? [adminExtraParticipant.name] : []), ...addedNames])
@@ -69,7 +69,15 @@ export function useRoomViewState({
     media.cleanup()
     recording.discard()
     transcript.stop()
-    if (viewer === 'admin') completeSession(sessionId)
+    // Leaving the room happens immediately regardless of this call's
+    // outcome — a slow/failed PATCH shouldn't trap the admin in the
+    // room. A failure here just means the request stays APPROVED
+    // instead of COMPLETED, recoverable from the admin session list.
+    if (viewer === 'admin') {
+      completeSession(sessionId).catch((err) => {
+        console.error(`Failed to mark session ${sessionId} complete on leave:`, err)
+      })
+    }
     onLeft()
   }
 
