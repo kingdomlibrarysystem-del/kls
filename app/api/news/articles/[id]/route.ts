@@ -59,7 +59,6 @@ const patchArticleSchema = z.union([
   z.object({ action: z.literal('reject') }),
   z.object({ action: z.literal('publish') }),
   z.object({ action: z.literal('toggleFeatured') }),
-  z.object({ action: z.undefined() }).passthrough(),
 ])
 
 export const PATCH = withErrorHandling('/api/news/articles/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -99,14 +98,7 @@ export const PATCH = withErrorHandling('/api/news/articles/[id]', 'PATCH', async
     return NextResponse.json({ data: serializeArticle(updated), message: 'Article published', code: 'success', status: 200 })
   }
 
-  if (body.action === 'toggleFeatured') {
-    const updated = await prisma.newsArticle.update({ where: { id }, data: { featured: !existing.featured } })
-    return NextResponse.json({ data: serializeArticle(updated), message: 'Article updated successfully', code: 'success', status: 200 })
-  }
-
-  const data: Record<string, unknown> = { ...body }
-  delete data.action
-  const updated = await prisma.newsArticle.update({ where: { id }, data })
+  const updated = await prisma.newsArticle.update({ where: { id }, data: { featured: !existing.featured } })
   return NextResponse.json({ data: serializeArticle(updated), message: 'Article updated successfully', code: 'success', status: 200 })
 })
 

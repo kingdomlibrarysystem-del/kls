@@ -69,7 +69,6 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     sessionRequestId: sessionId,
     userId: user?.id,
     displayName: youNameForTranscript ?? 'You',
-    role: viewer === 'admin' ? 'admin' : 'learner',
   })
 
   const activity = useRoomActivityLogging(sessionId)
@@ -99,18 +98,18 @@ export function SessionRoomView({ sessionId, viewer }: SessionRoomViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveKitReady])
 
-  const guard = <RoomAccessGuard loading={loading} request={request} waitingForHost={liveKit.waitingForHost} />
-  if (!request || getJoinWindowState(request).canJoin === false || liveKit.waitingForHost) return guard
-
   const {
     youName, otherName, you, otherRemote, otherPresent, otherState, extraParticipants, roomParticipants,
     handleLeave, toggleRecording, toggleCaptions, toggleHand: toggleHandState, togglePresenting,
   } = useRoomViewState({
     sessionId, viewer, request, adminDisplayName, handRaised, otherHandRaised, addedNames,
     media, liveKit, liveKitReady, presence, recording, recordingStream, transcript, activity,
-    backHref, onLeft: () => router.push(backHref),
+    onLeft: () => router.push(backHref),
   })
   const toggleHand = () => setHandRaised(toggleHandState())
+
+  const blocked = !request || getJoinWindowState(request).canJoin === false || liveKit.waitingForHost
+  if (blocked) return <RoomAccessGuard loading={loading} request={request} waitingForHost={liveKit.waitingForHost} />
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

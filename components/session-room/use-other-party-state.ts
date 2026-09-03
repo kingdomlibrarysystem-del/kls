@@ -11,7 +11,7 @@ interface ComputeOtherPartyInput {
   otherName: string
   otherHandRaised: boolean
   presenceRoster: PresenceRow[]
-  request: SessionRequest
+  request: SessionRequest | undefined
   knownNames: Set<string>
 }
 
@@ -26,13 +26,13 @@ interface ComputeOtherPartyInput {
  * the poll simply not having refreshed yet).
  */
 export function computeOtherPartyState({ liveKitReady, remoteParticipants, otherName, otherHandRaised, presenceRoster, request, knownNames }: ComputeOtherPartyInput) {
-  const otherRemote = remoteParticipants.find((p) => p.name === otherName || p.identity === request.lecturerId || p.identity === request.learnerId)
+  const otherRemote = remoteParticipants.find((p) => p.name === otherName || p.identity === request?.lecturerId || p.identity === request?.learnerId)
   const otherPresent = liveKitReady ? !!otherRemote : presenceRoster.some((p) => p.displayName === otherName && p.present)
   const otherState: ParticipantDeviceState = liveKitReady && otherRemote
     ? { cameraOn: !!otherRemote.cameraTrack, micOn: !otherRemote.micMuted, handRaised: otherHandRaised }
     : OTHER_PARTY_STATE
   const unmatchedRemotes = liveKitReady
-    ? remoteParticipants.filter((p) => !knownNames.has(p.name) && p.identity !== request.lecturerId && p.identity !== request.learnerId)
+    ? remoteParticipants.filter((p) => !knownNames.has(p.name) && p.identity !== request?.lecturerId && p.identity !== request?.learnerId)
     : []
 
   return { otherRemote, otherPresent, otherState, unmatchedRemotes }
