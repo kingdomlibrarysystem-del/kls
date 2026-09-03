@@ -35,12 +35,15 @@ export async function GET(request: NextRequest) {
   }
 
   const scopeUserId = userId ?? undefined
+  let viewedByStaff = false
   if (scopeUserId) {
     const auth = await requireOwnerOrStaff(scopeUserId)
     if (auth.response) return auth.response
+    viewedByStaff = auth.session.userId !== scopeUserId
   } else {
     const auth = await requireStaff()
     if (auth.response) return auth.response
+    viewedByStaff = true
   }
 
   const notes = await prisma.counselingNote.findMany({
@@ -49,10 +52,13 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: 'desc' },
   })
 
+  // A missing consent row (the default until a member ever touches
+  // /api/counseling/consent) must redact, not reveal — "shared" is an
+  // opt-in the member must set, never an assumed default.
   let redactedFor: string | null = null
-  if (scopeUserId) {
+  if (scopeUserId && !viewedByStaff) {
     const consent = await prisma.counselingConsent.findUnique({ where: { userId: scopeUserId } })
-    if (consent && !consent.shareNotesWithMember) redactedFor = scopeUserId
+    if (!consent || !consent.shareNotesWithMember) redactedFor = scopeUserId
   }
 
   const data = notes.map((n) => {
