@@ -12,7 +12,6 @@ import {
   CheckSquare,
   ClipboardList,
   Award,
-  User,
   ChevronDown,
   ChevronLeft,
   BookCopy,
@@ -26,6 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
+import { UserMenu } from "@/components/app-shell/user-menu";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -72,7 +72,6 @@ function buildSingleItems(t: (k: string) => string): NavItem[] {
     { icon: <MessageSquare size={16} />, key: "messages", href: "/member/messages" },
     { icon: <Heart size={16} />, key: "favorites", href: "/member/favorites" },
     { icon: <Trophy size={16} />, key: "leaderboard", href: "/member/leaderboard" },
-    { icon: <User size={16} />, key: "my_profile", href: "/member/profile" },
   ]
 }
 
@@ -317,6 +316,17 @@ export default function MemberSidebar() {
             {!collapsed && <span>{t(`member.${item.key}`)}</span>}
           </Link>
         ))}
+
+        {!collapsed && (
+          <div
+            style={{
+              height: 1,
+              background: "var(--border)",
+              margin: "6px 12px",
+            }}
+          />
+        )}
+        {!collapsed && <UserMenu profileHref="/member/profile" align="left" />}
       </div>
     </aside>
   );

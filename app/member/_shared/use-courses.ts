@@ -73,7 +73,7 @@ function notify() {
 function loadCourses(): Promise<void> {
   if (hasFetched) return Promise.resolve()
   if (fetchPromise) return fetchPromise
-  fetchPromise = fetch('/api/courses?status=PUBLISHED&pageSize=1000')
+  fetchPromise = fetch('/api/courses?pageSize=1000')
     .then((res) => {
       if (!res.ok) throw new Error(`Failed to fetch courses (${res.status})`)
       return res.json()
