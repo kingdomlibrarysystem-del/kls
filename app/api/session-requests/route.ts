@@ -125,6 +125,15 @@ export const POST = withErrorHandling('/api/session-requests', 'POST', async (re
   if (body.lecturerId && !lecturer) throw new ApiError('The specified lecturer does not exist', 400)
   if (!course) throw new ApiError('The specified course does not exist', 400)
 
+  const authRole = auth.session!.role
+  const isStaff = authRole === 'admin' || authRole === 'manager' || authRole === 'staff'
+  if (!isStaff) {
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: body.learnerId, courseId: body.courseId } },
+    })
+    if (!enrollment) throw new ApiError('You must be enrolled in this course to request a session', 403)
+  }
+
   const proposedTime = new Date(body.proposedTime)
   const sessionRequest = await prisma.sessionRequest.create({
     data: {

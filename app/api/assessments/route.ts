@@ -10,6 +10,9 @@ import { requireAuth, requireStaff } from '@/lib/auth/require-role'
  * admin Quizzes & Exams page and the member take-flow. Questions stay
  * embedded (Prisma Mongo `type Question`), matching the mock's own
  * always-fetched-together shape.
+ *
+ * Members can only see assessments for courses they are enrolled in.
+ * Staff/admin can see all assessments.
  */
 function serializeAssessment(a: {
   id: string
@@ -53,7 +56,30 @@ export async function GET(request: NextRequest) {
   const pageSize = parseInt(searchParams.get('pageSize') || '100')
   const courseId = searchParams.get('courseId')
 
-  const where = { ...(courseId && { courseId }) }
+  const isStaff = auth.session.role === 'admin' || auth.session.role === 'manager' || auth.session.role === 'staff'
+
+  let enrolledCourseIds: string[] | null = null
+  if (!isStaff) {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId: auth.session.userId, status: { in: ['ENROLLED', 'COMPLETED'] } },
+      select: { courseId: true },
+    })
+    enrolledCourseIds = enrollments.map((e) => e.courseId)
+    if (enrolledCourseIds.length === 0) {
+      return NextResponse.json({
+        data: [],
+        message: 'Assessments fetched successfully',
+        code: 'success',
+        status: 200,
+        pagination: { page, pageSize, totalItems: 0, totalPages: 0, hasNext: false, hasPrevious: false },
+      })
+    }
+  }
+
+  const where = {
+    ...(courseId && { courseId }),
+    ...(!isStaff && enrolledCourseIds ? { courseId: { in: enrolledCourseIds } } : {}),
+  }
 
   const [totalItems, assessments] = await Promise.all([
     prisma.assessment.count({ where }),

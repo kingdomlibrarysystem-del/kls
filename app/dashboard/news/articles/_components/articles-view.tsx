@@ -43,11 +43,11 @@ export function ArticlesView() {
       render: (a) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
           <UniversalButton href={`/dashboard/news/articles/${a.id}`} aria-label={`View ${a.title}`} variant="secondary" size="sm" icon={<Eye size={12} />} className="!px-2.5 !py-1 !text-xs">View</UniversalButton>
-          {a.status === 'DRAFT' && (
+          {a.status !== 'REJECTED' && (
             <>
               <button onClick={() => { setEditing(a); setFormOpen(true) }} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"><Pencil size={12} /> Edit</button>
-              <button onClick={() => handleSubmit(a)} className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-lato hover:bg-blue-100 transition-colors"><Send size={12} /> Submit</button>
-              <button onClick={() => setDeleting(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"><Trash2 size={12} /> Delete</button>
+              {a.status === 'DRAFT' && <button onClick={() => handleSubmit(a)} className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-lato hover:bg-blue-100 transition-colors"><Send size={12} /> Submit</button>}
+              {a.status === 'DRAFT' && <button onClick={() => setDeleting(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"><Trash2 size={12} /> Delete</button>}
             </>
           )}
         </div>

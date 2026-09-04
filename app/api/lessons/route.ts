@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requireStaff } from '@/lib/auth/require-role'
+import { requireAuth, requireStaff } from '@/lib/auth/require-role'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> — already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
@@ -24,7 +24,33 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '100')
 
-  const where = { ...(courseId && { courseId }) }
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+
+  const isStaff = auth.session.role === 'admin' || auth.session.role === 'manager' || auth.session.role === 'staff'
+
+  let enrolledCourseIds: string[] | null = null
+  if (!isStaff) {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId: auth.session.userId, status: { in: ['ENROLLED', 'COMPLETED'] } },
+      select: { courseId: true },
+    })
+    enrolledCourseIds = enrollments.map((e) => e.courseId)
+    if (enrolledCourseIds.length === 0) {
+      return NextResponse.json({
+        data: [],
+        message: 'Lessons fetched successfully',
+        code: 'success',
+        status: 200,
+        pagination: { page, pageSize, totalItems: 0, totalPages: 0, hasNext: false, hasPrevious: false },
+      })
+    }
+  }
+
+  const where = {
+    ...(courseId && { courseId }),
+    ...(!isStaff && enrolledCourseIds ? { courseId: { in: enrolledCourseIds } } : {}),
+  }
 
   const [totalItems, lessons] = await Promise.all([
     prisma.lesson.count({ where }),

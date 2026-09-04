@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { sanitizeHtml } from '@/lib/html-sanitizer'
 
 /**
  * Real NewsArticle API, mirrors /api/publications' query-param/status
@@ -114,7 +115,7 @@ export const POST = withErrorHandling('/api/news/articles', 'POST', async (reque
   const article = await prisma.newsArticle.create({
     data: {
       title: body.title,
-      content: body.content,
+      content: sanitizeHtml(body.content),
       summary: body.summary,
       coverImage: body.coverImage,
       category: body.category,

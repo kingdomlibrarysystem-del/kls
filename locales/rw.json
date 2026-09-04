@@ -127,7 +127,10 @@
     "subtitle": "Bona inama, ibishya, n'ibintu byihariye byoherezwa mu iposita yawe buri kwezi.",
     "placeholder": "Aderesi yawe ya imeyili",
     "subscribe": "Iyandikishe",
-    "success": "Wiyandikishije — urakoze kujya mu muryango wacu!"
+    "success": "Wiyandikishije — urakoze kujya mu muryango wacu!",
+    "already_subscribed": "Iyi imeyili yari yarabiyandikishije.",
+    "loading": "Turiko tubyandikisha…",
+    "error": "Hari ikosa ryabaye. Nyamuneka ugerageze nanone."
   },
   "testimonials": {
     "label": "Inkuru z'umuryango wacu",
@@ -205,6 +208,7 @@
     "dashboard": "Akaruka",
     "section_library": "Isomero",
     "section_elearning": "E-Learning",
+    "section_news": "Amakuru n'ibinyamakuru",
     "browse_books": "Reba ibitabo",
     "my_borrowings": "Ibyo ntijanye",
     "reservations": "Kubika",
@@ -215,6 +219,7 @@
     "assessments": "Ibizamini",
     "certificates": "Impapuro z'ubwiza",
     "my_sessions": "Amanama yanjye",
+    "news_papers": "Amakuru n'ibinyamakuru",
     "notifications": "Amatangazo",
     "messages": "Ubutumwa",
     "favorites": "Ibyo nakunze",
@@ -375,7 +380,10 @@
     "opening_course": "Gufungura",
     "course_word": "course",
     "go_to_next_lesson": "Jya ku gihe gikurikira",
-    "lessons_in": "Amasomo yo muri"
+    "lessons_in": "Amasomo yo muri",
+    "payment_required": "Ubwishyu burikenewe",
+    "payment_required_desc": "Iyi course isaba ubwishyu mbere yo kugera ku myandikire yayo.",
+    "browse_courses": "Rondera amasomo"
   },
   "m_sessions": {
     "title": "Amahora yanjye",

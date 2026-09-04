@@ -127,7 +127,10 @@
     "subtitle": "Get recommendations, new arrivals, and exclusive content delivered to your inbox monthly.",
     "placeholder": "Your email address",
     "subscribe": "Subscribe",
-    "success": "You're subscribed — thanks for joining!"
+    "success": "You're subscribed — thanks for joining!",
+    "already_subscribed": "This email is already subscribed.",
+    "loading": "Subscribing…",
+    "error": "Something went wrong. Please try again."
   },
   "testimonials": {
     "label": "Stories from Our Community",
@@ -205,6 +208,7 @@
     "dashboard": "Dashboard",
     "section_library": "Library",
     "section_elearning": "E-Learning",
+    "section_news": "News & Newspapers",
     "browse_books": "Browse Books",
     "my_borrowings": "My Borrowings",
     "reservations": "Reservations",
@@ -215,6 +219,7 @@
     "assessments": "Assessments",
     "certificates": "Certificates",
     "my_sessions": "My Sessions",
+    "news_papers": "News & Newspapers",
     "notifications": "Notifications",
     "messages": "Messages",
     "favorites": "Favorites",
@@ -375,7 +380,10 @@
     "opening_course": "Opening",
     "course_word": "course",
     "go_to_next_lesson": "Go to next lesson",
-    "lessons_in": "Lessons in"
+    "lessons_in": "Lessons in",
+    "payment_required": "Payment required",
+    "payment_required_desc": "This course requires payment before you can access its lessons.",
+    "browse_courses": "Browse Courses"
   },
   "m_sessions": {
     "title": "My Sessions",

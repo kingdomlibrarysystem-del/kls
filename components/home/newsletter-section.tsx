@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { useLanguage } from '@/contexts/language-context'
 
 const newsletterSchema = z.object({
@@ -16,13 +16,35 @@ type NewsletterFormData = z.infer<typeof newsletterSchema>
 export function NewsletterSection() {
   const { t } = useLanguage()
   const [subscribed, setSubscribed] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [serverError, setServerError] = useState('')
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm<NewsletterFormData>({
     resolver: zodResolver(newsletterSchema),
   })
 
-  const onSubmit = async (_data: NewsletterFormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 400))
-    setSubscribed(true)
+  const onSubmit = async (data: NewsletterFormData) => {
+    setLoading(true)
+    setServerError('')
+    setAlreadySubscribed(false)
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const json = await res.json()
+      if (json.code !== 'success') throw new Error(json.message ?? 'Subscription failed')
+      if (json.message === 'This email is already subscribed.') {
+        setAlreadySubscribed(true)
+      } else {
+        setSubscribed(true)
+      }
+    } catch {
+      setServerError(t('newsletter.error'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -43,6 +65,7 @@ export function NewsletterSection() {
                   type="email"
                   placeholder={t('newsletter.placeholder')}
                   aria-label={t('newsletter.placeholder')}
+                  disabled={loading}
                   className={`w-full px-6 py-3 font-lato text-sm border bg-white rounded focus:outline-none ${
                     errors.email ? 'border-red-500' : 'border-w-400 focus:border-w-600'
                   }`}
@@ -51,11 +74,21 @@ export function NewsletterSection() {
               </div>
               <button
                 type="submit"
-                className="px-8 py-3 bg-w-600 text-white font-lato font-semibold rounded hover:bg-w-700 transition-colors"
+                disabled={loading}
+                className="px-8 py-3 bg-w-600 text-white font-lato font-semibold rounded hover:bg-w-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {t('newsletter.subscribe')}
+                {loading ? t('newsletter.loading') : t('newsletter.subscribe')}
               </button>
             </div>
+            {errors.email && <p className="text-red-600 text-xs mt-2 font-lato">{errors.email.message}</p>}
+            {alreadySubscribed && (
+              <p className="text-yellow-700 text-xs mt-2 font-lato">{t('newsletter.already_subscribed')}</p>
+            )}
+            {serverError && (
+              <div className="flex items-center gap-2 mt-2 text-red-700 text-xs font-lato">
+                <AlertCircle size={13} /> {serverError}
+              </div>
+            )}
           </form>
         )}
       </div>

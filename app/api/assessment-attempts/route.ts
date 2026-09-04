@@ -97,6 +97,15 @@ export const POST = withErrorHandling('/api/assessment-attempts', 'POST', async 
   if (!user) throw new ApiError('The specified user does not exist', 400)
   if (!assessment) throw new ApiError('The specified assessment does not exist', 400)
 
+  const authRole = auth.session!.role
+  const isStaff = authRole === 'admin' || authRole === 'manager' || authRole === 'staff'
+  if (!isStaff) {
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: body.userId, courseId: assessment.courseId } },
+    })
+    if (!enrollment) throw new ApiError('You must be enrolled in this course to take the assessment', 403)
+  }
+
   if (assessment.kind === 'PROJECT') {
     const attempt = await prisma.assessmentAttempt.create({
       data: {

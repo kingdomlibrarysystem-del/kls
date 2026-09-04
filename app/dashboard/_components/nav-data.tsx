@@ -164,10 +164,11 @@ export const adminMgmtNav: NavItem[] = [
   {
     icon: <Newspaper size={14} />, label: "News & Newspapers",
     subItems: [
-      { icon: <Newspaper size={12} />,     label: "Overview",     href: "/dashboard/news" },
-      { icon: <ScrollText size={12} />,    label: "Articles",     href: "/dashboard/news/articles" },
-      { icon: <ClipboardList size={12} />, label: "Review Queue", href: "/dashboard/news/review" },
-      { icon: <BookOpen size={12} />,      label: "Editions",     href: "/dashboard/news/editions" },
+      { icon: <Newspaper size={12} />,     label: "Overview",         href: "/dashboard/news" },
+      { icon: <ScrollText size={12} />,    label: "Articles",         href: "/dashboard/news/articles" },
+      { icon: <ClipboardList size={12} />, label: "Review Queue",     href: "/dashboard/news/review" },
+      { icon: <BookOpen size={12} />,      label: "Editions",         href: "/dashboard/news/editions" },
+      { icon: <Mail size={12} />,          label: "Newsletter Subs",  href: "/dashboard/news/subscribers" },
     ],
   },
   {

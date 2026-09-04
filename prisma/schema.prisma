@@ -1934,6 +1934,17 @@ model NewsSubscription {
   @@unique([userId, category])
 }
 
+/// Public newsletter email subscriber — anonymous email signups from the
+/// homepage (no auth required). Separate from NewsSubscription (which
+/// requires a logged-in userId for category-level alert preferences).
+/// email is case-insensitive-normalized (lowercased before persistence)
+/// and unique to prevent duplicate subscriptions.
+model NewsletterSubscriber {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
 /// Real fundraising campaign — admin-created target for general
 /// giving, replacing donations/page.tsx's "Active Campaigns"
 /// placeholder card. `raisedRwf` is a denormalized running total,

@@ -126,8 +126,11 @@
     "title": "Restez informé",
     "subtitle": "Recevez des recommandations, les nouveautés et du contenu exclusif dans votre boîte mail chaque mois.",
     "placeholder": "Votre adresse e-mail",
-    "subscribe": "S’abonner",
-    "success": "Vous êtes abonné — merci de nous rejoindre !"
+    "subscribe": "S'abonner",
+    "success": "Vous êtes abonné — merci de nous rejoindre !",
+    "already_subscribed": "Cet e-mail est déjà abonné.",
+    "loading": "Abonnement en cours…",
+    "error": "Une erreur s'est produite. Veuillez réessayer."
   },
   "testimonials": {
     "label": "Témoignages de notre communauté",
@@ -205,6 +208,7 @@
     "dashboard": "Tableau de bord",
     "section_library": "Bibliothèque",
     "section_elearning": "E-Learning",
+    "section_news": "Actualités et journaux",
     "browse_books": "Parcourir les livres",
     "my_borrowings": "Mes emprunts",
     "reservations": "Réservations",
@@ -215,6 +219,7 @@
     "assessments": "Évaluations",
     "certificates": "Certificats",
     "my_sessions": "Mes sessions",
+    "news_papers": "Actualités et journaux",
     "notifications": "Notifications",
     "messages": "Messages",
     "favorites": "Favoris",
@@ -375,7 +380,10 @@
     "opening_course": "Ouverture",
     "course_word": "cours",
     "go_to_next_lesson": "Aller à la leçon suivante",
-    "lessons_in": "Leçons de"
+    "lessons_in": "Leçons de",
+    "payment_required": "Paiement requis",
+    "payment_required_desc": "Ce cours nécessite un paiement avant de pouvoir accéder aux leçons.",
+    "browse_courses": "Parcourir les cours"
   },
   "m_sessions": {
     "title": "Mes sessions",

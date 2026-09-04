@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeft, User, Tag, Globe, Calendar, FileText } from 'lucide-react'
+import { ArrowLeft, User, Tag, Globe, Calendar, FileText, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
+import { NewsletterContent } from '@/components/ui/newsletter-content'
+import { ArticleFormModal } from '../../_components/article-form-modal'
 import { articleStatusConfig, type NewsArticle } from '../../../_shared/news-data'
 
 interface ArticleDetailViewProps {
@@ -27,9 +29,9 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
   const [article, setArticle] = useState<NewsArticle | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
     fetch(`/api/news/articles/${id}`)
       .then((res) => res.json())
       .then((json) => {
@@ -61,7 +63,10 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
 
   return (
     <div>
-      <div className="mb-6"><UniversalButton href="/dashboard/news/articles" variant="ghost" size="sm" icon={<ArrowLeft size={14} />}>Back to Articles</UniversalButton></div>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <UniversalButton href="/dashboard/news/articles" variant="ghost" size="sm" icon={<ArrowLeft size={14} />}>Back to Articles</UniversalButton>
+        {article.status !== 'REJECTED' && <UniversalButton type="button" variant="outline" size="sm" icon={<Pencil size={14} />} onClick={() => setEditOpen(true)}>Edit Article</UniversalButton>}
+      </div>
 
       <div className="max-w-2xl space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -79,9 +84,15 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
         </div>
 
         <div className="bg-w-100 border border-w-300 rounded p-4">
-          <p className="font-lato text-sm text-w-950 whitespace-pre-wrap">{article.content}</p>
+          <NewsletterContent html={article.content} />
         </div>
       </div>
+      <ArticleFormModal
+        open={editOpen}
+        editing={article}
+        onClose={() => setEditOpen(false)}
+        onSaved={(updated) => { setArticle(updated); setEditOpen(false) }}
+      />
     </div>
   )
 }

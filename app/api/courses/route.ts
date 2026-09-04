@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { broadcastNewsletterUpdate } from '@/lib/newsletter-broadcast'
 
 /**
  * Real Course API, consolidating the three previously-unreconciled mock
@@ -151,6 +152,15 @@ export const POST = withErrorHandling('/api/courses', 'POST', async (request: Ne
     },
     include: LECTURER_SELECT,
   })
+
+  if (course.status === 'PUBLISHED') {
+    await broadcastNewsletterUpdate({
+      subject: `New course available: ${course.title}`,
+      title: 'New e-learning course',
+      message: `${course.title} is now available in Kingdom Library e-learning.`,
+      href: `/member/courses/${course.id}`,
+    })
+  }
 
   return NextResponse.json({ data: serializeCourse(course), message: 'Course created successfully', code: 'success', status: 201 }, { status: 201 })
 })
