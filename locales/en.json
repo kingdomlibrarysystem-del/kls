@@ -375,7 +375,10 @@
     "opening_course": "Opening",
     "course_word": "course",
     "go_to_next_lesson": "Go to next lesson",
-    "lessons_in": "Lessons in"
+    "lessons_in": "Lessons in",
+    "payment_required": "Payment required",
+    "payment_required_desc": "This course requires payment before you can access its lessons.",
+    "browse_courses": "Browse Courses"
   },
   "m_sessions": {
     "title": "My Sessions",

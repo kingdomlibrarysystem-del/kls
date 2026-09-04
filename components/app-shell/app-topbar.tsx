@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Bell, ShoppingCart, LogOut } from 'lucide-react'
+import { Bell, ShoppingCart } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useAuth } from '@/contexts/auth-context'
 import { useLanguage } from '@/contexts/language-context'
@@ -35,8 +34,7 @@ interface AppTopbarProps {
  * concept of "this specific person's" notifications.
  */
 export function AppTopbar({ profileHref, showCart = false }: AppTopbarProps) {
-  const router = useRouter()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { t } = useLanguage()
   const { data: notifications } = useMemberNotifications(user?.id)
   const notificationCount = notifications.filter((n) => !n.read).length
@@ -105,39 +103,6 @@ export function AppTopbar({ profileHref, showCart = false }: AppTopbarProps) {
             </span>
           )}
         </Link>
-
-        <Link
-          href={profileHref}
-          aria-label={t('m_profile.title')}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
-        >
-          <div
-            style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--purple), var(--teal))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, fontWeight: 700, color: 'white', flexShrink: 0,
-            }}
-          >
-            {user ? user.firstName[0] : 'G'}
-          </div>
-          <div className="hidden sm:block">
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-              {user ? `${user.firstName} ${user.lastName}` : t('m_welcome.guest')}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--gold)', lineHeight: 1.2 }}>
-              {user ? user.roleName : t('auth.not_signed_in')}
-            </div>
-          </div>
-        </Link>
-
-        <button
-          onClick={() => { logout(); router.push('/') }}
-          aria-label={t('auth.log_out')}
-          style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-        >
-          <LogOut size={20} />
-        </button>
       </div>
     </header>
   )

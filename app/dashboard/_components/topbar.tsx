@@ -1,10 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTheme } from "@/components/theme-provider";
-import { useAuth } from "@/contexts/auth-context";
 import {
   Sun,
   Moon,
@@ -21,8 +18,6 @@ import {
   Brain,
   Search,
   Bell,
-  User,
-  LogOut,
 } from "lucide-react";
 
 const topLinks = [
@@ -56,26 +51,6 @@ const topLinks = [
 
 export default function DashboardTopbar() {
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
-  const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    setMenuOpen(false);
-    router.push("/auth/login");
-  };
 
   return (
     <header
@@ -182,107 +157,6 @@ export default function DashboardTopbar() {
             >
               3
             </span>
-          </div>
-          <div ref={menuRef} style={{ position: "relative" }}>
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-                background: "none",
-                border: "none",
-                padding: 0,
-              }}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-            >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(135deg, var(--purple), var(--teal))",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: "white",
-                }}
-              >
-                {user ? user.firstName[0] : "G"}
-              </div>
-              <div className="hidden md:block" style={{ textAlign: "left" }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {user ? `${user.firstName} ${user.lastName}` : "Guest User"}
-                </div>
-                <div style={{ fontSize: 10, color: "var(--gold)" }}>
-                  {user ? user.roleName : "Not signed in"}
-                </div>
-              </div>
-            </button>
-
-            {menuOpen && (
-              <div
-                role="menu"
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "calc(100% + 8px)",
-                  minWidth: 180,
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                  overflow: "hidden",
-                  zIndex: 50,
-                }}
-              >
-                <a
-                  href="/dashboard/profile"
-                  onClick={() => setMenuOpen(false)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 14px",
-                    fontSize: 12,
-                    color: "var(--text-secondary)",
-                    textDecoration: "none",
-                  }}
-                >
-                  <User size={14} /> My Profile
-                </a>
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 14px",
-                    fontSize: 12,
-                    color: "var(--red)",
-                    background: "none",
-                    border: "none",
-                    borderTop: "1px solid var(--border)",
-                    width: "100%",
-                    textAlign: "left",
-                    cursor: "pointer",
-                  }}
-                >
-                  <LogOut size={14} /> Log Out
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -375,7 +375,10 @@
     "opening_course": "Gufungura",
     "course_word": "course",
     "go_to_next_lesson": "Jya ku gihe gikurikira",
-    "lessons_in": "Amasomo yo muri"
+    "lessons_in": "Amasomo yo muri",
+    "payment_required": "Ubwishyu burikenewe",
+    "payment_required_desc": "Iyi course isaba ubwishyu mbere yo kugera ku myandikire yayo.",
+    "browse_courses": "Rondera amasomo"
   },
   "m_sessions": {
     "title": "Amahora yanjye",

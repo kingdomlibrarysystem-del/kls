@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookX } from 'lucide-react'
+import { BookX, CreditCard } from 'lucide-react'
+import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
@@ -16,13 +17,11 @@ interface CourseRedirectViewProps {
 }
 
 /**
- * Enrolls the member if this is their first visit to this course (mirrors
- * what clicking "Enroll" on /member/e-learning would have done — so a
- * signed-in visitor arriving here straight from the public course preview's
- * "Go to Course" link doesn't need a separate trip to enroll), then forwards
- * to the next-incomplete-lesson URL — the same lesson "Resume"/"Continue
- * Learning" on /member/courses would pick. Enrollment is a real
- * POST /api/enrollments call against the signed-in session's real userId.
+ * Enrolls the member if this is their first visit to a FREE course, then
+ * forwards to the next-incomplete-lesson URL. For PAID courses, redirects
+ * to the e-learning browse page so the member can initiate checkout.
+ * Enrollment is a real POST /api/enrollments call against the signed-in
+ * session's real userId.
  */
 export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
   const router = useRouter()
@@ -41,6 +40,12 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
     async function redirect() {
       try {
         const existing = enrollments.find((e) => e.courseId === courseId)
+
+        if (!existing && course!.price > 0) {
+          router.replace('/member/e-learning')
+          return
+        }
+
         let enrollment = existing
         if (!enrollment) {
           enrollment = await enrollInCourse(user!.id, courseId)
@@ -77,6 +82,22 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
         title={t("m_courses.could_not_open_course")}
         description={error}
         style={{ color: 'var(--text-secondary)' }}
+      />
+    )
+  }
+
+  if (!loading && course && course.price > 0 && !enrollments.some((e) => e.courseId === courseId)) {
+    return (
+      <EmptyState
+        icon={CreditCard}
+        title={t("m_courses.payment_required")}
+        description={t("m_courses.payment_required_desc")}
+        style={{ color: 'var(--text-secondary)' }}
+        action={
+          <Link href="/member/e-learning" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 6, background: 'var(--teal-light)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            {t("m_courses.browse_courses")}
+          </Link>
+        }
       />
     )
   }
