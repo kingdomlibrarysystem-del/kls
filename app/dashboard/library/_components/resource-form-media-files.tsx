@@ -82,17 +82,17 @@ function MediaField({ control, id, kind, urlName, nameName, accept, label, onUpl
  * also auto-fills Pages from the file's real extracted page count).
  */
 export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, isCreating }: ResourceFormMediaFilesProps) {
-  const showMarkdown = isCreating && mediaType === 'TEXT'
+  const showMarkdown = mediaType === 'TEXT'
   const showDocument = mediaType === 'DOCUMENT' || mediaType === 'COMBINATION'
-  const showAudio = mediaType === 'VIDEO' || mediaType === 'COMBINATION' || mediaType === 'AUDIO'
-  const showVideo = mediaType === 'VIDEO' || mediaType === 'COMBINATION'
+  const showAudio    = mediaType === 'AUDIO'    || mediaType === 'COMBINATION'
+  const showVideo    = mediaType === 'VIDEO'    || mediaType === 'COMBINATION'
   const documentUrl = watch('documentUrl')
 
   return (
     <>
       {showMarkdown && (
         <div>
-          <FieldLabel htmlFor="chapterTitle">First Chapter (optional)</FieldLabel>
+          <FieldLabel htmlFor="chapterTitle">{isCreating ? 'First Chapter (optional)' : 'Chapter Content'}</FieldLabel>
           <Controller
             name="chapterTitle"
             control={control}
@@ -108,7 +108,9 @@ export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, is
             />
           </div>
           <p className="font-lato text-xs text-w-600 mt-1">
-            Creates this resource's real first chapter. More chapters can be added afterward from the resource's own page.
+            {isCreating
+              ? "Creates this resource's real first chapter. More chapters can be added afterward from the resource's own page."
+              : 'Updates the text content for this resource. Changes are saved when you click Save Changes.'}
           </p>
         </div>
       )}

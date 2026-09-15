@@ -56,43 +56,112 @@ export function ResourceFormModal({
   });
 
   useEffect(() => {
-    if (open) {
-      reset(
-        editing
-          ? {
-              title: editing.title,
-              author: editing.author,
-              categoryId: editing.categoryId,
-              totalQty: editing.totalQty,
-              description: editing.description,
-              publisher: editing.publisher,
-              language: editing.language,
-              pages: editing.pages,
-              price: editing.price,
-              freePreviewChapterCount: editing.freePreviewChapterCount ?? 0,
-              bindingType: editing.bindingType,
-              mediaType: editing.mediaType,
-              tags: editing.tags,
-              coverImage: editing.coverImages[0] ?? "",
-              documentUrl: editing.documentUrl ?? "",
-              documentName: "",
-              audioUrl: editing.audioUrl ?? "",
-              audioName: "",
-              videoUrl: editing.videoUrl ?? "",
-              videoName: "",
-            }
-          : {
-              ...defaultResourceFormValues,
-              categoryId: leafCategories[0]?.id ?? "",
-            },
-      );
-      setSubmitError("");
+    if (!open) return
+
+    if (editing && editing.mediaType === 'TEXT') {
+      // Pre-populate the markdown editor with the existing first chapter
+      // so the admin sees current content instead of a blank editor.
+      fetch(`/api/chapters?resourceId=${editing.id}`)
+        .then((r) => r.json())
+        .then((json) => {
+          const chapters: { id: string; title: string; body?: string }[] = json.data?.chapters ?? []
+          const first = chapters[0]
+          reset({
+            title: editing.title,
+            author: editing.author,
+            categoryId: editing.categoryId,
+            totalQty: editing.totalQty,
+            description: editing.description,
+            publisher: editing.publisher,
+            language: editing.language,
+            pages: editing.pages,
+            price: editing.price,
+            borrowPrice: editing.borrowPrice ?? 0,
+            borrowDurationDays: editing.borrowDurationDays ?? 14,
+            freePreviewChapterCount: editing.freePreviewChapterCount ?? 0,
+            bindingType: editing.bindingType,
+            mediaType: editing.mediaType,
+            tags: editing.tags,
+            coverImage: editing.coverImages[0] ?? '',
+            documentUrl: editing.documentUrl ?? '',
+            documentName: '',
+            audioUrl: editing.audioUrl ?? '',
+            audioName: '',
+            videoUrl: editing.videoUrl ?? '',
+            videoName: '',
+            chapterTitle: first?.title ?? '',
+            chapterContent: first?.body ?? '',
+          })
+        })
+        .catch(() => {
+          // fetch failed — reset without chapter content, admin can re-type
+          reset({
+            title: editing.title,
+            author: editing.author,
+            categoryId: editing.categoryId,
+            totalQty: editing.totalQty,
+            description: editing.description,
+            publisher: editing.publisher,
+            language: editing.language,
+            pages: editing.pages,
+            price: editing.price,
+            borrowPrice: editing.borrowPrice ?? 0,
+            borrowDurationDays: editing.borrowDurationDays ?? 14,
+            freePreviewChapterCount: editing.freePreviewChapterCount ?? 0,
+            bindingType: editing.bindingType,
+            mediaType: editing.mediaType,
+            tags: editing.tags,
+            coverImage: editing.coverImages[0] ?? '',
+            documentUrl: editing.documentUrl ?? '',
+            documentName: '',
+            audioUrl: editing.audioUrl ?? '',
+            audioName: '',
+            videoUrl: editing.videoUrl ?? '',
+            videoName: '',
+            chapterTitle: '',
+            chapterContent: '',
+          })
+        })
+      setSubmitError('')
+      return
     }
-    // leafCategories.length: re-run once real categories have loaded, so a
-    // new resource's default categoryId isn't silently stuck at "" from
-    // opening the modal before the categories fetch resolved.
+
+    reset(
+      editing
+        ? {
+            title: editing.title,
+            author: editing.author,
+            categoryId: editing.categoryId,
+            totalQty: editing.totalQty,
+            description: editing.description,
+            publisher: editing.publisher,
+            language: editing.language,
+            pages: editing.pages,
+            price: editing.price,
+            borrowPrice: editing.borrowPrice ?? 0,
+            borrowDurationDays: editing.borrowDurationDays ?? 14,
+            freePreviewChapterCount: editing.freePreviewChapterCount ?? 0,
+            bindingType: editing.bindingType,
+            mediaType: editing.mediaType,
+            tags: editing.tags,
+            coverImage: editing.coverImages[0] ?? "",
+            documentUrl: editing.documentUrl ?? "",
+            documentName: "",
+            audioUrl: editing.audioUrl ?? "",
+            audioName: "",
+            videoUrl: editing.videoUrl ?? "",
+            videoName: "",
+            chapterTitle: "",
+            chapterContent: "",
+          }
+        : {
+            ...defaultResourceFormValues,
+            categoryId: leafCategories[0]?.id ?? "",
+          },
+    )
+    setSubmitError("")
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editing, reset, leafCategories.length]);
+  }, [open, editing, reset, leafCategories.length])
 
   const onSubmit = (data: ResourceFormData) => {
     try {

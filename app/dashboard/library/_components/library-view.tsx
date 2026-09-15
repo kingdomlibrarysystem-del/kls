@@ -58,6 +58,29 @@ export function LibraryView() {
       }
       if (editingId) {
         await updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
+        // For TEXT resources: if the admin typed chapter content, find the
+        // first existing chapter and PATCH it. If none exists yet, create one.
+        if (formData.mediaType === 'TEXT' && chapterContent?.trim()) {
+          const chaptersRes = await fetch(`/api/chapters?resourceId=${editingId}`)
+          const chaptersJson = await chaptersRes.json()
+          const existingChapters: { id: string }[] = chaptersJson.data?.chapters ?? []
+          if (existingChapters.length > 0) {
+            await fetch(`/api/chapters/${existingChapters[0].id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: chapterTitle?.trim() || undefined,
+                body: chapterContent,
+              }),
+            })
+          } else {
+            await fetch('/api/chapters', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ resourceId: editingId, title: chapterTitle?.trim() || 'Chapter 1', body: chapterContent }),
+            })
+          }
+        }
         showToast(`Updated "${formData.title}".`)
       } else {
         const created = await addResource({
