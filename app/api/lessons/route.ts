@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> — already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
@@ -77,5 +78,7 @@ export const POST = withErrorHandling('/api/lessons', 'POST', async (request: Ne
       order: (maxOrder._max.order ?? 0) + 1,
     },
   })
+  broadcastToSubscribers({ type: 'new_lesson', title: lesson.title, courseTitle: course.title, courseId: course.id }).catch(() => {})
+
   return NextResponse.json({ data: serializeLesson(lesson), message: 'Lesson created successfully', code: 'success', status: 201 }, { status: 201 })
 })

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Newspaper, ScrollText, ClipboardList, BookOpen } from 'lucide-react'
+import { Newspaper, ScrollText, ClipboardList, BookOpen, Mail } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { useArticles } from './_shared/use-articles'
 
@@ -16,6 +16,7 @@ const sections: NewsSection[] = [
   { icon: <ScrollText size={20} />,     title: 'Articles',     desc: 'Draft, submit, and manage every article and edition.',        href: '/dashboard/news/articles' },
   { icon: <ClipboardList size={20} />,  title: 'Review Queue', desc: 'Approve or reject articles submitted for review.',            href: '/dashboard/news/review' },
   { icon: <BookOpen size={20} />,       title: 'Editions',     desc: 'Approved articles and editions ready to publish.',            href: '/dashboard/news/editions' },
+  { icon: <Mail size={20} />,           title: 'Subscribers',  desc: 'Manage newsletter subscribers — enable, disable, or remove.', href: '/dashboard/news/subscribers' },
 ]
 
 function StatCard({ label, value }: { label: string; value: number }) {

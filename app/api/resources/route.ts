@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { generateUniqueIsbn } from '@/lib/generate-isbn'
+import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 
 /**
  * Real Resource API — the digital library catalog, replacing the old
@@ -203,5 +204,8 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
     },
   })
 
+  broadcastToSubscribers({ type: 'new_resource', title: resource.title, author: resource.author, id: resource.id }).catch(() => {})
+
   return NextResponse.json({ data: serializeResource(resource), message: 'Resource created successfully', code: 'success', status: 201 }, { status: 201 })
 })
+

@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeft, User, Tag, Globe, Calendar, FileText } from 'lucide-react'
+import { ArrowLeft, User, Tag, Globe, Calendar, FileText, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
+import { ElegantButton } from '@/components/ui/elegant-button'
 import { articleStatusConfig, type NewsArticle } from '../../../_shared/news-data'
+import { ArticleFormModal } from '../../_components/article-form-modal'
 
 interface ArticleDetailViewProps {
   id: string
@@ -22,13 +24,14 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   )
 }
 
-/** Real details page for a single article, mirrors this migration's established detail-view pattern. */
+/** Real details page for a single article — Edit is available on any status. */
 export function ArticleDetailView({ id }: ArticleDetailViewProps) {
   const [article, setArticle] = useState<NewsArticle | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
 
-  useEffect(() => {
+  const loadArticle = () => {
     setLoading(true)
     fetch(`/api/news/articles/${id}`)
       .then((res) => res.json())
@@ -38,7 +41,9 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
       })
       .catch(() => setError('Failed to load article'))
       .finally(() => setLoading(false))
-  }, [id])
+  }
+
+  useEffect(() => { loadArticle() }, [id])
 
   if (loading) {
     return (
@@ -61,7 +66,16 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
 
   return (
     <div>
-      <div className="mb-6"><UniversalButton href="/dashboard/news/articles" variant="ghost" size="sm" icon={<ArrowLeft size={14} />}>Back to Articles</UniversalButton></div>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <UniversalButton href="/dashboard/news/articles" variant="ghost" size="sm" icon={<ArrowLeft size={14} />}>Back to Articles</UniversalButton>
+        <ElegantButton
+          variant="outline"
+          onClick={() => setEditOpen(true)}
+          className="flex items-center gap-1.5 text-sm"
+        >
+          <Pencil size={13} /> Edit Article
+        </ElegantButton>
+      </div>
 
       <div className="max-w-2xl space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -82,6 +96,15 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
           <p className="font-lato text-sm text-w-950 whitespace-pre-wrap">{article.content}</p>
         </div>
       </div>
+
+      <ArticleFormModal
+        open={editOpen}
+        editing={article}
+        onClose={() => {
+          setEditOpen(false)
+          loadArticle()
+        }}
+      />
     </div>
   )
 }

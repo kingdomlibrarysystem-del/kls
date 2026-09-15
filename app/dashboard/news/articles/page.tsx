@@ -5,7 +5,7 @@ import { ArticlesView } from './_components/articles-view'
 export default function NewsArticlesPage() {
   return (
     <PageTransition>
-      <PageHeader title="Articles" subtitle="Draft, submit, and manage every article and edition" />
+      <PageHeader title="Articles" subtitle="Draft, submit, and manage every article and edition " />
       <ArticlesView />
     </PageTransition>
   )

@@ -3,9 +3,10 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 
 /**
- * Real Course API, consolidating the three previously-unreconciled mock
+ * Real Course API — consolidating the three previously-unreconciled mock
  * catalogs found in Phase 5's re-verification (admin course-catalog-
  * data.ts, member course-catalog-data.ts, and an orphaned public
  * course-preview-data.ts) into one collection. Response shape merges the
@@ -151,6 +152,10 @@ export const POST = withErrorHandling('/api/courses', 'POST', async (request: Ne
     },
     include: LECTURER_SELECT,
   })
+
+  if (course.status === 'PUBLISHED') {
+    broadcastToSubscribers({ type: 'new_course', title: course.title, category: course.category, id: course.id }).catch(() => {})
+  }
 
   return NextResponse.json({ data: serializeCourse(course), message: 'Course created successfully', code: 'success', status: 201 }, { status: 201 })
 })

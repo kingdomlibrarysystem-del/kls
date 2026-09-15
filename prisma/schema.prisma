@@ -1934,6 +1934,21 @@ model NewsSubscription {
   @@unique([userId, category])
 }
 
+/// Public newsletter subscriber — stores an email address from the
+/// homepage newsletter signup form. Independent of NewsSubscription
+/// (which is user-FK-based, for logged-in members subscribing to
+/// specific article categories). A NewsletterSubscriber is anyone who
+/// typed their email on the public homepage — no account required.
+/// `active` is false when an admin disables the subscriber (they still
+/// receive no emails but the record is kept for audit purposes).
+model NewsletterSubscriber {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
 /// Real fundraising campaign — admin-created target for general
 /// giving, replacing donations/page.tsx's "Active Campaigns"
 /// placeholder card. `raisedRwf` is a denormalized running total,

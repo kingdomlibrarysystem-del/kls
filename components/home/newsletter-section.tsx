@@ -16,13 +16,33 @@ type NewsletterFormData = z.infer<typeof newsletterSchema>
 export function NewsletterSection() {
   const { t } = useLanguage()
   const [subscribed, setSubscribed] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { register, handleSubmit, formState: { errors } } = useForm<NewsletterFormData>({
     resolver: zodResolver(newsletterSchema),
   })
 
-  const onSubmit = async (_data: NewsletterFormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 400))
-    setSubscribed(true)
+  const onSubmit = async (data: NewsletterFormData) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(json.message ?? 'Subscription failed. Please try again.')
+        return
+      }
+      // Both new subscriptions and already-subscribed show the success banner
+      setSubscribed(true)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -48,12 +68,14 @@ export function NewsletterSection() {
                   }`}
                   {...register('email')}
                 />
+                {error && <p className="mt-1 text-xs text-red-600 font-lato">{error}</p>}
               </div>
               <button
                 type="submit"
-                className="px-8 py-3 bg-w-600 text-white font-lato font-semibold rounded hover:bg-w-700 transition-colors"
+                disabled={loading}
+                className="px-8 py-3 bg-w-600 text-white font-lato font-semibold rounded hover:bg-w-700 transition-colors disabled:opacity-60"
               >
-                {t('newsletter.subscribe')}
+                {loading ? '...' : t('newsletter.subscribe')}
               </button>
             </div>
           </form>
