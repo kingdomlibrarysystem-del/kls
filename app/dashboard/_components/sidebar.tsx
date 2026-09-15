@@ -6,7 +6,6 @@ import { BookCopy, ChevronDown, ChevronLeft } from "lucide-react";
 import { adminMainNav, adminMgmtNav, memberNav, type NavItem } from "./nav-data";
 import { SidebarNavItem } from "./sidebar-nav-item";
 import { SidebarFooter } from "./sidebar-footer";
-import { UserMenu } from "@/components/app-shell/user-menu";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -154,17 +153,6 @@ export default function Sidebar() {
         ))}
 
         {!collapsed && <SidebarFooter />}
-
-        {!collapsed && (
-          <div
-            style={{
-              height: 1,
-              background: "var(--border)",
-              margin: "6px 12px",
-            }}
-          />
-        )}
-        {!collapsed && <UserMenu profileHref="/dashboard/profile" align="left" />}
       </div>
     </aside>
   );
