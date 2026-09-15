@@ -148,9 +148,63 @@ export default function Sidebar() {
             PLATFORM MANAGEMENT
           </div>
         )}
-        {mgmtNav.map((item) => (
-          <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
-        ))}
+        {mgmtNav.map((item) => {
+          if (item.subItems && !collapsed) {
+            const sectionActive = isSectionActive(item)
+            const sectionExpanded = expandedSections[item.label] || sectionActive
+            return (
+              <div key={item.label}>
+                <div
+                  onClick={() => toggleSection(item.label)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 12px",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    color: sectionExpanded || sectionActive ? "var(--gold)" : "var(--text-secondary)",
+                    borderLeft: sectionActive ? "2px solid var(--gold)" : "2px solid transparent",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
+                  onMouseLeave={(e) => {
+                    if (!sectionExpanded && !sectionActive) e.currentTarget.style.color = "var(--text-secondary)"
+                  }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>{item.icon}</span>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
+                  {sectionExpanded ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
+                </div>
+                {sectionExpanded && item.subItems.map((sub) => (
+                  <a
+                    key={sub.label}
+                    href={sub.href}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "5px 12px 5px 32px",
+                      textDecoration: "none",
+                      fontSize: 11,
+                      color: currentRoute.startsWith(sub.href) ? "var(--gold)" : "var(--text-secondary)",
+                      background: currentRoute.startsWith(sub.href) ? "rgba(212,168,67,0.08)" : "transparent",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => { if (!currentRoute.startsWith(sub.href)) e.currentTarget.style.color = "var(--text-primary)" }}
+                    onMouseLeave={(e) => { if (!currentRoute.startsWith(sub.href)) e.currentTarget.style.color = "var(--text-secondary)" }}
+                  >
+                    {sub.icon}
+                    <span>{sub.label}</span>
+                  </a>
+                ))}
+              </div>
+            )
+          }
+          return <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
+        })}
 
         {!collapsed && <SidebarFooter />}
       </div>

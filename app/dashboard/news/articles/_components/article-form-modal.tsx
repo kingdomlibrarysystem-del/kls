@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
@@ -9,6 +9,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { useAuth } from '@/contexts/auth-context'
 import { addArticle, updateArticle } from '../../_shared/use-articles'
 import { articleSchema, type ArticleFormData } from './article-form-schema'
@@ -20,14 +21,14 @@ interface ArticleFormModalProps {
   onClose: () => void
 }
 
-/** Create/edit modal for a NewsArticle, mirrors AddCourseModal's exact shape — both modes share one form component. */
+/** Create/edit modal for a NewsArticle — edit is allowed on any status. */
 export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalProps) {
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ArticleFormData>({
+  const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } = useForm<ArticleFormData>({
     resolver: zodResolver(articleSchema),
     defaultValues: { language: 'EN', isEdition: false, coverImage: '' },
   })
@@ -36,7 +37,15 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
   useEffect(() => {
     if (open) {
       reset(editing
-        ? { title: editing.title, summary: editing.summary, content: editing.content, category: editing.category, coverImage: editing.coverImage ?? '', language: editing.language.toUpperCase() as 'EN' | 'FR' | 'RW', isEdition: editing.isEdition }
+        ? {
+            title: editing.title,
+            summary: editing.summary,
+            content: editing.content,
+            category: editing.category,
+            coverImage: editing.coverImage ?? '',
+            language: editing.language.toUpperCase() as 'EN' | 'FR' | 'RW',
+            isEdition: editing.isEdition,
+          }
         : { title: '', summary: '', content: '', category: '', coverImage: '', language: 'EN', isEdition: false })
       setSubmitError('')
       setSubmitSuccess(false)
@@ -67,8 +76,16 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
   return (
     <Modal open={open} onClose={close} title={editing ? 'Edit Article' : 'New Article'} size="3xl">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {submitSuccess && <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm"><CheckCircle2 size={15} /> Article saved.</div>}
-        {submitError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {submitError}</div>}
+        {submitSuccess && (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+            <CheckCircle2 size={15} /> Article saved.
+          </div>
+        )}
+        {submitError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm">
+            <AlertCircle size={15} /> {submitError}
+          </div>
+        )}
 
         <div>
           <FieldLabel htmlFor="title" required>Title</FieldLabel>
@@ -77,13 +94,24 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
 
         <div>
           <FieldLabel htmlFor="summary" required>Summary</FieldLabel>
-          <textarea id="summary" rows={2} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" {...register('summary')} />
+          <textarea
+            id="summary"
+            rows={2}
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+            {...register('summary')}
+          />
           {errors.summary && <p className="text-red-600 text-xs mt-1 font-lato">{errors.summary.message}</p>}
         </div>
 
         <div>
           <FieldLabel htmlFor="content" required>Content</FieldLabel>
-          <textarea id="content" rows={6} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" {...register('content')} />
+          <Controller
+            name="content"
+            control={control}
+            render={({ field }) => (
+              <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} height={320} />
+            )}
+          />
           {errors.content && <p className="text-red-600 text-xs mt-1 font-lato">{errors.content.message}</p>}
         </div>
 
@@ -105,7 +133,15 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="coverImage">Cover Image</FieldLabel>
-            <CloudinaryUploadField id="coverImage" accept="image/*" label="Upload cover image" kind="image" value={coverImage} onUploaded={(result) => setValue('coverImage', result.url)} onClear={() => setValue('coverImage', '')} />
+            <CloudinaryUploadField
+              id="coverImage"
+              accept="image/*"
+              label="Upload cover image"
+              kind="image"
+              value={coverImage}
+              onUploaded={(result) => setValue('coverImage', result.url)}
+              onClear={() => setValue('coverImage', '')}
+            />
           </div>
           <label className="flex items-center gap-2 font-lato text-sm text-w-950 mt-7">
             <input type="checkbox" {...register('isEdition')} />
@@ -115,7 +151,9 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
 
         <div className="flex justify-end gap-2 pt-2">
           <ElegantButton type="button" variant="outline" onClick={close}>Cancel</ElegantButton>
-          <ElegantButton type="submit" loading={submitting} variant="primary">{editing ? 'Save Changes' : 'Create Article'}</ElegantButton>
+          <ElegantButton type="submit" loading={submitting} variant="primary">
+            {editing ? 'Save Changes' : 'Create Article'}
+          </ElegantButton>
         </div>
       </form>
     </Modal>

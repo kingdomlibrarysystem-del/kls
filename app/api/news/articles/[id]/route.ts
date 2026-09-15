@@ -52,8 +52,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ data: serializeArticle(article), message: 'Article fetched successfully', code: 'success', status: 200 })
 }
 
-/** Status-transition guard, mirrors PATCH /api/publications/[id]'s action-schema pattern exactly — staff-only throughout, no owner branch. */
-const patchArticleSchema = z.union([
+const actionSchema = z.union([
   z.object({ action: z.literal('submit') }),
   z.object({ action: z.literal('approve') }),
   z.object({ action: z.literal('reject') }),
@@ -61,44 +60,72 @@ const patchArticleSchema = z.union([
   z.object({ action: z.literal('toggleFeatured') }),
 ])
 
+const editSchema = z.object({
+  title:      z.string().min(3).optional(),
+  summary:    z.string().min(1).optional(),
+  content:    z.string().min(1).optional(),
+  category:   z.string().min(1).optional(),
+  coverImage: z.string().optional(),
+  language:   z.enum(['EN', 'FR', 'RW']).optional(),
+  isEdition:  z.boolean().optional(),
+})
+
 export const PATCH = withErrorHandling('/api/news/articles/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const auth = await requireStaff()
   if (auth.response) return auth.response
 
   const { id } = await params
-  const parsed = patchArticleSchema.safeParse(await request.json())
-  if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
-  const body = parsed.data
-
   const existing = await prisma.newsArticle.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Article not found', 404)
 
-  if (body.action === 'submit') {
-    if (existing.status !== 'DRAFT') throw new ApiError('Only a draft article can be submitted', 409)
-    const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'SUBMITTED' } })
-    return NextResponse.json({ data: serializeArticle(updated), message: 'Article submitted for review', code: 'success', status: 200 })
+  const raw = await request.json()
+
+  // Action-based status transitions
+  const actionParsed = actionSchema.safeParse(raw)
+  if (actionParsed.success) {
+    const body = actionParsed.data
+    if (body.action === 'submit') {
+      if (existing.status !== 'DRAFT') throw new ApiError('Only a draft article can be submitted', 409)
+      const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'SUBMITTED' } })
+      return NextResponse.json({ data: serializeArticle(updated), message: 'Article submitted for review', code: 'success', status: 200 })
+    }
+    if (body.action === 'approve') {
+      if (existing.status !== 'SUBMITTED' && existing.status !== 'UNDER_REVIEW') throw new ApiError('Only a submitted or under-review article can be approved', 409)
+      const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'APPROVED' } })
+      return NextResponse.json({ data: serializeArticle(updated), message: 'Article approved', code: 'success', status: 200 })
+    }
+    if (body.action === 'reject') {
+      if (existing.status !== 'SUBMITTED' && existing.status !== 'UNDER_REVIEW') throw new ApiError('Only a submitted or under-review article can be rejected', 409)
+      const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'REJECTED' } })
+      return NextResponse.json({ data: serializeArticle(updated), message: 'Article rejected', code: 'success', status: 200 })
+    }
+    if (body.action === 'publish') {
+      if (existing.status !== 'APPROVED') throw new ApiError('Only an approved article can be published', 409)
+      const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() } })
+      await notifyPublishSubscribers(updated)
+      return NextResponse.json({ data: serializeArticle(updated), message: 'Article published', code: 'success', status: 200 })
+    }
+    // toggleFeatured
+    const updated = await prisma.newsArticle.update({ where: { id }, data: { featured: !existing.featured } })
+    return NextResponse.json({ data: serializeArticle(updated), message: 'Article updated successfully', code: 'success', status: 200 })
   }
 
-  if (body.action === 'approve') {
-    if (existing.status !== 'SUBMITTED' && existing.status !== 'UNDER_REVIEW') throw new ApiError('Only a submitted or under-review article can be approved', 409)
-    const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'APPROVED' } })
-    return NextResponse.json({ data: serializeArticle(updated), message: 'Article approved', code: 'success', status: 200 })
-  }
-
-  if (body.action === 'reject') {
-    if (existing.status !== 'SUBMITTED' && existing.status !== 'UNDER_REVIEW') throw new ApiError('Only a submitted or under-review article can be rejected', 409)
-    const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'REJECTED' } })
-    return NextResponse.json({ data: serializeArticle(updated), message: 'Article rejected', code: 'success', status: 200 })
-  }
-
-  if (body.action === 'publish') {
-    if (existing.status !== 'APPROVED') throw new ApiError('Only an approved article can be published', 409)
-    const updated = await prisma.newsArticle.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() } })
-    await notifyPublishSubscribers(updated)
-    return NextResponse.json({ data: serializeArticle(updated), message: 'Article published', code: 'success', status: 200 })
-  }
-
-  const updated = await prisma.newsArticle.update({ where: { id }, data: { featured: !existing.featured } })
+  // Field edit — allowed on any status
+  const editParsed = editSchema.safeParse(raw)
+  if (!editParsed.success) throw new ApiError(editParsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  const data = editParsed.data
+  const updated = await prisma.newsArticle.update({
+    where: { id },
+    data: {
+      ...(data.title      !== undefined && { title: data.title }),
+      ...(data.summary    !== undefined && { summary: data.summary }),
+      ...(data.content    !== undefined && { content: data.content }),
+      ...(data.category   !== undefined && { category: data.category }),
+      ...(data.coverImage !== undefined && { coverImage: data.coverImage || null }),
+      ...(data.language   !== undefined && { language: data.language }),
+      ...(data.isEdition  !== undefined && { isEdition: data.isEdition }),
+    },
+  })
   return NextResponse.json({ data: serializeArticle(updated), message: 'Article updated successfully', code: 'success', status: 200 })
 })
 
