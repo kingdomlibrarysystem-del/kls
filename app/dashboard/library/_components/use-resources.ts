@@ -62,6 +62,25 @@ export function useResources() {
   return { data, loading, error }
 }
 
+/** Fetches a single resource by ID without auth — safe for public detail pages. */
+export function usePublicResource(id: string) {
+  const [data, setData] = useState<Resource | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/resources/${id}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.code === 'success') setData(json.data)
+      })
+      .catch(() => setError('Failed to load resource'))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  return { data, loading, error }
+}
+
 /** Re-fetches the shared resources store — call after any create/update/delete so every consumer sees the change. */
 export async function refetchResources(): Promise<void> {
   await fetchResources()
