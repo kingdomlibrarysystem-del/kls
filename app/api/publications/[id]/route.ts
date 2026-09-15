@@ -59,8 +59,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!publication) {
     return NextResponse.json({ data: null, message: 'Publication not found', code: 'error', status: 404 }, { status: 404 })
   }
-  const auth = await requireOwnerOrStaff(publication.contributorId)
-  if (auth.response) return auth.response
+  // PUBLISHED records are publicly visible (e.g. email links to /library/[id])
+  if (publication.status !== 'PUBLISHED') {
+    const auth = await requireOwnerOrStaff(publication.contributorId)
+    if (auth.response) return auth.response
+  }
   return NextResponse.json({ data: serializePublication(publication), message: 'Publication fetched successfully', code: 'success', status: 200 })
 }
 

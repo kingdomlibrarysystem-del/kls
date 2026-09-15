@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
-import { usePublications } from '@/app/dashboard/publishing/_shared/use-publications'
+import { usePublicPublication } from '@/app/dashboard/publishing/_shared/use-publications'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 
@@ -32,7 +32,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const [cartError, setCartError] = useState('')
   const { user, isAuthenticated } = useAuth()
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
-  const { data: publications, loading: publicationsLoading, error: publicationsError } = usePublications()
+  const { data: publication, loading: publicationsLoading, error: publicationsError } = usePublicPublication(id)
   const readableContent = useReadableContent()
   useCart(user?.id)
 
@@ -40,7 +40,6 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const error = resourcesError ?? publicationsError
 
   const resource = resources.find((r) => r.id === id)
-  const publication = publications.find((p) => p.id === id && p.status === 'PUBLISHED')
   const catalogBook = publication
     ? {
         title: publication.title,

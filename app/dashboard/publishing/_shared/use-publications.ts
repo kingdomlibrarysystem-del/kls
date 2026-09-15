@@ -78,6 +78,26 @@ export function usePublications() {
   return { data, loading, error }
 }
 
+/** Fetches a single PUBLISHED publication by ID without auth — safe for public detail pages. Does not touch the shared staff cache. */
+export function usePublicPublication(id: string) {
+  const [data, setData] = useState<PublicationRecord | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/publications/${id}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch publication')
+        setData(json.data)
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load publication'))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  return { data, loading, error }
+}
+
 export async function refetchPublications(): Promise<void> {
   hasFetched = false
   await loadPublications()

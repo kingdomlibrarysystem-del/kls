@@ -70,12 +70,19 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status')
   const contributorId = searchParams.get('contributorId')
 
-  const auth = await (contributorId ? requireOwnerOrStaff(contributorId) : requireStaff())
-  if (auth.response) return auth.response
+  // Public access is allowed only for PUBLISHED records (no contributorId filter).
+  // Any other query (by contributorId, or non-published status) requires auth.
+  const isPublicCatalogRequest = !contributorId && (!status || status.toUpperCase() === 'PUBLISHED')
+
+  if (!isPublicCatalogRequest) {
+    const auth = await (contributorId ? requireOwnerOrStaff(contributorId) : requireStaff())
+    if (auth.response) return auth.response
+  }
 
   const where = {
+    ...(isPublicCatalogRequest && { status: 'PUBLISHED' as const }),
     ...(contributorId && { contributorId }),
-    ...(status && status !== 'all' && VALID_STATUSES.includes(status.toUpperCase()) && { status: status.toUpperCase() as 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' }),
+    ...(!isPublicCatalogRequest && status && status !== 'all' && VALID_STATUSES.includes(status.toUpperCase()) && { status: status.toUpperCase() as 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' }),
     ...(search && {
       OR: [
         { title: { contains: search, mode: 'insensitive' as const } },
