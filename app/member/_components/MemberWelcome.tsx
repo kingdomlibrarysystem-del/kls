@@ -26,7 +26,7 @@ export default function MemberWelcome() {
             <GraduationCap size={16} /> {t("m_welcome.go_elearning")}
           </a>
           <a href="/member/profile" className="btn btn-outline-dim btn-sm" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
-            <User size={16} /> {t("m_profile.title")}
+            <User size={16} /> {t("m_profile.title")} sdssaa
           </a>
         </div>
       </div>

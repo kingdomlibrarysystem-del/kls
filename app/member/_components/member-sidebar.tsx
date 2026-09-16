@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useRef, useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   BookOpen,
   Bookmark,
   CalendarDays,
-  Search,
   GraduationCap,
   CheckSquare,
   ClipboardList,
@@ -23,9 +22,13 @@ import {
   ShoppingBag,
   ShoppingCart,
   Bell,
+  LogOut,
+  Mail,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
+import { useAuth } from "@/contexts/auth-context";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -78,16 +81,34 @@ function buildSingleItems(t: (k: string) => string): NavItem[] {
 
 export default function MemberSidebar() {
   const { t } = useLanguage();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const navSections = buildNavSections(t);
   const singleItems = buildSingleItems(t);
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<
-    Record<string, boolean>
-  >({
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     library: true,
     elearning: false,
   });
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const currentRoute = usePathname();
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setProfileOpen(false);
+    router.push("/auth/login");
+  };
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) => ({ ...prev, [title]: !prev[title] }));
@@ -317,6 +338,130 @@ export default function MemberSidebar() {
             {!collapsed && <span>{t(`member.${item.key}`)}</span>}
           </Link>
         ))}
+      </div>
+
+      {/* User profile widget — pinned at bottom */}
+      <div
+        ref={profileRef}
+        style={{
+          borderTop: "1px solid var(--border)",
+          padding: collapsed ? "10px 8px" : "10px 12px",
+          position: "relative",
+        }}
+      >
+        <button
+          onClick={() => setProfileOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={profileOpen}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              minWidth: 32,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--purple), var(--teal))",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "white",
+              flexShrink: 0,
+            }}
+          >
+            {user?.firstName?.[0] ?? "G"}
+          </div>
+          {!collapsed && (
+            <div style={{ textAlign: "left", minWidth: 0, flex: 1, overflow: "hidden" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {user ? `${user.firstName} ${user.lastName}` : t("m_welcome.guest")}
+              </div>
+              <div style={{ fontSize: 10, color: "var(--gold)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {user?.roleName ?? t("auth.not_signed_in")}
+              </div>
+            </div>
+          )}
+        </button>
+
+        {profileOpen && (
+          <div
+            role="menu"
+            style={{
+              position: "absolute",
+              bottom: "calc(100% + 6px)",
+              left: collapsed ? 64 : 12,
+              minWidth: 200,
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
+              boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+              overflow: "hidden",
+              zIndex: 50,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 14px",
+                fontSize: 11,
+                color: "var(--text-muted)",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <Mail size={13} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {user?.email ?? "—"}
+              </span>
+            </div>
+            <a
+              href="/member/profile"
+              onClick={() => setProfileOpen(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 14px",
+                fontSize: 12,
+                color: "var(--text-secondary)",
+                textDecoration: "none",
+              }}
+            >
+              <User size={13} /> {t("member.my_profile")} <ExternalLink size={11} style={{ marginLeft: "auto", opacity: 0.5 }} />
+            </a>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 14px",
+                fontSize: 12,
+                color: "var(--red)",
+                background: "none",
+                border: "none",
+                borderTop: "1px solid var(--border)",
+                width: "100%",
+                textAlign: "left",
+                cursor: "pointer",
+              }}
+            >
+              <LogOut size={13} /> {t("auth.log_out")}
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );
