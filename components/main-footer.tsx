@@ -34,6 +34,7 @@ export function MainFooter() {
           <div>
             <h4 className="font-cinzel font-semibold text-w-950 mb-3">{t("footer.account")}</h4>
             <ul className="space-y-2 font-lato text-sm text-w-700">
+              <li><Link href="/#about" className="hover:text-w-950">{t("footer.about_us")}</Link></li>
               <li><Link href="/auth/login" className="hover:text-w-950">{t("footer.sign_in")}</Link></li>
               <li><Link href="/auth/register" className="hover:text-w-950">{t("footer.create_account")}</Link></li>
               <li><Link href="/auth/forgot-password" className="hover:text-w-950">{t("footer.forgot_password")}</Link></li>

@@ -61,13 +61,16 @@
     "browse_courses": "Browse Courses",
     "my_courses": "My Courses",
     "assessments": "Assessments",
-    "certificates": "Certificates"
+    "certificates": "Certificates",
+    "news": "News",
+    "latest_news": "Latest News"
   },
   "header": {
     "search_placeholder": "Search books by title or author..."
   },
   "footer": {
     "tagline": "Your gateway to digital knowledge and learning.",
+    "about_us": "About Us",
     "library": "Library",
     "browse_books": "Browse Books",
     "advanced_search": "Advanced Search",
@@ -147,6 +150,47 @@
     "subtitle": "Connect with scholars, researchers, and learners from around the world. Share knowledge, collaborate on projects, and grow together.",
     "cta": "Join Our Community Today"
   },
+  "news": {
+    "label": "Newspaper & News",
+    "title": "Newspapers & News",
+    "view_all": "View All News",
+    "edition": "Edition"
+  },
+  "m_news": {
+    "featured": "Featured",
+    "latest_editions": "Newspapers & Editions",
+    "latest_articles": "Latest Articles",
+    "edition": "Edition",
+    "no_news": "No news yet",
+    "no_news_desc": "Published articles and newspaper editions will appear here as soon as the newsroom releases them.",
+    "loaded": "Loading news...",
+    "not_found": "Article not found",
+    "not_found_desc": "This article does not exist or has not been published yet.",
+    "back": "Back to News",
+    "more": "More from the newsroom"
+  },
+  "daily_wisdom": {
+    "label": "Daily Wisdom",
+    "verse_1": "The light of the body is the eye: if therefore thine eye be single, thy whole body shall be full of light.",
+    "ref_1": "— Matthew 6:22",
+    "verse_2": "Trust in the LORD with all thine heart; and lean not unto thine own understanding.",
+    "ref_2": "— Proverbs 3:5",
+    "verse_3": "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.",
+    "ref_3": "— Matthew 6:33",
+    "tour": "New here? Tap to read today's Daily Wisdom."
+  },
+  "about": {
+    "label": "About Us",
+    "title": "About Kingdom Library",
+    "body": "Kingdom Library System is home to a digital library, e-learning courses, publishing, research, and a trusted newsroom — all in one place. Run by a small staff team, it serves the Kingdom community with faithful, accessible study resources.",
+    "p1_title": "Our Mission",
+    "p1_body": "To make the wisdom of the Kingdom accessible to every reader, learner, and seeker.",
+    "p2_title": "Our People",
+    "p2_body": "A small, dedicated team of staff, editors, contributors, and administrators who keep the library running for you.",
+    "p3_title": "Our Community",
+    "p3_body": "Members, learners, research partners, and daily subscribers growing together in knowledge and faith.",
+    "signoff": "Built with a humble heart for the Kingdom community."
+  },
   "auth": {
     "sign_in": "Sign In",
     "sign_in_subtitle": "Welcome back",
@@ -210,6 +254,7 @@
     "reservations": "Reservations",
     "my_cart": "My Cart",
     "my_orders": "My Orders",
+    "news": "News",
     "browse_courses": "Browse Courses",
     "my_courses": "My Courses",
     "assessments": "Assessments",
@@ -664,7 +709,10 @@
     "instagram": "Follow us on Instagram",
     "whatsapp": "Chat with us on WhatsApp",
     "twitter": "Follow us on X (Twitter)",
-    "tiktok": "Follow us on TikTok"
+    "tiktok": "Follow us on TikTok",
+    "youtube": "Subscribe to our YouTube channel",
+    "facebook": "Follow us on Facebook",
+    "linkedin": "Connect with us on LinkedIn"
   },
   "language": {
     "english": "English",

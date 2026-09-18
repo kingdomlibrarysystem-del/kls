@@ -61,13 +61,16 @@
     "browse_courses": "Parcourir les cours",
     "my_courses": "Mes cours",
     "assessments": "Évaluations",
-    "certificates": "Certificats"
+    "certificates": "Certificats",
+    "news": "Actualités",
+    "latest_news": "Dernières nouvelles"
   },
   "header": {
     "search_placeholder": "Rechercher des livres par titre ou auteur..."
   },
   "footer": {
     "tagline": "Votre passerelle vers la connaissance numérique et l’apprentissage.",
+    "about_us": "À propos",
     "library": "Bibliothèque",
     "browse_books": "Parcourir les livres",
     "advanced_search": "Recherche avancée",
@@ -147,6 +150,47 @@
     "subtitle": "Connectez-vous avec des chercheurs et des apprenants du monde entier. Partagez vos connaissances, collaborez sur des projets et grandissez ensemble.",
     "cta": "Rejoindre notre communauté"
   },
+  "news": {
+    "label": "Journal & Actualités",
+    "title": "Journaux & Actualités",
+    "view_all": "Voir toutes les actualités",
+    "edition": "Édition"
+  },
+  "m_news": {
+    "featured": "À la une",
+    "latest_editions": "Journaux & Éditions",
+    "latest_articles": "Derniers articles",
+    "edition": "Édition",
+    "no_news": "Pas encore d’actualités",
+    "no_news_desc": "Les articles publiés et les éditions de journaux apparaîtront ici dès que la rédaction les publiera.",
+    "loaded": "Chargement des actualités…",
+    "not_found": "Article introuvable",
+    "not_found_desc": "Cet article n’existe pas ou n’a pas encore été publié.",
+    "back": "Retour aux actualités",
+    "more": "Plus de la rédaction"
+  },
+  "daily_wisdom": {
+    "label": "Sagesse du jour",
+    "verse_1": "L’œil est la lampe du corps. Si ton œil est en bon état, tout ton corps sera éclairé.",
+    "ref_1": "— Matthieu 6:22",
+    "verse_2": "Confie-toi en l’Éternel de tout ton cœur, et ne t’appuie pas sur ta propre intelligence.",
+    "ref_2": "— Proverbes 3:5",
+    "verse_3": "Cherchez premièrement le royaume et la justice de Dieu; et toutes ces choses vous seront données par-dessus.",
+    "ref_3": "— Matthieu 6:33",
+    "tour": "Nouveaux ici ? Cliquer ici pour lire la parole du jour."
+  },
+  "about": {
+    "label": "À propos",
+    "title": "À propos de Kingdom Library",
+    "body": "Kingdom Library System rassemble une bibliothèque numérique, des cours en ligne, l’édition, la recherche et une rédaction de confiance — le tout en un seul endroit. Géré par une petite équipe, il sert la communauté du Royaume avec des ressources d’étude fidèles et accessibles.",
+    "p1_title": "Notre mission",
+    "p1_body": "Rendre la sagesse du Royaume accessible à chaque lecteur, apprenant et chercheur.",
+    "p2_title": "Notre équipe",
+    "p2_body": "Une petite équipe dévouée d’employés, d’éditeurs, de contributeurs et d’administrateurs qui font vivre la bibliothèque pour vous.",
+    "p3_title": "Notre communauté",
+    "p3_body": "Membres, apprenants, partenaires de recherche et abonnés quotidiens qui grandissent ensemble dans la connaissance et la foi.",
+    "signoff": "Construit avec un cœur humble pour la communauté du Royaume."
+  },
   "auth": {
     "sign_in": "Se connecter",
     "sign_in_subtitle": "Bon retour",
@@ -210,6 +254,7 @@
     "reservations": "Réservations",
     "my_cart": "Mon panier",
     "my_orders": "Mes commandes",
+    "news": "Actualités",
     "browse_courses": "Parcourir les cours",
     "my_courses": "Mes cours",
     "assessments": "Évaluations",
@@ -664,7 +709,10 @@
     "instagram": "Suivez-nous sur Instagram",
     "whatsapp": "Discutez avec nous sur WhatsApp",
     "twitter": "Suivez-nous sur X (Twitter)",
-    "tiktok": "Suivez-nous sur TikTok"
+    "tiktok": "Suivez-nous sur TikTok",
+    "youtube": "Abonnez-vous à notre chaîne YouTube",
+    "facebook": "Suivez-nous sur Facebook",
+    "linkedin": "Rejoignez-nous sur LinkedIn"
   },
   "language": {
     "english": "English",

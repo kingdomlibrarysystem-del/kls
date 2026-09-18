@@ -97,7 +97,7 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
 
       <div>
         <FieldLabel htmlFor="freePreviewChapterCount">
-          {mediaType === 'DOCUMENT' || mediaType === 'COMBINATION' ? 'Free Preview Pages' : 'Free Preview Chapters'}
+          {mediaType === 'DOCUMENT' || mediaType === 'COMBINATION' ? 'Free Preview Pages' : 'Free Preview pages'}
         </FieldLabel>
         <FormInput id="freePreviewChapterCount" type="number" min={0} error={errors.freePreviewChapterCount?.message} {...register('freePreviewChapterCount', { valueAsNumber: true })} />
         <p className="font-lato text-xs text-w-600 mt-1">

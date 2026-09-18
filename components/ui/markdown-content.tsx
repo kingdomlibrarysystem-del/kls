@@ -41,6 +41,11 @@ export function MarkdownContent({ markdown }: MarkdownContentProps) {
         .kcs-markdown-content td { padding: 6px 10px; border-bottom: 1px solid var(--border-light); }
         .kcs-markdown-content a { color: var(--gold); }
         .kcs-markdown-content img { max-width: 100%; border-radius: 8px; margin: 14px 0; display: block; }
+        .kcs-markdown-content .kcs-img { border-radius: 8px; }
+        .kcs-markdown-content .kcs-img-center { margin-left: auto; margin-right: auto; }
+        .kcs-markdown-content .kcs-img-wrap { box-sizing: border-box; }
+        .kcs-markdown-content .kcs-img-wrap img { width: 100%; height: auto; margin: 0; display: block; border-radius: 8px; }
+        .kcs-markdown-content :is(h1,h2,h3,h4,h5,table,blockquote,pre,ul,ol,hr) { clear: both; }
         .kcs-markdown-content .kcs-video-embed { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; margin: 14px 0; }
         .kcs-markdown-content .kcs-video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
       `}</style>

@@ -59,13 +59,10 @@ export function ResourceFormModal({
     if (!open) return
 
     if (editing && editing.mediaType === 'TEXT') {
-      // Pre-populate the markdown editor with the existing first chapter
-      // so the admin sees current content instead of a blank editor.
       fetch(`/api/chapters?resourceId=${editing.id}`)
         .then((r) => r.json())
         .then((json) => {
-          const chapters: { id: string; title: string; body?: string }[] = json.data?.chapters ?? []
-          const first = chapters[0]
+          const chapters: { title: string; body?: string }[] = json.data?.chapters ?? []
           reset({
             title: editing.title,
             author: editing.author,
@@ -89,8 +86,7 @@ export function ResourceFormModal({
             audioName: '',
             videoUrl: editing.videoUrl ?? '',
             videoName: '',
-            chapterTitle: first?.title ?? '',
-            chapterContent: first?.body ?? '',
+chapters: chapters.map((c) => ({ title: c.title, content: c.body ?? '' })),
           })
         })
         .catch(() => {
@@ -118,8 +114,7 @@ export function ResourceFormModal({
             audioName: '',
             videoUrl: editing.videoUrl ?? '',
             videoName: '',
-            chapterTitle: '',
-            chapterContent: '',
+chapters: [],
           })
         })
       setSubmitError('')
@@ -151,8 +146,7 @@ export function ResourceFormModal({
             audioName: "",
             videoUrl: editing.videoUrl ?? "",
             videoName: "",
-            chapterTitle: "",
-            chapterContent: "",
+chapters: [],
           }
         : {
             ...defaultResourceFormValues,

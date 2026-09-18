@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Controller, type Control, type UseFormSetValue, type UseFormWatch } from 'react-hook-form'
+import { Controller, useFieldArray, type Control, type UseFormSetValue, type UseFormWatch } from 'react-hook-form'
+import { Plus, Trash2 } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/field-label'
 import { CloudinaryUploadField, type UploadKind } from '@/components/ui/cloudinary-upload-field'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
@@ -74,12 +75,14 @@ function MediaField({ control, id, kind, urlName, nameName, accept, label, onUpl
 /**
  * Document/audio/video/markdown field for a Resource — only the field
  * matching the selected `mediaType` is shown. A TEXT resource is
- * authored directly as real markdown (creates a real first Chapter row
- * via POST /api/chapters right after the Resource itself — see
- * resource-form-modal.tsx's onSubmit) rather than uploading a PDF,
- * since a pure-text book's real readable content lives in Chapter rows,
- * not a document file. DOCUMENT/COMBINATION keep the PDF picker (which
- * also auto-fills Pages from the file's real extracted page count).
+ * authored directly as real markdown (a whole book at once: the
+ * `chapters` list becomes one real ordered Chapter row per entry via
+ * POST /api/chapters after the Resource itself — see
+ * resource-form-modal.tsx's onSubmit / library-view.tsx's handleSave)
+ * rather than uploading a PDF, since a pure-text book's real readable
+ * content lives in Chapter rows, not a document file. DOCUMENT/
+ * COMBINATION keep the PDF picker (which also auto-fills Pages from the
+ * file's real extracted page count).
  */
 export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, isCreating }: ResourceFormMediaFilesProps) {
   const showMarkdown = mediaType === 'TEXT'
@@ -87,30 +90,59 @@ export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, is
   const showAudio    = mediaType === 'AUDIO'    || mediaType === 'COMBINATION'
   const showVideo    = mediaType === 'VIDEO'    || mediaType === 'COMBINATION'
   const documentUrl = watch('documentUrl')
+  const { fields, append, remove } = useFieldArray({ control, name: 'chapters' })
 
   return (
     <>
       {showMarkdown && (
         <div>
-          <FieldLabel htmlFor="chapterTitle">{isCreating ? 'First Chapter (optional)' : 'Chapter Content'}</FieldLabel>
-          <Controller
-            name="chapterTitle"
-            control={control}
-            render={({ field }) => (
-              <FormInput id="chapterTitle" type="text" placeholder="Chapter title, e.g. Chapter 1" value={field.value ?? ''} onChange={field.onChange} />
-            )}
-          />
-          <div className="mt-2">
-            <Controller
-              name="chapterContent"
-              control={control}
-              render={({ field }) => <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} height={280} />}
-            />
-          </div>
+<FieldLabel htmlFor="chapters">{isCreating ? 'Chapters — one per book section' : 'Chapters'}</FieldLabel>
+          {fields.length === 0 ? (
+            <p className="font-lato text-xs text-w-600 bg-form-bg border border-dashed border-w-300 rounded px-3 py-4 mb-2">
+              No chapters yet. Add a book one chapter at a time — each chapter gets its own title and rich markdown content (images, headings, blocks).
+            </p>
+          ) : (
+            <div className="space-y-4 mb-2">
+              {fields.map((item, i) => (
+                <div key={item.id} className="border border-w-300 rounded p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-cinzel text-xs font-bold uppercase tracking-widest text-w-600">Chapter {i + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => remove(i)}
+                      className="flex items-center gap-1 text-xs font-lato text-w-600 hover:text-red-600 transition-colors cursor-pointer"
+                      aria-label={`Remove chapter ${i + 1}`}
+                    >
+                      <Trash2 size={13} /> Remove
+                    </button>
+                  </div>
+                  <Controller
+                    name={`chapters.${i}.title`}
+                    control={control}
+                    render={({ field }) => (
+                      <FormInput id={`chapterTitle-${i}`} type="text" placeholder={`Chapter title, e.g. Chapter ${i + 1}`} value={field.value} onChange={field.onChange} />
+                    )}
+                  />
+                  <Controller
+                    name={`chapters.${i}.content`}
+                    control={control}
+                    render={({ field }) => <MarkdownEditor value={field.value} onChange={field.onChange} height={240} />}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => append({ title: '', content: '' })}
+            className="flex items-center gap-1.5 text-xs font-lato font-semibold text-w-700 hover:text-w-950 transition-colors cursor-pointer"
+          >
+            <Plus size={14} /> Add Chapter
+          </button>
           <p className="font-lato text-xs text-w-600 mt-1">
             {isCreating
-              ? "Creates this resource's real first chapter. More chapters can be added afterward from the resource's own page."
-              : 'Updates the text content for this resource. Changes are saved when you click Save Changes.'}
+              ? 'Every chapter you add becomes real readable content on the member side, with the paywall cutting in after the Free Preview Pages count.'
+              : 'Saves your full book: edited chapters are updated, new ones are added, and removed ones are deleted.'}
           </p>
         </div>
       )}

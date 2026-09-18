@@ -14,9 +14,11 @@ import {
   ChevronDown,
   Library,
   Menu,
+  Newspaper,
 } from "lucide-react";
 import { ProfileDropdown } from "./profile-dropdown";
 import { LanguageSwitcher } from "./language-switcher";
+import { DailyWisdom } from "@/components/home/daily-wisdom";
 import { useLanguage } from "@/contexts/language-context";
 
 export function MainHeader() {
@@ -51,6 +53,12 @@ export function MainHeader() {
         { label: t("nav.certificates"), href: "/member/certificates", icon: <Award size={14} /> },
       ],
     },
+    {
+      title: t("nav.news"),
+      items: [
+        { label: t("nav.latest_news"), href: "/member/news", icon: <Newspaper size={14} /> },
+      ],
+    },
   ];
 
   return (
@@ -83,7 +91,7 @@ export function MainHeader() {
               <ChevronDown size={14} />
             </Link>
 
-            <form onSubmit={handleSearch} className="flex-1">
+            <form onSubmit={handleSearch} className="flex-1 min-w-0">
               <input
                 type="text"
                 value={query}
@@ -93,6 +101,8 @@ export function MainHeader() {
                 className="w-full px-4 py-2 border border-w-300 dark:border-gray-600 rounded font-lato text-sm focus:outline-none focus:border-w-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
               />
             </form>
+
+            <DailyWisdom />
 
             <div className="flex items-center gap-4">
               <LanguageSwitcher minimal />

@@ -61,13 +61,16 @@
     "browse_courses": "Shakisha amasomo",
     "my_courses": "Amasomo yanjye",
     "assessments": "Ibizamini",
-    "certificates": "Impamyabumenyi"
+    "certificates": "Impamyabumenyi",
+    "news": "Amakuru",
+    "latest_news": "Amakuru ya vuba"
   },
   "header": {
     "search_placeholder": "Shakisha ibitabo ukurikije umutwe cyangwa umwanditsi..."
   },
   "footer": {
     "tagline": "Irembo ryawe ry'ubumenyi bwa digitale n'imyigishirize.",
+    "about_us": "Ibyerekeye",
     "library": "Isomero",
     "browse_books": "Shakisha ibitabo",
     "advanced_search": "Gushaka birambuye",
@@ -147,6 +150,47 @@
     "subtitle": "Huza n'abashakashatsi n'abiga ku isi yose. Sangira ubumenyi, korana ku bikorwa, nuke hamwe.",
     "cta": "Injira mu muryango wacu ubu"
   },
+  "news": {
+    "label": "Ikipapuro n'Amakuru",
+    "title": "Amakuru n'Ibibaho",
+    "view_all": "Reba amakuru yose",
+    "edition": "Igicapo"
+  },
+  "m_news": {
+    "featured": "Byahiswe",
+    "latest_editions": "Ibibaho n'Amagazeti",
+    "latest_articles": "Ingingo z'ingenzi",
+    "edition": "Igicapo",
+    "no_news": "Nta makuru arimo",
+    "no_news_desc": "Ingingo n'ibibaho by'amakuru bishyirwaho bizagaragara hano iyo ibiro byandika byabitanze.",
+    "loaded": "Bitondera amakuru...",
+    "not_found": "Ingingo ntaboneka",
+    "not_found_desc": "Iyi ngingo ntaho iri cyangwa iracyashyizweho.",
+    "back": "Subira ku makuru",
+    "more": "Ibindi biva mu biro byandika"
+  },
+  "daily_wisdom": {
+    "label": "Ubwenge bwo ku munsi",
+    "verse_1": "Amaaso ni itara ry'umubiri. Nuko amaso yawe aramutse ari meza, umubiri wawe wose uzaba umurika.",
+    "ref_1": "— Matayo 6:22",
+    "verse_2": "Icyizere ukuze Uwiteka n'umutima wawe wose, kandi ntukishingire ku bwenge bwawe bwite.",
+    "ref_2": "— Imigani 3:5",
+    "verse_3": "Mubanze musabe ubwami bw'Imana no gukiranuka kwayo, n'ibindi byose muzabibongererwa.",
+    "ref_3": "— Matayo 6:33",
+    "tour": "Ushya? Kanda hano usome ijambo ryo ku munsi."
+  },
+  "about": {
+    "label": "Ibyerekeye",
+    "title": "Ibyerekeye Kingdom Library",
+    "body": "Kingdom Library System ihuza isomero rya digitale, amasomo yo kwiga kuri interineti, gutangaza, ubushakashatsi, n'ibiro byandika byizewe — byose ahantu hamwe. Iyobowe n'itsinda rito ry'abakozi, ifasha umuryango w'Ubwami n'ibintu byo kwiga biboneye kandi byoroshye kugeraho.",
+    "p1_title": "Umugambi wacu",
+    "p1_body": "Guhindura ubwenge bw'Ubwami bugezweho na buri usoma, wiga, n'ushakisha byese.",
+    "p2_title": "Abantu bacu",
+    "p2_body": "Itsinda rito ryiyemeje ry'abakozi, abandika, abagize uruhare, n'abayobozi babika isomero rikora kuri wowe.",
+    "p3_title": "Umuryango wacu",
+    "p3_body": "Abanyamuryango, abiga, abafatanyabikorwa b'ubushakashatsi, n'abiyandikisha bari kumwe bakura mu bumenyi no mu kwizera.",
+    "signoff": "Byubatswe n'umutima w'ubwibone kuri umuryango w'Ubwami."
+  },
   "auth": {
     "sign_in": "Injira",
     "sign_in_subtitle": "Murakaza neza",
@@ -210,6 +254,7 @@
     "reservations": "Kubika",
     "my_cart": "Agasanduku kanjye",
     "my_orders": "Ibyo natanze",
+    "news": "Amakuru",
     "browse_courses": "Reba amasomo",
     "my_courses": "Amasomo yanjye",
     "assessments": "Ibizamini",
@@ -669,6 +714,9 @@
     "instagram": "Dukurikire kuri Instagram",
     "whatsapp": "Bwira natwe kuri WhatsApp",
     "twitter": "Dukurikire kuri X (Twitter)",
-    "tiktok": "Dukurikire kuri TikTok"
+    "tiktok": "Dukurikire kuri TikTok",
+    "youtube": "Iyandikishe kuri YouTube",
+    "facebook": "Dukurikire kuri Facebook",
+    "linkedin": "Duhuze kuri LinkedIn"
   }
 }
