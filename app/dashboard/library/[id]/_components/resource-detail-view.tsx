@@ -66,8 +66,9 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     if (!editingId) return
     try {
-      // chapterTitle/chapterContent are create-only (see resource-form-media-files.tsx) and never sent here.
-      const { coverImage, documentUrl, audioUrl, videoUrl, chapterTitle: _chapterTitle, chapterContent: _chapterContent, ...rest } = formData
+      // chapters are client-only (see resource-form-media-files.tsx) — book
+      // content is authored through the Book Inventory table's form.
+      const { coverImage, documentUrl, audioUrl, videoUrl, chapters: _chapters, ...rest } = formData
       const updated = await updateResource(editingId, {
         ...rest,
         coverImages: [coverImage],

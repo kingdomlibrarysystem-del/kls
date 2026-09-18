@@ -50,35 +50,45 @@ export function LibraryView() {
 
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     try {
-      const { coverImage, documentUrl, documentName, audioUrl, audioName, videoUrl, videoName, chapterTitle, chapterContent, ...rest } = formData
+      const { coverImage, documentUrl, documentName, audioUrl, audioName, videoUrl, videoName, chapters, ...rest } = formData
       const fileFields = {
         documentUrl: documentUrl || undefined,
         audioUrl: audioUrl || undefined,
         videoUrl: videoUrl || undefined,
       }
+      // A TEXT book's readable content lives in Chapter rows. Empty
+      // entries (no title AND no content) are simply skipped — an admin
+      // may have clicked "Add Chapter" without typing anything.
+      const realChapters = formData.mediaType === 'TEXT'
+        ? chapters.filter((c) => c.title.trim() || c.content.trim())
+        : []
+
       if (editingId) {
         await updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
-        // For TEXT resources: if the admin typed chapter content, find the
-        // first existing chapter and PATCH it. If none exists yet, create one.
-        if (formData.mediaType === 'TEXT' && chapterContent?.trim()) {
+// Reconcile the typed book against the real chapter rows: update
+        // matching positions in place, create any entries beyond them, and
+        // delete rows that were removed from the editor. The `/` route
+        // auto-assigns `order` so appended chapters land in sequence.
+        if (realChapters.length > 0) {
           const chaptersRes = await fetch(`/api/chapters?resourceId=${editingId}`)
           const chaptersJson = await chaptersRes.json()
           const existingChapters: { id: string }[] = chaptersJson.data?.chapters ?? []
-          if (existingChapters.length > 0) {
-            await fetch(`/api/chapters/${existingChapters[0].id}`, {
+          for (let i = 0; i < Math.min(existingChapters.length, realChapters.length); i++) {
+            await fetch(`/api/chapters/${existingChapters[i].id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                title: chapterTitle?.trim() || undefined,
-                body: chapterContent,
-              }),
+              body: JSON.stringify({ title: realChapters[i].title.trim(), body: realChapters[i].content }),
             })
-          } else {
+          }
+          for (let i = existingChapters.length; i < realChapters.length; i++) {
             await fetch('/api/chapters', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ resourceId: editingId, title: chapterTitle?.trim() || 'Chapter 1', body: chapterContent }),
+              body: JSON.stringify({ resourceId: editingId, title: realChapters[i].title.trim(), body: realChapters[i].content }),
             })
+          }
+          for (let i = realChapters.length; i < existingChapters.length; i++) {
+            await fetch(`/api/chapters/${existingChapters[i].id}`, { method: 'DELETE' })
           }
         }
         showToast(`Updated "${formData.title}".`)
@@ -93,14 +103,16 @@ export function LibraryView() {
           coverImages: [coverImage],
           ...fileFields,
         })
-        // A TEXT resource authored with real markdown gets a real first
-        // Chapter row right away, so it has genuine readable content from
-        // creation instead of needing a separate chapter-authoring step.
-        if (chapterContent?.trim()) {
+        // A TEXT book authored with real markdown gets its real Chapter
+        // rows right away — sequentially, so each POST's server-side
+        // `order` assignment (next after this resource's last) lands in the
+        // order the admin typed them — giving the book genuine readable
+        // content from creation without a separate authoring step.
+        for (const chapter of realChapters) {
           await fetch('/api/chapters', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ resourceId: created.id, title: chapterTitle?.trim() || 'Chapter 1', body: chapterContent }),
+            body: JSON.stringify({ resourceId: created.id, title: chapter.title.trim(), body: chapter.content }),
           })
         }
         showToast(`Added "${formData.title}".`)

@@ -31,3 +31,23 @@ export const PATCH = withErrorHandling('/api/chapters/[id]', 'PATCH', async (req
 
   return NextResponse.json({ data: serializeChapter(updated, false), message: 'Chapter updated successfully', code: 'success', status: 200 })
 })
+
+/**
+ * Deletes one chapter - staff-only. Used by the Book Inventory form's
+ * chapter editor when saving: chapters the admin removed from the typed
+ * book are deleted so the member reading view matches exactly what was
+ * authored (the editor reconciles: patch in place / create extras /
+ * delete removed).
+ */
+export const DELETE = withErrorHandling('/api/chapters/[id]', 'DELETE', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const auth = await requireStaff()
+  if (auth.response) return auth.response
+
+  const { id } = await params
+  const existing = await prisma.chapter.findUnique({ where: { id } })
+  if (!existing) throw new ApiError('Chapter not found', 404)
+
+  await prisma.chapter.delete({ where: { id } })
+
+  return NextResponse.json({ data: null, message: 'Chapter deleted successfully', code: 'success', status: 200 })
+})

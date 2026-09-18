@@ -65,6 +65,20 @@ export const POST = withErrorHandling('/api/uploads', 'POST', async (request: Ne
   const auth = await requireStaff()
   if (auth.response) return auth.response
 
+  // Signed server-side Cloudinary uploads need api_key + api_secret in the
+  // server environment. This app's .env intentionally carries only the
+  // public cloud name and the unsigned upload preset (that's all the
+  // client-side CldUploadWidget pickers need), so without the server
+  // secrets configured this route cannot work — fail with a specific,
+  // actionable message instead of Cloudinary's generic throw that
+  // surfaced to users as the opaque "An unexpected error occurred".
+  if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new ApiError(
+      'Cloudinary server credentials are not configured — add CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET to your environment (the client-side pickers use the unsigned preset instead and do not need them)',
+      500
+    )
+  }
+
   const formData = await request.formData()
   const file = formData.get('file')
   const kindRaw = formData.get('type')

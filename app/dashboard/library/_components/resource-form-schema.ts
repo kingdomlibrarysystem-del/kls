@@ -41,14 +41,16 @@ export const resourceSchema = z.object({
   videoUrl: z.string().optional(),
   videoName: z.string().optional(),
   /**
-   * Client-only — never sent to POST /api/resources directly. When a
-   * TEXT (or COMBINATION) resource is created with real markdown typed
-   * here, the modal creates a real first Chapter row (via POST
-   * /api/chapters) right after the Resource itself, so a text-based
-   * resource has real readable content from the moment it's created.
+   * Client-only — never sent to POST /api/resources directly. When a TEXT
+   * resource is created with real markdown typed here, the modal creates
+   * the real Chapter rows (via POST /api/chapters, in order) right after
+   * the Resource itself, so a text-based book has real readable content
+   * from the moment it's created. Supports adding a whole book at once:
+   * each entry becomes one ordered Chapter row. When editing, the modal
+   * is pre-filled with the resource's existing chapters and saving
+   * reconciles them (patch in place / create extras / delete removed).
    */
-  chapterTitle: z.string().optional(),
-  chapterContent: z.string().optional(),
+  chapters: z.array(z.object({ title: z.string(), content: z.string() })),
 })
 
 export type ResourceFormData = z.infer<typeof resourceSchema>
@@ -76,8 +78,7 @@ export const defaultResourceFormValues: ResourceFormData = {
   audioName: '',
   videoUrl: '',
   videoName: '',
-  chapterTitle: '',
-  chapterContent: '',
+  chapters: [],
 }
 
 /** Common language codes a library resource is realistically authored/translated in — replaces a free-text field prone to inconsistent values (e.g. "english" vs "EN" vs "en-US"). */

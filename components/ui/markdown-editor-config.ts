@@ -11,6 +11,46 @@ export function extractYouTubeId(url: string): string | null {
 }
 
 /**
+ * Image layout — encoded as a small DSL inside the markdown image's
+ * `title` attribute so it round-trips through the raw text (and survives
+ * copy/paste), and read by the image renderer rule below in BOTH the
+ * admin editor's live preview and the member-facing renderer (they share
+ * this markdown-it config).
+ *
+ *   ![alt](url)             — default block image (max-width 100%)
+ *   ![alt](url "kcs-right w40")   — floats right, 40% width, text wraps left
+ *   ![alt](url "kcs-left w35")    — floats left, 35% width, text wraps right
+ *   ![alt](url "kcs-center w60")  — centered standalone block, 60% width
+ *   ![alt](url "w60")             — plain block, 60% width
+ */
+export interface ImgLayout {
+  /** left/right float the image so book text wraps around it; center = standalone centered; none = default block. */
+  align: 'left' | 'right' | 'center' | 'none'
+  /** Width as a percentage of the text column (10–100). */
+  width: number
+}
+
+export function parseImgLayout(title: string | null | undefined): ImgLayout {
+  const t = title ?? ''
+  const align = /kcs-(left|right|center)/.exec(t)?.[1] as 'left' | 'right' | 'center' | undefined
+  const w = /w(\d+)/.exec(t)?.[1]
+  return { align: align ?? 'none', width: w ? Math.min(100, Math.max(10, Number(w))) : 100 }
+}
+
+/** Rebuilds a markdown image with the given layout DSL (or plain if default). */
+export function encodeImgLayout(alt: string, url: string, layout: ImgLayout): string {
+  const parts: string[] = []
+  if (layout.align !== 'none') parts.push(`kcs-${layout.align}`)
+  if (layout.width < 100) parts.push(`w${layout.width}`)
+  if (parts.length === 0) return `![${alt}](${url})`
+  return `![${alt}](${url} "${parts.join(' ')}")`
+}
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/**
  * Overrides markdown-it's link_open/link_close renderer rules so a bare
  * YouTube link renders as a real iframe embed. Exported separately from
  * configureMarkdownEditor so it can be unit-tested directly against a bare
@@ -47,15 +87,44 @@ export function applyYouTubeEmbedRule(md: MarkdownIt): void {
   }
 }
 
+/**
+ * Overrides markdown-it's image renderer so an image whose title carries
+ * the kcs-* layout DSL is emitted with real book-layout HTML: a centered
+ * block (width %) or a floated, text-wrapping span (float left/right,
+ * defined in CSS as `.kcs-img` / `.kcs-img-wrap`). Images without the DSL
+ * keep the plain markdown behavior. Inline styled width keeps the exact
+ * size the author chose on both small and large screens.
+ */
+export function applyImageLayoutRule(md: MarkdownIt): void {
+  md.renderer.rules.image = (tokens, idx, _options, _env, _self) => {
+    const token = tokens[idx]
+    const src = token.attrGet('src') ?? ''
+    const alt = token.content
+    const title = token.attrGet('title')
+    const { align, width } = parseImgLayout(title)
+    const base = `<img src="${esc(src)}" alt="${esc(alt)}"`
+
+    if (align === 'center') {
+      return `${base} class="kcs-img kcs-img-center" style="width:${width}%" />`
+    }
+    if (align === 'left' || align === 'right') {
+      const inline = align === 'left' ? 'float:left;margin:4px 16px 12px 0' : 'float:right;margin:4px 0 12px 16px'
+      return `<span class="kcs-img-wrap kcs-img-${align}" style="width:${width}%;${inline}">${base} class="kcs-img" /></span>`
+    }
+    return `${base} class="kcs-img" />`
+  }
+}
+
 let configured = false
 
 /**
  * One-time global md-editor-rt setup so a bare YouTube link on its own line
- * renders as a real playable iframe in both the admin editor's live preview
- * and the member-facing MdPreview — matching what the old custom
- * react-markdown renderer used to do, now done via markdown-it's own
- * renderer rules so MdEditor/MdPreview stay the single source of truth for
- * everything else (headings, tables, code blocks, images).
+ * renders as a real playable iframe AND images honor the kcs-* size/float
+ * layout DSL in both the admin editor's live preview and the member-facing
+ * MdPreview — matching what the old custom react-markdown renderer used to
+ * do, now done via markdown-it's own renderer rules so MdEditor/MdPreview
+ * stay the single source of truth for everything else (headings, tables,
+ * code blocks, images).
  */
 export function configureMarkdownEditor(): void {
   if (configured) return
@@ -64,6 +133,7 @@ export function configureMarkdownEditor(): void {
   config({
     markdownItConfig(md) {
       applyYouTubeEmbedRule(md)
+      applyImageLayoutRule(md)
     },
   })
 }

@@ -1,3 +1,16 @@
+# Standing rule — every change is logged here
+
+> **Rule (per project owner):** EVERY code/UI/data change made to this app
+> must append a dated entry to the **Change Log** section at the bottom of
+> this file before it is considered done. The entry describes what changed,
+> which files were touched, and — critically — what interactions the change
+> can affect elsewhere (routes that share a store, pages that mount the same
+> component, data-shape assumptions), so future work never breaks existing
+> behavior by accident. This rule exists to keep the app problem-free as it
+> grows. A change is NOT complete until its PROGRESS.md entry is written.
+
+---
+
 # Autonomous Run Progress
 
 Working through the combined remaining backlog from
@@ -4261,7 +4274,8 @@ Addressed 9 user-reported issues spanning member and admin portals.
 6. Fixed a real bug in Add Resource where a new resource's category
    could silently default to unset if the categories fetch hadn't
    resolved yet when the modal opened — same visual form, no layout
-   change.
+change.
+
 7. Added a real `UNAVAILABLE` session status (for a `PENDING` request
    whose window lapsed unactioned) and a real `Notify` action for
    `APPROVED` sessions (reminds both learner and lecturer/hoster).
@@ -4396,3 +4410,666 @@ Recommend a human confirm one real email arrives in a real inbox after
 deploying/running this outside the sandbox, since "the code is
 correct" and "an email actually arrived" are different claims.
 
+---
+
+## 2026-09-18 — News, daily wisdom & About on landing + member news reading pages (manual request run)
+
+**What changed**
+
+- `components/home/daily-wisdom.tsx` (new): animated "Daily Wisdom" bible-verse
+  strip that sits directly below the main header on the landing page. Slow
+  opacity-only fade in/out (no side-to-side slide), rotates through 3
+  translated verses, deliberately thin height so it never pushes the hero
+  deep below the fold.
+
+- `components/home/news-paper-section.tsx` (new): compact single-row news strip
+  on the landing page rendered above the trending books. Pulls up to 5 of the
+  newest PUBLISHED articles from the real `/api/news/articles` endpoint; small
+  card layout with line-clamped text; self-hides completely when the API is
+  unreachable or no news has been published yet (never shows a broken strip).
+
+- `components/home/about-section.tsx` (new): simple "About Us" section with an
+  `id="about"` anchor for the footer link, three short pillar cards
+  (mission/people/community), placed on the landing page between Research and
+  Testimonials.
+
+- `app/page.tsx`: now mounts `<DailyWisdom />` immediately under `<MainHeader />`,
+  `<NewsPaperSection />` above `<TrendingBooks />`, and `<AboutSection />` after
+  `<ResearchSection />`. All three self-hide gracefully when empty.
+
+- `app/member/news/page.tsx` + `app/member/news/_components/news-feed-view.tsx`
+  (new): member-side published-news list page. Renders a "Newspapers & Editions"
+  horizontal-scroll row of edition/featured cards, then a filterable (by
+  category) vertical list of all published articles. Dialect B (CSS-variable
+  driven). No auth required — the member portal has no auth gate, so these
+  pages are also the destination the email "Read Article" buttons already link
+  to. Shows `EmptyState` when the DB is empty.
+
+- `app/member/news/[id]/page.tsx` + `app/member/news/[id]/_components/
+  news-article-view.tsx` (new): full reading view of one published article.
+  Gradient hero header, optional cover-image banner, summary card, and
+  markdown body rendered via the existing `MarkdownContent` component
+  (`components/ui/markdown-content.tsx`). Back button → `/member/news`.
+  No login required. Server route page uses Next 16 `Promise<{id}>` params
+  convention, matching `dashboard/news/articles/[id]/page.tsx`.
+
+- `app/member/_components/member-sidebar.tsx`: added "News" item (with
+  `Newspaper` lucide icon) to the library nav-group items, linking to
+  `/member/news`. Uses existing `t('member.news')` translation key.
+
+- `components/main-header.tsx`: added a new "News" dropdown nav section (after
+  E-Learning) containing a single "Latest News" item linking to `/member/news`,
+  using new `nav.news` / `nav.latest_news` translation keys. Added `Newspaper`
+  to the lucide import list.
+
+- `components/main-footer.tsx`: added a new "About Us" link at the top of the
+  Account column, linking to `href="/#about"` (the About section's anchor).
+  Uses `footer.about_us` key.
+
+- `components/home/trending-books.tsx`: added `object-top` to the book-cover
+  `<Image>` (`object-cover object-top`) so the top of each cover image — where
+  title text usually sits — is visible instead of being cropped away by the
+  default center-object-fit.
+
+- `locales/en.json`, `locales/fr.json`, `locales/rw.json`: added all new
+  translation keys across all three languages (keys: `nav.news`,
+  `nav.latest_news`, `footer.about_us`, `member.news`, `news.*` (4 keys),
+  `m_news.*` (10 keys), `daily_wisdom.*` (7 keys), `about.*` (12 keys)).
+  JSON validated (47 top-level keys in all three locales, all parse clean).
+
+- `PROGRESS.md`: standing rule added at the top (this entry).
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- Both the landing news strip (`news-paper-section.tsx`) and the member news
+  pages (`news-feed-view.tsx` / `news-article-view.tsx`) read the real news
+  API. Public calls see only `PUBLISHED` status articles (per the route
+  guards in `app/api/news/articles/route.ts`), so nothing appears until staff
+  publish content via the existing `/dashboard/news` admin UI. No seed data
+  was added; with an empty DB all new sections self-hide or show `EmptyState`.
+
+- `/member/news/[id]` is the URL the email system already sends (see
+  `app/api/news/articles/[id]/notify-subscribers.ts` and
+  `lib/newsletter-broadcast.ts` — both use `/member/news/${article.id}` as the
+  `href`). The member portal layout has no auth gate, so unauthenticated
+  email recipients can read articles at this URL without logging in. Do not
+  add auth to these routes.
+
+- `news-paper-section.tsx` hard-caps at 5 items and a single row by design,
+  so the news strip never pushes the trending books far down the page. The
+  cap is intentional, not a bug — it avoids landing-page length creep as the
+  newsroom publishes more content.
+
+- `daily-wisdom.tsx` currently hardcodes exactly 3 verses (inline array, not
+  from the API). Adding more verses requires extending the component's
+  `verses` array and adding the corresponding `daily_wisdom.verse_N` /
+  `daily_wisdom.ref_N` keys in all three locale files.
+
+- Sidebar and header nav additions use `t()` keys; if new nav labels are
+  changed later, update `locales/{en,fr,rw}.json` — all three locales must
+  stay in sync or the fallback key string will display in the untranslated
+  language.
+
+- `object-top` on trending-books changes cover rendering globally on the
+  landing page. If any future cover images need center-crop behavior
+  instead, those will need a per-image override class.
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build` succeeded
+(177 static pages generated, `/member/news` and `/member/news/[id]` confirmed
+present in the route list). Full `npm run build` was NOT run because the user's
+`next dev` server (PIDs 29832, 33332, 44804, 34120) was holding a lock on
+`node_modules/.prisma/client/query_engine-windows.dll.node`, causing
+`prisma generate` to fail with EPERM. The Prisma schema was unchanged, so
+`npx next build` (which skips generate) was the safe verification path.
+
+---
+
+## 2026-09-18 — Follow-up: daily-wisdom floating card, newspaper-look strip, article header contrast (owner review)
+
+The owner reviewed the first cut and requested three adjustments:
+
+**1. Article header text was unreadable in light mode** —
+`app/member/news/[id]/_components/news-article-view.tsx`. The header used
+`background: var(--welcome-gradient)`, which is a pale cream
+(`#fdf8ef → #f0e8d5`) gradient in light theme (it only turns dark in dark
+theme), while the title + meta were hardcoded white. Replaced with an
+explicit always-dark ink gradient `linear-gradient(135deg, #2c2416, #6b5020)`
+(the same warm browns the trending badge already uses), so the white title,
+meta row, and chips stay readable in BOTH themes regardless of
+`--welcome-gradient`. Decorative highlight circle and the Featured chip were
+left as-is (both fine on dark).
+
+**2. Daily Wisdom must not be a section — it is now a floating right-side
+card that changes once per day** — `components/home/daily-wisdom.tsx`
+(rewritten). Removed the full-width gradient bar entirely. Now renders a
+`hidden md:block fixed top-24 right-4 z-40 w-64` card that OVERLAYS the
+hero (in front of content, no layout space, sits just below the sticky
+header `z-50`). The verse lasts 24 hours: the active verse is derived from
+the locale day-of-year (`dayOfYear` % verse count, safe negative modulo), and
+a timer set to the next local midnight (`nextMidnight()`) advances `today`
+so the verse swaps at exactly 12:00 AM. Slow 1.5s opacity-only fade-in on
+mount and again each day-change via a `key={today.toDateString()}` remount
++ tiny inline `kcs-dw-fadein` keyframe (pure opacity — no translation/slide).
+Hidden below `md:`, where a fixed card would cover the mobile hero.
+
+**3. The landing news strip must look like a newspaper, not a row of book
+cover cards** — `components/home/news-paper-section.tsx` (rewritten as a
+broadsheet). Gone: the uniform "image on top, title, then body" grid cards
+with rounded, bordered images. Now: a centered masthead (kicker + big
+cinzel title) under a double rule, then stacked article rows separated by
+hairline rules. Each row lays out as one line of "lead-in + headline
++ single-sentence summary" with the photo pulled square-cornered (NO
+border-radius, NO border) on the LEFT for even rows and RIGHT for odd rows
+via `flex-row-reverse`. Photo crops are straight newsprint cuts
+(`object-cover`, no `rounded-*`, no border). Rows are height-tight
+(`line-clamp-1` headline + one-line summary on mobile, two lines on larger
+screens) and MAX_ITEMS stays 5, so the strip still cannot push the books far
+down the page. "View All News" moved to the bottom-right under the column,
+and each row now shows the publish date next to the category kicker.
+Photos still render through `RemoteImage` (fallback icon when no cover).
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- `daily-wisdom.tsx` is `fixed` and overlays content on the landing page from
+  `md:` up; it is hidden on small screens by design. It depends on the
+  `daily_wisdom.*` locale keys (3 verses). Increasing the number of verses
+  requires edits to `components/home/daily-wisdom.tsx`'s `verses` array and
+  matching `daily_wisdom.verse_N` / `daily_wisdom.ref_N` keys in all three
+  locale files. If another page ever wants the same widget, it can be mounted
+  anywhere (it is self-positioned).
+- `news-paper-section.tsx` still reads `/api/news/articles?pageSize=5` and
+  links each row to `/member/news/[id]` — email-URL and published-only
+  guarantees from the first entry still apply unchanged.
+- The article header now uses a fixed dark ink gradient instead of the theme
+  variable, so it no longer follows `--welcome-gradient` changes. If a future
+  admin prefers a theme-following header, the text colors must switch to a
+  theme-aware scheme at the same time (this is why it was fixed deliberately).
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+succeeded (177 pages, route list unchanged and complete). Same limitation as
+before: `npm run build` was not run because the dev server still holds the
+Prisma DLL lock; `prisma generate` was skipped because the schema did not
+change.
+
+---
+
+## 2026-09-18 — Daily Wisdom: transparent + auto-show/hide, then white-card-in-header + modal (owner reviews 2–3)
+
+Two owner revisions of the Daily Wisdom widget in one day; both are logged
+together here in chronological order. Final behavior is the white header
+card + absolutely-positioned modal described below.
+
+**Review 2 — make it transparent, lower it, auto-show for 10s then hide for 1h**
+
+- `components/home/daily-wisdom.tsx` rewritten: the floating note was moved
+  down (`top-40`), made FULLY transparent (card background, gold border, and
+  shadow all removed — bare theme-token text), and given the final
+  show/hide rhythm: shows the verse on app open, hides after 10 seconds,
+  returns for 10 seconds every 1 hour, forever. A small always-visible
+  "Daily Wisdom · Matthew 6:22" caption stayed up; clicking it re-showed the
+  verse. Mobile got a bottom-sheet modal on the same cycle plus a tiny
+  floating reopen label.
+
+**Review 3 — make it a well-designed WHITE card inside the header; verse opens as an absolutely-positioned (front) modal**
+
+- `components/home/daily-wisdom.tsx` rewritten again. The widget is now a
+  white, shadowed, rounded button/card whose focal element is the word
+  "DAILY WISDOM" rendered in `font-cinzel`, uppercase, wide letter-spacing,
+  next to a `BookHeart` icon and (from `sm:` up) a thin divider + today's
+  short reference (e.g. "Matthew 6:22"). The card always lives at the top
+  of the screen and no longer floats over page content.
+- Mounting moved: `<DailyWisdom />` was REMOVED from `app/page.tsx` (after
+  `MainHeader`) and is now rendered INSIDE `components/main-header.tsx`
+  between the search form and the language switcher, so the chip appears on
+  every page that uses `MainHeader` (the landing page and the `(public)`
+  layout — `/library`, `/courses`, etc.).
+- The full verse now opens as an **absolutely-positioned overlay modal**
+  (`fixed inset-0 z-[70]` — in front of everything, above the sticky
+  `z-50` header): a centered max-w-md card with a dimmed backdrop, a
+  BookHeart roundel, the designed "DAILY WISDOM" wordmark under a short gold
+  rule, the day's verse set in italic serif, and the reference in the gold
+  accent face. Opened by clicking the header card, by the auto
+  show/hide cycle (still 10s show → 1h hide), or manually at any time; closed
+  by the X or tapping the backdrop.
+- The daily rotation is unchanged: one verse per local day, swapped at
+  12:00 AM via `dayOfYear` + `nextMidnight` timer.
+- `components/main-header.tsx`: added the `DailyWisdom` import/usage and
+  added `min-w-0` to the search `<form>` so the search bar can shrink and the
+  new chip never overflows the header row on small screens.
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- The widget is now part of `MainHeader`, which is shared by the landing
+  page (`app/page.tsx`) and the `(public)` route-group layout. It is NOT
+  mounted on `/member/*` or `/dashboard/*` (those use their own chrome). If
+  it should appear in the member portal too, mount it in
+  `app/member/layout.tsx` — the component is self-contained and position-free
+  (inline card + `fixed` modal), so it works from any host.
+- The modal auto-opens on every full page load (first paint of the widget)
+  for 10 seconds, then hides for 1 hour. Because it lives in the header,
+  client-side navigations within the `(public)` layout keep the same mounted
+  instance, so the modal does NOT re-pop on every route change — only on a
+  hard reload or after a 1-hour window elapses. This is intended behavior,
+  not a bug.
+- The modal `z-[70]` intentionally sits above the header's `z-50` so it
+  reads as "in front". Keep any new full-screen overlays on these pages
+  below `z-70` or they may compete with the Daily Wisdom preview.
+- The header card keeps a `bg-white` chip in dark mode too (deliberate —
+  the owner asked for a white card); its border/icon/ref still use theme
+  tokens. If a future pass wants the chip theme-adaptive, replace
+  `bg-white dark:bg-white` with `bg-white dark:bg-[#161e30]`.
+- Still depends on `daily_wisdom.*` locale keys (3 verses, en/fr/rw). Adding
+  verses requires updating the `verses` array in
+  `components/home/daily-wisdom.tsx` AND `daily_wisdom.verse_N` /
+  `daily_wisdom.ref_N` in all three locale files.
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+succeeded (177 pages, route list unchanged). Same limitation as the earlier
+entries today: `npm run build` was not run because the running `next dev`
+server holds the Prisma DLL lock; `prisma generate` was skipped (schema
+unchanged).
+
+**Housekeeping**: a previous append of the review-2 entry accidentally landed
+mid-file (the `oldString` matched an earlier paragraph ending in "change.")
+and split an old Admin list; that misplaced block was removed and this single
+chronological entry now replaces it, so the file tail is again one ordered
+log.
+
+---
+
+## 2026-09-18 — Daily Wisdom modal: removed close button, added 10-second progress line (owner review 4)
+
+Single-file change in `components/home/daily-wisdom.tsx` (nothing else).
+
+- Removed the `X` close button from the absolutely-positioned verse modal.
+  The backdrop-tap close stays (the only manual dismissal).
+- Added a thin progress line along the bottom of the modal card that counts
+  down the 10-second preview: a low-key track (`bg-w-100/70` light /
+  `dark:bg-gray-800/70`) with a gold fill (`linear-gradient(90deg,#6b5020,
+  #d4a843)`) animating 0% → 100% over `SHOW_MS` (10s) via an inline
+  `kcs-dw-progress` keyframe and a `key={cycle}` remount.
+- `cycle` state increments each time a show-phase begins (tracked with a
+  `prevVisible` ref inside a small effect that fires only on the false→true
+  edge), so the bar restarts from zero on the initial app-open, on every
+  hourly re-show, and on every manual reopen from the header card — it is
+  not left half-filled from a prior show. The existing 10s→1h auto cycle and
+  daily midnight rotation are unchanged.
+- The modal card gained `overflow-hidden` (so the bottom bar clips to the
+  rounded corners) and a touch more bottom padding (`pb-7`) so the fill line
+  never sits on top of the reference text.
+- `X` removed from the lucide import (no longer used).
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- Modal dismissal is now: backdrop tap, or the auto 10-second timer. There
+  is no visible close affordance, so on touch devices the backdrop tap is
+  the only manual out — keep the backdrop hit area covering the full screen
+  (it does).
+- The progress bar timing is purely cosmetic and driven by the same
+  `SHOW_MS` constant the hide timer uses, so the two cannot drift apart.
+  If `SHOW_MS` ever changes, the keyframe duration uses the same constant.
+- The re-mount relies on `key={cycle}`, and `cycle` only bumps on the
+  false→true edge — do not add `cycle` to any other effect's dependency
+  array (the guard effect itself must keep `[visible]`).
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+succeeded (177 pages, route list unchanged). Same known limitation as prior
+entries: `npm run build` skipped because the running `next dev` server holds
+the Prisma DLL lock; schema unchanged.
+
+---
+
+## 2026-09-18 — Daily Wisdom header chip simplified + modal pause button (owner review 5)
+
+Single-file change in `components/home/daily-wisdom.tsx` (nothing else).
+
+**Header chip — "DAILY WISDOM" only**
+- Removed the verse reference from the header card: the `hidden sm:flex`
+  divider + `shortRef` span (e.g. "· Matthew 6:22") is gone. The chip now
+  shows just the `BookHeart` icon + the "DAILY WISDOM" wordmark
+  (cinzel, letter-spaced), so nothing in the header reads like a title.
+- The `shortRef` helper is deleted; `useRef` is still imported for the
+  `prevVisible` book-keeping below.
+
+**Modal — pause so the reader can take their time**
+- Replaced the CSS-keyframe progress with an `elapsed` ticker
+  (`TICK_MS = 100`). The bottom gold progress line is now driven by state
+  (`width: progress%`), which makes it pausable at any point.
+- Added a centered round pause/play button floating in the modal's bottom
+  padding (`absolute bottom-4 inset-x-0 flex justify-center`, `pb-16` on
+  the card): shows `Pause` by default, `Play` while paused.
+- Behavior: tapping pause freezes the countdown (ticker effect skips while
+  `paused`; the hide-check effect also skips), so the modal stays open as
+  long as the reader needs. Tapping play resumes from exactly where it
+  stopped. Backdrop-tap still closes immediately.
+- State wiring:
+  - Countdown: `[visible, paused]`-gated setInterval ticking `elapsed`.
+  - Hide: effect on `[visible, paused, elapsed]` flips `visible` off once
+    `elapsed >= SHOW_MS`.
+  - Hourly re-show: only scheduled while hidden (was previously one combined
+    effect branching on `visible`).
+  - Show-edge effect: on every false→true edge resets `elapsed` to 0 and
+    `paused` to false, so each new show (initial, hourly, or manual reopen
+    from the header chip) starts fresh, unpaused, from zero.
+- Manual reopen while already showing is unchanged (no reset, keeps running).
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- `prevVisible` + the reset effect must stay on `[visible]` only — adding
+  `elapsed`/`paused` deps would reset the clock mid-countdown on every tick.
+- The pause button is purely local state; it does not affect the daily
+  rotation or the Header chip, and it disappears with the modal (it lives
+  inside the opacity-gated overlay).
+- `Pause`/`Play` joined the lucide import; `X` remains unused (removed in
+  review 4) and `BookHeart` is used by both chip and modal.
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+succeeded (177 pages, route list unchanged). Same known limitation as prior
+entries: `npm run build` skipped because the running `next dev` server holds
+the Prisma DLL lock; schema unchanged.
+
+---
+
+## 2026-09-18 — Daily Wisdom modal: backdrop click no longer closes (owner review 6)
+
+Single-file change in `components/home/daily-wisdom.tsx` (nothing else).
+
+- Removed the `onClick={() => setVisible(false)}` handler from the dimmed
+  backdrop overlay (`<div className="absolute inset-0 bg-black/50" />`).
+  Tapping the background outside the modal no longer closes it, so the
+  preview never vanishes unexpectedly while the user is still reading.
+- The only dismissal paths are now:
+  1. The 10-second countdown completes (gold progress line reaches 100%) —
+     modal hides automatically, then re-shows after the 1-hour window.
+  2. Pausing the countdown and never resuming — the modal stays open
+     indefinitely (only a hard page reload or new navigation clears it;
+     the hourly re-show cycle resumes from whichever `visible` state it
+     finds on next mount).
+- The backdrop remains visually (translucent `bg-black/50` screen) to
+  signal "you're in a focused modal state" and to prevent interaction with
+  the page behind it, but it is now inert to taps.
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- There is no way to dismiss a paused modal other than resuming and letting
+  the countdown finish, reloading the page, or navigating away. This is
+  intentional — the owner specifically wanted no accidental dismissals. If
+  a manual dismiss is later required, re-add the backdrop `onClick` or
+  introduce an explicit close icon; do not do both.
+- The `pointerEvents: visible ? 'auto' : 'none'` on the outer wrapper
+  still blocks clicks to the background when hidden; this is unchanged.
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+succeeded (177 pages, route list unchanged). Same known limitation: `npm run
+build` skipped because the running `next dev` server holds the Prisma DLL
+lock; schema unchanged.
+
+---
+
+## 2026-09-18 — Fix inline image upload in markdown editor + whole-book chapters-at-once in the Resource form
+
+Two owner-reported issues on the Book Inventory form, one diagnosis:
+
+**1. "An unexpected error occurred" when uploading an image in the markdown editor**
+
+Root cause: the editor's toolbar image button POSTed the file to the app's
+`POST /api/uploads`, a SERVER-SIGNED Cloudinary upload that requires
+`CLOUDINARY_API_KEY` + `CLOUDINARY_API_SECRET` in the server environment.
+This repo's `.env` intentionally carries only the public
+`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` and the unsigned
+`NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` (all the CldUploadWidget pickers
+need), so the signed route always 500'd — the SDK's throw surfaced as the
+opaque generic "An unexpected error occurred. Please try again." The cover/
+document/audio/video pickers were unaffected because they upload through
+the client-side unsigned widget. This bug silently affected EVERY
+`MarkdownEditor` (resource chapters, lessons, news articles).
+
+Fix (`components/ui/markdown-editor.tsx`):
+- `onUploadImg` now uploads each selected file straight to Cloudinary's
+  unsigned REST endpoint
+  `https://api.cloudinary.com/v1_1/<cloud_name>/image/upload` with
+  `upload_preset = NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` + the
+  `kcs-resources/image` folder — the exact mechanism CldUploadWidget uses
+  under the hood. No server secrets, no double file dialog, works in dev
+  and prod. A missing preset/cloud-name throws a specific configuration
+  message instead of a generic one.
+- `POST /api/uploads/route.ts` gained a guard: if the server credentials
+  are absent it fails with an actionable ApiError naming the two env vars,
+  instead of Cloudinary's throw becoming the generic 500.
+
+**2. "Add Resource" — let the owner author a whole book (many chapters) at once; keep the chapter feature**
+
+Verdict after reading the model end-to-end: chapters are CORE, not optional.
+They are the only readable content for a TEXT book: the member reader
+(reader-view, chapter nav/search/highlights) renders Chapter rows, the
+"buy to continue" paywall gates by per-chapter `freePreviewChapterCount`,
+and entitlements are checked per resource over its chapters. Removing them
+would gut text books — so the feature was kept and EXTENDED from "one
+optional first chapter" to a whole book:
+
+- `resource-form-schema.ts`: `chapterTitle`/`chapterContent` replaced by
+  `chapters: { title: string; content: string }[]` (required field; the
+  array lives in `defaultResourceFormValues`). Not `.default()`-ed — a
+  default made zod's input type optional vs the form's required output and
+  broke the RHF resolver types (fixed by dropping the `.default()`).
+- `resource-form-media-files.tsx`: uses `useFieldArray({ control,
+  name: 'chapters' })` — a stack of per-chapter cards (Chapter N label +
+  remove, title input, markdown editor) with an "Add Chapter" button. Empty
+  state has a dashed helper prompt. Rich text via the (now working)
+  MarkdownEditor, so each chapter supports images/headings/code.
+- `resource-form-modal.tsx`: on edit of a TEXT resource, prefills the array
+  with ALL existing chapters fetched from `/api/chapters`; all reset
+  payloads updated to the `chapters` shape.
+- `library-view.tsx` handleSave:
+  - Create: loops the typed chapters SEQUENTIALLY through `POST
+    /api/chapters` so each server-side `order` assignment lands in typed
+    order — the book reads front-to-back from birth. Empty entries (no
+    title and no content) are skipped.
+  - Edit: reconciles the typed book against the real rows — PATCH matched
+    positions in place, POST any entries beyond them, DELETE rows that were
+    removed from the editor.
+- `app/api/chapters/[id]/route.ts`: new staff-only `DELETE` (needed by the
+  edit reconciliation; previously chapters could never be deleted).
+- `resource-detail-view.tsx`: continues to strip the client-only `chapters`
+  field from the resource PATCH (book content is authored from the Book
+  Inventory table's form).
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- The markdown editor's upload no longer depends on the server env — but it
+  DOES require the Cloudinary upload preset to be unsigned (it is
+  `kls_uploads`, same one the widget uses). If that preset is ever changed
+  to signed-only, revert to the `/api/uploads` path and configure the
+  server credentials.
+- Lesson + news article editors get the same image-upload fix automatically
+  (shared MarkdownEditor).
+- `chapters` is destructured OUT of the payload everywhere before PATCH/
+  POST /api/resources — do not re-add a plain `chapters` field to the
+  resource API body; the real authoring endpoints are /api/chapters*.
+- The edit reconciliation deletes real chapter rows the admin removed.
+  That is now the ONLY delete path for chapters and is staff-gated.
+- Member-facing code reads `chapter.title` from the API — unaffected.
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+succeeded (177 pages, route list unchanged). Same known limitation: `npm
+run build` skipped because the running `next dev` server holds the Prisma
+DLL lock; schema unchanged.
+
+---
+## 2026-09-18 � Book-style image layout in the markdown editor + member reader (resize + wrap text around an image)
+
+The owner asked whether an image dropped/uploaded into a section can be moved
+wherever they want in that section and have the book's prose flow around it,
+"like a normal book." md-editor-rt 6.5.6 ships no image resize or alignment, so
+this adds it ourselves via a layout DSL + a markdown-it rule + a toolbar dialog:
+
+**Design: layout travels inside the image's markdown title** (so it survives
+save/reload, copy/paste, and the raw-text pipeline with zero extra columns):
+
+- `![alt](url)` � plain block image, max-width 100% (unchanged default).
+- `![alt](url "kcs-left w35")` � floats LEFT at 35% width; prose wraps right of it.
+- `![alt](url "kcs-right w40")` � floats RIGHT at 40% width; prose wraps left of it.
+- `![alt](url "kcs-center w60")` � centered standalone block at 60% width.
+
+**Implementation**
+
+- `markdown-editor-config.ts`:
+  - `parseImgLayout(title)` / `encodeImgLayout(alt, url, layout)` � tiny
+    round-trippable DSL helpers (`kcs-<left|right|center>` + `w<10-100>`).
+  - `applyImageLayoutRule(md)` � overrides markdown-it's `rules.image` to emit
+    the layout HTML; registered in the shared `configureMarkdownEditor()` so ONE
+    rule serves BOTH the admin editor's live preview (MdEditor) and the member
+    reader (MdPreview via MarkdownContent) � chapters, lessons, news articles
+    all pick it up automatically. Inline `style=width:X%` preserves the exact
+    chosen size on every screen.
+  - HTML out: centered ? `<img class="kcs-img kcs-img-center" style="width:X%">`;
+    float ? `<span class="kcs-img-wrap kcs-img-{left,right}" style="width:X%;float:...;margin:..."><img class="kcs-img"></span>`;
+    default ? `<img class="kcs-img">`. `sanitize` stays pass-through so inline
+    styles survive rendering (they are emitted by our own rule).
+- `markdown-editor.tsx`:
+  - New toolbar button via md-editor-rt `defToolbars` (Image icon) opening an
+    in-file `ImageLayoutDialog`: scans the document for every markdown image
+    `/!\[[^]]*\]\(\S+(".*?")?\)/g`, shows a thumbnail strip, per-image alignment
+    presets (Block / Text right of image / Text left of image / Centered) + a
+    10�100% width slider with a hint describing the float behavior, and an
+    Apply button that rewrites that image's markdown title via `encodeImgLayout`
+    and `onChange`s it back � editor preview and member page update instantly,
+    no server round-trip. Backdrop click or Done closes; alignment/width are
+    re-read from whichever thumbnail is selected.
+  - `<style>` block scoping `.md-editor-preview` rules for `.kcs-img*` (floats
+    are not squashed: `display:block`, inner img `width:100%`, `border-radius`)
+    plus `clear: both` on headings/tables/quotes/pre/lists so those blocks are
+    never pulled up beside a float � only the paragraph prose flows around it.
+- `markdown-content.tsx` (member renderer): mirrored `.kcs-markdown-content`
+  rules for `.kcs-img`, `.kcs-img-center`, `.kcs-img-wrap` and the same
+  `clear: both` set, so the reader honors exactly what the author picked.
+
+**Interactions this can affect elsewhere (read before touching)**
+
+- The YouTube embed rule (`applyYouTubeEmbedRule`) and the image rule
+  (`applyImageLayoutRule`) are registered in the SAME `configureMarkdownEditor()`
+  1-time global � do not reorder or split them; the markdown-it `image`
+  renderer is fully overridden, so any future image-related styling must keep
+  the `kcs-img` classes or be added inside the rule.
+- `MdEditor` insert of a normal image uses the same shared pipeline, so plain
+  `![alt](url)` keeps its classic look; only titled images get layout classes.
+- Admin preview vs member output are now pixel-parity for image layout; keep
+  the two `.kcs-*` CSS blocks in sync when tuning margins/radius.
+
+**Verification**: `npx tsc --noEmit` clean (0 errors); `npx next build`
+177/177. Same known limitation: `npm run build` skipped while the running
+`next dev` server holds the Prisma DLL lock; schema unchanged, no migration.
+---
+## 2026-09-18 � Daily Wisdom: only on the very first app open (never on refresh) + restored missing /api/chapters/[id] route
+
+**Daily Wisdom auto-show no longer annoys on every refresh**
+
+Previously `visible` started as `true` on every mount, so any page carrying the
+main header reopened the verse modal on each load/refresh. Now:
+
+- The modal starts HIDDEN (`visible = false`) on every render � SSR and client
+  agree, so there is no hydration flash either.
+- A mount effect reads the `kcs-daily-wisdom-seen` localStorage marker. Only
+  when it is ABSENT (a real first app open in this browser) does it set the
+  marker and call `setVisible(true)` � a refresh or later return never reopens
+  it on load. Storage failures are swallowed and stay closed.
+- The existing rules are unchanged and complete the flow: the header button
+  opens it on demand any time; and the hourly timer (`HIDE_MS`, unaffected)
+  still brings the 10-second preview back once per hour while the page stays
+  open. Components/home/daily-wisdom.tsx only.
+
+**Restored the lost /api/chapters/[id] route**
+
+While building, `.next/types` surfaced stale-route references and the build
+dropped from 177 to 174 entries. Investigation showed the committed tree
+(HEAD) had lost `app/api/chapters/[id]/route.ts` entirely even though the
+committed Book Inventory form (`library-view.tsx` lines 77 & 91) unconditionally
+calls `PATCH` and `DELETE /api/chapters/:id` when saving an edited book �
+their edit flow was returning 404 before any save. The file was recovered from
+the `a1cbc1e` WIP commit (which also carries the staff-only `DELETE` handler
+added for the whole-book reconciliation) and recreated at
+`app/api/chapters/[id]/route.ts` with both handlers: `PATCH` (title/body) and
+`DELETE` (staff-only, the only chapter-delete path). Verified against the
+current `app/api/chapters/route.ts` `serializeChapter` export.
+
+**Verification**: `npx tsc --noEmit` clean; `npx next build` 174/174 (page
+count unchanged from the committed tree; API routes are not pages). Working
+tree: `M components/home/daily-wisdom.tsx` + untracked restored route
+`app/api/chapters/[id]/`. Note: the missing newsletter routes
+(`/api/newsletter/subscribe`, `/api/newsletter/subscribers*` and
+`app/dashboard/news/subscribers/page.tsx`) are ALSO absent from HEAD though
+the landing page's committed `newsletter-section.tsx` may reference them �
+left untouched here, pending the owner's word on whether the newsletter
+feature should be reverted or restored.
+---
+## 2026-09-18 � First-time "where to click" bubble next to the Daily Wisdom header button
+
+New-visitor onboarding like other websites use: a small BLUE callout appears
+beside the DAILY WISDOM button in the main header, its arrow pointing at the
+button, with a floating (bobbing) animation and a mouse-cursor icon so the
+eye finds it. It only exists for a brand-new browser (same
+`kcs-daily-wisdom-seen` localStorage marker the modal uses � one gate, no
+second cookie), it starts together with the first-time verse modal, and the
+moment the user clicks the button OR the bubble itself, the bubble disappears
+("moves away") and the verse modal opens � exactly the pattern the owner
+described. On a refresh nothing shows again.
+
+- `components/home/daily-wisdom.tsx`: `tour` state armed inside the first-ever
+  mount effect; `openFromHeader()` funnels BOTH the header button and the
+  bubble through one handler that hides the bubble + opens the modal; the
+  button is wrapped in a `relative` span so the bubble anchors to it
+  (`absolute right-0 top-full mt-3`, `z-[80]`, `max-w-[240px]` so no mobile
+  overflow), sky-blue with a white triangle arrow and a `kcs-dw-tour-bob`
+  keyframe (gentle 5px bob, 1.6s) injected via a local `<style>` tag.
+- `locales/{en,fr,rw}.json`: new `daily_wisdom.tour` strings (en/fr/rw) so the
+  bubble speaks the visitor's language.
+
+**Verification**: JSON parses in all three locales; `npx tsc --noEmit` clean;
+`npx next build` 174/174. Reminder still open from the round before: the
+newsletter routes (`/api/newsletter/*`, `app/dashboard/news/subscribers/`)
+are absent from HEAD while the landing page still renders
+`newsletter-section.tsx` � restore only if the feature is meant to stay.
+---
+## 2026-09-18 � Resolved `git rebase main` conflicts on develop (5 files, all develop-side wins)
+
+The owner rebased `develop` onto `main` while commit `5f6b8be` (footer social
+links) was replaying, which stopped mid-rebase on five conflicts. Every one
+was the same shape: `main` (HEAD side) carried the OLD single-first-chapter
+Resource-authoring shape, `develop` (theirs) carries the NEW whole-book
+multi-chapter `chapters[]` array � and since the form schema already declares
+`chapters`, main's halves referenced fields that no longer exist
+(`chapterTitle`/`chapterContent`) and would not even compile. Resolution was
+therefore develop-side in all five, then tsc + build confirmed:
+
+- `app/api/chapters/[id]/route.ts` (add/add): kept develop's file � PATCH
+  (title/body) + the staff-only DELETE the Book Inventory form's reconcile
+  calls. Main's copy had only PATCH.
+- `library-view.tsx`: kept develop's `realChapters` reconciliation (PATCH
+  positions in place / POST extras / DELETE removed). Dropped main's
+  first-chapter-only block referencing undone `chapterTitle`/`chapterContent`.
+- `resource-form-modal.tsx`: four hunks � kept the `chapters.map(...)`
+  prefill and `chapters: []` defaults (main's `chapterTitle`/`chapterContent`
+  reset keys do not exist in the schema). Fixed an uncovered `>>>>>>>` tail
+  and de-indented fetch from the first manual hunk.
+- `resource-form-media-files.tsx`: kept the chapter-card `useFieldArray` UI
+  ("Add Chapter", per-chapter title + MarkdownEditor). Dropped main's single
+  First Chapter field.
+- `member-sidebar.tsx`: kept the `Newspaper` lucide import (its nav item is
+  rendered by both sides, so main's import list was simply missing it).
+
+After staging, `git rebase --continue` still refused with "You must edit all
+merge conflicts" even though `git status` said all conflicts fixed � the
+blocker was an unstaged `tsconfig.tsbuildinfo` working-tree change from a
+typecheck; discarding it (`git checkout -- tsconfig.tsbuildinfo`) let the
+rebase finish: `Successfully rebased and updated refs/heads/develop`
+(commit 1c95888). The newsletter feature files (`app/api/newsletter/*`,
+`app/dashboard/news/subscribers/*`, `lib/newsletter-broadcast.ts`,
+`components/home/newsletter-section.tsx`) came back through develop history;
+they need the `NewsletterSubscriber` Prisma model � which IS present in
+`prisma/schema.prisma` � and a regenerated client (`npx prisma generate`)
+for the implicit-any errors to clear.
+
+**Verification**: `git status` clean; `npx tsc --noEmit` 0 errors; `npx next
+build` 177/177 (page count returned to 177 � the news/subscribers tree
+counts again). Same `next dev` Prisma-DLL lock limitation for `npm run build`
+continues to apply; schema unchanged, no new migration.

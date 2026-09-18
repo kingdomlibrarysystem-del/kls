@@ -9,6 +9,8 @@ import { TrendingBooks } from '@/components/home/trending-books'
 import { ELearningSection } from '@/components/home/elearning-section'
 import { ResearchSection } from '@/components/home/research-section'
 import { NewsletterSection } from '@/components/home/newsletter-section'
+import { NewsPaperSection } from '@/components/home/news-paper-section'
+import { AboutSection } from '@/components/home/about-section'
 import { MainHeader } from '@/components/main-header'
 import { MainFooter } from '@/components/main-footer'
 import { useLanguage } from '@/contexts/language-context'
@@ -26,9 +28,11 @@ export default function Page() {
     <main className="min-h-screen bg-white">
       <MainHeader />
       <HeroSection />
+      <NewsPaperSection />
       <TrendingBooks />
       <ELearningSection />
       <ResearchSection />
+      <AboutSection />
 
       {/* Testimonials */}
       <div className="py-20 px-4 bg-white">

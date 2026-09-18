@@ -25,6 +25,7 @@ import {
   LogOut,
   Mail,
   ExternalLink,
+  Newspaper,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
@@ -53,6 +54,7 @@ function buildNavSections(t: (k: string) => string): NavSection[] {
         { icon: <CalendarDays size={14} />, key: "reservations", href: "/member/reservations" },
         { icon: <ShoppingCart size={14} />, key: "my_cart", href: "/member/cart" },
         { icon: <ShoppingBag size={14} />, key: "my_orders", href: "/member/orders" },
+        { icon: <Newspaper size={14} />, key: "news", href: "/member/news" },
       ],
     },
     {
