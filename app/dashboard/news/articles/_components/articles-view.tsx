@@ -59,7 +59,7 @@ export function ArticlesView() {
     <div>
       {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <div className="flex justify-end mb-4">
-        <ElegantButton variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5"><PlusCircle size={15} /> New Article</ElegantButton>
+        <ElegantButton variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5"><PlusCircle size={15} /> New Article sada</ElegantButton>
       </div>
       <DataTable<NewsArticle>
         data={data}

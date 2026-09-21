@@ -54,7 +54,7 @@ function buildEmail(event: BroadcastEvent, base: string): { subject: string; htm
             <h3 style="margin:0">${event.title}</h3>
             <p style="color:#666">${event.summary}</p>
             <p style="color:#888;font-size:12px">Category: ${event.category}</p>
-            <p style="margin-top:16px"><a href="${base}/member/news/${event.id}" style="background:#8a6d3b;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Read Article</a></p>
+            <p style="margin-top:16px"><a href="${base}/news/${event.id}" style="background:#8a6d3b;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Read Article</a></p>
             <p style="margin-top:24px;font-size:12px;color:#888">You're receiving this because you subscribed to Kingdom Library updates.</p>
           </div>`,
       }

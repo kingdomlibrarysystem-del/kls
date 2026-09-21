@@ -63,7 +63,6 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
   useEffect(() => {
     if (chapters.length === 0) return
     startReading(resourceId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resourceId, chapters.length])
 
   useEffect(() => {
@@ -152,8 +151,8 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
 
       <ChapterSearch chapters={chapters} onJump={goToChapter} />
 
-      <div className="card" style={{ padding: 24 }}>
-        <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)', marginBottom: 14 }}>{chapter.title}</h2>
+      <div className="card" style={{ padding: 28, background: 'var(--bg-section)' }}>
+        <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)', marginBottom: 18 }}>{chapter.title}</h2>
         {chapter.locked ? (
           <LockedChapterPaywall bookTitle={resource.title} priceRwf={resource.price} onBuyAction={setBuyAction} />
         ) : (

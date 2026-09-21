@@ -8,7 +8,7 @@ export default function MemberNewsPage() {
           News &amp; Newspapers
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-          Newsletters, articles, and newspaper editions
+          Newsletters, articles, and newspaper editions 
         </div>
       </div>
       <NewsFeedView />
