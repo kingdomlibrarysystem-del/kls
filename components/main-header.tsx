@@ -56,7 +56,7 @@ export function MainHeader() {
     {
       title: t("nav.news"),
       items: [
-        { label: t("nav.latest_news"), href: "/member/news", icon: <Newspaper size={14} /> },
+        { label: t("nav.latest_news"), href: "/news", icon: <Newspaper size={14} /> },
       ],
     },
   ];

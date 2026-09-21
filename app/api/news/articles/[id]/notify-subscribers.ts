@@ -1,6 +1,6 @@
 import prisma from '@/prisma/client'
 import { notifyUser } from '@/lib/notify'
-import { sendMail, appBaseUrl } from '@/lib/mailer'
+import { appBaseUrl } from '@/lib/mailer'
 import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 
 export async function notifyPublishSubscribers(article: { id: string; title: string; summary: string; category: string }) {
@@ -27,7 +27,7 @@ export async function notifyPublishSubscribers(article: { id: string; title: str
           <h3 style="margin:0">${article.title}</h3>
           <p style="color:#666">${article.summary}</p>
           <p style="color:#888;font-size:12px">Category: ${article.category}</p>
-          <p style="margin-top:16px"><a href="${base}/member/news/${article.id}" style="background:#8a6d3b;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Read Article</a></p>
+          <p style="margin-top:16px"><a href="${base}/news/${article.id}" style="background:#8a6d3b;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Read Article</a></p>
         </div>`,
     },
   })))

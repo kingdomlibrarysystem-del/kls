@@ -25,11 +25,12 @@ const cardStyle: React.CSSProperties = {
 }
 
 /**
- * Full reading view of one published article — this is the page the email
- * "Read Article" buttons point at (/member/news/[id]). Public: no login
- * required, and it only ever displays articles the news API exposes.
+ * Full reading view of one published article — the page the email
+ * "Read Article" buttons point at (/news/[id] when public, /member/news/[id]
+ * inside the member portal). Only ever displays articles the news API
+ * exposes, and works on the public site with no login required.
  */
-export function NewsArticleView({ id }: { id: string }) {
+export function NewsArticleView({ id, backPath = '/member/news' }: { id: string; backPath?: string }) {
   const { t } = useLanguage()
   const [article, setArticle] = useState<NewsArticle | null>(null)
   const [loading, setLoading] = useState(true)
@@ -37,15 +38,15 @@ export function NewsArticleView({ id }: { id: string }) {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     fetch(`/api/news/articles/${id}`)
       .then((res) => res.json())
       .then((json) => {
         if (cancelled) return
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? t('m_news.not_found')); return }
+        if (json.code !== 'success' || !json.data) { setArticle(null); setError(json.message ?? t('m_news.not_found')); return }
         setArticle(json.data)
+        setError('')
       })
-      .catch(() => { if (!cancelled) setError('Failed to load article') })
+      .catch(() => { if (!cancelled) { setArticle(null); setError('Failed to load article') } })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,7 +73,7 @@ export function NewsArticleView({ id }: { id: string }) {
           style={cardStyle}
         />
         <div>
-          <UniversalButton href="/member/news" variant="gold-outline" size="sm" icon={<ArrowLeft size={14} />}>
+          <UniversalButton href={backPath} variant="gold-outline" size="sm" icon={<ArrowLeft size={14} />}>
             {t('m_news.back')}
           </UniversalButton>
         </div>
@@ -158,7 +159,7 @@ export function NewsArticleView({ id }: { id: string }) {
         </div>
       )}
 
-      <div style={{ ...cardStyle, padding: 18 }}>
+     <div style={{ ...cardStyle, padding: 18 }}>
         <MarkdownContent markdown={article.content ?? ''} />
       </div>
 
@@ -179,7 +180,7 @@ export function NewsArticleView({ id }: { id: string }) {
           {t('m_news.more')}
         </span>
         <Link
-          href="/member/news"
+          href={backPath}
           style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}
         >
           {t('m_news.back')} →

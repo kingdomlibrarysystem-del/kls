@@ -25,20 +25,20 @@ const cardStyle: React.CSSProperties = {
 }
 
 /**
- * Member-side "news folder": the published, reading-only view of the news
- * system. Lists new editions first (newspaper covers), then a filterable
- * list of every published article — the destination the email "Read
- * Article" buttons link to (no login required to browse).
+ * Published, reading-only view of the news system: lists newest editions
+ * first (newspaper covers), then a filterable list of every published
+ * article. Used both in the member portal (/member/news) and on the public
+ * site (/news) — `detailPath` controls where article cards link so the
+ * public copy needs no login.
  */
-export function NewsFeedView() {
+export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: string }) {
   const { t } = useLanguage()
   const [articles, setArticles] = useState<NewsArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [category, setCategory] = useState('All')
 
-  const load = () => {
-    setLoading(true)
+  useEffect(() => {
     fetch('/api/news/articles?pageSize=100')
       .then((res) => res.json())
       .then((json) => {
@@ -47,9 +47,7 @@ export function NewsFeedView() {
       })
       .catch(() => setError('Failed to load news'))
       .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [])
+  }, [])
 
   if (loading) {
     return (
@@ -113,7 +111,7 @@ export function NewsFeedView() {
           <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6 }}>
             {featured && (
               <Link
-                href={`/member/news/${featured.id}`}
+                href={`${detailPath}/${featured.id}`}
                 style={{ flex: '0 0 auto', width: 170, textDecoration: 'none', background: 'var(--bg-section)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
               >
                 <div style={{ position: 'relative', width: '100%', height: 90, background: 'var(--bg-section)' }}>
@@ -131,7 +129,7 @@ export function NewsFeedView() {
                   />
                 </div>
                 <div style={{ padding: 10 }}>
-                  <span style={{ background: 'var(--welcome-gradient)', color: '#fff', padding: '1px 7px', borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <span style={{ background: 'var(--welcome-gradient)', color: 'var(--text-primary)', padding: '1px 7px', borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     {t('m_news.featured')}
                   </span>
                   <p style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35 }}>{featured.title}</p>
@@ -143,7 +141,7 @@ export function NewsFeedView() {
             {editions.map((a) => (
               <Link
                 key={`ed-${a.id}`}
-                href={`/member/news/${a.id}`}
+                href={`${detailPath}/${a.id}`}
                 style={{ flex: '0 0 auto', width: 170, textDecoration: 'none', background: 'var(--bg-section)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
               >
                 <div style={{ position: 'relative', width: '100%', height: 90, background: 'var(--bg-section)' }}>
@@ -195,7 +193,7 @@ export function NewsFeedView() {
                   borderRadius: 999,
                   border: active ? '1px solid var(--gold)' : '1px solid var(--border)',
                   background: active ? 'var(--welcome-gradient)' : 'var(--bg-section)',
-                  color: active ? '#fff' : 'var(--text-secondary)',
+                  color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                   fontSize: 11,
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -214,7 +212,7 @@ export function NewsFeedView() {
             return (
               <Link
                 key={a.id}
-                href={`/member/news/${a.id}`}
+                href={`${detailPath}/${a.id}`}
                 style={{ display: 'flex', gap: 14, textDecoration: 'none', background: 'var(--bg-section)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, transition: 'border-color .2s ease' }}
               >
                 {a.coverImage ? (
@@ -243,7 +241,7 @@ export function NewsFeedView() {
                       {a.isEdition ? t('m_news.edition') : a.category}
                     </span>
                     {a.featured && (
-                      <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, background: 'var(--welcome-gradient)', color: '#fff', padding: '1px 6px', borderRadius: 5 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, background: 'var(--welcome-gradient)', color: 'var(--text-primary)', padding: '1px 6px', borderRadius: 5 }}>
                         {t('m_news.featured')}
                       </span>
                     )}

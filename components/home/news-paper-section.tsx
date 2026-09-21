@@ -64,7 +64,7 @@ export function NewsPaperSection() {
             return (
               <Link
                 key={a.id}
-                href={`/member/news/${a.id}`}
+                href={`/news/${a.id}`}
                 className={`group flex items-center gap-3 sm:gap-5 px-3 sm:px-5 py-3 border-t border-w-200/80 dark:border-gray-800 first:border-t-0 ${i % 2 === 1 ? 'flex-row-reverse' : ''}`}
               >
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 grow-0" style={{ background: 'var(--bg-section, #f3ede1)' }}>
@@ -106,7 +106,7 @@ export function NewsPaperSection() {
 
         <div className="flex justify-end mt-4">
           <Link
-            href="/member/news"
+            href="/news"
             className="inline-flex items-center gap-1 font-lato font-semibold text-sm text-w-700 dark:text-gray-400 hover:text-w-950 dark:hover:text-gray-100 border-b border-w-600 dark:border-gray-600 hover:border-w-950 dark:hover:border-gray-100 transition pb-0.5"
           >
             {t('news.view_all')} <ArrowRight size={14} />

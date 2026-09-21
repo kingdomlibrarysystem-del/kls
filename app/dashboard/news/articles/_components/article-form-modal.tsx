@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ImageIcon } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { useAuth } from '@/contexts/auth-context'
@@ -27,6 +28,8 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  /** Tracks whether the current coverImage came from the uploader (vs. a pasted URL in the text input) — so the uploader only shows its "uploaded" state for a genuine upload. */
+  const [coverUploaded, setCoverUploaded] = useState(false)
 
   const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } = useForm<ArticleFormData>({
     resolver: zodResolver(articleSchema),
@@ -133,15 +136,36 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="coverImage">Cover Image</FieldLabel>
-            <CloudinaryUploadField
+            <FormInput
               id="coverImage"
-              accept="image/*"
-              label="Upload cover image"
-              kind="image"
+              type="text"
+              placeholder="https://... (paste a URL, or upload below)"
               value={coverImage}
-              onUploaded={(result) => setValue('coverImage', result.url)}
-              onClear={() => setValue('coverImage', '')}
+              onChange={(e) => { setValue('coverImage', e.target.value); setCoverUploaded(false) }}
             />
+            <div className="mt-2">
+              <CloudinaryUploadField
+                id="coverImageFile"
+                accept="image/*"
+                label="Upload cover image"
+                kind="image"
+                value={coverUploaded ? coverImage : ''}
+                onUploaded={(result) => { setValue('coverImage', result.url); setCoverUploaded(true) }}
+                onClear={() => { setValue('coverImage', ''); setCoverUploaded(false) }}
+              />
+            </div>
+            {coverImage && (
+              <div className="relative w-full h-28 rounded overflow-hidden border border-w-300 bg-w-200 mt-2">
+                <RemoteImage
+                  src={coverImage}
+                  alt="Cover preview"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 320px"
+                  className="object-cover"
+                  fallback={<div className="w-full h-full flex items-center justify-center"><ImageIcon size={18} className="text-w-400" /></div>}
+                />
+              </div>
+            )}
           </div>
           <label className="flex items-center gap-2 font-lato text-sm text-w-950 mt-7">
             <input type="checkbox" {...register('isEdition')} />
