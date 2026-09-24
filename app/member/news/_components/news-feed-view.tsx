@@ -8,13 +8,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useLanguage } from '@/contexts/language-context'
 import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
-
-function categoryColor(category: string) {
-  const colors: Record<string, string> = {
-    Announcement: '#f59e0b', General: '#3b82f6', Events: '#8b5cf6', Spiritual: '#10b981', Publishing: '#ef4444',
-  }
-  return colors[category] ?? '#f59e0b'
-}
+import { resolveCategoryColor } from '@/app/dashboard/news/_shared/news-data'
+import { useNewsCategories } from '@/app/dashboard/news/_shared/use-news-categories'
 
 /** The table of contents card style used across the member portal. */
 const cardStyle: React.CSSProperties = {
@@ -33,6 +28,7 @@ const cardStyle: React.CSSProperties = {
  */
 export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: string }) {
   const { t } = useLanguage()
+  const managedCategories = useNewsCategories()
   const [articles, setArticles] = useState<NewsArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,7 +73,9 @@ export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: str
   const editions = articles.filter((a) => a.isEdition)
   const featured = articles.find((a) => a.featured) ?? null
   const rest = articles.filter((a) => !a.isEdition && a.id !== featured?.id)
-  const categories = ['All', ...Array.from(new Set(rest.map((a) => a.category).filter(Boolean)))]
+  const categories = managedCategories.length > 0
+    ? ['All', ...managedCategories.map((c) => c.name)]
+    : ['All', ...Array.from(new Set(rest.map((a) => a.category).filter(Boolean)))]
   const visible = category === 'All' ? [...rest] : rest.filter((a) => a.category === category)
 
   const dateLabel = (iso?: string | null) =>
@@ -208,7 +206,7 @@ export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: str
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {visible.map((a) => {
-            const color = categoryColor(a.category)
+            const color = resolveCategoryColor(a.category, managedCategories)
             return (
               <Link
                 key={a.id}

@@ -2,15 +2,11 @@
 
 import dynamic from 'next/dynamic'
 import 'md-editor-rt/lib/preview.css'
-import { configureMarkdownEditor } from './markdown-editor-config'
+import { configureMarkdownEditor, parseDocumentStyle, type DocumentAlign } from './markdown-editor-config'
 
 const MdPreview = dynamic(() => import('md-editor-rt').then((m) => m.MdPreview), { ssr: false })
 
 configureMarkdownEditor()
-
-interface MarkdownContentProps {
-  markdown: string
-}
 
 /**
  * Renders real lesson markdown through md-editor-rt's own MdPreview — the
@@ -21,16 +17,29 @@ interface MarkdownContentProps {
  * renderer-rule override in markdown-editor-config.ts rather than a
  * per-component React override, since MdPreview renders raw HTML.
  */
-export function MarkdownContent({ markdown }: MarkdownContentProps) {
+export type ParagraphAlign = DocumentAlign
+
+interface MarkdownContentProps {
+  markdown: string
+  /** Explicit paragraph alignment, such as the article-level setting. */
+  align?: ParagraphAlign
+}
+
+export function MarkdownContent({ markdown, align }: MarkdownContentProps) {
+  const parsed = parseDocumentStyle(markdown)
+  const effectiveAlign = align ?? parsed.style.align ?? 'left'
   return (
-    <div className="kcs-markdown-content">
+    <div className="kcs-markdown-content" style={{ fontFamily: parsed.style.fontFamily || undefined, fontSize: parsed.style.fontSize || undefined, textAlign: effectiveAlign }}>
       <style>{`
         .kcs-markdown-content .md-editor-preview-wrapper { padding: 0; }
-        .kcs-markdown-content .md-editor-preview { font-size: 15px; color: var(--text-primary); line-height: 1.95; background: transparent; letter-spacing: 0.01em; }
+        /* Fix md-editor-rt's word-break: break-all which splits words mid-character.
+           word-break: normal keeps whole words together; overflow-wrap handles
+           genuinely unbreakable long strings (URLs, etc.) gracefully. */
+        .kcs-markdown-content .md-editor-preview { font-size: 15px; color: var(--text-primary); line-height: 1.95; background: transparent; letter-spacing: 0.01em; word-break: normal !important; overflow-wrap: break-word !important; hyphens: none !important; }
         .kcs-markdown-content h1 { font-size: 21px; font-weight: 700; color: var(--text-primary); margin: 24px 0 12px; }
         .kcs-markdown-content h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 22px 0 10px; }
         .kcs-markdown-content h3 { font-size: 15.5px; font-weight: 700; color: var(--gold); margin: 18px 0 8px; }
-        .kcs-markdown-content p { margin-bottom: 15px; }
+        .kcs-markdown-content p { margin-bottom: 15px; text-align: ${effectiveAlign}; }
         .kcs-markdown-content ul, .kcs-markdown-content ol { margin-bottom: 15px; padding-left: 22px; }
         .kcs-markdown-content li { margin-bottom: 5px; }
         .kcs-markdown-content blockquote { border-left: 3px solid var(--gold); padding-left: 16px; margin: 16px 0; color: var(--text-secondary); font-style: italic; }
@@ -49,7 +58,7 @@ export function MarkdownContent({ markdown }: MarkdownContentProps) {
         .kcs-markdown-content .kcs-video-embed { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; margin: 14px 0; }
         .kcs-markdown-content .kcs-video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
       `}</style>
-      <MdPreview modelValue={markdown} />
+      <MdPreview modelValue={parsed.content} />
     </div>
   )
 }

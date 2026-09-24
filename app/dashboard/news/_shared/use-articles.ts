@@ -66,6 +66,7 @@ export interface ArticleInput {
   category: string
   language?: 'EN' | 'FR' | 'RW'
   isEdition?: boolean
+  align?: 'left' | 'center' | 'right' | 'justify'
 }
 
 export async function addArticle(input: ArticleInput): Promise<NewsArticle> {

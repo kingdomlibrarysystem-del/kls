@@ -24,6 +24,7 @@ function serializeArticle(a: {
   publishedAt: Date | null
   isEdition: boolean
   featured: boolean
+  align: string
   createdAt: Date
 }) {
   return {
@@ -40,23 +41,33 @@ function serializeArticle(a: {
     publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null,
     isEdition: a.isEdition,
     featured: a.featured,
+    align: a.align,
     createdAt: a.createdAt.toISOString(),
   }
 }
 
 const VALID_STATUSES = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'PUBLISHED']
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling('/api/news/articles', 'GET', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
-  const page = parseInt(searchParams.get('page') || '1')
-  const pageSize = parseInt(searchParams.get('pageSize') || '50')
+  const requestedPage = Number.parseInt(searchParams.get('page') || '1', 10)
+  const requestedPageSize = Number.parseInt(searchParams.get('pageSize') || '50', 10)
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1
+  const pageSize = Number.isFinite(requestedPageSize) && requestedPageSize > 0
+    ? Math.min(requestedPageSize, 100)
+    : 50
   const category = searchParams.get('category')
   const isEdition = searchParams.get('isEdition')
   const search = searchParams.get('search')?.toLowerCase()
   const requestedStatus = searchParams.get('status')
 
-  const staffAuth = await requireStaff()
-  const isStaff = !staffAuth.response
+  let isStaff = false
+  try {
+    const staffAuth = await requireStaff()
+    isStaff = !staffAuth.response
+  } catch {
+    isStaff = false
+  }
 
   const status = isStaff && requestedStatus && requestedStatus !== 'all' && VALID_STATUSES.includes(requestedStatus)
     ? requestedStatus
@@ -86,7 +97,7 @@ export async function GET(request: NextRequest) {
     status: 200,
     pagination: { page, pageSize, totalItems, totalPages, hasNext: page < totalPages, hasPrevious: page > 1 },
   })
-}
+})
 
 const createArticleSchema = z.object({
   authorId: z.string().min(1, 'authorId is required'),
@@ -97,6 +108,7 @@ const createArticleSchema = z.object({
   category: z.string().trim().min(1, 'category is required'),
   language: z.enum(['EN', 'FR', 'RW']).default('EN'),
   isEdition: z.boolean().default(false),
+  align: z.enum(['left', 'center', 'right', 'justify']).optional(),
 })
 
 export const POST = withErrorHandling('/api/news/articles', 'POST', async (request: NextRequest) => {
@@ -122,6 +134,7 @@ export const POST = withErrorHandling('/api/news/articles', 'POST', async (reque
       authorId: body.authorId,
       authorName,
       isEdition: body.isEdition,
+      align: body.align ?? 'left',
       status: 'DRAFT',
     },
   })

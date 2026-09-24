@@ -10,13 +10,8 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import { useLanguage } from '@/contexts/language-context'
 import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
-
-function categoryColor(category: string) {
-  const colors: Record<string, string> = {
-    Announcement: '#f59e0b', General: '#3b82f6', Events: '#8b5cf6', Spiritual: '#10b981', Publishing: '#ef4444',
-  }
-  return colors[category] ?? 'var(--gold)'
-}
+import { resolveCategoryColor } from '@/app/dashboard/news/_shared/news-data'
+import { useNewsCategories } from '@/app/dashboard/news/_shared/use-news-categories'
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--bg-card)',
@@ -32,6 +27,7 @@ const cardStyle: React.CSSProperties = {
  */
 export function NewsArticleView({ id, backPath = '/member/news' }: { id: string; backPath?: string }) {
   const { t } = useLanguage()
+  const categories = useNewsCategories()
   const [article, setArticle] = useState<NewsArticle | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -81,7 +77,7 @@ export function NewsArticleView({ id, backPath = '/member/news' }: { id: string;
     )
   }
 
-  const color = categoryColor(article.category)
+  const color = resolveCategoryColor(article.category, categories)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -160,7 +156,7 @@ export function NewsArticleView({ id, backPath = '/member/news' }: { id: string;
       )}
 
      <div style={{ ...cardStyle, padding: 18 }}>
-        <MarkdownContent markdown={article.content ?? ''} />
+        <MarkdownContent markdown={article.content ?? ''} align={(article as NewsArticle & { align?: 'left' | 'center' | 'right' | 'justify' }).align ?? 'left'} />
       </div>
 
       <div

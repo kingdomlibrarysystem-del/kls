@@ -4896,7 +4896,7 @@ run build` skipped because the running `next dev` server holds the Prisma
 DLL lock; schema unchanged.
 
 ---
-## 2026-09-18 � Book-style image layout in the markdown editor + member reader (resize + wrap text around an image)
+## 2026-09-18 � Book-style image layout in the markdown editor + member reader (resize + wrap text around an image)
 
 The owner asked whether an image dropped/uploaded into a section can be moved
 wherever they want in that section and have the book's prose flow around it,
@@ -4906,20 +4906,20 @@ this adds it ourselves via a layout DSL + a markdown-it rule + a toolbar dialog:
 **Design: layout travels inside the image's markdown title** (so it survives
 save/reload, copy/paste, and the raw-text pipeline with zero extra columns):
 
-- `![alt](url)` � plain block image, max-width 100% (unchanged default).
-- `![alt](url "kcs-left w35")` � floats LEFT at 35% width; prose wraps right of it.
-- `![alt](url "kcs-right w40")` � floats RIGHT at 40% width; prose wraps left of it.
-- `![alt](url "kcs-center w60")` � centered standalone block at 60% width.
+- `![alt](url)` � plain block image, max-width 100% (unchanged default).
+- `![alt](url "kcs-left w35")` � floats LEFT at 35% width; prose wraps right of it.
+- `![alt](url "kcs-right w40")` � floats RIGHT at 40% width; prose wraps left of it.
+- `![alt](url "kcs-center w60")` � centered standalone block at 60% width.
 
 **Implementation**
 
 - `markdown-editor-config.ts`:
-  - `parseImgLayout(title)` / `encodeImgLayout(alt, url, layout)` � tiny
+  - `parseImgLayout(title)` / `encodeImgLayout(alt, url, layout)` � tiny
     round-trippable DSL helpers (`kcs-<left|right|center>` + `w<10-100>`).
-  - `applyImageLayoutRule(md)` � overrides markdown-it's `rules.image` to emit
+  - `applyImageLayoutRule(md)` � overrides markdown-it's `rules.image` to emit
     the layout HTML; registered in the shared `configureMarkdownEditor()` so ONE
     rule serves BOTH the admin editor's live preview (MdEditor) and the member
-    reader (MdPreview via MarkdownContent) � chapters, lessons, news articles
+    reader (MdPreview via MarkdownContent) � chapters, lessons, news articles
     all pick it up automatically. Inline `style=width:X%` preserves the exact
     chosen size on every screen.
   - HTML out: centered ? `<img class="kcs-img kcs-img-center" style="width:X%">`;
@@ -4931,15 +4931,15 @@ save/reload, copy/paste, and the raw-text pipeline with zero extra columns):
     in-file `ImageLayoutDialog`: scans the document for every markdown image
     `/!\[[^]]*\]\(\S+(".*?")?\)/g`, shows a thumbnail strip, per-image alignment
     presets (Block / Text right of image / Text left of image / Centered) + a
-    10�100% width slider with a hint describing the float behavior, and an
+    10�100% width slider with a hint describing the float behavior, and an
     Apply button that rewrites that image's markdown title via `encodeImgLayout`
-    and `onChange`s it back � editor preview and member page update instantly,
+    and `onChange`s it back � editor preview and member page update instantly,
     no server round-trip. Backdrop click or Done closes; alignment/width are
     re-read from whichever thumbnail is selected.
   - `<style>` block scoping `.md-editor-preview` rules for `.kcs-img*` (floats
     are not squashed: `display:block`, inner img `width:100%`, `border-radius`)
     plus `clear: both` on headings/tables/quotes/pre/lists so those blocks are
-    never pulled up beside a float � only the paragraph prose flows around it.
+    never pulled up beside a float � only the paragraph prose flows around it.
 - `markdown-content.tsx` (member renderer): mirrored `.kcs-markdown-content`
   rules for `.kcs-img`, `.kcs-img-center`, `.kcs-img-wrap` and the same
   `clear: both` set, so the reader honors exactly what the author picked.
@@ -4948,7 +4948,7 @@ save/reload, copy/paste, and the raw-text pipeline with zero extra columns):
 
 - The YouTube embed rule (`applyYouTubeEmbedRule`) and the image rule
   (`applyImageLayoutRule`) are registered in the SAME `configureMarkdownEditor()`
-  1-time global � do not reorder or split them; the markdown-it `image`
+  1-time global � do not reorder or split them; the markdown-it `image`
   renderer is fully overridden, so any future image-related styling must keep
   the `kcs-img` classes or be added inside the rule.
 - `MdEditor` insert of a normal image uses the same shared pipeline, so plain
@@ -4960,18 +4960,18 @@ save/reload, copy/paste, and the raw-text pipeline with zero extra columns):
 177/177. Same known limitation: `npm run build` skipped while the running
 `next dev` server holds the Prisma DLL lock; schema unchanged, no migration.
 ---
-## 2026-09-18 � Daily Wisdom: only on the very first app open (never on refresh) + restored missing /api/chapters/[id] route
+## 2026-09-18 � Daily Wisdom: only on the very first app open (never on refresh) + restored missing /api/chapters/[id] route
 
 **Daily Wisdom auto-show no longer annoys on every refresh**
 
 Previously `visible` started as `true` on every mount, so any page carrying the
 main header reopened the verse modal on each load/refresh. Now:
 
-- The modal starts HIDDEN (`visible = false`) on every render � SSR and client
+- The modal starts HIDDEN (`visible = false`) on every render � SSR and client
   agree, so there is no hydration flash either.
 - A mount effect reads the `kcs-daily-wisdom-seen` localStorage marker. Only
   when it is ABSENT (a real first app open in this browser) does it set the
-  marker and call `setVisible(true)` � a refresh or later return never reopens
+  marker and call `setVisible(true)` � a refresh or later return never reopens
   it on load. Storage failures are swallowed and stay closed.
 - The existing rules are unchanged and complete the flow: the header button
   opens it on demand any time; and the hourly timer (`HIDE_MS`, unaffected)
@@ -4984,7 +4984,7 @@ While building, `.next/types` surfaced stale-route references and the build
 dropped from 177 to 174 entries. Investigation showed the committed tree
 (HEAD) had lost `app/api/chapters/[id]/route.ts` entirely even though the
 committed Book Inventory form (`library-view.tsx` lines 77 & 91) unconditionally
-calls `PATCH` and `DELETE /api/chapters/:id` when saving an edited book �
+calls `PATCH` and `DELETE /api/chapters/:id` when saving an edited book �
 their edit flow was returning 404 before any save. The file was recovered from
 the `a1cbc1e` WIP commit (which also carries the staff-only `DELETE` handler
 added for the whole-book reconciliation) and recreated at
@@ -4998,20 +4998,20 @@ tree: `M components/home/daily-wisdom.tsx` + untracked restored route
 `app/api/chapters/[id]/`. Note: the missing newsletter routes
 (`/api/newsletter/subscribe`, `/api/newsletter/subscribers*` and
 `app/dashboard/news/subscribers/page.tsx`) are ALSO absent from HEAD though
-the landing page's committed `newsletter-section.tsx` may reference them �
+the landing page's committed `newsletter-section.tsx` may reference them �
 left untouched here, pending the owner's word on whether the newsletter
 feature should be reverted or restored.
 ---
-## 2026-09-18 � First-time "where to click" bubble next to the Daily Wisdom header button
+## 2026-09-18 � First-time "where to click" bubble next to the Daily Wisdom header button
 
 New-visitor onboarding like other websites use: a small BLUE callout appears
 beside the DAILY WISDOM button in the main header, its arrow pointing at the
 button, with a floating (bobbing) animation and a mouse-cursor icon so the
 eye finds it. It only exists for a brand-new browser (same
-`kcs-daily-wisdom-seen` localStorage marker the modal uses � one gate, no
+`kcs-daily-wisdom-seen` localStorage marker the modal uses � one gate, no
 second cookie), it starts together with the first-time verse modal, and the
 moment the user clicks the button OR the bubble itself, the bubble disappears
-("moves away") and the verse modal opens � exactly the pattern the owner
+("moves away") and the verse modal opens � exactly the pattern the owner
 described. On a refresh nothing shows again.
 
 - `components/home/daily-wisdom.tsx`: `tour` state armed inside the first-ever
@@ -5028,26 +5028,26 @@ described. On a refresh nothing shows again.
 `npx next build` 174/174. Reminder still open from the round before: the
 newsletter routes (`/api/newsletter/*`, `app/dashboard/news/subscribers/`)
 are absent from HEAD while the landing page still renders
-`newsletter-section.tsx` � restore only if the feature is meant to stay.
+`newsletter-section.tsx` � restore only if the feature is meant to stay.
 ---
-## 2026-09-18 � Resolved `git rebase main` conflicts on develop (5 files, all develop-side wins)
+## 2026-09-18 � Resolved `git rebase main` conflicts on develop (5 files, all develop-side wins)
 
 The owner rebased `develop` onto `main` while commit `5f6b8be` (footer social
 links) was replaying, which stopped mid-rebase on five conflicts. Every one
 was the same shape: `main` (HEAD side) carried the OLD single-first-chapter
 Resource-authoring shape, `develop` (theirs) carries the NEW whole-book
-multi-chapter `chapters[]` array � and since the form schema already declares
+multi-chapter `chapters[]` array � and since the form schema already declares
 `chapters`, main's halves referenced fields that no longer exist
 (`chapterTitle`/`chapterContent`) and would not even compile. Resolution was
 therefore develop-side in all five, then tsc + build confirmed:
 
-- `app/api/chapters/[id]/route.ts` (add/add): kept develop's file � PATCH
+- `app/api/chapters/[id]/route.ts` (add/add): kept develop's file � PATCH
   (title/body) + the staff-only DELETE the Book Inventory form's reconcile
   calls. Main's copy had only PATCH.
 - `library-view.tsx`: kept develop's `realChapters` reconciliation (PATCH
   positions in place / POST extras / DELETE removed). Dropped main's
   first-chapter-only block referencing undone `chapterTitle`/`chapterContent`.
-- `resource-form-modal.tsx`: four hunks � kept the `chapters.map(...)`
+- `resource-form-modal.tsx`: four hunks � kept the `chapters.map(...)`
   prefill and `chapters: []` defaults (main's `chapterTitle`/`chapterContent`
   reset keys do not exist in the schema). Fixed an uncovered `>>>>>>>` tail
   and de-indented fetch from the first manual hunk.
@@ -5058,18 +5058,278 @@ therefore develop-side in all five, then tsc + build confirmed:
   rendered by both sides, so main's import list was simply missing it).
 
 After staging, `git rebase --continue` still refused with "You must edit all
-merge conflicts" even though `git status` said all conflicts fixed � the
+merge conflicts" even though `git status` said all conflicts fixed � the
 blocker was an unstaged `tsconfig.tsbuildinfo` working-tree change from a
 typecheck; discarding it (`git checkout -- tsconfig.tsbuildinfo`) let the
 rebase finish: `Successfully rebased and updated refs/heads/develop`
 (commit 1c95888). The newsletter feature files (`app/api/newsletter/*`,
 `app/dashboard/news/subscribers/*`, `lib/newsletter-broadcast.ts`,
 `components/home/newsletter-section.tsx`) came back through develop history;
-they need the `NewsletterSubscriber` Prisma model � which IS present in
-`prisma/schema.prisma` � and a regenerated client (`npx prisma generate`)
+they need the `NewsletterSubscriber` Prisma model � which IS present in
+`prisma/schema.prisma` � and a regenerated client (`npx prisma generate`)
 for the implicit-any errors to clear.
 
 **Verification**: `git status` clean; `npx tsc --noEmit` 0 errors; `npx next
-build` 177/177 (page count returned to 177 � the news/subscribers tree
+build` 177/177 (page count returned to 177 � the news/subscribers tree
 counts again). Same `next dev` Prisma-DLL lock limitation for `npm run build`
 continues to apply; schema unchanged, no new migration.
+
+---
+## 2026-09-23 — Shared book/article editor typography, spellcheck, wrapping, and category workflow
+
+Completed the requested authoring and reading improvements across the shared
+markdown path. `components/ui/markdown-editor-config.ts` now encodes optional
+font family, font size, and paragraph alignment in an invisible `kcs-style`
+markdown marker, so settings survive article/chapter saves without changing
+the existing Article or Chapter API shapes. `components/ui/markdown-editor.tsx`
+adds Times New Roman plus other font choices, font-size choices, paragraph
+alignment choices, and enables the browser's real spellcheck attribute on the
+CodeMirror contenteditable surface. `components/ui/markdown-content.tsx`
+parses and removes that marker before rendering, applies the saved typography,
+and prevents normal words from splitting at the line edge while still allowing
+long unbroken strings such as URLs to wrap.
+
+`app/dashboard/news/articles/_components/article-form-modal.tsx` now always
+uses the CRUD-backed category select (while retaining an existing category
+when editing an older article), and `app/dashboard/news/page.tsx` exposes the
+existing article-category CRUD screen. The category API/model remains
+backward-compatible: deleting a category does not rewrite existing article
+text, so published feeds and old records remain readable. The shared editor
+changes affect both TEXT-resource chapters and news articles, while the
+article-level alignment field remains authoritative for article rendering.
+
+Verification: `npx tsc --noEmit` passes. Focused ESLint has 0 errors; remaining
+warnings are the existing React Hook Form compiler warning and minor lint
+warnings around unused renderer callback parameters and the existing preview
+`<img>` usage. No Prisma schema migration was needed.
+
+---
+## 2026-09-24 — Build fix + real offline spelling checker, category rename propagation, article align round-trip
+
+Follow-up to the 2026-09-23 entry: that round left two blockers — the uncommit
+ted `@/lib/html-sanitizer` import meant the build had a hard failure, and the
+MutationObserver spellcheck approach could never work because CodeMirror 6
+rewrites `spellcheck="false"`/`autocorrect="off"` on `.cm-content` on every
+update (`node_modules/@codemirror/view/dist/index.js`). This round replaces
+both with the correct mechanism and adds a real offline dictionary checker.
+
+**Fixed the build break** — `app/api/news/articles/route.ts` no longer imports
+the nonexistent `@/lib/html-sanitizer`; article content is stored as raw
+markdown (the app's established pattern — md-editor-rt/MdPreview XSS-filters at
+render time; an HTML sanitizer would also strip the `kcs-style` marker). The
+same file now serializes `align` on the GET list and accepts/persists it on
+POST (`createArticleSchema` + create data), which it previously did NOT —
+`[id]` GET/PATCH already had it, so an article edited from the list silently
+lost its stored alignment. `ArticleInput` (`use-articles.ts`) gained the
+optional `align` field to match.
+
+**Category rename now propagates to articles** —
+`app/api/news/categories/[id]/route.ts` PATCH wraps the rename in a `$transaction`
+that also runs `newsArticle.updateMany` for every article whose `category`
+equaled the old name, so "assigning updated categories to articles" holds.
+Creation and deletion stay text-preserving (deleting a category leaves article
+text untouched, per the prior entry).
+
+**Real offline spelling checker ("high level", exactly what was asked):**
+- `components/ui/spellcheck/words.ts` — auto-generated offline dictionary:
+  ~116k lowercase a-z/hyphen words up to 8 chars from
+  `an-array-of-english-words@2.0.0`, plus a curated church/ministry + app
+  vocabulary addendum (135 terms) so long domain words like "discipleship"
+  resolve. ~900KB; only bundled where the editor ships.
+- `components/ui/spellcheck/spellchecker.ts` — pure, unit-tested scan:
+  `markdownSkipRanges()` (fenced blocks, inline code, image/link destinations,
+  HTML/autolink/comments), per-token checks that skip acronyms, contraction
+  list, inflection recovery (`providing→provide`, `churches→church`,
+  doubles-consonant, `-tion/-ness/-ship` stems...), `suggestFor()` via capped
+  Damerau–Levenshtein against first-letter buckets, and a session/localStorage
+  ignore set.
+- `components/ui/spellcheck/cm-spellcheck.ts` — the CodeMirror fix: a
+  `spellcheckContentAttributes(locale)` extension appends an
+  `EditorView.contentAttributes` facet (the only way to beat CM6's hard-coded
+  reset), and a `StateField` draws `.kcs-spell-error` wavy underlines for the
+  offline-flagged words so squiggles always appear even if the browser has no
+  dictionary for the text.
+- `components/ui/markdown-editor.tsx` — replaced the MutationObserver with
+  `ref → getEditorView() → StateEffect.appendConfig` (guarded, re-asserted on
+  language change); added a "Spelling (n)" toolbar toggle with a per-word
+  report (click a suggestion to replace every occurrence via one CM dispatch;
+  Ignore silences the word); decorations refresh live on every change; new
+  `language` prop routes EN→`en-US`, FR→`fr-FR`, RW→`rw-RW`, and hides the
+  offline panel for non-English (native spellcheck only). The old
+  "Spellcheck is active" note is now a real control.
+- `components/ui/spellcheck/__tests__/spellchecker.test.ts` — 17 unit tests
+  (known/unknown/inflected/contraction handling, skip-ranges offsets, ignore
+  set, acronyms, suggestions, distance). All pass.
+
+**Article form & reading surfaces** — `article-form-modal.tsx` passes the
+selected `language` into the editor and, when the category list is empty,
+shows a CTA pointing at `/dashboard/news/categories` instead of a dead select.
+`article-detail-view.tsx` (admin) now renders content through the shared
+`MarkdownContent` instead of raw `whitespace-pre-wrap`, so font/size/align and
+the no-word-split rule apply on every article surface. New
+`prisma/seed/seed-news-categories.mjs` upserts 12 default news categories
+(matching the existing categoryColor vocabulary: Announcement, General,
+Events, Spiritual, Devotional, Prayer, Testimony, Ministry, Youth, Family,
+Editorial, Publishing) — already run against the dev DB (12 rows).
+
+**Interactions to watch:** `words.ts` (900KB) inflates the admin editor bundle —
+spellchecker is pure data, no runtime network; words are only a substitute for
+native coverage, and English-only. `align` now appears on the list API —
+consumers reading literal fields still work, this adds a key. Category rename
+rewrites `NewsArticle.category` strings — relevant if the seeded names change
+later (DELETE does not re-tag). The MutationObserver in the 09-23 write-up is
+gone; decorations + native facets are the mechanism now. Pre-existing vitest
+failures in `app/api/__tests__/cart.test.ts` and
+`app/api/__tests__/order-sparse-unique.test.ts` (stale DB rows / hook
+timeouts) are untouched by this change and unrelated to news/spellcheck.
+
+Verification: `npx tsc --noEmit` clean; `npm run build` succeeds; spellchecker
+suite 17/17. Full vitest run: 118 pass, same 6 pre-existing cart/order DB
+failures only.
+
+## 2026-09-24 — French + English offline spelling checker (book & article content)
+
+Owner request: the typing-error checker must also check **French** text in book
+chapters and article content, not just English. The offline dictionary checker
+is now language-aware: `'EN'` and `'FR'` both get offline suggestions + squiggles;
+every other language falls back to native browser spellcheck only.
+
+**French dictionary (`components/ui/spellcheck/words-fr.ts`)** — generated from
+hermitdave/FrequencyWords `fr_50k` (French subtitle word frequency, 50k lines)
+plus a curated church/ministry addendum; filtered to lowercase 2–18 char
+tokens (a–z + `àâäçèéêëîïôöùûüÿæœ`, apostrophe, hyphen). 49,644 words,
+lowercase-accented, no proper nouns. Stored as a **single template literal**
+(`export const FR_WORDS = \`.trim().split(/\\s+/)`) — the previous
+statement-per-word concat form hit a vitest/vite oxc crash (access violation +
+hang) when the file contained accented chars; one giant template transforms in
+~120ms and loads fine. Same rule as `words.ts`: never hand-edit, regenerate.
+
+**Language-aware `spellchecker.ts`** — `export type SpellLanguage = 'EN' | 'FR'`;
+`FR_WORD_SET` + `FR_CONTRACTIONS` (elisions/compounds: `aujourd'hui`,
+`quelqu'un`, …); `foldAccents()` (NFD + strip combining marks) so `ecole` is
+matched against `école`; `frenchInflectionCandidates()` covers plurals
+(`-eaux→-eau`, `-aux→-al`, `-oux→-ou`, `-s/-x`), common verb endings, and
+nominal suffixes; `isKnownWord(word, language)`, `scanSpellIssues(text, ignore,
+language)` and `suggestFor(word, limit, language)` now take a language.
+Apostrophe/hyphen tokens are accepted when every segment is known
+(`l'école`, `c'est`, `rendez-vous`). Suggestions use per-language
+first-letter buckets with **accent-folded** distance, so typing `ecole` offers
+`école`.
+
+**Editor wiring (`components/ui/markdown-editor.tsx`)** — the `language` prop is
+now a plain string (was `'EN' | 'FR' | 'RW'`). Spelling toggle + report + offline
+squiggles activate only for `'EN'`/`'FR'` (`offlineActive`); other languages use
+native spellcheck (`SPELL_LOCALE` extended to rw-RW, sw-KE, pt-BR, es-ES, he, el,
+la, ar) and any stale offline decorations are cleared when a non-dictionary
+language is selected. Book chapters were not previously wired: 
+`resource-form-media-files.tsx` now passes `language={watch('language') || 'EN'}`
+so the Resource form's language drives the chapter editor; articles already had
+`language` wired via `article-form-modal.tsx`.
+
+**Tests (`components/ui/spellcheck/__tests__/spellchecker.test.ts`)** — added
+French coverage: elisions/compounds, dictionary separation (`merci` not EN,
+`worship` not FR), French typos rejected (`bonnne`, `sheux`), French scan mode
+flags `maisnn` but not `belle`, and suggestions return `école` for `ecole` /
+`journée` for `jeurnee`. Suite now 23/23 (17 EN + 6 FR).
+
+**Interactions to watch:** The FR list is a frequency corpus plus an addendum —
+rare words, proper nouns, and neologisms will be flagged as typos (same tradeoff
+as EN); suggestion caps are unchanged (≤18 char tokens). `words-fr.ts` is ~426KB
+and `words.ts` ~900KB — both data-only, no runtime network; the admin editor
+bundle grows accordingly. Books now follow the article pattern: the Resource
+form language select drives offline vs native checking per chapter. Non-dict
+languages silently switch squiggles off (existing typos re-check once content or
+language changes). Pre-existing cart/order vitest env failures remain unrelated.
+
+Verification: spellchecker suite 23/23. Full vitest: 124 pass + same 6
+pre-existing cart/order DB failures. `npx tsc --noEmit` clean; `npx next build`
+succeeds (ran `next build` directly because the dev server running on the
+machine holds `node_modules/.prisma/client/query_engine-windows.dll.node`,
+which makes the `prisma generate` step of `npm run build` fail with EPERM — a
+machine-state lock, not a code issue).
+
+## 2026-09-24 — News categories: DB-driven colors (CRUD + admin path) and delete-for-submitted
+
+**Problem:** News category colors were hard-coded in three member/public
+components (`news-article-view.tsx`, `news-feed-view.tsx` had a
+`categoryColor()` map; `news-paper-section.tsx` colors by `isEdition`, not
+category, and was left alone). `NewsArticleCategory` had no color column, so
+the admin category UI couldn't express brand colors. Also, `articles-view.tsx`
+only rendered the Delete button for `DRAFT` articles, so submitted editors
+couldn't remove their own stories.
+
+**Now:**
+
+1. `prisma/schema.prisma` — `NewsArticleCategory` gains `color String
+   @default("#3b82f6")`. Pushed to prod Mongo (`npx prisma db push --skip-generate`;
+   schemaless, so only the unique `name` index was re-synced).
+2. `prisma/seed/seed-news-categories.mjs` — the 12 default categories now
+   upsert a per-category hex (Announcement #f59e0b, General #3b82f6, Events
+   #8b5cf6, Spiritual #10b981, Devotional #f97316, Prayer #6366f1, Testimony
+   #ec4899, Ministry #14b8a6, Youth #22c55e, Family #06b6d4, Editorial #a855f7,
+   Publishing #ef4444). Rerun applied: count stays 12, colors updated.
+3. `/api/news/categories` (POST) and `/api/news/categories/[id]` (PATCH) accept
+   optional `color` validated `/^#[0-9a-fA-F]{6}$/`.
+4. Shared helper `app/dashboard/news/_shared/news-data.ts` adds
+   `NewsCategoryInfo`, `DEFAULT_CATEGORY_COLOR = '#f59e0b'`, and
+   `resolveCategoryColor(name, categories)`; new hook
+   `app/dashboard/news/_shared/use-news-categories.ts` fetches the public GET
+   (no auth needed) so member/public views share the DB palette. `color ||''`
+   fallback keeps legacy free-text categories rendering.
+5. Member views (`news-article-view.tsx`, `news-feed-view.tsx`) dropped the
+   hard-coded `categoryColor` maps and resolve colors from the fetched
+   categories; feed filter chips prefer managed category names (falls back to
+   article-derived names). Public pages get consistent brand colors for free.
+6. Admin category UI (`news-categories-view.tsx`) — 12 preset swatches plus a
+   native custom color input, a color dot in the category list, and color
+   round-trips through create/edit payloads.
+7. `app/dashboard/_components/nav-data.tsx` — News & Newspapers submenu gains
+   a **Categories** link (`/dashboard/news/categories`, Tag icon), so the path
+   is reachable from the sidebar (previously only via direct URL).
+8. `articles-view.tsx` — Delete button is now rendered for every status
+   (Submit remains DRAFT-only). The server `DELETE /api/news/articles/[id]`
+   already had no status guard, so submitted-article deletion now works both
+   ways without API changes.
+
+**Interactions to watch:** The member/news color palette is now data-driven, so
+renaming/recategorizing in the admin panel immediately changes articles on the
+member and public news surfaces (no redeploy); a category whose color is
+cleared falls back to amber #f59e0b. Deleting a category with articles retains
+the articles but their color falls back to the default — re-tag to restore.
+Admin/category, admin/articles, and member/news routes all share the underlying
+`NewsArticleCategory`/`NewsArticle` data shape; the PATCH rename still
+propagates to articles. `db push` required a client regenerate (the running
+`next dev` had to be briefly stopped because it holds
+`query_engine-windows.dll.node` — same EPERM as the build step).
+
+**Google sign-in (`redirect_uri_mismatch`):** Not a code problem. Env vars are
+present (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`), and
+NextAuth v4 derives the callback origin from `NEXTAUTH_URL` (no VERCEL /
+`AUTH_TRUST_HOST`), so the redirect URI is exactly
+`https://libkingdom.com/api/auth/callback/google`. The 400 means that exact URI
+is missing from the OAuth client's Authorized redirect URIs in Google Cloud
+Console → add it (and `https://libkingdom.com` as an authorized JavaScript
+origin) under the account that owns that client
+(14432826529-6jhshnib2441v83jbiuvmdqno8it6s0q, likely
+kingdomlibrarysystem@gmail.com) and re-test.
+
+Verification: `npx tsc --noEmit` clean; `npx next build` exit 0; full vitest
+124 pass + same 6 pre-existing cart/order failures. `db push` + category seed
+applied to prod. Dev server restarted with the regenerated Prisma client.
+
+## 2026-09-24 — New Category button on the Articles page
+
+**Now:** `app/dashboard/news/articles/_components/articles-view.tsx` shows a
+**New Category** (outline, Tag icon) button next to **New Article**. It opens a
+create-only `CategoryFormModal` (`articles/_components/category-form-modal.tsx`)
+— name, optional description, and the same 12 preset swatches + custom color
+picker — that POSTs to `/api/news/categories` and, on success, closes, shows a
+toast, and refreshes the page's category dropdown so the new tag is immediately
+selectable when creating/editing an article (previously you had to leave the
+page and use the Categories admin). `CATEGORY_COLOR_PRESETS` moved from
+`news-categories-view.tsx` into `_shared/news-data.ts` (no duplicates now).
+
+**Interactions to watch:** No behavior change to the Categories admin page; it
+imports the shared presets. The Articles view's category list is refreshed
+after creation, so a brand-new category is instantly available to the existing
+open Article form. Category create endpoint unchanged.

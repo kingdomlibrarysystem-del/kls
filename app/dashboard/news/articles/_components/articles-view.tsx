@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { PlusCircle, Eye, Pencil, Trash2, Send, AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { PlusCircle, Eye, Pencil, Trash2, Send, AlertTriangle, Tag } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -11,14 +11,26 @@ import { articleStatusConfig, type NewsArticle } from '../../_shared/news-data'
 import { useArticles, submitArticle } from '../../_shared/use-articles'
 import { ArticleFormModal } from './article-form-modal'
 import { DeleteArticleModal } from './delete-article-modal'
+import { CategoryFormModal } from './category-form-modal'
 
 /** Authoring list — every NewsArticle regardless of status, mirrors Publishing's Submissions page shape driving off usePublications(). */
 export function ArticlesView() {
   const { data, loading, error } = useArticles()
   const [formOpen, setFormOpen] = useState(false)
+  const [catFormOpen, setCatFormOpen] = useState(false)
   const [editing, setEditing] = useState<NewsArticle | null>(null)
   const [deleting, setDeleting] = useState<NewsArticle | null>(null)
   const [toast, setToast] = useState('')
+  const [categories, setCategories] = useState<string[]>([])
+
+  const loadCategories = () => {
+    fetch('/api/news/categories')
+      .then((r) => r.json())
+      .then((json) => { if (json.code === 'success') setCategories((json.data as { name: string }[]).map((c) => c.name)) })
+      .catch(() => {})
+  }
+
+  useEffect(() => { loadCategories() }, [])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
@@ -45,11 +57,9 @@ export function ArticlesView() {
           <UniversalButton href={`/dashboard/news/articles/${a.id}`} aria-label={`View ${a.title}`} variant="secondary" size="sm" icon={<Eye size={12} />} className="!px-2.5 !py-1 !text-xs">View</UniversalButton>
           <button onClick={() => { setEditing(a); setFormOpen(true) }} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"><Pencil size={12} /> Edit</button>
           {a.status === 'DRAFT' && (
-            <>
-              <button onClick={() => handleSubmit(a)} className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-lato hover:bg-blue-100 transition-colors"><Send size={12} /> Submit</button>
-              <button onClick={() => setDeleting(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"><Trash2 size={12} /> Delete</button>
-            </>
+            <button onClick={() => handleSubmit(a)} className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-lato hover:bg-blue-100 transition-colors"><Send size={12} /> Submit</button>
           )}
+          <button onClick={() => setDeleting(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"><Trash2 size={12} /> Delete</button>
         </div>
       ),
     },
@@ -58,8 +68,9 @@ export function ArticlesView() {
   return (
     <div>
       {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
-      <div className="flex justify-end mb-4">
-        <ElegantButton variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5"><PlusCircle size={15} /> New Article sada</ElegantButton>
+      <div className="flex justify-end gap-2 mb-4">
+        <ElegantButton variant="outline" onClick={() => setCatFormOpen(true)} className="flex items-center gap-1.5"><Tag size={15} /> New Category</ElegantButton>
+        <ElegantButton variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5"><PlusCircle size={15} /> New Article </ElegantButton>
       </div>
       <DataTable<NewsArticle>
         data={data}
@@ -69,7 +80,8 @@ export function ArticlesView() {
         searchFilter={(a, q) => a.title.toLowerCase().includes(q) || a.category.toLowerCase().includes(q)}
         emptyMessage="No articles yet."
       />
-      <ArticleFormModal open={formOpen} editing={editing} onClose={() => { setFormOpen(false); setEditing(null) }} />
+      <ArticleFormModal open={formOpen} editing={editing} categories={categories} onClose={() => { setFormOpen(false); setEditing(null) }} />
+      <CategoryFormModal open={catFormOpen} onClose={() => setCatFormOpen(false)} onCreated={() => { showToast('Category created'); loadCategories() }} />
       <DeleteArticleModal article={deleting} onClose={() => setDeleting(null)} />
     </div>
   )

@@ -8,6 +8,7 @@ export const articleSchema = z.object({
   coverImage: z.string().trim().optional(),
   language: z.enum(['EN', 'FR', 'RW']),
   isEdition: z.boolean(),
+  align: z.enum(['left', 'center', 'right', 'justify']).optional(),
 })
 
 export type ArticleFormData = z.infer<typeof articleSchema>

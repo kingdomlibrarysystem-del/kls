@@ -19,6 +19,7 @@ function serializeArticle(a: {
   publishedAt: Date | null
   isEdition: boolean
   featured: boolean
+  align: string
   createdAt: Date
 }) {
   return {
@@ -35,6 +36,7 @@ function serializeArticle(a: {
     publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null,
     isEdition: a.isEdition,
     featured: a.featured,
+    align: a.align,
     createdAt: a.createdAt.toISOString(),
   }
 }
@@ -68,6 +70,7 @@ const editSchema = z.object({
   coverImage: z.string().optional(),
   language:   z.enum(['EN', 'FR', 'RW']).optional(),
   isEdition:  z.boolean().optional(),
+  align:      z.enum(['left', 'center', 'right', 'justify']).optional(),
 })
 
 export const PATCH = withErrorHandling('/api/news/articles/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -124,6 +127,7 @@ export const PATCH = withErrorHandling('/api/news/articles/[id]', 'PATCH', async
       ...(data.coverImage !== undefined && { coverImage: data.coverImage || null }),
       ...(data.language   !== undefined && { language: data.language }),
       ...(data.isEdition  !== undefined && { isEdition: data.isEdition }),
+      ...(data.align      !== undefined && { align: data.align }),
     },
   })
   return NextResponse.json({ data: serializeArticle(updated), message: 'Article updated successfully', code: 'success', status: 200 })
