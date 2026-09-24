@@ -9,6 +9,7 @@ import { UniversalButton } from '@/components/ui/universal-button'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { articleStatusConfig, type NewsArticle } from '../../../_shared/news-data'
 import { ArticleFormModal } from '../../_components/article-form-modal'
+import { MarkdownContent } from '@/components/ui/markdown-content'
 
 interface ArticleDetailViewProps {
   id: string
@@ -93,7 +94,7 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
         </div>
 
         <div className="bg-w-100 border border-w-300 rounded p-4">
-          <p className="font-lato text-sm text-w-950 whitespace-pre-wrap">{article.content}</p>
+          <MarkdownContent markdown={article.content ?? ''} align={(article as NewsArticle & { align?: 'left' | 'center' | 'right' | 'justify' }).align ?? 'left'} />
         </div>
       </div>
 

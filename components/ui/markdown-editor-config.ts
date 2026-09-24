@@ -46,6 +46,41 @@ export function encodeImgLayout(alt: string, url: string, layout: ImgLayout): st
   return `![${alt}](${url} "${parts.join(' ')}")`
 }
 
+export type DocumentAlign = 'left' | 'center' | 'right' | 'justify'
+
+export interface DocumentStyle {
+  fontFamily?: string
+  fontSize?: string
+  align?: DocumentAlign
+}
+
+const STYLE_MARKER = /^\s*<!-- kcs-style:(\{.*?\}) -->\s*/
+
+function isDocumentStyle(value: unknown): value is DocumentStyle {
+  if (!value || typeof value !== 'object') return false
+  const style = value as Record<string, unknown>
+  return (style.fontFamily === undefined || (typeof style.fontFamily === 'string' && /^[\w\s,"'-]+$/.test(style.fontFamily)))
+    && (style.fontSize === undefined || (typeof style.fontSize === 'string' && /^\d{1,3}px$/.test(style.fontSize)))
+    && (style.align === undefined || ['left', 'center', 'right', 'justify'].includes(style.align as string))
+}
+
+export function parseDocumentStyle(value: string): { style: DocumentStyle; content: string } {
+  const match = value.match(STYLE_MARKER)
+  if (!match) return { style: {}, content: value }
+  try {
+    const parsed: unknown = JSON.parse(match[1])
+    return isDocumentStyle(parsed) ? { style: parsed, content: value.slice(match[0].length) } : { style: {}, content: value }
+  } catch {
+    return { style: {}, content: value }
+  }
+}
+
+export function encodeDocumentStyle(content: string, style: DocumentStyle): string {
+  const current = parseDocumentStyle(content).content
+  const clean = Object.fromEntries(Object.entries(style).filter(([, value]) => value))
+  return Object.keys(clean).length === 0 ? current : `<!-- kcs-style:${JSON.stringify(clean)} -->\n${current}`
+}
+
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }

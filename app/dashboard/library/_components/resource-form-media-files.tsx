@@ -126,7 +126,9 @@ export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, is
                   <Controller
                     name={`chapters.${i}.content`}
                     control={control}
-                    render={({ field }) => <MarkdownEditor value={field.value} onChange={field.onChange} height={240} />}
+                    render={({ field }) => (
+                      <MarkdownEditor value={field.value} onChange={field.onChange} height={240} language={watch('language') || 'EN'} />
+                    )}
                   />
                 </div>
               ))}

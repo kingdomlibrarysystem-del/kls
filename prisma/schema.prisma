@@ -1874,6 +1874,28 @@ model RehabMilestone {
 /// becomes a purchasable Resource on approval; a NewsArticle never
 /// does — it has a `content` body field Publication has no
 /// equivalent of, and a `category` feed/filter concept.
+/// Admin-managed news article category ("Ministry Updates", "Community",
+/// "Events", etc.) — replaces the free-text category field on NewsArticle
+/// with a real, CRUD-backed collection so an admin can add/rename/remove
+/// categories without a code deploy. NewsArticle.category stays a plain
+/// String (the category name) rather than a FK, so existing articles with
+/// free-text values don't break — the FK-style integrity lives in the
+/// admin UI (the dropdown only offers real NewsArticleCategory names).
+model NewsArticleCategory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  description String?
+  /// Hex color (e.g. "#f59e0b") used to visually tag this category on the
+  /// member feed and article reading view. Stored on the row so the admin
+  /// can re-brand a category without a code deploy — the old hard-coded
+  /// name->color map in the member views is gone (they read this field,
+  /// falling back to `DEFAULT_CATEGORY_COLOR` in news-data.ts for legacy
+  /// free-text categories that have no row yet).
+  color       String   @default("#3b82f6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model NewsArticle {
   id          String              @id @default(auto()) @map("_id") @db.ObjectId
   title       String
@@ -1900,6 +1922,9 @@ model NewsArticle {
   /// filtered differently, not two different resources.
   isEdition   Boolean             @default(false)
   featured    Boolean             @default(false)
+  /// Paragraph text alignment for the reading view — stored so the
+  /// published article renders with the alignment the editor chose.
+  align       String              @default("left")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 

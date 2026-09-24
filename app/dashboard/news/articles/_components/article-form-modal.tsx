@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CheckCircle2, AlertCircle, ImageIcon } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
@@ -15,27 +15,38 @@ import { useAuth } from '@/contexts/auth-context'
 import { addArticle, updateArticle } from '../../_shared/use-articles'
 import { articleSchema, type ArticleFormData } from './article-form-schema'
 import type { NewsArticle } from '../../_shared/news-data'
+import type { ParagraphAlign } from '@/components/ui/markdown-content'
 
 interface ArticleFormModalProps {
   open: boolean
   editing: NewsArticle | null
   onClose: () => void
+  /** Pre-loaded category names for the category select. */
+  categories?: string[]
 }
 
+const ALIGN_OPTIONS: { value: ParagraphAlign; label: string; icon: typeof AlignLeft }[] = [
+  { value: 'left', label: 'Left', icon: AlignLeft },
+  { value: 'center', label: 'Center', icon: AlignCenter },
+  { value: 'right', label: 'Right', icon: AlignRight },
+  { value: 'justify', label: 'Justify', icon: AlignJustify },
+]
+
 /** Create/edit modal for a NewsArticle — edit is allowed on any status. */
-export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalProps) {
+export function ArticleFormModal({ open, editing, onClose, categories = [] }: ArticleFormModalProps) {
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
-  /** Tracks whether the current coverImage came from the uploader (vs. a pasted URL in the text input) — so the uploader only shows its "uploaded" state for a genuine upload. */
   const [coverUploaded, setCoverUploaded] = useState(false)
 
   const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } = useForm<ArticleFormData>({
     resolver: zodResolver(articleSchema),
-    defaultValues: { language: 'EN', isEdition: false, coverImage: '' },
+    defaultValues: { language: 'EN', isEdition: false, coverImage: '', align: 'left' },
   })
   const coverImage = watch('coverImage') ?? ''
+  const align = watch('align') ?? 'left'
+  const categoryOptions = Array.from(new Set([...(editing?.category ? [editing.category] : []), ...categories]))
 
   useEffect(() => {
     if (open) {
@@ -48,8 +59,9 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
             coverImage: editing.coverImage ?? '',
             language: editing.language.toUpperCase() as 'EN' | 'FR' | 'RW',
             isEdition: editing.isEdition,
+            align: (editing as NewsArticle & { align?: ParagraphAlign }).align ?? 'left',
           }
-        : { title: '', summary: '', content: '', category: '', coverImage: '', language: 'EN', isEdition: false })
+        : { title: '', summary: '', content: '', category: '', coverImage: '', language: 'EN', isEdition: false, align: 'left' })
       setSubmitError('')
       setSubmitSuccess(false)
     }
@@ -112,16 +124,56 @@ export function ArticleFormModal({ open, editing, onClose }: ArticleFormModalPro
             name="content"
             control={control}
             render={({ field }) => (
-              <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} height={320} />
+              <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} height={320} language={watch('language') ?? 'EN'} />
             )}
           />
           {errors.content && <p className="text-red-600 text-xs mt-1 font-lato">{errors.content.message}</p>}
         </div>
 
+        {/* Paragraph alignment */}
+        <div>
+          <FieldLabel htmlFor="article-align">Paragraph Alignment (reading view)</FieldLabel>
+          <div className="flex gap-2 mt-1">
+            {ALIGN_OPTIONS.map((opt) => {
+              const Icon = opt.icon
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setValue('align', opt.value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-lato cursor-pointer transition ${
+                    align === opt.value
+                      ? 'border-w-600 bg-w-100 text-w-950 font-semibold'
+                      : 'border-w-300 text-w-700 hover:border-w-400'
+                  }`}
+                  aria-pressed={align === opt.value}
+                >
+                  <Icon size={13} /> {opt.label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="font-lato text-[11px] text-w-500 mt-1">Controls how paragraph text is aligned in the published article view.</p>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="category" required>Category</FieldLabel>
-            <FormInput id="category" type="text" placeholder="e.g. Ministry Updates" error={errors.category?.message} {...register('category')} />
+            <select
+              id="category"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              {...register('category')}
+            >
+              <option value="">{categoryOptions.length ? 'Select a category…' : 'No categories available'}</option>
+              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            {errors.category && <p className="text-red-600 text-xs mt-1 font-lato">{errors.category.message}</p>}
+            {!categoryOptions.length && (
+              <p className="text-amber-700 text-xs mt-1 font-lato">
+                No article categories exist yet. Create one in{' '}
+                <a className="font-semibold underline" href="/dashboard/news/categories">News Categories</a> first, then reload this form.
+              </p>
+            )}
           </div>
           <div>
             <FieldLabel htmlFor="language" required>Language</FieldLabel>
