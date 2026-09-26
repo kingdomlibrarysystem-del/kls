@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import 'md-editor-rt/lib/preview.css'
-import { configureMarkdownEditor, parseDocumentStyle, type DocumentAlign } from './markdown-editor-config'
+import { configureMarkdownEditor, parseDocumentStyle, sanitizeRichHtml, type DocumentAlign } from './markdown-editor-config'
 
 const MdPreview = dynamic(() => import('md-editor-rt').then((m) => m.MdPreview), { ssr: false })
 
@@ -29,7 +29,15 @@ export function MarkdownContent({ markdown, align }: MarkdownContentProps) {
   const parsed = parseDocumentStyle(markdown)
   const effectiveAlign = align ?? parsed.style.align ?? 'left'
   return (
-    <div className="kcs-markdown-content" style={{ fontFamily: parsed.style.fontFamily || undefined, fontSize: parsed.style.fontSize || undefined, textAlign: effectiveAlign }}>
+    <div
+      className="kcs-markdown-content"
+      style={{
+        fontFamily: parsed.style.fontFamily || undefined,
+        fontSize: parsed.style.fontSize || undefined,
+        textAlign: effectiveAlign,
+        lineHeight: parsed.style.lineHeight || undefined,
+      }}
+    >
       <style>{`
         .kcs-markdown-content .md-editor-preview-wrapper { padding: 0; }
         /* Fix md-editor-rt's word-break: break-all which splits words mid-character.
@@ -41,7 +49,14 @@ export function MarkdownContent({ markdown, align }: MarkdownContentProps) {
         .kcs-markdown-content h3 { font-size: 15.5px; font-weight: 700; color: var(--gold); margin: 18px 0 8px; }
         .kcs-markdown-content p { margin-bottom: 15px; text-align: ${effectiveAlign}; }
         .kcs-markdown-content ul, .kcs-markdown-content ol { margin-bottom: 15px; padding-left: 22px; }
+        /* Tailwind's preflight sets \`list-style: none\` on ol/ul/menu, which erases the
+           bullets and numbers; restore them (outside markers sit in the padding above). */
+        .kcs-markdown-content ul { list-style: disc outside; }
+        .kcs-markdown-content ol { list-style: decimal outside; }
+        .kcs-markdown-content ul ul { list-style: circle outside; }
+        .kcs-markdown-content ul ul ul { list-style: square outside; }
         .kcs-markdown-content li { margin-bottom: 5px; }
+        .kcs-markdown-content li::marker { color: var(--gold); }
         .kcs-markdown-content blockquote { border-left: 3px solid var(--gold); padding-left: 16px; margin: 16px 0; color: var(--text-secondary); font-style: italic; }
         .kcs-markdown-content pre { background: var(--bg-section); border-radius: 6px; padding: 14px; overflow-x: auto; margin-bottom: 16px; }
         .kcs-markdown-content code { font-size: 13px; }
@@ -54,11 +69,22 @@ export function MarkdownContent({ markdown, align }: MarkdownContentProps) {
         .kcs-markdown-content .kcs-img-center { margin-left: auto; margin-right: auto; }
         .kcs-markdown-content .kcs-img-wrap { box-sizing: border-box; }
         .kcs-markdown-content .kcs-img-wrap img { width: 100%; height: auto; margin: 0; display: block; border-radius: 8px; }
-        .kcs-markdown-content :is(h1,h2,h3,h4,h5,table,blockquote,pre,ul,ol,hr) { clear: both; }
+        /* Author-set caption under an image (cap= DSL), centered in its column. */
+        .kcs-markdown-content .kcs-figure { margin: 16px 0; }
+        .kcs-markdown-content .kcs-figure .kcs-img-wrap { max-width: 100%; }
+        .kcs-markdown-content .kcs-figure figcaption { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 6px; font-style: italic; }
+        .kcs-markdown-content .kcs-figure.kcs-figure-left figcaption { text-align: left; }
+        .kcs-markdown-content .kcs-figure.kcs-figure-right figcaption { text-align: right; }
+        .kcs-markdown-content :is(h1,h2,h3,h4,h5,h6,table,blockquote,pre,ul,ol,hr,figure,p) { clear: both; }
+        /* Rich-text spans the editor stores as markdown inline HTML. */
+        .kcs-markdown-content u { text-decoration: underline; }
+        .kcs-markdown-content s, .kcs-markdown-content del { text-decoration: line-through; }
+        .kcs-markdown-content sup { vertical-align: super; font-size: 0.75em; }
+        .kcs-markdown-content sub { vertical-align: sub; font-size: 0.75em; }
         .kcs-markdown-content .kcs-video-embed { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; margin: 14px 0; }
         .kcs-markdown-content .kcs-video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
       `}</style>
-      <MdPreview modelValue={parsed.content} />
+      <MdPreview modelValue={parsed.content} sanitize={sanitizeRichHtml} />
     </div>
   )
 }

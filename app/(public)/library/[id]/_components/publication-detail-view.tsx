@@ -99,7 +99,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
 
   const title = resource?.title ?? catalogBook!.title
   const author = resource?.author ?? catalogBook!.contributor
-  const coverImage = resource?.coverImages[0] ?? catalogBook!.coverImages[0]
+  const coverImage = resource?.coverImages?.[0] ?? catalogBook?.coverImages?.[0] ?? ''
   const description = resource?.description ?? catalogBook?.description
   const bindingType = resource?.bindingType ?? catalogBook!.bindingType
   const mediaType = resource?.mediaType ?? catalogBook!.mediaType
@@ -135,7 +135,16 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             className="relative w-full h-72 sm:h-96 md:h-[30rem] lg:h-[34rem] rounded-[2px] overflow-hidden"
             style={{ boxShadow: '0 1px 0 1px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.18), 0 16px 32px -8px rgba(0,0,0,0.3), inset -4px 0 8px rgba(0,0,0,0.14)' }}
           >
-            <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 320px, 380px" />
+            {coverImage ? (
+              <Image src={coverImage} alt={title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 320px, 380px" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-w-100">
+                <div className="text-center px-4">
+                  <Package size={32} className="mx-auto text-w-400 mb-2" />
+                  <span className="font-cinzel text-sm font-semibold text-w-600 tracking-wide uppercase">Kingdom Library</span>
+                </div>
+              </div>
+            )}
             <div className="absolute top-0 right-0 h-full w-2" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.35) 40%, rgba(0,0,0,0.1))' }} />
             <div className="absolute top-0 left-0 h-full w-4" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }} />
           </div>

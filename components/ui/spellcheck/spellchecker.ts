@@ -1,5 +1,8 @@
 /**
- * Offline, dictionary-backed spelling checks for the markdown editor.
+ * Offline, dictionary-backed spelling checks for the markdown editor — the
+ * fallback used whenever the online professional dictionary is unreachable
+ * (see online-spellcheck.ts) and the source of suggestions/squiggles for
+ * documents larger than the online limit.
  *
  * English (words.ts) and French (words-fr.ts) are checked offline: each
  * dictionary covers short common words plus a curated church/ministry +
@@ -48,6 +51,8 @@ export interface SpellIssue {
   start: number
   /** End offset in the scanned document string. */
   end: number
+  /** Corrections suggested by the online dictionary when the scan came from the remote source. */
+  suggestions?: string[]
 }
 
 /**
@@ -269,6 +274,20 @@ export function scanSpellIssues(
 }
 
 const EMPTY_IGNORE: ReadonlySet<string> = new Set()
+
+/**
+ * Every occurrence of `rawWord` (exact spelling) as a standalone token in the
+ * document, skipping markdown that must not be edited. Used by replace-all so
+ * a flagged word's corrections reach exactly the positions the user saw,
+ * regardless of which dictionary produced the flag.
+ */
+export function occurrencesOfRawWord(text: string, rawWord: string): Array<{ start: number; end: number }> {
+  if (!rawWord) return []
+  const skip = markdownSkipRanges(text)
+  return scannableWords(text, skip)
+    .filter((w) => w.word === rawWord)
+    .map((w) => ({ start: w.start, end: w.end }))
+}
 
 /* ------------------------------ suggestions ------------------------------ */
 

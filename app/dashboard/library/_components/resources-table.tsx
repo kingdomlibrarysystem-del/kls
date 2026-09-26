@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Pencil, Archive, BookOpenCheck } from "lucide-react";
+import { Eye, Pencil, Archive, BookOpenCheck, Package } from "lucide-react";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { UniversalButton } from "@/components/ui/universal-button";
 import { getCategoryById } from "@/lib/kcs-taxonomy";
@@ -51,12 +51,19 @@ export function ResourcesTable({
       render: (r) => (
         <div className="flex items-center gap-3">
           <div className="relative w-9 h-12 shrink-0 rounded overflow-hidden bg-w-200">
-            <Image
-              src={r.coverImages[0]}
-              alt={r.title}
-              fill
-              className="object-cover"
-            />
+            {r.coverImages[0] ? (
+              <Image
+                src={r.coverImages[0]}
+                alt={r.title}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                <Package size={14} className="text-w-400" />
+                <span className="font-lato text-[8px] font-semibold text-w-500 uppercase tracking-wide leading-none">Kingdom Library</span>
+              </div>
+            )}
           </div>
           <div>
             <p className="font-semibold text-w-950 max-w-45 truncate">

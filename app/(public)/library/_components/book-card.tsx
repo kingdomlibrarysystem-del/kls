@@ -62,7 +62,16 @@ export function BookCard({ book }: { book: Resource }) {
               '0 1px 0 1px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.15), 0 8px 16px -4px rgba(0,0,0,0.25), inset -3px 0 6px rgba(0,0,0,0.12)',
           }}
         >
-          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 40vw, 25vw" />
+          {book.coverImages[0] ? (
+            <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 40vw, 25vw" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-w-100">
+              <div className="text-center px-4">
+                <Package size={28} className="mx-auto text-w-400 mb-2" />
+                <span className="font-cinzel text-xs font-semibold text-w-600 tracking-wide uppercase">Kingdom Library</span>
+              </div>
+            </div>
+          )}
           {/* Page-edge stripe on the right — the visual cue that reads as "this is a bound book," not a flat poster. */}
           <div
             className="absolute top-0 right-0 h-full w-[6px]"

@@ -84,9 +84,12 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
         <div style={{ width: 200, flexShrink: 0, position: 'relative', height: 280, borderRadius: 8, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
           {resource.coverImages[0] ? (
-            <RemoteImage src={resource.coverImages[0]} alt={resource.title} fill sizes="200px" className="object-cover" fallback={<div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-section)' }}><Package size={32} color="var(--text-muted)" /></div>} />
+            <RemoteImage src={resource.coverImages[0]} alt={resource.title} fill sizes="200px" className="object-cover" fallback={<div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--bg-section)' }}><Package size={28} color="var(--text-muted)" /><span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Kingdom Library</span></div>} />
           ) : (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-section)' }}><Package size={32} color="var(--text-muted)" /></div>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--bg-section)' }}>
+              <Package size={28} color="var(--text-muted)" />
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Kingdom Library</span>
+            </div>
           )}
         </div>
 
