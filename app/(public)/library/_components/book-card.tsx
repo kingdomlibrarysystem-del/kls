@@ -23,7 +23,6 @@ import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_s
  * from the Cart page.
  */
 export function BookCard({ book }: { book: Resource }) {
-  const [showSummary, setShowSummary] = useState(false)
   const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   const { user, isAuthenticated } = useAuth()
@@ -98,16 +97,6 @@ export function BookCard({ book }: { book: Resource }) {
           <span>{book.language}</span><span>·</span>
           <span className={`flex items-center gap-1 ${outOfStock ? 'text-red-700 font-semibold' : ''}`}><Package size={11} /> {book.availableQty} available</span>
         </div>
-        <button
-          onClick={() => setShowSummary((v) => !v)}
-          className="flex items-center gap-1 font-lato text-xs text-w-600 hover:text-w-950 transition-colors w-fit"
-        >
-          {showSummary ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          {showSummary ? 'Hide summary' : 'View summary'}
-        </button>
-        {showSummary && (
-          <p className="font-lato text-xs text-w-700 leading-relaxed border-t border-w-300 pt-2">{book.description}</p>
-        )}
         <div className="flex flex-col gap-2 mt-auto pt-3">
           {isReadable && (
             isAuthenticated ? (

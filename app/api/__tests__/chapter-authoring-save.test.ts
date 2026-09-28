@@ -3,8 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/app/member/_shared/use-readable-content', () => ({
   refreshReadableContent: vi.fn(async () => {}),
 }))
+vi.mock('@/app/dashboard/library/_components/use-resources', () => ({
+  refetchResources: vi.fn(async () => {}),
+}))
 
 import { createResourceChapters, syncResourceChapters, realChaptersFrom } from '@/app/dashboard/library/_components/sync-resource-chapters'
+import { refetchResources } from '@/app/dashboard/library/_components/use-resources'
 
 /**
  * Regression tests for the authoring flow that produced content-less TEXT
@@ -48,6 +52,7 @@ describe('createResourceChapters', () => {
   let calls: Call[]
 
   beforeEach(() => {
+    vi.clearAllMocks()
     calls = []
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url: String(url), method: init?.method ?? 'GET', body: init?.body ? JSON.parse(String(init.body)) : undefined })
@@ -64,6 +69,11 @@ describe('createResourceChapters', () => {
   it('preserves the admin\'s own title when they gave one', async () => {
     await createResourceChapters('res1', [{ title: '  Genesis 1  ', content: 'In the beginning...' }])
     expect((calls[0].body as { title: string }).title).toBe('Genesis 1')
+  })
+
+  it('refreshes the resource catalog after creating chapters so chapterCount updates', async () => {
+    await createResourceChapters('res1', [{ title: 'Genesis 1', content: 'In the beginning...' }])
+    expect(refetchResources).toHaveBeenCalledOnce()
   })
 
   it('posts chapters sequentially so server-assigned order matches typed order', async () => {

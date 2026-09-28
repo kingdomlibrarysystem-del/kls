@@ -164,7 +164,7 @@ export function ResourcesTable({
       className: "text-right",
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5">
-          {isResourceReadable(r) && (
+          {isResourceReadable(r) ? (
             <Link
               href={`/dashboard/library/read/${r.id}`}
               aria-label={`Read ${r.title}`}
@@ -172,7 +172,14 @@ export function ResourcesTable({
             >
               <BookOpenCheck size={12} /> Read
             </Link>
-          )}
+          ) : r.mediaType === 'TEXT' ? (
+            <span
+              title="No chapters yet — edit this book and add chapters to make it readable"
+              className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-lato cursor-help"
+            >
+              <BookOpenCheck size={12} /> No chapters
+            </span>
+          ) : null}
           {isResourceReadable(r) && r.price > 0 && (
             <Link
               href={`/dashboard/library/read/${r.id}?preview=1`}

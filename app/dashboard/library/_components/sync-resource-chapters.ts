@@ -1,4 +1,5 @@
 import { refreshReadableContent } from '@/app/member/_shared/use-readable-content'
+import { refetchResources } from './use-resources'
 import type { ResourceFormData } from './resource-form-schema'
 
 type FormChapter = ResourceFormData['chapters'][number]
@@ -97,6 +98,7 @@ export async function syncResourceChapters(resourceId: string, chapters: FormCha
   // admin who saves a book and then hits Read would otherwise open the reader
   // against the pre-save snapshot and be told the book has no content.
   await refreshReadableContent()
+  await refetchResources()
 }
 
 /** Creates every chapter of a brand-new TEXT book, in typed order. */
@@ -109,4 +111,5 @@ export async function createResourceChapters(resourceId: string, chapters: FormC
     })
   }
   await refreshReadableContent()
+  await refetchResources()
 }

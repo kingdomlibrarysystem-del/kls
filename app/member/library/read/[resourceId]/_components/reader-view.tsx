@@ -173,9 +173,9 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
       <div
         key={c.id}
         id={`reader-chapter-${c.id}`}
-        className="card"
-        style={{ padding: 28, background: 'var(--bg-section)', scrollMarginTop: 16 }}
+        style={{ padding: '28px 0', scrollMarginTop: 16, borderBottom: '1px solid var(--border)' }}
       >
+
         <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)', marginBottom: 18 }}>{c.title}</h2>
         {c.locked ? (
           index === firstLockedVisible ? (

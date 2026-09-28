@@ -43,7 +43,9 @@ export function MarkdownContent({ markdown, align }: MarkdownContentProps) {
         /* Fix md-editor-rt's word-break: break-all which splits words mid-character.
            word-break: normal keeps whole words together; overflow-wrap handles
            genuinely unbreakable long strings (URLs, etc.) gracefully. */
-        .kcs-markdown-content .md-editor-preview { font-size: 15px; color: var(--text-primary); line-height: 1.95; background: transparent; letter-spacing: 0.01em; word-break: normal !important; overflow-wrap: break-word !important; hyphens: none !important; }
+        .kcs-markdown-content .md-editor-preview { font-size: 15px; color: var(--text-primary); line-height: 1.95; background: transparent; letter-spacing: 0.01em; word-break: normal !important; overflow-wrap: break-word !important; hyphens: none !important; padding-left: 1rem; padding-right: 1rem; }
+        @media (min-width: 640px) { .kcs-markdown-content .md-editor-preview { padding-left: 1.5rem; padding-right: 1.5rem; } }
+        @media (min-width: 1024px) { .kcs-markdown-content .md-editor-preview { padding-left: 2rem; padding-right: 2rem; } }
         .kcs-markdown-content h1 { font-size: 21px; font-weight: 700; color: var(--text-primary); margin: 24px 0 12px; }
         .kcs-markdown-content h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 22px 0 10px; }
         .kcs-markdown-content h3 { font-size: 15.5px; font-weight: 700; color: var(--gold); margin: 18px 0 8px; }
