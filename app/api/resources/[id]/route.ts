@@ -37,7 +37,7 @@ function serializeResource(r: {
   videoUrl: string | null
   avgRating: number
   reviewCount: number
-}) {
+}, chapterCount: number) {
   return {
     id: r.id,
     title: r.title,
@@ -67,6 +67,7 @@ function serializeResource(r: {
     videoUrl: r.videoUrl ?? undefined,
     avgRating: r.avgRating,
     reviewCount: r.reviewCount,
+    chapterCount,
   }
 }
 
@@ -78,7 +79,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ data: null, message: 'Resource not found', code: 'error', status: 404 }, { status: 404 })
   }
 
-  return NextResponse.json({ data: serializeResource(resource), message: 'Resource fetched successfully', code: 'success', status: 200 })
+  const chapterCount = await prisma.chapter.count({ where: { resourceId: id } })
+
+  return NextResponse.json({ data: serializeResource(resource, chapterCount), message: 'Resource fetched successfully', code: 'success', status: 200 })
 }
 
 /**
@@ -164,7 +167,9 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
 
   const resource = await prisma.resource.update({ where: { id }, data })
 
-  return NextResponse.json({ data: serializeResource(resource), message: 'Resource updated successfully', code: 'success', status: 200 })
+  const chapterCount = await prisma.chapter.count({ where: { resourceId: id } })
+
+  return NextResponse.json({ data: serializeResource(resource, chapterCount), message: 'Resource updated successfully', code: 'success', status: 200 })
 })
 
 export const DELETE = withErrorHandling('/api/resources/[id]', 'DELETE', async (_request: NextRequest, { params }: RouteParams) => {

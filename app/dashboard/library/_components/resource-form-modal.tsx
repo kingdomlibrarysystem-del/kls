@@ -32,6 +32,7 @@ export function ResourceFormModal({
   onSave,
 }: ResourceFormModalProps) {
   const [submitError, setSubmitError] = useState("");
+  const [chapterLoadFailed, setChapterLoadFailed] = useState(false);
   const { data: allCategories } = useCategories();
   /**
    * Leaf/scroll-level categories only, grouped under their root pillar label
@@ -57,12 +58,14 @@ export function ResourceFormModal({
 
   useEffect(() => {
     if (!open) return
+    setChapterLoadFailed(false)
 
     if (editing && editing.mediaType === 'TEXT') {
       fetch(`/api/chapters?resourceId=${editing.id}`)
         .then((r) => r.json())
         .then((json) => {
           const chapters: { title: string; body?: string }[] = json.data?.chapters ?? []
+          setChapterLoadFailed(false)
           reset({
             title: editing.title,
             author: editing.author,
@@ -90,7 +93,8 @@ chapters: chapters.map((c) => ({ title: c.title, content: c.body ?? '' })),
           })
         })
         .catch(() => {
-          // fetch failed — reset without chapter content, admin can re-type
+          setChapterLoadFailed(true)
+          setSubmitError('Could not load this book’s existing chapters. Close and reopen the editor before saving so no content is lost.')
           reset({
             title: editing.title,
             author: editing.author,
@@ -210,6 +214,7 @@ chapters: [],
             type="submit"
             variant="primary"
             className="flex-1 text-sm py-2"
+            disabled={chapterLoadFailed}
           >
             {editing ? "Save Changes" : "Add Resource"}
           </ElegantButton>

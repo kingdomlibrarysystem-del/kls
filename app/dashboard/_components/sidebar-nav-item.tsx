@@ -6,6 +6,7 @@ import type { NavItem } from "./nav-data";
 export function SidebarNavItem({ item, collapsed, currentRoute }: { item: NavItem; collapsed: boolean; currentRoute: string }) {
   const [hovered, setHovered] = useState(false);
   const isActive = item.active || (item.href && currentRoute.startsWith(item.href));
+
   return (
     <a
       href={item.href || "#"}
@@ -14,32 +15,28 @@ export function SidebarNavItem({ item, collapsed, currentRoute }: { item: NavIte
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: "6px 12px",
+        gap: 10,
+        margin: "0 8px",
+        padding: "8px 10px",
+        borderRadius: 8,
         cursor: "pointer",
-        fontSize: 12,
+        fontSize: 13,
+        fontWeight: 600,
+        letterSpacing: 0.1,
         textDecoration: "none",
-        background: isActive
-          ? "rgba(212,168,67,0.12)"
-          : hovered
-            ? "var(--bg-hover)"
-            : "transparent",
-        borderLeft: isActive
-          ? "2px solid var(--gold)"
-          : "2px solid transparent",
-        color: isActive
-          ? "var(--gold)"
-          : hovered
-            ? "var(--text-primary)"
-            : "var(--text-secondary)",
-        transition: "all 0.15s",
+        background: isActive ? "var(--gold-tint)" : hovered ? "var(--bg-hover)" : "transparent",
+        boxShadow: isActive ? "inset 2px 0 0 var(--gold)" : "none",
+        color: isActive ? "var(--gold)" : hovered ? "var(--text-primary)" : "var(--text-primary)",
+        transition: "background 0.15s, color 0.15s",
         whiteSpace: "nowrap",
         overflow: "hidden",
       }}
     >
-      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>{item.icon}</span>
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18, flexShrink: 0 }}>
+        {item.icon}
+      </span>
       {!collapsed && (
-        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
           {item.label}
         </span>
       )}

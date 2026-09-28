@@ -5333,3 +5333,391 @@ page and use the Categories admin). `CATEGORY_COLOR_PRESETS` moved from
 imports the shared presets. The Articles view's category list is refreshed
 after creation, so a brand-new category is instantly available to the existing
 open Article form. Category create endpoint unchanged.
+
+## 2026-09-25 — Markdown editor: rich-text authoring, drawing, tables, and sanitization
+
+**Now:** the shared publisher editor (`components/ui/markdown-editor.tsx`,
+`markdown-editor-config.ts`, and the new `components/ui/markdown-editor-drawing.tsx`)
+gains full publishing-authoring features while staying on md-editor-rt v6
+(markdown is the storage format; no WYSIWYG migration — see library decision
+below).
+
+1. **Rich text on a selection** — new toolbar row: text color and highlight
+   (18 swatches + custom color plus the classic marker-yellow), per-selection
+   font family / font size, and clear-formatting. All stored as inline HTML
+   spans/marks (`<span style="color:red">`, `<mark style="...">`) authored via
+   `mdEditorRef.insert()` against the CodeMirror selection; non-HTML wrapper
+   `stripInlineTags` unwraps them. When nothing is selected a pre-selected
+   placeholder is inserted so typing replaces it.
+2. **Paragraph / utility tools** — horizontal rule, indent/outdent on the
+   selected lines (CodeMirror line-span dispatch, so nested list items work),
+   document-level **line spacing** picker persisted via the `kcs-style` marker
+   (`DocumentStyle.lineHeight`, validated `/^\d+(\.\d+)?$/`) and applied by the
+   reader in `markdown-content.tsx`.
+3. **Images** — existing size/alignment dialog unchanged; **Insert image by
+   URL** dialog (no upload needed); **Drawing** dialog (new file): a 900×560
+   canvas with pen/eraser/line/arrow/rectangle/ellipse/text, 10+custom colors,
+   width slider, undo/redo, and clear — the artwork is exported to a PNG and
+   uploaded to Cloudinary (`kcs-resources/image`, permanent URL) so the
+   markdown stores one stable image, never a blob.
+4. **Image captions** — the title DSL gains a `cap=` token
+   (`![alt](url "kcs-center w60 cap=Our%20figure")`); `parseImgCaption` reads
+   it (character-set limited so it can never smuggle HTML) and
+   `encodeImgLayout(alt, url, layout, caption)` writes it, so captions survive
+   resize/align edits. When a caption is present the shared renderer emits
+   `<figure class="kcs-figure …"><img …/><figcaption>…</figcaption></figure>`
+   in BOTH the editor preview and the member reader; without one the output is
+   byte-identical to before (existing `parseImgLayout` tests untouched).
+5. **Table tools** — dialog that rewrites the markdown table around the
+   cursor (the only way to edit rows/columns of `| a | b |` text): insert or
+   delete a column before/after the selected one, insert/delete a row, always
+   preserving the header separator row.
+6. **XSS sanitization (the important one)** — `md-editor-rt`'s default
+   `sanitize` is identity, so pasted HTML (`<script>`, `onerror`, `javascript:`)
+   previously rendered raw in previews and published views. New
+   `sanitizeRichHtml` (DOMParser allowlist in `markdown-editor-config.ts`)
+   keeps structural blocks, the kcs-*/md-* layout classes, the YouTube embed,
+   Cloudinary images, and author rich-text spans, and strips everything else
+   (scripts, event handlers, `javascript:`/`expression()`/`url()` values,
+   unknown style props, non-YouTube iframes). It is now wired to BOTH the
+   editor's `MdEditor` and the reader's `MdPreview`, so preview and published
+   output are sanitized identically. Raw author markdown is not re-written —
+   the sanitizer runs on the rendered HTML only, so existing documents keep
+   their source text.
+7. **Preview CSS** — editor preview and reader styles updated for the new
+   surfaces: `mark`/highlight, `sup`/`sub`, `u`/`s`, `figure`/`figcaption`,
+   floated+centered captioned figures, and `clear:both` on `figure`/`p` so
+   floats never swallow later headings/tables.
+
+**Files touched:** `components/ui/markdown-editor-config.ts` (caption DSL +
+sanitizer + lineHeight), `components/ui/markdown-editor.tsx` (toolbar rows +
+dialogs + `sanitize` prop), `components/ui/markdown-editor-drawing.tsx` (new),
+`components/ui/markdown-content.tsx` (sanitize + CSS + lineHeight),
+`components/ui/__tests__/markdown-editor-config.test.ts` (+12 tests).
+
+**Library decision (kept md-editor-rt):** content is markdown end-to-end
+(`NewsArticle.content`, `Chapter.body`, lesson markdown) rendered by one
+shared markdown-it config through `MdPreview`; migration to a real WYSIWYG
+(Tiptap/Lexical/CKEditor) would force a second storage format, a second render
+pipeline to keep parity in the reader, rebuild the offline CodeMirror
+spellchecker, and break the kcs-* layout/embed DSL. The publisher features
+above are implemented as markdown constructs (inline HTML spans, DSL title
+tokens, canvas→Cloudinary→image) plus md-editor-rt's own
+`insert`/`execCommand`/`getEditorView`, with the public
+`value/onChange/height/language` API unchanged — all four existing consumers
+(article form, resource media files, book chapter editor, lesson modals) keep
+working unchanged. Per-selection font/size/color is emitted as inline HTML
+because CommonMark has no other way to carry it; the result is identical in
+preview and published views.
+
+**Interactions to watch:** (a) The kcs-style marker now may carry
+`lineHeight`; any consumer that re-encodes document style with an object
+missing the key would clear it, so all `encodeDocumentStyle` callers pass the
+same full style shape. (b) The sanitizer is strict: any future feature that
+needs a new tag/class/style prop must extend the allowlists, and new embeds
+(iframes) must be allowlisted explicitly. (c) The editor now re-encodes each
+keystroke with lineHeight alongside font/size/align; performance unchanged.
+(d) Drawings/screenshots are full-width `<img>` until the author applies the
+existing image size/alignment dialog (which now also supports captions).
+
+**Unimplemented by design:** paragraph-level first-line indent (CommonMark has
+no construct — blockquote is the escape hatch), per-paragraph line spacing
+(implemented at document level), and spelling squiggles in the preview pane
+(HTML preview cannot render the editor's DOM-based underlines; choice was to
+keep the squiggles in the typing area where the author actually edits).
+
+Verification: `npx tsc --noEmit` clean; `npx eslint` on the four changed files
+clean (one pre-existing `@next/next/no-img-element` warning in the layout
+dialog's thumbnail strip); config test suite 36/36 passing; full vitest 143
+pass + same 6 pre-existing cart/order failures; `npx next build` exit 0
+(180 pages static; TypeScript finished clean).
+
+## 2026-09-25 � Library cover-image fixes: no more crashes for books without a cover
+
+**Now:** resources with an empty `coverImages` array (legacy/test rows created
+through the API or the seed, not the admin form) crashed the public library
+surfaces � an empty string was passed to `next/image`'s src and the detail
+page dereferenced `catalogBook!.coverImages[0]` on a 404'd publication,
+throwing `Cannot read properties of undefined (reading 'coverImages')`. Every
+cover render site now guards against a missing cover and falls back to a "Cover
+page" placeholder (icon + text) instead of a broken image or crash.
+
+1. **Public grid crash** � `app/(public)/library/_components/book-card.tsx`:
+   `<Image src={book.coverImages[0]}>` now only renders when a cover exists;
+   otherwise the book area shows the neutral "Kingdom Library" placeholder.
+2. **Public detail crash** � `app/(public)/library/[id]/_components/publication-detail-view.tsx`:
+   `resource?.coverImages[0] ?? catalogBook!.coverImages[0]` (the
+   `catalogBook!` non-null assertion threw when the resource resolved but the
+   publication 404'd) is now `resource?.coverImages?.[0] ?? catalogBook?.coverImages?.[0] ?? ''`,
+   and the cover blocks out the same placeholder when no image resolves.
+3. **Member surfaces** � `resource-card.tsx` ResourceCover and
+   `resource-detail-view.tsx` already guarded the ternary; their no-cover
+   placeholder now shows the same "Kingdom Library" text, so /member/library grid and
+   detail look consistent with the public ones.
+4. **Admin surfaces** � the same empty-src class bug was guarded in
+   `resources-table.tsx` (row thumbnail), `resource-cover-gallery.tsx`
+   (admin detail cover), and `catalog-card.tsx` (publishing catalog cards).
+5. **Required-cover validation already in place** � `resource-form-schema.ts`
+   has enforced `coverImage: z.string().min(1, 'A cover image is required')`
+   since before this round; the admin modal surfaces it via
+   `errors.coverImage?.message` under the cover field on both create and edit
+   (editing a legacy coverless row forces the admin to supply a cover before
+   saving). The API deliberately still accepts `coverImages: []` � the API
+   test fixtures (cart, reviews, entitlement suites) create coverless resources,
+   so server-side enforcement stayed out of scope.
+6. **Typescript fix** � `components/ui/__tests__/markdown-editor-config.test.ts`
+   imports `JSDOM` (jsdom is a transitive dep, not in package.json), which
+   broke `npx tsc` with TS7016. Added an ambient declaration in
+   `types/jsdom.d.ts` describing the parsed subset (constructor + `window`
+   with `DOMParser`/`HTMLElement`) � no package.json change.
+
+**Interactions to watch:** covers are treated as "*the first entry of
+`coverImages` or nothing*" all the way down � the same convention the cart,
+orders, and borrowings API responses already use
+(`coverImages[0] ?? null`). Any future surface that renders a resource cover
+should follow the same guard.
+
+Verification: `npx tsc --noEmit` clean; `npx eslint` clean on all nine
+changed files; full vitest 143 pass + same 6 pre-existing cart/order failures;
+`npx next build` exit 0 (180 pages; TypeScript finished clean).
+
+## 2026-09-25 � Editor: rich-text authoring now writes compact DSL tokens, not raw HTML (owner request)
+
+**Now:** the per-selection color/highlight/font/size toolbar previously wrote
+`<span style="...">` / `<mark style="...">` straight into the markdown.
+Because md-editor-rt's editing area is always the raw markdown source (it has
+no WYSIWYG/IR mode), the author saw literal HTML tags in the typing pane.
+Image sizes/captions never had this problem � they ride on the kcs-* title
+DSL, which the shared markdown-it config turns into styled HTML only at
+render time. The rich-text features now do the same:
+
+- **New compact DSL** (`components/ui/markdown-editor-config.ts`):
+
+  - `[[c:#0ea5e9|tsss]]`  ? `<span style="color:#0ea5e9">tsss</span>`
+  - `[[h:#3b82f6|text]]`  ? `<mark style="background-color:#3b82f6">text</mark>`
+  - `[[ff:Georgia, serif|text]]` ? `<span style="font-family:Georgia, serif">text</span>`
+  - `[[fs:18px|text]]` ? `<span style="font-size:18px">text</span>`
+
+  New `applyRichTextRule` (md.inline rule before 'emphasis') validates every
+  value strictly (hex colors, unit px sizes, word/quote font stacks), escapes
+  the inner text, and renders the token only when valid � malformed tokens
+  fall back to literal text and can never smuggle HTML or attributes.
+
+- **Registered in `configureMarkdownEditor()`**, the single shared markdown-it
+  setup used by the editor's live preview AND every reader
+  (`MarkdownContent`: member chapter reader, lesson content, news article
+  views, admin detail previews) � so a colored word authored in the editor is
+  styled identically everywhere it is displayed.
+
+- **Toolbar writes tokens** (`components/ui/markdown-editor.tsx`): text
+  color / highlight / font / size now emit the `[[�]]` tokens instead of
+  inline HTML, so the author's stored text stays clean of tags. Clear
+  formatting (`stripInlineTags`) unwraps both the legacy HTML wrappers and
+  the new tokens.
+
+- **Backwards compatible:** chapters/articles already saved with the previous
+  inline-HTML spans keep rendering unchanged (the sanitizer already
+  allowlists `span`/`mark` + color/background/font style props). The DSL
+  is purely additive for new authoring; no data migration needed.
+
+**Interactions to watch:** (a) any future renderer for book/article markdown
+must route through `configureMarkdownEditor()`/`MarkdownContent` or the
+tokens will show as literal text. (b) Tokens only match on the strict
+`kind:value|` shape, so ordinary prose with `[[` is untouched; nested
+tokens (formatting inside formatting) are not supported. (c) The drawing +
+image-URL + size/caption flows were untouched and still produce plain
+markdown.
+
+Verification: config test suite 44/44 (8 new applyRichTextRule cases: all four
+kinds, quote-safe font stacks, inner-text escaping, literal fallback for
+malformed/invalid tokens, 3-digit hex); 
+px tsc --noEmit clean; 
+px eslint
+on the three changed files clean of new issues (3 pre-existing warnings in
+markdown-editor.tsx untouched); full vitest 151 pass + the same 6 pre-existing
+cart/order DB failures (plus a one-off 10s hook timeout in the borrow-reserve
+concurrency suite's cleanup � environment/network, not code); 
+px next build
+exit 0 (180 pages).
+
+## 2026-09-25 � Editor spellcheck: professional online English dictionary (LanguageTool) with offline fallback
+
+**Request:** use a professional *online* English dictionary for the editor's
+spelling; the banner/context lines had advertised an "offline English
+dictionary". Online is now the preferred path; the bundled offline dictionary
+remains as an automatic fallback.
+
+**Online path** � pp/api/spellcheck/route.ts (NEW) proxies the editor's
+spellcheck to LanguageTool's public proofreading API
+(https://api.languagetool.org/v2/check, POST, form-encoded). Staff-only
+(`requireStaff()` � every MarkdownEditor consumer is a dashboard form; the
+dashboard session cookie rides along on the same-origin fetch). Normalizes the
+service's matches to `{ data: { matches: [{ from, to, word, suggestions }] } }`
+with offsets straight into the document. Guards: zod body (`text` required,
+max 20,000 chars � the free API's per-request cap), maps our codes
+(EN?en-US, FR?fr, �), drops multi-token/non-letter/out-of-range flags, and
+short-circuits whitespace-only text so the rate-limited service is never hit.
+Free endpoint is keyless but rate-limited (~20 req/75KB per min); set
+`LANGUAGETOOL_API_KEY` + `LANGUAGETOOL_USERNAME` to route to the premium
+`api.languagetoolplus.com/v2/check` endpoint (same route, higher limits).
+Errors surface as 502 and the client falls back offline.
+
+**Client** � components/ui/spellcheck/online-spellcheck.ts (NEW):
+`maskMarkdownForSpellcheck` replaces every offline-markdown skip range
+(fences, inline code, image/link destinations, autolinks, HTML tags/comments �
+reusing `markdownSkipRanges`) with spaces so offsets still map onto the
+CodeMirror document while the remote checker never sees markup;
+`runSpellingCheck(text, language, ignore, signal)` calls `/api/spellcheck`
+and returns `{ issues, suggestions: Map<word, string[]>, source }`, silently
+falling back to `scanSpellIssues` + `suggestFor` on any failure and for
+texts over the online limit; a caller-provided `AbortSignal` lets superseded
+scans cancel in-flight requests (aborts are rethrown so stale results never
+apply).
+
+**Editor** � components/ui/markdown-editor.tsx reworked from synchronous
+offline scans to a debounced (500ms) async, abortable `runSpelling`/
+`scheduleSpelling` pair driving squiggles, the Spelling report, suggestions,
+and the "online vs offline fallback" indicator; browser-native spellcheck
+still gives instant feedback while the dictionary catch-up runs. Ignore
+silences instantly (local filter) then an online rescan confirms (the remote
+match list already excludes ignored words). Replace-all now uses the new
+`occurrencesOfRawWord('')(exact token spans, skip-markdown aware)` so a
+flagged word's correction reaches exactly the occurrences the user saw,
+regardless of which dictionary produced the flag. `SpellIssue` gained an
+optional `suggestions?: string[]`; `offlineActive` renamed to
+`dictionaryActive`. Caption/panel copy updated: *"Spellcheck + online
+professional English dictionary (LanguageTool) � falls back to the offline
+dictionary when the online service is unreachable. Click a suggestion to
+replace every occurrence; Ignore silences a word for this session."*
+
+**Env:** .env.example documents the two optional LanguageTool credentials.
+
+Verification: 19 new tests (11 online-spellcheck: masking/offset fidelity,
+online mapping, ignored-match filtering, offline fallback on throw/429/oversize/
+prose-free, abort rethrow; 8 route handler: match mapping, EN?en-US, premium
+endpoint toggle via env, whitespace short-circuit, 400 on oversize/missing
+text, 502 on unreachable/rejected). Suite 170 pass + the same 6 pre-existing
+cart/order-sparse DB-environment failures (this run's borrow-reserve concurrency
+suite cleaned up cleanly). `npx tsc --noEmit` clean; eslint 0 errors (3
+pre-existing warnings in markdown-editor.tsx untouched); `npx next build`
+exit 0 (181 pages incl. the new /api/spellcheck).
+
+---
+
+## 2026-09-25 � Revert rich-text DSL toolbar in the markdown editor (online dictionary spellcheck retained)
+
+**Request:** the experimental per-selection rich-text toolbar (color, highlight,
+`Font�`, `Size�`, clear formatting, HR, indent/outdent, Image-by-URL, Draw,
+tables) wrote transient DSL tokens (`[[c:_|text]]`, `[[h:_|text]]`,
+`[[ff:_|text]]`, `[[fs:_|text]]`) and inline HTML directly into the markdown
+source � clicking a font style produced e.g. `[[h:#4c1d95|Prioritize ]]` and
+`[[ff:"Times New Roman", Times, serif|documents]]` in the editor, and the
+preview "changed the content". The user asked for font size/family to work like
+they always did and to drop the duplicate size picker ("remove one of font size
+because we have two buttons"; there were two: the per-selection `Size�` and the
+document-level `Size:`).
+
+**Resolution � components/ui/markdown-editor.tsx rewritten** back to the
+clean, pre-DSL toolbar and behavior (the user supplied the reference version):
+
+- Toolbar reduced to the classic row only: **Font:** (document-level family),
+  **Size:** (single document-level size), **Paragraph:** (left/center/right/
+  justify), **Spelling** report toggle + live issue count, and the dictionary
+  caption. All DSL/experimental controls removed: color, highlight,
+  per-selection `Font�`/`Size�`, RemoveFormatting, HR, indent/outdent,
+  Image-by-URL, Draw, table tools, and the separate line-spacing picker.
+- Font family/size/alignment are once again applied ONLY as a document-level
+  `<!-- kcs-style:... -->` metadata block � never as inline HTML or magic
+  tokens inside the markdown. The editor preview (what the author sees while
+  writing) renders those choices; the stored markdown stays clean.
+- Single shared `applyStyle(partial)` mutation sets font-family/font-size/
+  align/line-height together and re-encodes the style envelope (existing
+  `lineHeight` in stored docs is preserved even though the picker UI is gone).
+- **Online dictionary spellcheck fully retained** (previous round): debounced
+  500ms `runSpelling`/`scheduleSpelling` with AbortController, `spellSource`
+  caption ("online professional English/French dictionary (LanguageTool)" with
+  offline fallback), Suggestions via `spellSuggestions` + `suggestFor`,
+  replace-all via `occurrencesOfRawWord`, per-language ignore persistence, and
+  the unmount cancel/cleanup effect.
+- **Load-time cleanup of leaked tokens:** `unwrapRichDslTokens` strips any
+  stray `[[c:|/[[h:|/[[ff:|/[[fs:�|text]]` tokens back to their plain inner
+  text on open, so drafts polluted by the experimental toolbar open and re-save
+  cleanly � no `[[` ever appears in the editor again. Legacy inline-HTML spans
+  are deliberately left alone.
+- **Reader/back-compat:** `markdown-editor-config.ts` is unchanged �
+  `configureMarkdownEditor()` still registers `applyRichTextRule`, so any
+  leftover `[[�]]` tokens in existing published content still render nicely in
+  the reader/preview; all 44 config tests stay green. The `ImageLayoutDialog`
+  (image size & alignment) is kept.
+
+**Files:** `components/ui/markdown-editor.tsx` (rewritten); nothing else
+needed changes (`markdown-editor-config.ts`, the `/api/spellcheck` route, the
+spellcheck utility modules and their tests are untouched).
+
+**Interactions to watch:** every dashboard library/publishing form mounts this
+editor on `value`/`onChange` � the shape is unchanged and the same CSP-style
+inline `<style>` tag is injected for preview fonts. Stored documents that used
+the experimental toolbar lose their per-word color/highlight styling on next
+save (tokens unwrap to plain text); paragraph-level alignment, font family/size,
+and image layout settings are unaffected.
+
+Verification: `npx tsc --noEmit` clean; eslint 0 errors (1 pre-existing
+no-img-element warning from the ImageLayoutDialog thumbnails); full `npx vitest
+run` 170 pass + the same 6 pre-existing cart/order-sparse DB-environment
+failures (unchanged); `npx next build` exit 0 (181 pages).
+
+
+## 2026-09-25 - Rich-text editor: selection formatting, colors, highlights, HR, drawing
+Restores and improves the editing features the previous round dropped, now built
+on sanitized inline HTML instead of the experimental `[[..]]` token toolbar.
+
+- **Library decision:** keep md-editor-rt 6.5.6 (no migration). Verified its
+  markdown-it config is `{ html: !0, breaks: !0, linkify: !0 }` in
+  `node_modules/md-editor-rt/lib/es/chunks/ContentPreview.mjs`, so inline
+  `<span>`/`<mark>` styling passes through. Editor body is fully re-rendered
+  from the markdown state on every change, so selection-aware formatting works.
+- **Selection-aware font family/size:** with a selection, the Font/Size selects
+  wrap the selection in a sanitized `<span style="font-family|font-size:...">`
+  via `wrapSelectionInSpan` (idempotent, nests new props on top of existing
+  spans). Without a selection they keep the document-level `applyStyle`
+  `<!-- kcs-style:... -->` behavior. Font-family values are stored quote-free.
+- **Text color & highlight:** `StyleDropButton` popovers (Color = `TEXT_COLORS`,
+  Highlight = `TEXT_HIGHLIGHTS`, 5-col swatches + native custom color input +
+  Remove). Buttons are disabled until a selection exists (`selectionActive`
+  from a window `selectionchange` listener). Applies `color` / `background-color`
+  spans; Clear Formatting strips `CLEAR_FORMAT_PROPS`.
+- **HR + Drawing:** HR inserts `\n\n---\n\n`; drawing opens the existing
+  `markdown-editor-drawing.tsx` canvas (pen/eraser/shapes/text, undo/redo) and
+  pastes the Cloudinary PNG as `![Drawing](url)`.
+- **Storage format:** inline sanitized HTML spans in the markdown source; no
+  tokens, no DB migration, backward compatible. `sanitizeRichHtml` allowlists
+  `color`, `background-color`, `font-family`, `font-size`; the re-emitted
+  `style` attribute now escapes CSSOM-normalized quotes (`&quot;`) so multi-word
+  font stacks survive sanitization. Hex colors normalize to `rgb(...)` (valid).
+- **Preview/publish parity (free):** editor preview and all readers share
+  `MarkdownContent` -> `MdPreview` + `sanitizeRichHtml`; `applyRichTextRule`
+  still renders legacy `[[..]]` tokens and `unwrapRichDslTokens` still cleans
+  polluted drafts on load.
+- **New pure helpers** in `markdown-editor-config.ts` (exported and unit-tested):
+  `wrapSelectionInSpan`, `stripSelectionStyles`, types `InlineStyleProp`,
+  `SpanEditResult`; internal `parseStyledSpans`, `splitCss` (restricted to the
+  four allowed props), offset re-map (positions at edit boundaries now shift
+  correctly). Config test suite grew to 55 tests, including a markdown-it
+  `html:true` + JSDOM sanitization pipeline.
+- **Fix:** `view.state.selection.empty` -> `view.state.selection.main.empty`
+  (EditorSelection has no `.empty`; the TS build caught it).
+
+**Files:** `components/ui/markdown-editor-config.ts` (new helpers + sanitizer
+quote-escaping), `components/ui/markdown-editor.tsx` (feature wiring, two
+StyleDropButton popovers, selectionchange listener), the drawing dialog and
+spellcheck modules are untouched, `components/ui/__tests__/markdown-editor-config.test.ts`.
+
+**Interactions to watch:** editor stays on `value`/`onChange`, so all library/
+publishing forms are unaffected. Styled spans only enter docs when the author
+selects text first. Drawing images upload as permanent Cloudinary PNG URLs.
+
+Verification: `npx tsc --noEmit` clean; eslint 0 errors (1 pre-existing
+no-img-element warning); `npx vitest run` 180 pass + the same 6 pre-existing
+cart/order-sparse DB failures (one-off borrow-reserve-concurrency timeout is
+the known SQLite-contention flake - clean in the previous round); `npx next
+build` exit 0 (181 pages).

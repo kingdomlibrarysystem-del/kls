@@ -86,8 +86,8 @@ export async function refetchResources(): Promise<void> {
   await fetchResources()
 }
 
-/** `isbn` is never sent by the client — it's generated server-side (see lib/generate-isbn.ts) and always ignored if present in the request body. */
-export async function addResource(resource: Omit<Resource, 'id' | 'isbn' | 'avgRating' | 'reviewCount'>): Promise<Resource> {
+/** `isbn` is never sent by the client — it's generated server-side (see lib/generate-isbn.ts) and always ignored if present in the request body. `chapterCount` is likewise server-derived (counted from real Chapter rows), never client-supplied. */
+export async function addResource(resource: Omit<Resource, 'id' | 'isbn' | 'avgRating' | 'reviewCount' | 'chapterCount'>): Promise<Resource> {
   const res = await fetch('/api/resources', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

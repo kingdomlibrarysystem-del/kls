@@ -44,7 +44,10 @@ function ResourceCover({ resource, liked, height }: { resource: Resource; liked:
           {resource.coverImages[0] ? (
             <RemoteImage src={resource.coverImages[0]} alt={resource.title} fill sizes="(max-width: 768px) 90vw, 30vw" className="object-cover" fallback={<Package size={32} color="var(--text-muted)" />} />
           ) : (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={32} color="var(--text-muted)" /></div>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Package size={28} color="var(--text-muted)" />
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Kingdom Library</span>
+            </div>
           )}
           <div style={{ position: 'absolute', top: 0, right: 0, height: '100%', width: 8, background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.3) 40%, rgba(0,0,0,0.1))' }} />
           <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 16, background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }} />

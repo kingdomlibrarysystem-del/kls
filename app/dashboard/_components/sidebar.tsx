@@ -1,10 +1,13 @@
 "use client";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { BookCopy, ChevronDown, ChevronLeft, User, LogOut, Mail, ExternalLink } from "lucide-react";
-import { adminMainNav, adminMgmtNav, memberNav, type NavItem } from "./nav-data";
-import { SidebarNavItem } from "./sidebar-nav-item";
+import { BookCopy, User, LogOut, Mail, ExternalLink } from "lucide-react";
+import { adminMainNav, adminMgmtNav, memberNav } from "./nav-data";
+import { flattenNav, searchNav } from "./nav-search";
+import { SidebarNavRow } from "./sidebar-nav-section";
+import { SidebarSearch } from "./sidebar-search";
+import { SidebarSearchResults } from "./sidebar-search-results";
 import { SidebarFooter } from "./sidebar-footer";
 
 export default function Sidebar() {
@@ -16,13 +19,21 @@ export default function Sidebar() {
     "Research": false,
   });
   const [profileOpen, setProfileOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const profileRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const router = useRouter();
   const isMember = user?.role === "member";
   const mainNav = isMember ? memberNav : adminMainNav;
-  const mgmtNav = isMember ? [] : adminMgmtNav;
+  const mgmtNav = useMemo(() => (isMember ? [] : adminMgmtNav), [isMember]);
   const currentRoute = usePathname();
+
+  const searching = query.trim().length > 0;
+  /** Flat page index for the search box, rebuilt only when the role's nav changes. */
+  const searchEntries = useMemo(() => flattenNav([mainNav, mgmtNav]), [mainNav, mgmtNav]);
+  const hits = useMemo(() => (searching ? searchNav(searchEntries, query) : []), [searching, searchEntries, query]);
+  /** True when nothing matched outright and the list is showing nearest pages. */
+  const fuzzy = hits.length > 0 && hits.every((hit) => hit.score <= 0);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -44,14 +55,17 @@ export default function Sidebar() {
     setExpandedSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const isSectionActive = (item: NavItem) =>
-    !!item.subItems?.some((sub) => currentRoute.startsWith(sub.href));
+  /** Opens a search result and restores the full nav behind it. */
+  const openHit = (href: string) => {
+    setQuery("");
+    router.push(href);
+  };
 
   return (
     <aside
       style={{
-        width: collapsed ? 56 : 200,
-        minWidth: collapsed ? 56 : 200,
+        width: collapsed ? 60 : 232,
+        minWidth: collapsed ? 60 : 232,
         background: "var(--bg-sidebar)",
         borderRight: "1px solid var(--border)",
         display: "flex",
@@ -65,15 +79,24 @@ export default function Sidebar() {
       }}
     >
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         style={{
-          padding: "16px 12px",
+          padding: "16px 14px",
           borderBottom: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          gap: 12,
           cursor: "pointer",
         }}
         onClick={() => setCollapsed(!collapsed)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setCollapsed(!collapsed);
+          }
+        }}
       >
         <div
           style={{
@@ -81,151 +104,81 @@ export default function Sidebar() {
             height: 40,
             minWidth: 40,
             background: "linear-gradient(135deg, var(--gold-dim), var(--gold))",
-            borderRadius: 8,
+            borderRadius: 10,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            boxShadow: "0 2px 8px var(--gold-tint)",
           }}
         >
-          <BookCopy size={20} color="#fff" />
+          <BookCopy size={21} color="#fff" />
         </div>
         {!collapsed && (
-          <div>
-            <div className="cinzel" style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)", lineHeight: 1.2 }}>
+          <div style={{ minWidth: 0 }}>
+            <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", lineHeight: 1.15, letterSpacing: 0.5 }}>
               KINGDOM
             </div>
-            <div className="cinzel" style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)", lineHeight: 1.2 }}>
+            <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", lineHeight: 1.15, letterSpacing: 0.5 }}>
               LIBRARY
             </div>
-            <div style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: 1 }}>
+            <div style={{ fontSize: 10, color: "var(--text-secondary)", letterSpacing: 1, marginTop: 2 }}>
               {isMember ? "MEMBER PORTAL" : "KCS SYSTEM"}
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "8px 0" }}>
-        {mainNav.map((item) => {
-          const sectionActive = item.subItems ? isSectionActive(item) : false;
-          const sectionExpanded = item.subItems ? expandedSections[item.label] || sectionActive : false;
-          return item.subItems && !collapsed ? (
-            <div key={item.label}>
-              <div
-                onClick={() => toggleSection(item.label)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "6px 12px",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  color: sectionExpanded || sectionActive ? "var(--gold)" : "var(--text-secondary)",
-                  borderLeft: sectionActive ? "2px solid var(--gold)" : "2px solid transparent",
-                  transition: "all 0.15s",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-                onMouseLeave={(e) => {
-                  if (!sectionExpanded && !sectionActive) e.currentTarget.style.color = "var(--text-secondary)";
-                }}
-              >
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>{item.icon}</span>
-                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
-                {sectionExpanded ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
-              </div>
-              {sectionExpanded && item.subItems.map((sub) => (
-                <a
-                  key={sub.label}
-                  href={sub.href}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "5px 12px 5px 32px",
-                    textDecoration: "none",
-                    fontSize: 11,
-                    color: currentRoute.startsWith(sub.href) ? "var(--gold)" : "var(--text-secondary)",
-                    background: currentRoute.startsWith(sub.href) ? "rgba(212,168,67,0.08)" : "transparent",
-                    transition: "all 0.15s",
-                  }}
-                  onMouseEnter={(e) => { if (!currentRoute.startsWith(sub.href)) e.currentTarget.style.color = "var(--text-primary)"; }}
-                  onMouseLeave={(e) => { if (!currentRoute.startsWith(sub.href)) e.currentTarget.style.color = "var(--text-secondary)"; }}
-                >
-                  {sub.icon}
-                  <span>{sub.label}</span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
-          );
-        })}
+      {!collapsed && (
+        <SidebarSearch
+          value={query}
+          onChange={setQuery}
+          resultCount={hits.length}
+          fuzzy={fuzzy}
+          onSubmit={() => hits[0] && openHit(hits[0].href)}
+        />
+      )}
 
-        {mgmtNav.length > 0 && !collapsed && (
-          <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
-            PLATFORM MANAGEMENT
-          </div>
+      <div className="kcs-sidebar-nav" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "8px 0 12px" }}>
+        {searching ? (
+          <SidebarSearchResults
+            hits={hits}
+            query={query}
+            currentRoute={currentRoute}
+            onNavigate={() => setQuery("")}
+            onOpenHit={openHit}
+          />
+        ) : (
+          <>
+            {mainNav.map((item) => (
+              <SidebarNavRow
+                key={item.label}
+                item={item}
+                collapsed={collapsed}
+                currentRoute={currentRoute}
+                expandedSections={expandedSections}
+                onToggle={toggleSection}
+              />
+            ))}
+
+            {mgmtNav.length > 0 && !collapsed && (
+              <div className="kcs-sidebar-label" style={{ padding: "16px 18px 6px" }}>
+                PLATFORM MANAGEMENT
+              </div>
+            )}
+            {mgmtNav.map((item) => (
+              <SidebarNavRow
+                key={item.label}
+                item={item}
+                collapsed={collapsed}
+                currentRoute={currentRoute}
+                expandedSections={expandedSections}
+                onToggle={toggleSection}
+              />
+            ))}
+
+            {!collapsed && <SidebarFooter />}
+          </>
         )}
-        {mgmtNav.map((item) => {
-          if (item.subItems && !collapsed) {
-            const sectionActive = isSectionActive(item)
-            const sectionExpanded = expandedSections[item.label] || sectionActive
-            return (
-              <div key={item.label}>
-                <div
-                  onClick={() => toggleSection(item.label)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "6px 12px",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    color: sectionExpanded || sectionActive ? "var(--gold)" : "var(--text-secondary)",
-                    borderLeft: sectionActive ? "2px solid var(--gold)" : "2px solid transparent",
-                    transition: "all 0.15s",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-                  onMouseLeave={(e) => {
-                    if (!sectionExpanded && !sectionActive) e.currentTarget.style.color = "var(--text-secondary)"
-                  }}
-                >
-                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 18 }}>{item.icon}</span>
-                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
-                  {sectionExpanded ? <ChevronDown size={12} /> : <ChevronLeft size={12} />}
-                </div>
-                {sectionExpanded && item.subItems.map((sub) => (
-                  <a
-                    key={sub.label}
-                    href={sub.href}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "5px 12px 5px 32px",
-                      textDecoration: "none",
-                      fontSize: 11,
-                      color: currentRoute.startsWith(sub.href) ? "var(--gold)" : "var(--text-secondary)",
-                      background: currentRoute.startsWith(sub.href) ? "rgba(212,168,67,0.08)" : "transparent",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => { if (!currentRoute.startsWith(sub.href)) e.currentTarget.style.color = "var(--text-primary)" }}
-                    onMouseLeave={(e) => { if (!currentRoute.startsWith(sub.href)) e.currentTarget.style.color = "var(--text-secondary)" }}
-                  >
-                    {sub.icon}
-                    <span>{sub.label}</span>
-                  </a>
-                ))}
-              </div>
-            )
-          }
-          return <SidebarNavItem key={item.label} item={item} collapsed={collapsed} currentRoute={currentRoute} />
-        })}
-
-        {!collapsed && <SidebarFooter />}
       </div>
 
       {/* User profile widget — pinned at bottom */}
@@ -233,7 +186,7 @@ export default function Sidebar() {
         ref={profileRef}
         style={{
           borderTop: "1px solid var(--border)",
-          padding: collapsed ? "10px 8px" : "10px 12px",
+          padding: collapsed ? "12px 10px" : "12px",
           position: "relative",
         }}
       >
@@ -244,39 +197,41 @@ export default function Sidebar() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            gap: 11,
             width: "100%",
-            background: "none",
+            background: profileOpen ? "var(--bg-hover)" : "none",
             border: "none",
             cursor: "pointer",
-            padding: 0,
-            borderRadius: 6,
+            padding: collapsed ? 0 : "6px 8px",
+            borderRadius: 9,
+            transition: "background 0.15s",
           }}
         >
           <div
             style={{
-              width: 32,
-              height: 32,
-              minWidth: 32,
+              width: 34,
+              height: 34,
+              minWidth: 34,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--purple), var(--teal))",
+              background: "linear-gradient(135deg, var(--gold-dim), var(--gold))",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
-              color: "white",
+              color: "#fff",
               flexShrink: 0,
+              boxShadow: "0 1px 4px var(--gold-tint)",
             }}
           >
             {user?.firstName?.[0] ?? "G"}
           </div>
           {!collapsed && (
             <div style={{ textAlign: "left", minWidth: 0, flex: 1, overflow: "hidden" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {user ? `${user.firstName} ${user.lastName}` : "Guest"}
               </div>
-              <div style={{ fontSize: 10, color: "var(--gold)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 11, color: "var(--gold)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {user?.roleName ?? "Not signed in"}
               </div>
             </div>
@@ -289,12 +244,12 @@ export default function Sidebar() {
             style={{
               position: "absolute",
               bottom: "calc(100% + 6px)",
-              left: collapsed ? 56 : 12,
-              minWidth: 200,
+              left: collapsed ? 60 : 12,
+              minWidth: 224,
               background: "var(--bg-card)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-sm)",
-              boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+              border: "1px solid var(--border-gold)",
+              borderRadius: 10,
+              boxShadow: "0 -6px 28px rgba(0,0,0,0.18)",
               overflow: "hidden",
               zIndex: 50,
             }}
@@ -304,14 +259,13 @@ export default function Sidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "10px 14px",
-                fontSize: 11,
-                color: "var(--text-muted)",
-                borderBottom: "1px solid var(--border)",
+                gap: 9,
+                padding: "12px 14px",
+                fontSize: 12,
+                color: "var(--text-secondary)",
               }}
             >
-              <Mail size={13} />
+              <Mail size={14} color="var(--gold)" />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user?.email ?? "—"}
               </span>
@@ -323,14 +277,15 @@ export default function Sidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "10px 14px",
-                fontSize: 12,
-                color: "var(--text-secondary)",
+                gap: 9,
+                padding: "11px 14px",
+                fontSize: 13,
+                color: "var(--text-primary)",
                 textDecoration: "none",
+                borderTop: "1px solid var(--border)",
               }}
             >
-              <User size={13} /> My Profile <ExternalLink size={11} style={{ marginLeft: "auto", opacity: 0.5 }} />
+              <User size={14} /> My Profile <ExternalLink size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />
             </a>
             {/* Logout */}
             <button
@@ -338,9 +293,9 @@ export default function Sidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "10px 14px",
-                fontSize: 12,
+                gap: 9,
+                padding: "11px 14px",
+                fontSize: 13,
                 color: "var(--red)",
                 background: "none",
                 border: "none",

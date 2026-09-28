@@ -9,6 +9,7 @@ import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_compone
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
 import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { usePdfViewMode } from '@/app/member/_shared/use-pdf-view-mode'
 import { useReadingProgress, startReading, markChapterRead, markBookComplete, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { NotesPanel } from './notes-panel'
 import { ChapterSearch } from './chapter-search'
@@ -17,6 +18,7 @@ import { LockedChapterPaywall } from './locked-chapter-paywall'
 import { ChapterNavFooter } from './chapter-nav-footer'
 import { SkippedChaptersCard } from './skipped-chapters-card'
 import { PdfReaderView } from './pdf-reader-view'
+import { PdfViewModeToggle } from './pdf-view-mode-toggle'
 import { ReaderHeader } from './reader-header'
 import { ChapterBody } from './chapter-body'
 
@@ -30,11 +32,13 @@ interface ReaderViewProps {
 }
 
 /**
- * Chapter reader: one chapter's body at a time with prev/next nav, from
- * the shared useReadableContent() store. Falls back to PdfReaderView for
- * a documentUrl-only resource with no authored chapters. Progress
- * auto-starts/resumes and tracks every chapter actually viewed, resuming
- * at `lastChapterId` unless the URL names one explicitly.
+ * Chapter reader: renders a TEXT book's authored chapters in the same three
+ * view modes the PDF reader offers — a continuous scroll, a single chapter,
+ * or a two-chapter facing-page spread — so reading a text book feels like
+ * reading an uploaded PDF rather than a different, plainer UI. Falls back to
+ * PdfReaderView for a documentUrl-only resource with no authored chapters.
+ * Progress auto-starts/resumes and tracks every chapter actually visible,
+ * resuming at `lastChapterId` unless the URL names one explicitly.
  *
  * Creating a NEW highlight by selecting body text is no longer offered —
  * ChapterBody now renders real markdown (headings/bold/quotes) via
@@ -50,6 +54,9 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
   const { data: resources, loading, error } = useResources()
   const content = useReadableContent()
   const progressEntries = useReadingProgress(user?.id)
+  // Same hook/localStorage key the PDF reader uses, so one reading
+  // preference follows the member across both kinds of book.
+  const [viewMode, setViewMode] = usePdfViewMode()
 
   const resource = resources.find((r) => r.id === resourceId)
   const readable = content[resourceId]
@@ -60,6 +67,19 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
   const [chapterIndex, setChapterIndex] = useState(startIndex)
   const [buyAction, setBuyAction] = useState<BuyAction>(null)
 
+  // Which chapters are on screen right now, by view mode. Scroll shows the
+  // whole book at once; spread shows a facing-page pair and therefore steps
+  // two at a time; single shows just the current one.
+  const visibleIndexes =
+    viewMode === 'scroll'
+      ? chapters.map((_, i) => i)
+      : viewMode === 'spread'
+        ? [chapterIndex, chapterIndex + 1].filter((i) => i < chapters.length)
+        : [chapterIndex]
+  // Only the first locked chapter in view gets the full buy/borrow paywall —
+  // a spread showing two locked chapters would otherwise stack two of them.
+  const firstLockedVisible = visibleIndexes.find((i) => chapters[i]?.locked)
+
   useEffect(() => {
     if (chapters.length === 0) return
     startReading(resourceId)
@@ -67,16 +87,17 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
 
   useEffect(() => {
     if (chapters.length === 0) return
-    const current = chapters[chapterIndex]
-    // A locked chapter renders LockedChapterPaywall, not real content — the
-    // member never actually read anything, so it must not count toward
-    // reading progress. Without this guard, simply landing on a paywalled
-    // chapter (e.g. the free preview's only/last chapter) marked it
-    // complete, which could show 100% progress while 0% of the book had
-    // ever actually been displayed.
-    if (current && !current.locked) markChapterRead(resourceId, current.id)
+    // Marks every chapter actually on screen, not just the anchor one, so
+    // scrolling or reading a spread counts what the member can actually see.
+    // Locked chapters are skipped — they render LockedChapterPaywall, not
+    // real content, so landing on one must not count as having read it
+    // (otherwise 0% of the book read could show as 100% progress).
+    for (const i of visibleIndexes) {
+      const c = chapters[i]
+      if (c && !c.locked) markChapterRead(resourceId, c.id)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resourceId, chapterIndex, chapters.length])
+  }, [resourceId, viewMode, chapterIndex, chapters.length])
 
   const backLink = (
     <Link href={backHref} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
@@ -135,11 +156,51 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
     : []
 
   const goToChapter = (index: number) => {
-    setChapterIndex(index)
+    const target = Math.max(0, Math.min(chapters.length - 1, index))
+    // In scroll mode every chapter is already mounted, so switching to
+    // single/spread anchors on the chosen one; scrolling to it works in
+    // every mode because each chapter card carries a stable id.
+    setChapterIndex(target)
+    requestAnimationFrame(() => {
+      document.getElementById(`reader-chapter-${chapters[target]?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
+  const renderChapter = (index: number) => {
+    const c = chapters[index]
+    if (!c) return null
+    return (
+      <div
+        key={c.id}
+        id={`reader-chapter-${c.id}`}
+        style={{ padding: '28px 0', scrollMarginTop: 16, borderBottom: '1px solid var(--border)' }}
+      >
+
+        <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)', marginBottom: 18 }}>{c.title}</h2>
+        {c.locked ? (
+          index === firstLockedVisible ? (
+            <LockedChapterPaywall bookTitle={resource.title} priceRwf={resource.price} onBuyAction={setBuyAction} />
+          ) : (
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+              This chapter is locked. Use the paywall alongside to buy or borrow the book.
+            </p>
+          )
+        ) : (
+          <ChapterBody body={c.body ?? ''} />
+        )}
+        <NotesPanel resourceId={resourceId} chapterId={c.id} />
+      </div>
+    )
+  }
+
+  const isSpread = viewMode === 'spread'
+  const isScroll = viewMode === 'scroll'
+  // A spread needs room for two columns; single/scroll stay a readable
+  // measure, matching the PDF reader's own 1400px spread width.
+  const shellWidth = isSpread ? 1400 : 800
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: shellWidth, margin: '0 auto' }}>
       {backLink}
 
       <ReaderHeader
@@ -149,29 +210,44 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
         progressPercent={existingProgress ? getReadingProgressPercent(existingProgress) : undefined}
       />
 
-      <ChapterSearch chapters={chapters} onJump={goToChapter} />
-
-      <div className="card" style={{ padding: 28, background: 'var(--bg-section)' }}>
-        <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)', marginBottom: 18 }}>{chapter.title}</h2>
-        {chapter.locked ? (
-          <LockedChapterPaywall bookTitle={resource.title} priceRwf={resource.price} onBuyAction={setBuyAction} />
-        ) : (
-          <ChapterBody body={chapter.body ?? ''} />
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          {isScroll
+            ? `All ${chapters.length} chapter${chapters.length === 1 ? '' : 's'}`
+            : `Chapter ${chapterIndex + 1} of ${chapters.length}${isSpread && visibleIndexes.length === 1 ? ' (last spread)' : ''}`}
+        </p>
+        <PdfViewModeToggle mode={viewMode} onChange={setViewMode} />
       </div>
 
-      <NotesPanel resourceId={resourceId} chapterId={chapter.id} />
+      <ChapterSearch chapters={chapters} onJump={goToChapter} />
 
-      <ChapterNavFooter
-        chapterTitle={chapter.title}
-        hasPrev={hasPrev}
-        hasNext={hasNext}
-        isLastChapter={isLastChapter}
-        isCompleted={isCompleted}
-        onPrev={() => goToChapter(Math.max(0, chapterIndex - 1))}
-        onNext={() => goToChapter(Math.min(chapters.length - 1, chapterIndex + 1))}
-        onMarkComplete={() => markBookComplete(resourceId, chapters.map((c) => c.id))}
-      />
+      {isScroll ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {visibleIndexes.map(renderChapter)}
+        </div>
+      ) : isSpread ? (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 340px', minWidth: 0 }}>{renderChapter(visibleIndexes[0])}</div>
+          {visibleIndexes.length > 1 && (
+            <div style={{ flex: '1 1 340px', minWidth: 0 }}>{renderChapter(visibleIndexes[1])}</div>
+          )}
+        </div>
+      ) : (
+        renderChapter(chapterIndex)
+      )}
+
+      {!isScroll && (
+        <ChapterNavFooter
+          chapterTitle={chapter.title}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
+          isLastChapter={isLastChapter}
+          isCompleted={isCompleted}
+          onPrev={() => goToChapter(chapterIndex - (isSpread ? 2 : 1))}
+          onNext={() => goToChapter(chapterIndex + (isSpread ? 2 : 1))}
+          onMarkComplete={() => markBookComplete(resourceId, chapters.map((c) => c.id))}
+        />
+      )}
 
       {unreadChapters.length > 0 && (
         <SkippedChaptersCard

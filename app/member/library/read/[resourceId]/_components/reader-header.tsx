@@ -16,7 +16,7 @@ export function ReaderHeader({ title, chapterIndex, totalChapters, progressPerce
         Chapter {chapterIndex + 1} of {totalChapters}
         {progressPercent !== undefined && ` — ${progressPercent}% complete`}
       </p>
-      <div style={{ height: 4, borderRadius: 2, background: 'var(--bg-section)', marginTop: 6, overflow: 'hidden' }}>
+      <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', marginTop: 6, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${progressPercent ?? 0}%`, background: 'var(--gold)', transition: 'width 0.2s' }} />
       </div>
     </div>

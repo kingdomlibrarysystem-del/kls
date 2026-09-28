@@ -20,27 +20,43 @@ function triggerGoogleTranslate(lang: string) {
 export function SidebarFooter() {
   return (
     <>
-      <div style={{ padding: "12px 12px 4px", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>
+      <div className="kcs-sidebar-label" style={{ padding: "14px 18px 6px" }}>
         LANGUAGES
       </div>
       {langList.map((lang) => (
         <div
           key={lang.value}
+          role="button"
+          tabIndex={0}
           onClick={() => triggerGoogleTranslate(lang.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              triggerGoogleTranslate(lang.value);
+            }
+          }}
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            padding: "5px 12px",
+            gap: 10,
+            margin: "1px 8px",
+            padding: "7px 10px",
+            borderRadius: 7,
             cursor: "pointer",
             color: "var(--text-secondary)",
-            fontSize: 12,
-            transition: "color 0.15s",
+            fontSize: 12.5,
+            transition: "background 0.15s, color 0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "var(--gold)";
+            e.currentTarget.style.background = "var(--bg-hover)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "var(--text-secondary)";
+            e.currentTarget.style.background = "transparent";
+          }}
         >
-          <span style={{ fontSize: 14 }}>{lang.flag}</span>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>{lang.flag}</span>
           {lang.label}
         </div>
       ))}

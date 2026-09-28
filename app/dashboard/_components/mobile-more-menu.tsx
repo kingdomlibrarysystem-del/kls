@@ -34,7 +34,7 @@ export function MobileMoreMenu({ open, onClose, isMember, currentRoute }: Mobile
     <Modal open={open} onClose={onClose} title="All Sections" size="md">
       <nav aria-label="All dashboard sections" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {mgmtLinks.length > 0 && (
-          <p style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5, padding: "4px 4px 6px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: 1.2, padding: "4px 4px 6px" }}>
             MAIN
           </p>
         )}
@@ -44,7 +44,7 @@ export function MobileMoreMenu({ open, onClose, isMember, currentRoute }: Mobile
 
         {mgmtLinks.length > 0 && (
           <>
-            <p style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5, padding: "14px 4px 6px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: 1.2, padding: "14px 4px 6px" }}>
               PLATFORM MANAGEMENT
             </p>
             {mgmtLinks.map((link) => (
@@ -77,9 +77,9 @@ function MoreMenuLink({
         padding: "10px 8px",
         borderRadius: 6,
         textDecoration: "none",
-        fontSize: 13,
+        fontSize: 13.5,
         color: active ? "var(--gold)" : "var(--text-primary)",
-        background: active ? "rgba(212,168,67,0.1)" : "transparent",
+        background: active ? "var(--gold-tint)" : "transparent",
       }}
     >
       {link.icon}

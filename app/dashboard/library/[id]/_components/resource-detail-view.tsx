@@ -13,6 +13,7 @@ import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { ResourceFormModal } from '../../_components/resource-form-modal'
 import { type Resource } from '../../_components/resources-data'
 import { updateResource, archiveResource } from '../../_components/use-resources'
+import { realChaptersFrom, syncResourceChapters } from '../../_components/sync-resource-chapters'
 import { ResourceCoverGallery } from './resource-cover-gallery'
 import { ResourceDetailRows, ResourceMediaLinks } from './resource-detail-rows'
 import type { ResourceFormData } from '../../_components/resource-form-schema'
@@ -66,9 +67,11 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     if (!editingId) return
     try {
-      // chapters are client-only (see resource-form-media-files.tsx) — book
-      // content is authored through the Book Inventory table's form.
-      const { coverImage, documentUrl, audioUrl, videoUrl, chapters: _chapters, ...rest } = formData
+      // `chapters` is client-only (see resource-form-media-files.tsx) — it is
+      // not a Resource field, so it is split out of the PATCH body and
+      // reconciled against the real Chapter rows below instead.
+      const { coverImage, documentUrl, audioUrl, videoUrl, chapters, ...rest } = formData
+      const realChapters = realChaptersFrom({ mediaType: formData.mediaType, chapters })
       const updated = await updateResource(editingId, {
         ...rest,
         coverImages: [coverImage],
@@ -76,6 +79,11 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
         audioUrl: audioUrl || undefined,
         videoUrl: videoUrl || undefined,
       })
+      // Previously the chapters were destructured away and never saved, so
+      // authoring a TEXT book from THIS page's Edit button silently discarded
+      // the whole book — the form even promises "edited chapters are updated,
+      // new ones are added, and removed ones are deleted".
+      await syncResourceChapters(editingId, realChapters)
       setResource(updated)
       setEditing(false)
       showToast(`Updated "${formData.title}".`)

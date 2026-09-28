@@ -45,6 +45,8 @@ export interface Resource {
   /** Denormalized from real Review rows (see /api/reviews) — 0 when reviewCount is 0, not a placeholder. */
   avgRating: number
   reviewCount: number
+  /** How many real Chapter rows this resource has — the readable content of a TEXT book (see /api/chapters). A resource is readable online when this is > 0 OR documentUrl is set, which is what gates the Read button. */
+  chapterCount: number
 }
 
 export const statusConfig: Record<Resource['status'], { label: string; cls: string }> = {
@@ -64,4 +66,19 @@ export const mediaTypeLabels: Record<MediaType, string> = {
   DOCUMENT: 'Document',
   TEXT: 'Text',
   COMBINATION: 'Combination',
+}
+
+/**
+ * Whether a resource has anything at all to read online — an uploaded PDF
+ * (documentUrl) or real authored chapters (chapterCount). This is the single
+ * definition of "readable" shared by the admin inventory table, the public
+ * publication page and the member detail pages, so a Read button can never
+ * appear for a book the reader would then refuse to open.
+ *
+ * Both branches matter: gating on documentUrl alone hid Read on every TEXT
+ * book (chapters, no PDF), and gating on chapterCount alone would have hidden
+ * it on every uploaded-PDF book, which is the majority of the catalog.
+ */
+export function isResourceReadable(r: Pick<Resource, 'documentUrl' | 'chapterCount'>): boolean {
+  return !!r.documentUrl || r.chapterCount > 0
 }

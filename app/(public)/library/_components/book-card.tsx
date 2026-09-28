@@ -3,13 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, BookMarked, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
+import { ChevronDown, ChevronUp, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
-import { bindingTypeLabels, mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { mediaTypeLabels, isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
-import { getCategoryName } from '@/lib/kcs-taxonomy'
 
 /**
  * The identity portion (cover, title, price, badges) is wrapped in a real
@@ -25,13 +23,11 @@ import { getCategoryName } from '@/lib/kcs-taxonomy'
  * from the Cart page.
  */
 export function BookCard({ book }: { book: Resource }) {
-  const [showSummary, setShowSummary] = useState(false)
   const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   const { user, isAuthenticated } = useAuth()
-  const readableContent = useReadableContent()
   useCart(user?.id)
-  const isReadable = !!readableContent[book.id]
+  const isReadable = isResourceReadable(book)
   const outOfStock = book.availableQty === 0
   const detailHref = `/library/${book.id}`
   const loginHref = `/auth/login?redirect=${encodeURIComponent(detailHref)}`
@@ -62,7 +58,16 @@ export function BookCard({ book }: { book: Resource }) {
               '0 1px 0 1px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.15), 0 8px 16px -4px rgba(0,0,0,0.25), inset -3px 0 6px rgba(0,0,0,0.12)',
           }}
         >
-          <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 40vw, 25vw" />
+          {book.coverImages[0] ? (
+            <Image src={book.coverImages[0]} alt={book.title} fill className="object-cover" sizes="(max-width: 640px) 90vw, (max-width: 1024px) 40vw, 25vw" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-w-100">
+              <div className="text-center px-4">
+                <Package size={28} className="mx-auto text-w-400 mb-2" />
+                <span className="font-cinzel text-xs font-semibold text-w-600 tracking-wide uppercase">Kingdom Library</span>
+              </div>
+            </div>
+          )}
           {/* Page-edge stripe on the right — the visual cue that reads as "this is a bound book," not a flat poster. */}
           <div
             className="absolute top-0 right-0 h-full w-[6px]"
@@ -85,8 +90,6 @@ export function BookCard({ book }: { book: Resource }) {
         </p>
         <p className="font-lato text-xs text-w-600">{book.borrowPrice > 0 ? `${book.borrowPrice.toLocaleString('en-RW')} RWF` : 'Free'} to borrow · {book.borrowDurationDays}d</p>
         <div className="flex flex-wrap gap-1.5">
-          <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{getCategoryName(book.categoryId)}</span>
-          <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
           <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><Film size={10} /> {mediaTypeLabels[book.mediaType]}</span>
         </div>
         <div className="flex gap-3 text-xs font-lato text-w-700 items-center">
@@ -94,16 +97,6 @@ export function BookCard({ book }: { book: Resource }) {
           <span>{book.language}</span><span>·</span>
           <span className={`flex items-center gap-1 ${outOfStock ? 'text-red-700 font-semibold' : ''}`}><Package size={11} /> {book.availableQty} available</span>
         </div>
-        <button
-          onClick={() => setShowSummary((v) => !v)}
-          className="flex items-center gap-1 font-lato text-xs text-w-600 hover:text-w-950 transition-colors w-fit"
-        >
-          {showSummary ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          {showSummary ? 'Hide summary' : 'View summary'}
-        </button>
-        {showSummary && (
-          <p className="font-lato text-xs text-w-700 leading-relaxed border-t border-w-300 pt-2">{book.description}</p>
-        )}
         <div className="flex flex-col gap-2 mt-auto pt-3">
           {isReadable && (
             isAuthenticated ? (

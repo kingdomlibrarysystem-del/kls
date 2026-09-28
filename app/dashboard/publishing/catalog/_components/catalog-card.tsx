@@ -18,12 +18,19 @@ export function CatalogCard({ book }: CatalogCardProps) {
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col group">
       <div className="relative w-full h-56 bg-w-200 overflow-hidden">
-        <Image
-          src={book.coverImages[0]}
-          alt={book.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {book.coverImages[0] ? (
+          <Image
+            src={book.coverImages[0]}
+            alt={book.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+            <Package size={28} className="text-w-400" />
+            <span className="font-lato text-[10px] font-semibold text-w-500 uppercase tracking-wide">Kingdom Library</span>
+          </div>
+        )}
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
           <span className="px-2 py-0.5 bg-w-950/80 text-white rounded text-xs font-lato font-semibold">
             {languageBadgeLabels[book.language]}
