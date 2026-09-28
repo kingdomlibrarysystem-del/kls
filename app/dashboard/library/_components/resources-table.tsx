@@ -8,6 +8,7 @@ import {
   statusConfig,
   bindingTypeLabels,
   mediaTypeLabels,
+  isResourceReadable,
   type Resource,
 } from "./resources-data";
 
@@ -163,7 +164,7 @@ export function ResourcesTable({
       className: "text-right",
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5">
-          {r.documentUrl && (
+          {isResourceReadable(r) && (
             <Link
               href={`/dashboard/library/read/${r.id}`}
               aria-label={`Read ${r.title}`}
@@ -172,7 +173,7 @@ export function ResourcesTable({
               <BookOpenCheck size={12} /> Read
             </Link>
           )}
-          {r.documentUrl && r.price > 0 && (
+          {isResourceReadable(r) && r.price > 0 && (
             <Link
               href={`/dashboard/library/read/${r.id}?preview=1`}
               aria-label={`Preview ${r.title} as a member would see it`}

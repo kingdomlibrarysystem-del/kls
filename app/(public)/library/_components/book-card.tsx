@@ -3,13 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, BookMarked, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
+import { ChevronDown, ChevronUp, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
-import { bindingTypeLabels, mediaTypeLabels, type Resource } from '@/app/dashboard/library/_components/resources-data'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import { mediaTypeLabels, isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
-import { getCategoryName } from '@/lib/kcs-taxonomy'
 
 /**
  * The identity portion (cover, title, price, badges) is wrapped in a real
@@ -29,9 +27,8 @@ export function BookCard({ book }: { book: Resource }) {
   const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   const { user, isAuthenticated } = useAuth()
-  const readableContent = useReadableContent()
   useCart(user?.id)
-  const isReadable = !!readableContent[book.id]
+  const isReadable = isResourceReadable(book)
   const outOfStock = book.availableQty === 0
   const detailHref = `/library/${book.id}`
   const loginHref = `/auth/login?redirect=${encodeURIComponent(detailHref)}`
@@ -94,8 +91,6 @@ export function BookCard({ book }: { book: Resource }) {
         </p>
         <p className="font-lato text-xs text-w-600">{book.borrowPrice > 0 ? `${book.borrowPrice.toLocaleString('en-RW')} RWF` : 'Free'} to borrow · {book.borrowDurationDays}d</p>
         <div className="flex flex-wrap gap-1.5">
-          <span className="px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato">{getCategoryName(book.categoryId)}</span>
-          <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
           <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><Film size={10} /> {mediaTypeLabels[book.mediaType]}</span>
         </div>
         <div className="flex gap-3 text-xs font-lato text-w-700 items-center">

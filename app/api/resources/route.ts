@@ -46,7 +46,7 @@ function serializeResource(r: {
   videoUrl: string | null
   avgRating: number
   reviewCount: number
-}) {
+}, chapterCount: number) {
   return {
     id: r.id,
     title: r.title,
@@ -80,6 +80,14 @@ function serializeResource(r: {
     videoUrl: r.videoUrl ?? undefined,
     avgRating: r.avgRating,
     reviewCount: r.reviewCount,
+    // How many real Chapter rows this resource has. A TEXT book's readable
+    // content lives entirely in these rows, so a resource with chapters but
+    // no documentUrl is just as readable as an uploaded PDF — the admin
+    // inventory table and the public book pages gate their Read button on
+    // this. Passed in rather than read off a Prisma `_count` include so the
+    // count comes from one grouped aggregate for the whole page instead of
+    // per-row, and so it works against a not-yet-regenerated Prisma client.
+    chapterCount,
   }
 }
 
@@ -105,7 +113,7 @@ export async function GET(request: NextRequest) {
     }),
   }
 
-  const [totalItems, resources] = await Promise.all([
+  const [totalItems, resources, chapterCounts] = await Promise.all([
     prisma.resource.count({ where }),
     prisma.resource.findMany({
       where,
@@ -113,12 +121,15 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
+    prisma.chapter.groupBy({ by: ['resourceId'], _count: { _all: true } }),
   ])
+
+  const chapterCountByResource = new Map(chapterCounts.map((c) => [c.resourceId, c._count._all]))
 
   const totalPages = Math.ceil(totalItems / pageSize)
 
   return NextResponse.json({
-    data: resources.map(serializeResource),
+    data: resources.map((r) => serializeResource(r, chapterCountByResource.get(r.id) ?? 0)),
     message: 'Resources fetched successfully',
     code: 'success',
     status: 200,
@@ -206,6 +217,6 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
 
   broadcastToSubscribers({ type: 'new_resource', title: resource.title, author: resource.author, id: resource.id }).catch(() => {})
 
-  return NextResponse.json({ data: serializeResource(resource), message: 'Resource created successfully', code: 'success', status: 201 }, { status: 201 })
+  return NextResponse.json({ data: serializeResource(resource, 0), message: 'Resource created successfully', code: 'success', status: 201 }, { status: 201 })
 })
 

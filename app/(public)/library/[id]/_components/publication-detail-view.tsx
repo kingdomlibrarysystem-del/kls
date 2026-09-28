@@ -3,17 +3,16 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookX, CheckCircle2, XCircle, LogIn, BookMarked, Film, Package, BookOpenCheck, AlertTriangle, ShoppingCart, Check } from 'lucide-react'
+import { BookX, CheckCircle2, XCircle, LogIn, Film, Package, BookOpenCheck, AlertTriangle, ShoppingCart, Check } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import { mediaTypeLabels, isResourceReadable } from '@/app/dashboard/library/_components/resources-data'
 import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
 import { usePublicPublication } from '@/app/dashboard/publishing/_shared/use-publications'
 import { usePublicResource } from '@/app/dashboard/library/_components/use-resources'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 
 interface PublicationDetailViewProps {
@@ -35,7 +34,6 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { data: singleResource, loading: singleLoading, error: singleError } = usePublicResource(id)
   const { data: publication, loading: publicationsLoading, error: publicationsError } = usePublicPublication(id)
-  const readableContent = useReadableContent()
   useCart(user?.id)
 
   const loading = resourcesLoading || singleLoading || publicationsLoading
@@ -62,7 +60,12 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         language: publication.language,
       }
     : undefined
-  const isReadable = !!readableContent[id]
+  // A book is readable when it has either an uploaded PDF (documentUrl) or
+  // real authored chapters (chapterCount) — checking only the chapter store
+  // hid the Read button on every uploaded-PDF book, while checking only
+  // documentUrl hid it on every TEXT book. ReaderView routes to the right
+  // reader for whichever one is present.
+  const isReadable = !!resource && isResourceReadable(resource)
 
   if (loading) {
     return (
@@ -101,7 +104,6 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   const author = resource?.author ?? catalogBook!.contributor
   const coverImage = resource?.coverImages?.[0] ?? catalogBook?.coverImages?.[0] ?? ''
   const description = resource?.description ?? catalogBook?.description
-  const bindingType = resource?.bindingType ?? catalogBook!.bindingType
   const mediaType = resource?.mediaType ?? catalogBook!.mediaType
   const price = resource?.price ?? catalogBook!.price
   const borrowPrice = resource?.borrowPrice ?? catalogBook!.borrowPrice
@@ -158,7 +160,6 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
               {available ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
               {available ? 'Available' : 'Unavailable'}
             </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold"><BookMarked size={12} /> {bindingTypeLabels[bindingType]}</span>
             <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold"><Film size={12} /> {mediaTypeLabels[mediaType]}</span>
           </div>
 

@@ -12,6 +12,7 @@ import { useResources, addResource, updateResource, archiveResource } from './us
 import { ResourcesStats } from './resources-stats'
 import { ResourcesTable } from './resources-table'
 import { ResourceFormModal } from './resource-form-modal'
+import { realChaptersFrom, syncResourceChapters, createResourceChapters } from './sync-resource-chapters'
 import type { ResourceFormData } from './resource-form-schema'
 
 /**
@@ -56,42 +57,13 @@ export function LibraryView() {
         audioUrl: audioUrl || undefined,
         videoUrl: videoUrl || undefined,
       }
-      // A TEXT book's readable content lives in Chapter rows. Empty
-      // entries (no title AND no content) are simply skipped — an admin
-      // may have clicked "Add Chapter" without typing anything.
-      const realChapters = formData.mediaType === 'TEXT'
-        ? chapters.filter((c) => c.title.trim() || c.content.trim())
-        : []
+      // A TEXT book's readable content lives in Chapter rows.
+      const realChapters = realChaptersFrom({ mediaType: formData.mediaType, chapters })
 
       if (editingId) {
         await updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })
-// Reconcile the typed book against the real chapter rows: update
-        // matching positions in place, create any entries beyond them, and
-        // delete rows that were removed from the editor. The `/` route
-        // auto-assigns `order` so appended chapters land in sequence.
-        if (realChapters.length > 0) {
-          const chaptersRes = await fetch(`/api/chapters?resourceId=${editingId}`)
-          const chaptersJson = await chaptersRes.json()
-          const existingChapters: { id: string }[] = chaptersJson.data?.chapters ?? []
-          for (let i = 0; i < Math.min(existingChapters.length, realChapters.length); i++) {
-            await fetch(`/api/chapters/${existingChapters[i].id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title: realChapters[i].title.trim(), body: realChapters[i].content }),
-            })
-          }
-          for (let i = existingChapters.length; i < realChapters.length; i++) {
-            await fetch('/api/chapters', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ resourceId: editingId, title: realChapters[i].title.trim(), body: realChapters[i].content }),
-            })
-          }
-          for (let i = realChapters.length; i < existingChapters.length; i++) {
-            await fetch(`/api/chapters/${existingChapters[i].id}`, { method: 'DELETE' })
-          }
-        }
-        showToast(`Updated "${formData.title}".`)
+        await syncResourceChapters(editingId, realChapters)
+        showToast(`Updated "${formData.title}" with ${realChapters.length} chapter${realChapters.length === 1 ? '' : 's'}.`)
       } else {
         const created = await addResource({
           ...rest,
@@ -108,18 +80,19 @@ export function LibraryView() {
         // `order` assignment (next after this resource's last) lands in the
         // order the admin typed them — giving the book genuine readable
         // content from creation without a separate authoring step.
-        for (const chapter of realChapters) {
-          await fetch('/api/chapters', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ resourceId: created.id, title: chapter.title.trim(), body: chapter.content }),
-          })
-        }
-        showToast(`Added "${formData.title}".`)
+        //
+        // The Resource already exists by this point, so a chapter failure here
+        // would otherwise leave an orphaned, unreadable book AND still report
+        // success. The error is caught below and surfaced instead.
+        await createResourceChapters(created.id, realChapters)
+        showToast(`Added "${formData.title}" with ${realChapters.length} chapter${realChapters.length === 1 ? '' : 's'}.`)
       }
       setFormOpen(false)
       setEditing(null)
     } catch (err) {
+      // Keep the modal OPEN on failure so the admin's typed chapters are not
+      // lost from the form — they can fix the problem and save again rather
+      // than retyping a whole book.
       showToast(err instanceof Error ? err.message : 'Could not save this resource — please try again.')
     }
   }

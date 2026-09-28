@@ -55,6 +55,23 @@ function loadReadableContent(): Promise<void> {
   return fetchPromise
 }
 
+/**
+ * Forces a re-fetch of the chapter catalog and notifies every subscriber.
+ *
+ * The store otherwise fetches exactly once per browser session and is never
+ * invalidated, which is right for members browsing a finished catalog but
+ * breaks the admin authoring loop: an admin who adds chapters to a book and
+ * then opens the reader in the same session kept seeing the pre-save
+ * snapshot (an empty chapter list, so the reader reported the book as "not
+ * available to read online yet"). Called after a chapter save/authoring
+ * operation so the reader reflects what was just written without needing a
+ * hard reload.
+ */
+export async function refreshReadableContent(): Promise<void> {
+  hasFetched = false
+  await loadReadableContent()
+}
+
 /** Whether a resource has any readable chapter content at all. */
 export function isReadable(resourceId: string): boolean {
   return !!cache[resourceId]?.chapters.length
