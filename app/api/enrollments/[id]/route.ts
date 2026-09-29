@@ -4,39 +4,7 @@ import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-
-function serializeEnrollment(e: {
-  id: string
-  userId: string
-  user: { name: string | null; firstName: string | null; lastName: string | null }
-  courseId: string
-  course: { title: string }
-  status: string
-  enrolledAt: Date
-  completedLessonIds: string[]
-  totalLessons: number
-  assessmentPassed: boolean
-  paid: boolean
-}) {
-  const memberName = e.user.name ?? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim()
-  const progress = e.totalLessons > 0 ? Math.round((e.completedLessonIds.length / e.totalLessons) * 100) : 0
-  return {
-    id: e.id,
-    userId: e.userId,
-    member: memberName,
-    courseId: e.courseId,
-    courseTitle: e.course.title,
-    enrolledAt: e.enrolledAt.toISOString().split('T')[0],
-    status: e.status,
-    progress,
-    completedLessonIds: e.completedLessonIds,
-    totalLessons: e.totalLessons,
-    assessmentPassed: e.assessmentPassed,
-    paid: e.paid,
-  }
-}
-
-const INCLUDE = { user: { select: { name: true, firstName: true, lastName: true } }, course: { select: { title: true } } } as const
+import { serializeEnrollment, INCLUDE } from '@/lib/data/enrollments'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

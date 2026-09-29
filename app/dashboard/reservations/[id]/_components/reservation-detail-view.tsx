@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { User, Mail, BookOpen, Calendar, Layers, Clock, ArrowLeft, Bell, ArrowRightCircle, XCircle, AlertTriangle, CalendarClock } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { statusConfig, type Reservation } from '../../_components/reservations-data'
@@ -12,7 +11,8 @@ import { QueueBadge, ClaimCountdown } from '../../_components/reservation-helper
 import { notifyReservation, convertReservationToBorrow, cancelReservation, expireReservation } from '../../_components/use-reservations-admin'
 
 interface ReservationDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing). */
+  initialReservation: Reservation
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
@@ -20,48 +20,33 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-24 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /**
  * Real details page for a single reservation, replacing the modal that
- * used to open from the Reservations table's "View" button. Fetches
- * directly from /api/reservations/:id, and keeps the same admin
+ * used to open from the Reservations table's "View" button. The record
+ * arrives from the server page; after an action it re-reads
+ * /api/reservations/:id so queue/status changes show up. It keeps the same admin
  * notify/convert-to-borrow/cancel/expire actions the list page exposed,
  * since those are workflow mutations rather than the "view details"
  * modal being replaced.
  */
-export function ReservationDetailView({ id }: ReservationDetailViewProps) {
+export function ReservationDetailView({ initialReservation }: ReservationDetailViewProps) {
+  const id = initialReservation.id
   const router = useRouter()
-  const [reservation, setReservation] = useState<Reservation | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [reservation, setReservation] = useState<Reservation | null>(initialReservation)
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState('')
 
-  const load = (cancelledRef?: { current: boolean }) => {
-    setLoading(true)
-    return fetch(`/api/reservations/${id}`)
+  /** Re-reads the reservation after a workflow action (the initial copy comes from the server). Keeps the last known copy if the refresh fails. */
+  const load = () =>
+    fetch(`/api/reservations/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (cancelledRef?.current) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Reservation not found')
-          return
-        }
-        setReservation(json.data)
-      })
-      .catch(() => { if (!cancelledRef?.current) setError('Failed to load reservation') })
-      .finally(() => { if (!cancelledRef?.current) setLoading(false) })
-  }
-
-  useEffect(() => {
-    const cancelledRef = { current: false }
-    load(cancelledRef)
-    return () => { cancelledRef.current = true }
-  }, [id])
+      .then((json) => { if (json.code === 'success' && json.data) setReservation(json.data) })
+      .catch(() => {})
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
@@ -78,23 +63,11 @@ export function ReservationDetailView({ id }: ReservationDetailViewProps) {
     }
   }
 
-  if (loading) {
+  if (!reservation) {
     return (
       <div>
         <PageHeader title="Reservation Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !reservation) {
-    return (
-      <div>
-        <PageHeader title="Reservation Details" />
-        <EmptyState icon={CalendarClock} title="Reservation not found" description={error || 'This reservation does not exist or was removed.'} />
+        <EmptyState icon={CalendarClock} title="Reservation not found" description="This reservation does not exist or was removed." />
         <div className="mt-4">
           <UniversalButton href="/dashboard/reservations" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Reservations

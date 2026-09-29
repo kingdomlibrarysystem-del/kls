@@ -1,50 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Users, ArrowLeft, Pencil, Trash2, ShieldOff } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { RoleEditModal } from '../../_components/role-edit-modal'
 import { permissionLabels, type Role } from '../../_components/roles-data'
 
 interface RoleDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (404s when missing) — no fetch on mount. */
+  initialRole: Role
 }
 
 /**
  * Real details page for a single role, replacing the modal that used to
- * open from the Roles grid's "View" button. Fetches directly from
- * /api/roles/:id so this page also works when linked to directly,
- * without the role list being loaded first.
+ * open from the Roles grid's "View" button. The role is loaded on the
+ * server by page.tsx and passed in, so it renders immediately.
  */
-export function RoleDetailView({ id }: RoleDetailViewProps) {
+export function RoleDetailView({ initialRole }: RoleDetailViewProps) {
   const router = useRouter()
-  const [role, setRole] = useState<Role | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [role, setRole] = useState<Role | null>(initialRole)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/roles/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Role not found')
-          return
-        }
-        setRole(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load role') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
 
   const handleTogglePerm = (perm: string) => {
     if (!role) return
@@ -88,25 +67,10 @@ export function RoleDetailView({ id }: RoleDetailViewProps) {
     }
   }
 
-  if (loading) {
+  if (!role) {
     return (
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <Shield size={22} color="var(--gold)" />
-          <div className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>ROLE DETAILS</div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Skeleton style={{ height: 80, borderRadius: 8 }} />
-          <Skeleton style={{ height: 160, borderRadius: 8 }} />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !role) {
-    return (
-      <div>
-        <EmptyState icon={ShieldOff} title="Role not found" description={error || 'This role does not exist or was deleted.'} style={{ color: 'var(--text-secondary)' }} />
+        <EmptyState icon={ShieldOff} title="Role not found" description="This role does not exist or was deleted." style={{ color: 'var(--text-secondary)' }} />
         <div style={{ marginTop: 16 }}>
           <UniversalButton href="/dashboard/roles" variant="dim-outline" icon={<ArrowLeft size={14} />}>
             Back to Roles

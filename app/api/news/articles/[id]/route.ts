@@ -4,42 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { notifyPublishSubscribers } from './notify-subscribers'
-
-function serializeArticle(a: {
-  id: string
-  title: string
-  content: string
-  summary: string
-  coverImage: string | null
-  category: string
-  language: string
-  authorId: string
-  authorName: string
-  status: string
-  publishedAt: Date | null
-  isEdition: boolean
-  featured: boolean
-  align: string
-  createdAt: Date
-}) {
-  return {
-    id: a.id,
-    title: a.title,
-    content: a.content,
-    summary: a.summary,
-    coverImage: a.coverImage,
-    category: a.category,
-    language: a.language.toLowerCase(),
-    authorId: a.authorId,
-    authorName: a.authorName,
-    status: a.status,
-    publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null,
-    isEdition: a.isEdition,
-    featured: a.featured,
-    align: a.align,
-    createdAt: a.createdAt.toISOString(),
-  }
-}
+import { serializeArticle } from '@/lib/data/news-articles'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -5,8 +5,19 @@ import InventoryOverview  from "./_components/InventoryOverview";
 import MiddleSection      from "./_components/MiddleSection";
 import RightPanels        from "./_components/RightPanels";
 import WelcomeSection     from "./_components/WelcomeSection";
+import { requireStaffPage } from "@/lib/server/page-session";
+import { getAdminDashboardData } from "@/lib/data/admin-dashboard";
+import { toPlain } from "@/lib/server/to-plain";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
-export default function DashboardPage() {
+/**
+ * Admin home. All widget data is loaded here on the server in one batch of
+ * parallel aggregate queries (lib/data/admin-dashboard.ts) and passed down —
+ * no widget fetches on mount (PERFORMANCE.md rules 1-5).
+ */
+export default async function DashboardPage() {
+  await requireStaffPage();
+  const data = toPlain<AdminDashboardData>(await getAdminDashboardData());
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
@@ -17,27 +28,27 @@ export default function DashboardPage() {
       >
         {/* LEFT */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <BorrowReturn />
+          <BorrowReturn borrow={data.borrow} reservationsTotal={data.reservationsTotal} />
         </div>
 
         {/* CENTRE */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
-          <WelcomeSection />
+          <WelcomeSection inventory={data.inventory} />
           <DigitalLibrary />
-          <InventoryOverview />
+          <InventoryOverview inventory={data.inventory} />
         </div>
 
         {/* RIGHT */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <RightPanels />
+          <RightPanels publications={data.publications} projects={data.projects} />
         </div>
       </div>
 
       {/* ROW 2 */}
-      <MiddleSection />
+      <MiddleSection popular={data.popular} recent={data.inventory.newest} />
 
       {/* ROW 3 */}
-      <StatsBar />
+      <StatsBar membersTotal={data.membersTotal} borrowTotal={data.borrow.total} />
 
       {/* ROW 4 */}
       <FooterSection />

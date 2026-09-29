@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, User, Calendar, CreditCard, RefreshCw, Receipt } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { donationStatusConfig, type Donation } from '../../../_shared/donations-data'
 import { pollDonationStatus } from '../../../_shared/use-donations-admin'
 
 interface DonationDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialDonation: Donation
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -18,45 +18,29 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /** Real donation/receipt detail page, mirrors this migration's established detail-view pattern. */
-export function DonationDetailView({ id }: DonationDetailViewProps) {
-  const [donation, setDonation] = useState<Donation | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function DonationDetailView({ initialDonation }: DonationDetailViewProps) {
+  const id = initialDonation.id
+  const [donation, setDonation] = useState<Donation | null>(initialDonation)
 
+  /** Re-reads the record after an action (the first copy comes from the server page); keeps the last known copy if the refresh fails. */
   const load = () => {
-    setLoading(true)
     fetch(`/api/donations/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Donation not found'); return }
-        setDonation(json.data)
-      })
-      .catch(() => setError('Failed to load donation'))
-      .finally(() => setLoading(false))
+      .then((json) => { if (json.code === 'success' && json.data) setDonation(json.data) })
+      .catch(() => {})
   }
 
-  useEffect(load, [id])
-
-  if (loading) {
+  if (!donation) {
     return (
       <div>
         <PageHeader title="Donation Details" />
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-lg" /><Skeleton className="h-40 w-full rounded-lg" /></div>
-      </div>
-    )
-  }
-
-  if (error || !donation) {
-    return (
-      <div>
-        <PageHeader title="Donation Details" />
-        <EmptyState icon={Receipt} title="Donation not found" description={error || 'This donation does not exist.'} />
+        <EmptyState icon={Receipt} title="Donation not found" description={'This donation does not exist.'} />
         <div className="mt-4"><UniversalButton href="/dashboard/donations/history" variant="outline" icon={<ArrowLeft size={14} />}>Back to History</UniversalButton></div>
       </div>
     )
@@ -75,7 +59,7 @@ export function DonationDetailView({ id }: DonationDetailViewProps) {
 
       <div className="max-w-2xl space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="font-cinzel text-xl font-semibold text-w-950">{donation.amountRwf.toLocaleString()} RWF</h1>
+          <h1 className="font-cinzel text-xl font-semibold text-w-950" suppressHydrationWarning>{donation.amountRwf.toLocaleString()} RWF</h1>
           <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold shrink-0 ${donationStatusConfig[donation.status].cls}`}>{donationStatusConfig[donation.status].label}</span>
         </div>
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Star, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 
-interface Review {
+export interface Review {
   id: string
   userId: string
   userName: string
@@ -26,23 +26,21 @@ function StarInput({ value, onChange }: { value: number; onChange: (n: number) =
 }
 
 /** Real review list + submit form for a resource — one review per user, editable in place (POST is an upsert), backing Resource.avgRating/reviewCount shown on cards. */
-export function ResourceReviews({ resourceId }: { resourceId: string }) {
+export function ResourceReviews({ resourceId, initialReviews }: { resourceId: string; initialReviews: Review[] }) {
   const { user, isAuthenticated } = useAuth()
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<Review[]>(initialReviews)
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  /** Re-reads reviews after a submit/delete (the first list comes from the server page). */
   const load = () => {
     fetch(`/api/reviews?resourceId=${resourceId}`)
       .then((res) => res.json())
       .then((json) => { if (json.code === 'success') setReviews(json.data) })
-      .finally(() => setLoading(false))
+      .catch(() => {})
   }
-
-  useEffect(() => { load() }, [resourceId])
 
   const myReview = reviews.find((r) => r.userId === user?.id)
 
@@ -115,9 +113,7 @@ export function ResourceReviews({ resourceId }: { resourceId: string }) {
         </div>
       )}
 
-      {loading ? (
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading reviews…</p>
-      ) : reviews.length === 0 ? (
+      {reviews.length === 0 ? (
         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No reviews yet — be the first to share your thoughts.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

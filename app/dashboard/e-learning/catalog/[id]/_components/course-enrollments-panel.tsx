@@ -1,21 +1,15 @@
-'use client'
-
 import Link from 'next/link'
 import { Users } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useEnrollmentsAdmin } from '../../../enrollments/_components/use-enrollments-admin'
+import type { EnrollmentRecord } from '../../../enrollments/_components/use-enrollments-admin'
 
 interface CourseEnrollmentsPanelProps {
-  courseId: string
+  /** This course's enrollments, loaded on the server by the page. */
+  enrollments: EnrollmentRecord[]
 }
 
-/** Members enrolled in this course, reusing the already-cached cross-course Enrollments store (filtered client-side) rather than firing a duplicate courseId-scoped fetch. */
-export function CourseEnrollmentsPanel({ courseId }: CourseEnrollmentsPanelProps) {
-  const { data, loading } = useEnrollmentsAdmin()
-  const enrollments = data.filter((e) => e.courseId === courseId)
-
-  if (loading) return null
-
+/** Members enrolled in this course. Rows come from a courseId-scoped server query instead of downloading every enrollment and filtering in the browser. */
+export function CourseEnrollmentsPanel({ enrollments }: CourseEnrollmentsPanelProps) {
   if (enrollments.length === 0) {
     return <EmptyState icon={Users} title="No enrollments yet" description="No member has enrolled in this course." />
   }

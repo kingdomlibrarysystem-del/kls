@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ShoppingBag, Tag, Coins, Calendar, CheckCircle2, Hash } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { RemoteImage } from '@/components/ui/remote-image'
@@ -10,7 +9,8 @@ import { useLanguage } from '@/contexts/language-context'
 import { typeConfig, statusConfig, type MemberOrder } from '../../_components/orders-data'
 
 interface OrderDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialOrder: MemberOrder
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -18,57 +18,41 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ color: 'var(--gold)', marginTop: 2 }}>{icon}</span>
       <span style={{ fontSize: 13, color: 'var(--text-muted)', width: 70, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
+      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }} suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /**
  * Real details page for a single order (purchase or rental), replacing
- * the modal that used to open from the member orders list. Fetches
- * directly from /api/orders/:id so this page also works when linked to
- * directly, and picks up any PayPack status refresh that endpoint does.
+ * the modal that used to open from the member orders list. The stored
+ * order is loaded on the server by page.tsx; only a still-pending order is
+ * re-read from /api/orders/:id (which re-polls PayPack/Stripe) after mount.
  */
-export function OrderDetailView({ id }: OrderDetailViewProps) {
+export function OrderDetailView({ initialOrder }: OrderDetailViewProps) {
   const { t } = useLanguage()
-  const [order, setOrder] = useState<MemberOrder | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [order, setOrder] = useState<MemberOrder | null>(initialOrder)
 
+  // The stored state came from the server page. Only while payment is still
+  // pending does the route have anything new (it re-polls the payment
+  // provider), so refresh once in that case instead of on every visit.
   useEffect(() => {
+    if (!(initialOrder.status === 'pending')) return
     let cancelled = false
-    setLoading(true)
-    fetch(`/api/orders/${id}`)
+    fetch(`C:/Program Files/Git/api/orders/${initialOrder.id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Order not found')
-          return
-        }
-        setOrder(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load order') })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .then((json) => { if (!cancelled && json.code === 'success' && json.data) setOrder(json.data) })
+      .catch(() => {})
     return () => { cancelled = true }
-  }, [id])
+  }, [initialOrder])
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading order">
-        <Skeleton style={{ height: 32, width: 160, borderRadius: 6 }} />
-        <Skeleton style={{ height: 160, borderRadius: 8 }} />
-      </div>
-    )
-  }
-
-  if (error || !order) {
+  if (!order) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <EmptyState
           icon={ShoppingBag}
           title={t('m_orders.not_found')}
-          description={error || t('m_orders.not_found_desc')}
+          description={t('m_orders.not_found_desc')}
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>

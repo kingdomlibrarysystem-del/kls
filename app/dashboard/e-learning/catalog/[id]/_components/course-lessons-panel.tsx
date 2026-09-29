@@ -1,22 +1,23 @@
-'use client'
-
 import Link from 'next/link'
 import { Video, ChevronRight } from 'lucide-react'
-import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
+import type { LessonContentType } from '@/app/member/_shared/lesson-data'
 import { contentTypeConfig } from '../../../lessons/_components/lessons-config'
 import { EmptyState } from '@/components/ui/empty-state'
 
+export interface CourseLessonRow {
+  id: string
+  title: string
+  contentType: LessonContentType
+  durationMinutes: number
+}
+
 interface CourseLessonsPanelProps {
-  courseId: string
+  /** This course's lessons in order, loaded on the server by the page (not the all-courses lesson store). */
+  lessons: CourseLessonRow[]
 }
 
 /** Ordered lesson list for a course's detail page — lets an admin jump straight into any lesson, or "continue" from the first one, without going through the cross-course Lessons table. */
-export function CourseLessonsPanel({ courseId }: CourseLessonsPanelProps) {
-  const { data: lessonsByCourse, loading } = useLessonsByCourse()
-  const lessons = lessonsByCourse[courseId]?.lessons ?? []
-
-  if (loading) return null
-
+export function CourseLessonsPanel({ lessons }: CourseLessonsPanelProps) {
   if (lessons.length === 0) {
     return <EmptyState icon={Video} title="No lessons yet" description="Add the first lesson from the Lessons tab." />
   }

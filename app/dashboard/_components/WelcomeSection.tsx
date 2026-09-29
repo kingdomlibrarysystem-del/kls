@@ -2,21 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useResources } from "@/app/dashboard/library/_components/use-resources";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 import { mediaTypeLabels } from "@/app/dashboard/library/_components/resources-data";
 
 const tabFilters = ["All", "TEXT", "VIDEO", "AUDIO", "DOCUMENT", "COMBINATION"] as const;
 
-/** Real search + real per-mediaType collection counts, both from the /api/resources-backed hook. */
-export default function WelcomeSection() {
-  const { data: resources } = useResources();
+/** Real search + real per-mediaType collection counts (aggregated server-side, passed in). */
+export default function WelcomeSection({ inventory }: { inventory: AdminDashboardData["inventory"] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<typeof tabFilters[number]>("All");
 
-  const totalItems = resources.reduce((sum, r) => sum + r.totalQty, 0);
-  const byMediaType = new Map<string, number>();
-  resources.forEach((r) => byMediaType.set(r.mediaType, (byMediaType.get(r.mediaType) ?? 0) + r.totalQty));
+  const { totalItems } = inventory;
 
   const handleSearch = () => {
     router.push(`/dashboard/library${query ? `?search=${encodeURIComponent(query)}` : ""}`);
@@ -67,14 +64,14 @@ export default function WelcomeSection() {
         style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px 12px", textAlign: "center", flexShrink: 0 }}
       >
         <div style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: 1, marginBottom: 2 }}>TOTAL COLLECTION</div>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "var(--gold)", lineHeight: 1 }}>{totalItems.toLocaleString()}+</div>
+        <div suppressHydrationWarning style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "var(--gold)", lineHeight: 1 }}>{totalItems.toLocaleString()}+</div>
         <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 8 }}>Items Available</div>
         <button onClick={() => router.push("/dashboard/library")} className="btn btn-outline btn-sm" style={{ width: "100%", justifyContent: "center", marginBottom: 8 }}>View Collection</button>
         <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "8px 0" }} />
-        {Array.from(byMediaType.entries()).map(([mediaType, count]) => (
+        {inventory.byMediaType.map(({ mediaType, qty: count }) => (
           <div key={mediaType} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", fontSize: 10 }}>
             <span style={{ color: "var(--text-secondary)" }}>{mediaTypeLabels[mediaType as keyof typeof mediaTypeLabels] ?? mediaType}</span>
-            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{count.toLocaleString()}</span>
+            <span suppressHydrationWarning style={{ color: "var(--text-primary)", fontWeight: 600 }}>{count.toLocaleString()}</span>
           </div>
         ))}
       </div>

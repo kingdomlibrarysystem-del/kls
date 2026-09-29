@@ -19,7 +19,7 @@ export function ClaimCountdown({ deadline }: { deadline: string }) {
   }, [])
   const { label, urgent } = claimCountdown(deadline)
   return (
-    <span className={`flex items-center gap-1 text-xs font-lato font-semibold ${urgent ? 'text-red-700' : 'text-yellow-700 dark:text-warning'}`}>
+    <span suppressHydrationWarning className={`flex items-center gap-1 text-xs font-lato font-semibold ${urgent ? 'text-red-700 dark:text-destructive' : 'text-yellow-700 dark:text-warning'}`}>
       <Clock size={11} /> {label}
     </span>
   )

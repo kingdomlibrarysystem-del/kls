@@ -3,19 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
-
-function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
-  return {
-    id: l.id,
-    courseId: l.courseId,
-    title: l.title,
-    contentType: l.contentType,
-    durationMinutes: l.durationMinutes,
-    content: l.content,
-    contentMarkdown: l.contentMarkdown ?? undefined,
-    order: l.order,
-  }
-}
+import { serializeLesson } from '@/lib/data/lessons'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

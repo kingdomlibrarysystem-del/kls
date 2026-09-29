@@ -8,7 +8,7 @@ import {
   BarChart3,
   Database,
 } from "lucide-react";
-import { useResources } from "@/app/dashboard/library/_components/use-resources";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 import { mediaTypeLabels } from "@/app/dashboard/library/_components/resources-data";
 
 const sliceColors: Record<string, string> = {
@@ -26,15 +26,11 @@ const quickActions = [
   { icon: <Database size={18} />, label: "Manage Categories", sub: "KCS taxonomy…", href: "/dashboard/library/kcs" },
 ];
 
-/** Real inventory breakdown by mediaType, quick actions linking to real pages, and the 4 most recently added resources — all from the real /api/resources-backed hook. */
-export default function InventoryOverview() {
-  const { data: resources } = useResources();
-
-  const totalItems = resources.reduce((sum, r) => sum + r.totalQty, 0);
-  const byMediaType = new Map<string, number>();
-  resources.forEach((r) => byMediaType.set(r.mediaType, (byMediaType.get(r.mediaType) ?? 0) + r.totalQty));
-  const slices = Array.from(byMediaType.entries())
-    .map(([mediaType, count]) => ({
+/** Real inventory breakdown by mediaType, quick actions linking to real pages, and the 4 most recently added resources — aggregated server-side (lib/data/admin-dashboard.ts). */
+export default function InventoryOverview({ inventory }: { inventory: AdminDashboardData["inventory"] }) {
+  const { totalItems } = inventory;
+  const slices = inventory.byMediaType
+    .map(({ mediaType, qty: count }) => ({
       label: mediaTypeLabels[mediaType as keyof typeof mediaTypeLabels] ?? mediaType,
       count,
       pct: totalItems > 0 ? Math.round((count / totalItems) * 100) : 0,
@@ -42,7 +38,7 @@ export default function InventoryOverview() {
     }))
     .filter((s) => s.count > 0);
 
-  const recentlyAdded = [...resources].slice(-4).reverse();
+  const recentlyAdded = inventory.newest;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-0">
@@ -57,7 +53,7 @@ export default function InventoryOverview() {
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <svg width="90" height="90" viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
               {(() => { let offset = 0; return slices.map((s) => { const dash = `${s.pct} ${100 - s.pct}`; const el = (<circle key={s.label} cx="18" cy="18" r="15.9155" fill="none" stroke={s.color} strokeWidth="3.5" strokeDasharray={dash} strokeDashoffset={-offset + 25} />); offset += s.pct; return el; }); })()}
-              <text x="18" y="16" textAnchor="middle" style={{ fill: "var(--gold)", fontSize: "4px", fontWeight: 700, fontFamily: "Cinzel,serif" }}>{totalItems.toLocaleString()}</text>
+              <text suppressHydrationWarning x="18" y="16" textAnchor="middle" style={{ fill: "var(--gold)", fontSize: "4px", fontWeight: 700, fontFamily: "Cinzel,serif" }}>{totalItems.toLocaleString()}</text>
               <text x="18" y="21" textAnchor="middle" style={{ fill: "#9aa0b4", fontSize: "2.5px" }}>Total Items</text>
             </svg>
             <div style={{ flex: 1 }}>
@@ -65,7 +61,7 @@ export default function InventoryOverview() {
                 <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
                   <span style={{ fontSize: 10, color: "var(--text-secondary)", flex: 1 }}>{s.label}</span>
-                  <span style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 600 }}>{s.count.toLocaleString()}</span>
+                  <span suppressHydrationWarning style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 600 }}>{s.count.toLocaleString()}</span>
                   <span style={{ fontSize: 9, color: "var(--text-muted)", width: 24, textAlign: "right" }}>{s.pct}%</span>
                 </div>
               ))}

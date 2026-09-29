@@ -3,39 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireAuth, requireStaff } from '@/lib/auth/require-role'
-
-function serializeAssessment(a: {
-  id: string
-  title: string
-  kind: string
-  courseId: string
-  durationSeconds: number | null
-  questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; marks: number }[]
-  brief: string | null
-  submissionFormat: string | null
-  projectMarks: number | null
-}) {
-  return {
-    id: a.id,
-    title: a.title,
-    kind: a.kind,
-    courseId: a.courseId,
-    durationSeconds: a.durationSeconds ?? undefined,
-    questions: a.questions.map((q) => ({
-      id: q.id,
-      text: q.text,
-      type: q.type,
-      context: q.context ?? undefined,
-      options: q.options.length ? q.options : undefined,
-      correctOptionIndex: q.correctOptionIndex ?? undefined,
-      correctOptionIndices: q.correctOptionIndices.length ? q.correctOptionIndices : undefined,
-      marks: q.marks,
-    })),
-    brief: a.brief ?? undefined,
-    submissionFormat: a.submissionFormat ?? undefined,
-    projectMarks: a.projectMarks ?? undefined,
-  }
-}
+import { serializeAssessment } from '@/lib/data/assessments'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth()

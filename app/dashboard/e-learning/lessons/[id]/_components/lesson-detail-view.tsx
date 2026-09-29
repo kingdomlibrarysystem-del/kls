@@ -1,24 +1,32 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2, Video } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { MarkdownContent } from '@/components/ui/markdown-content'
-import { useCourseCatalog } from '@/app/dashboard/e-learning/_shared/use-course-catalog'
-import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { EditLessonModal } from '../../_components/edit-lesson-modal'
 import { DeleteLessonModal } from '../../_components/delete-lesson-modal'
 import { contentTypeConfig, type LessonRow } from '../../_components/lessons-config'
 
-interface LessonDetailViewProps {
+/** A neighbouring lesson in the same course, for the prev/next buttons and "Lesson N of M". */
+export interface SiblingLesson {
   id: string
+  title: string
 }
 
-interface LessonApiResponse {
+interface LessonDetailViewProps {
+  /** GET /api/lessons/[id] shape, loaded on the server by page.tsx (which 404s when missing). */
+  initialLesson: LessonApiResponse
+  /** Parent course title, resolved server-side. */
+  courseTitle: string
+  /** Every lesson of the parent course in order, loaded server-side. */
+  siblings: SiblingLesson[]
+}
+
+export interface LessonApiResponse {
   id: string
   courseId: string
   title: string
@@ -31,57 +39,23 @@ interface LessonApiResponse {
 
 /**
  * Real details page for a single lesson, replacing the modal that used to
- * open from the admin Lessons table's "View" button. Fetches directly from
- * /api/lessons/:id and resolves the parent course's title from the shared
- * course-catalog store (the lesson API itself only returns courseId), so
- * this page also works when linked to directly without the lessons table
- * being loaded first.
+ * open from the admin Lessons table's "View" button. The lesson, its course
+ * title and its sibling lessons all arrive from the server page — previously
+ * this view downloaded the whole course catalog and every lesson of every
+ * course just to show one title and the prev/next links.
  */
-export function LessonDetailView({ id }: LessonDetailViewProps) {
+export function LessonDetailView({ initialLesson, courseTitle, siblings }: LessonDetailViewProps) {
+  const id = initialLesson.id
   const router = useRouter()
-  const [lesson, setLesson] = useState<LessonApiResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [lesson, setLesson] = useState<LessonApiResponse | null>(initialLesson)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const { data: courseCatalog } = useCourseCatalog()
-  const { data: lessonsByCourse } = useLessonsByCourse()
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/lessons/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Lesson not found')
-          return
-        }
-        setLesson(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load lesson') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
-
-  if (loading) {
+  if (!lesson) {
     return (
       <div>
         <PageHeader title="Lesson Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-16 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !lesson) {
-    return (
-      <div>
-        <PageHeader title="Lesson Details" />
-        <EmptyState icon={Video} title="Lesson not found" description={error || 'This lesson does not exist or was deleted.'} />
+        <EmptyState icon={Video} title="Lesson not found" description="This lesson does not exist or was deleted." />
         <div className="mt-4">
           <UniversalButton href="/dashboard/e-learning/lessons" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Lessons
@@ -102,7 +76,6 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
     }
   }
 
-  const courseTitle = courseCatalog.find((c) => c.id === lesson.courseId)?.title ?? ''
   const row: LessonRow = {
     courseId: lesson.courseId,
     courseTitle,
@@ -115,7 +88,6 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
     contentMarkdown: lesson.contentMarkdown,
   }
 
-  const siblings = lessonsByCourse[lesson.courseId]?.lessons ?? []
   const position = siblings.findIndex((l) => l.id === lesson.id)
   const prevLesson = position > 0 ? siblings[position - 1] : null
   const nextLesson = position >= 0 && position < siblings.length - 1 ? siblings[position + 1] : null
@@ -189,7 +161,14 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
         </div>
       </div>
 
-      <EditLessonModal lesson={editing ? row : null} onClose={() => setEditing(false)} />
+      <EditLessonModal
+        lesson={editing ? row : null}
+        onClose={() => {
+          setEditing(false)
+          // Re-run the server page so the title/siblings reflect the edit (they used to come from the shared lessons store).
+          router.refresh()
+        }}
+      />
       <DeleteLessonModal lesson={deleting ? row : null} onClose={handleDeleteClose} />
     </div>
   )

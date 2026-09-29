@@ -202,6 +202,9 @@ model AuditLog {
   ipAddress  String?
   notes      String?
   timestamp  DateTime @default(now())
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([timestamp])
 }
 
 /// Single-row system settings — replaces the "client-held default,
@@ -380,6 +383,10 @@ model Resource {
   donations               Donation[]
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([categoryId])
+  @@index([status])
 }
 
 /// Real member review of a Resource — one per user per resource
@@ -698,6 +705,11 @@ model Borrow {
   finePaid     Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([userId, borrowDate])
+  @@index([resourceId, status])
+  @@index([status, dueDate])
 }
 
 enum BorrowStatus {
@@ -733,6 +745,10 @@ model Reservation {
   status          ReservationStatus @default(PENDING)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([userId, reservationDate])
+  @@index([resourceId, status])
 }
 
 enum ReservationStatus {
@@ -797,6 +813,9 @@ model Publication {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   revenueShare    RevenueShare?
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([contributorId])
 }
 
 enum PublicationStatus {
@@ -894,6 +913,9 @@ model Course {
   orders          CourseOrder[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([lecturerId])
 }
 
 enum CourseLanguage {
@@ -931,6 +953,9 @@ model Lesson {
   order           Int               @default(0)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([courseId, order])
 }
 
 enum LessonContentType {
@@ -967,6 +992,9 @@ model Enrollment {
   updatedAt          DateTime         @updatedAt
 
   @@unique([userId, courseId])
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([courseId])
 }
 
 enum EnrollmentStatus {
@@ -995,6 +1023,9 @@ model Assessment {
   attempts         AssessmentAttempt[]
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([courseId])
 }
 
 type Question {
@@ -1046,6 +1077,10 @@ model AssessmentAttempt {
   openScores   Json?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([userId])
+  @@index([assessmentId])
 }
 
 enum AttemptResult {
@@ -1078,6 +1113,10 @@ model Certificate {
   revoked          Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([userId])
+  @@index([courseId])
 }
 
 /// Real live-session booking request, replacing
@@ -1117,6 +1156,10 @@ model SessionRequest {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   presence     SessionPresence[]
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([learnerId])
+  @@index([lecturerId])
 }
 
 enum SessionRequestStatus {
@@ -1226,6 +1269,9 @@ model ResearchPaper {
   status      ResearchPaperStatus @default(DRAFT)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([projectId])
 }
 
 enum ResearchPaperStatus {
@@ -1255,6 +1301,9 @@ model Channel {
   messages       Message[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([courseId])
 }
 
 enum ChannelKind {
@@ -1276,6 +1325,9 @@ model Message {
   sentAt     DateTime          @default(now())
   readByIds  String[]          @db.ObjectId
   reactions  MessageReaction[]
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([channelId, sentAt])
 }
 
 type MessageReaction {
@@ -1303,6 +1355,9 @@ model Notification {
   recipientId   String?          @db.ObjectId
   recipient     User?            @relation(fields: [recipientId], references: [id])
   createdAt     DateTime         @default(now())
+
+  // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
+  @@index([recipientId, createdAt])
 }
 
 enum NotificationType {

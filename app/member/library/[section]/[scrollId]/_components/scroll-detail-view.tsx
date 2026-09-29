@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/auth-context'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { getCategoryById, getChildCategories } from '@/lib/kcs-taxonomy'
 import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
 
@@ -37,7 +36,6 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
   const { data: resources, loading: resourcesLoading, error: resourcesError } = useResources()
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
   const favorites = useFavorites(user?.id)
-  const readableContent = useReadableContent()
   useCart(user?.id)
 
   const loading = resourcesLoading || categoriesLoading
@@ -125,7 +123,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
               action={
                 isAuthenticated && resource.price > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {!!readableContent[resource.id] && (
+                    {resource.chapterCount > 0 && (
                       <Link
                         href={`/member/library/read/${resource.id}`}
                         aria-label={`Read ${resource.title} online`}

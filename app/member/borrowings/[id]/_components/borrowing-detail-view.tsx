@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, BookOpen, BookText, Calendar, CalendarCheck, Hash, Package, Tag, User } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { statusConfig, type Borrowing } from '@/app/dashboard/library/borrowings/_components/borrowings-data'
 
 interface BorrowingDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialBorrowing: Borrowing
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -18,55 +17,26 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ color: 'var(--gold)', marginTop: 2 }}>{icon}</span>
       <span style={{ fontSize: 13, color: 'var(--text-muted)', width: 70, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
+      <span style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 600 }} suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /**
  * Real details page for a single borrowing, replacing the modal that used
- * to open from the member borrowings list. Fetches directly from
- * /api/borrowings/:id so this page also works when linked to directly.
+ * to open from the member borrowings list. The borrowing is loaded on the
+ * server by page.tsx (owner-or-staff checked there).
  */
-export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
-  const [borrowing, setBorrowing] = useState<Borrowing | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function BorrowingDetailView({ initialBorrowing }: BorrowingDetailViewProps) {
+  const borrowing: Borrowing | null = initialBorrowing
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/borrowings/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Borrowing not found')
-          return
-        }
-        setBorrowing(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load borrowing') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading borrowing">
-        <Skeleton style={{ height: 32, width: 160, borderRadius: 6 }} />
-        <Skeleton style={{ height: 160, borderRadius: 8 }} />
-      </div>
-    )
-  }
-
-  if (error || !borrowing) {
+  if (!borrowing) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <EmptyState
           icon={BookOpen}
           title="Borrowing not found"
-          description={error || 'This borrowing does not exist or was removed.'}
+          description={'This borrowing does not exist or was removed.'}
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>

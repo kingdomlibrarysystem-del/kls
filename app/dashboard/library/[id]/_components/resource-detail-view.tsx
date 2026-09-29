@@ -1,17 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { ResourceFormModal } from '../../_components/resource-form-modal'
-import { type Resource } from '../../_components/resources-data'
+import { type Resource, isResourceReadable } from '../../_components/resources-data'
 import { updateResource, archiveResource } from '../../_components/use-resources'
 import { realChaptersFrom, syncResourceChapters } from '../../_components/sync-resource-chapters'
 import { ResourceCoverGallery } from './resource-cover-gallery'
@@ -19,48 +17,25 @@ import { ResourceDetailRows, ResourceMediaLinks } from './resource-detail-rows'
 import type { ResourceFormData } from '../../_components/resource-form-schema'
 
 interface ResourceDetailViewProps {
-  id: string
+  /** GET /api/resources/[id] shape, loaded on the server by page.tsx (which 404s when missing). */
+  initialResource: Resource
 }
 
 /**
  * Real details page for a single library resource, replacing the modal
  * that used to open from the Book Inventory table's "View" button.
- * Fetches directly from /api/resources/:id rather than relying on the
- * already-loaded list, so this page also works when linked to directly.
+ * The resource arrives from the server page (no fetch on mount).
  */
-export function ResourceDetailView({ id }: ResourceDetailViewProps) {
+export function ResourceDetailView({ initialResource }: ResourceDetailViewProps) {
   const router = useRouter()
-  const [resource, setResource] = useState<Resource | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [resource, setResource] = useState<Resource | null>(initialResource)
   const [editing, setEditing] = useState(false)
   const [toast, setToast] = useState('')
-  const readableContent = useReadableContent()
-  // A resource is readable either through real authored Chapter rows
-  // (readableContent) or a real uploaded PDF (documentUrl) — ReaderView
-  // itself already falls back to the page-native PdfReaderView for the
-  // latter, but this button never showed for a PDF-only resource before
-  // this fix, since readableContent only ever contains chapter-backed
-  // resources (from /api/chapters, grouped by resource).
-  const isReadable = !!resource && (!!readableContent[resource.id] || !!resource.documentUrl)
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/resources/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Resource not found')
-          return
-        }
-        setResource(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load resource') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
+  // Readable = real authored chapters (the server-derived chapterCount) or an
+  // uploaded PDF. Previously this pulled the whole chapter catalog
+  // (useReadableContent -> GET /api/chapters, every chapter body in the
+  // library) just to answer this one yes/no question.
+  const isReadable = !!resource && isResourceReadable(resource)
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
@@ -84,7 +59,9 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
       // the whole book — the form even promises "edited chapters are updated,
       // new ones are added, and removed ones are deleted".
       await syncResourceChapters(editingId, realChapters)
-      setResource(updated)
+      // Re-read so chapterCount (and so the Read button) reflects the chapter sync above.
+      const fresh = await fetch(`/api/resources/${editingId}`).then((r) => r.json()).catch(() => null)
+      setResource(fresh?.code === 'success' && fresh.data ? fresh.data : updated)
       setEditing(false)
       showToast(`Updated "${formData.title}".`)
     } catch (err) {
@@ -103,23 +80,11 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
     }
   }
 
-  if (loading) {
+  if (!resource) {
     return (
       <div>
         <PageHeader title="Resource Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !resource) {
-    return (
-      <div>
-        <PageHeader title="Resource Details" />
-        <EmptyState icon={BookX} title="Resource not found" description={error || 'This resource does not exist or was deleted.'} />
+        <EmptyState icon={BookX} title="Resource not found" description="This resource does not exist or was deleted." />
         <div className="mt-4">
           <UniversalButton href="/dashboard/library" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Library
@@ -146,8 +111,8 @@ export function ResourceDetailView({ id }: ResourceDetailViewProps) {
           <div>
             <h1 className="font-cinzel text-lg font-semibold text-w-950 leading-snug">{resource.title}</h1>
             <p className="font-lato text-sm text-w-700 mt-0.5">by {resource.author}</p>
-            <p className="font-cinzel text-base font-bold text-w-600 mt-1">{resource.price.toLocaleString()} RWF <span className="font-lato text-xs font-semibold text-w-500">to reserve</span></p>
-            <p className="font-lato text-xs text-w-600">{resource.borrowPrice.toLocaleString()} RWF to borrow · {resource.borrowDurationDays} days</p>
+            <p className="font-cinzel text-base font-bold text-w-600 mt-1" suppressHydrationWarning>{resource.price.toLocaleString()} RWF <span className="font-lato text-xs font-semibold text-w-500">to reserve</span></p>
+            <p className="font-lato text-xs text-w-600" suppressHydrationWarning>{resource.borrowPrice.toLocaleString()} RWF to borrow · {resource.borrowDurationDays} days</p>
           </div>
 
           <div className="bg-form-highlight border border-w-300 rounded p-3">

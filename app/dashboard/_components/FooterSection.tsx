@@ -15,8 +15,6 @@ import {
   Bot,
   Rocket,
 } from "lucide-react";
-import { useUsers } from "@/app/dashboard/users/_components/use-users";
-import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
 
 const features = [
   { icon: <Brain size={20} />, label: "AI Knowledge Engine", sub: "Smart recommendations" },
@@ -29,14 +27,12 @@ const features = [
   { icon: <Lock size={20} />, label: "Blockchain Security", sub: "Library in Your Pocket" },
 ];
 
-/** Real member count (/api/users) and real items-borrowed count (/api/borrowings) — "Resources Sold" and "Countries Reached" were removed entirely (no Sales/Transaction model, no geo data anywhere in the app). */
-export function StatsBar() {
-  const { users } = useUsers();
-  const { data: borrowings } = useBorrowingsAdmin();
+/** Real member and items-borrowed counts (server-side counts, passed in) — "Resources Sold" and "Countries Reached" were removed entirely (no Sales/Transaction model, no geo data anywhere in the app). */
+export function StatsBar({ membersTotal, borrowTotal }: { membersTotal: number; borrowTotal: number }) {
 
   const globalStats = [
-    { icon: <Users size={24} />, value: users.length.toLocaleString(), label: "Active Members" },
-    { icon: <Download size={24} />, value: borrowings.length.toLocaleString(), label: "Items Borrowed" },
+    { icon: <Users size={24} />, value: membersTotal.toLocaleString(), label: "Active Members" },
+    { icon: <Download size={24} />, value: borrowTotal.toLocaleString(), label: "Items Borrowed" },
     { icon: <Clock size={24} />, value: "24/7", label: "Library Access" },
   ];
 
@@ -49,7 +45,7 @@ export function StatsBar() {
         <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ display: "flex", alignItems: "center" }}>{s.icon}</span>
           <div>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: "var(--gold)" }}>{s.value}</div>
+            <div suppressHydrationWarning style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: "var(--gold)" }}>{s.value}</div>
             <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>{s.label}</div>
           </div>
         </div>

@@ -6,10 +6,9 @@ import { Star, Heart, BookOpenCheck, ShoppingCart, Check, Package } from 'lucide
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
-import type { Resource } from '@/app/dashboard/library/_components/resources-data'
+import { isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
 
 interface ResourceCardProps {
   resource: Resource
@@ -71,10 +70,10 @@ function useResourceCardState(resource: Resource) {
   const { user, isAuthenticated } = useAuth()
   const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
-  const readableContent = useReadableContent()
   useCart(user?.id)
   const liked = useIsFavorited(resource.id)
-  const isReadable = !!readableContent[resource.id] || !!resource.documentUrl
+  // chapterCount comes with the resource list — no need to download every chapter in the library to know this.
+  const isReadable = isResourceReadable(resource)
   const outOfStock = resource.availableQty === 0
   const inCartRental = isInCart(resource.id, 'RENTAL')
   const inCartSale = isInCart(resource.id, 'SALE')

@@ -6,8 +6,7 @@ import {
   Star,
   Plus,
 } from "lucide-react";
-import { useResources } from "@/app/dashboard/library/_components/use-resources";
-import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
 const card: React.CSSProperties = { background: "var(--bg-card)", border: "1px solid var(--border)", padding: "10px 12px", borderRadius: 8 };
 
@@ -18,21 +17,10 @@ const card: React.CSSProperties = { background: "var(--bg-card)", border: "1px s
  * entirely (per explicit product decision): neither has a real backend
  * (no Sales/Transaction model exists; News is a Phase-9 placeholder),
  * so faking their numbers here would be worse than not showing them.
+ * Both lists are computed server-side (a borrow groupBy for "popular",
+ * newest-by-createdAt for "recent") and passed in.
  */
-export default function MiddleSection() {
-  const { data: resources } = useResources();
-  const { data: borrowings } = useBorrowingsAdmin();
-
-  const borrowCounts = new Map<string, number>();
-  borrowings.forEach((b) => borrowCounts.set(b.resourceTitle, (borrowCounts.get(b.resourceTitle) ?? 0) + 1));
-
-  const popular = resources
-    .map((r) => ({ resource: r, count: borrowCounts.get(r.title) ?? 0 }))
-    .filter((p) => p.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-
-  const recent = [...resources].slice(-4).reverse();
+export default function MiddleSection({ popular, recent }: { popular: AdminDashboardData["popular"]; recent: AdminDashboardData["inventory"]["newest"] }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-0">

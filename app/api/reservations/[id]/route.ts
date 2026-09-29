@@ -3,45 +3,10 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { serializeReservation, RESOURCE_INCLUDE } from '@/lib/data/reservations'
 import { notifyUser } from '@/lib/notify'
 import { reservationReadyEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
-
-function serializeReservation(r: {
-  id: string
-  userId: string
-  memberName: string
-  memberEmail: string
-  resourceId: string
-  resource: { title: string; author: string; type: string; totalQty: number; availableQty: number; coverImages: string[]; category: { nameEn: string } | null }
-  queuePosition: number
-  reservationDate: Date
-  notifiedAt: Date | null
-  claimDeadline: Date | null
-  status: string
-}) {
-  return {
-    id: r.id,
-    memberId: r.userId,
-    memberName: r.memberName,
-    memberEmail: r.memberEmail,
-    resourceId: r.resourceId,
-    resourceTitle: r.resource.title,
-    resourceAuthor: r.resource.author,
-    resourceType: r.resource.type,
-    resourceCover: r.resource.coverImages[0] ?? null,
-    resourceCategory: r.resource.category?.nameEn ?? null,
-    totalCopies: r.resource.totalQty,
-    borrowedCopies: r.resource.totalQty - r.resource.availableQty,
-    queuePosition: r.queuePosition,
-    reservationDate: r.reservationDate.toISOString().split('T')[0],
-    notifiedAt: r.notifiedAt ? r.notifiedAt.toISOString() : null,
-    claimDeadline: r.claimDeadline ? r.claimDeadline.toISOString() : null,
-    status: r.status.toLowerCase(),
-  }
-}
-
-const RESOURCE_INCLUDE = { resource: { select: { title: true, author: true, type: true, totalQty: true, availableQty: true, coverImages: true, category: { select: { nameEn: true } } } } } as const
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

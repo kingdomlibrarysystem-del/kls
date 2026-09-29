@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { BookCopy, Search, ScrollText } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { getCategoryById, getChildCategories, type CategoryStatus } from '@/lib/kcs-taxonomy'
@@ -12,9 +11,6 @@ import { KcsViewToggle, type KcsContentView } from './kcs-view-toggle'
 import { KcsScrollsTable } from './kcs-scrolls-table'
 import { KcsScrollsList } from './kcs-scrolls-list'
 import { KcsPillarAnalytics } from './kcs-pillar-analytics'
-
-/** Simulated network delay before mock scrolls become visible. */
-const LOAD_DELAY_MS = 400
 
 const statusConfig: Record<CategoryStatus, { label: string; color: string; bg: string }> = {
   AVAILABLE:    { label: 'Available',    color: 'var(--green-light)', bg: 'var(--green-dim)' },
@@ -33,22 +29,15 @@ interface KcsPillarViewProps {
  * Single consolidated view for all 8 KCS pillars: a tab bar to switch
  * pillars (replacing the previous 8 separate routes/page.tsx files) plus
  * the header (code, name, theme) and a searchable grid of the active
- * pillar's scrolls. Shows a brief simulated loading state, then the grid,
+ * pillar's scrolls. Shows the grid,
  * or an EmptyState if a search yields no results.
  */
 export function KcsPillarView({ pillarSlug, onPillarChange }: KcsPillarViewProps) {
   const pillar = getCategoryById(pillarSlug)
   const scrolls = pillar ? getChildCategories(pillar.id) : []
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [view, setView] = useState<KcsContentView>('table')
   const [showAnalytics, setShowAnalytics] = useState(true)
-
-  useEffect(() => {
-    setLoading(true)
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [pillarSlug])
 
   if (!pillar) return null
 
@@ -114,16 +103,10 @@ export function KcsPillarView({ pillarSlug, onPillarChange }: KcsPillarViewProps
         />
       </div>
 
-      {showAnalytics && !loading && <KcsPillarAnalytics pillar={pillar} scrolls={scrolls} />}
+      {showAnalytics && <KcsPillarAnalytics pillar={pillar} scrolls={scrolls} />}
 
       {/* Scrolls content */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" aria-label={`Loading ${pillar.name.en} scrolls`}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} style={{ height: 72, borderRadius: 8 }} />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState icon={ScrollText} title="No scrolls found" description="Try a different search term." style={{ color: 'var(--text-secondary)' }} />
       ) : view === 'table' ? (
         <KcsScrollsTable scrolls={filtered} pillarSlug={pillarSlug} pillarName={pillar.name.en} />

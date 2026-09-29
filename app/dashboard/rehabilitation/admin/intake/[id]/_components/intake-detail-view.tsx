@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, User, FileText, Target, ClipboardCheck, FilePlus2, XCircle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { rehabIntakeStatusConfig, type RehabIntake } from '../../../../_shared/rehab-data'
 import { reviewIntake, createPlanFromIntake, declineIntake } from '../../../../_shared/use-rehab-intake-admin'
 
 interface IntakeDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialIntake: RehabIntake
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -18,45 +18,29 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /** Real details page for a single intake, mirrors Beauty/Counseling's detail-view pattern. */
-export function IntakeDetailView({ id }: IntakeDetailViewProps) {
-  const [intake, setIntake] = useState<RehabIntake | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function IntakeDetailView({ initialIntake }: IntakeDetailViewProps) {
+  const id = initialIntake.id
+  const [intake, setIntake] = useState<RehabIntake | null>(initialIntake)
 
-  function load() {
-    setLoading(true)
+  /** Re-reads the record after an action (the first copy comes from the server page); keeps the last known copy if the refresh fails. */
+  const load = () => {
     fetch(`/api/rehabilitation/intake/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Intake not found'); return }
-        setIntake(json.data)
-      })
-      .catch(() => setError('Failed to load intake'))
-      .finally(() => setLoading(false))
+      .then((json) => { if (json.code === 'success' && json.data) setIntake(json.data) })
+      .catch(() => {})
   }
 
-  useEffect(() => { Promise.resolve().then(load) }, [id])
-
-  if (loading) {
+  if (!intake) {
     return (
       <div>
         <PageHeader title="Intake Details" />
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-lg" /><Skeleton className="h-40 w-full rounded-lg" /></div>
-      </div>
-    )
-  }
-
-  if (error || !intake) {
-    return (
-      <div>
-        <PageHeader title="Intake Details" />
-        <EmptyState icon={FileText} title="Intake not found" description={error || 'This intake does not exist.'} />
+        <EmptyState icon={FileText} title="Intake not found" description={'This intake does not exist.'} />
         <div className="mt-4"><UniversalButton href="/dashboard/rehabilitation/admin/intake" variant="outline" icon={<ArrowLeft size={14} />}>Back to Intake Review</UniversalButton></div>
       </div>
     )

@@ -1,55 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, Circle, ClipboardX, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { useCourseCatalog } from '../../../_shared/use-course-catalog'
 import { projectSubmissionFormatLabels } from '@/app/member/_shared/assessment-data'
 import { kindConfig, type TakeableAssessment } from '../../_components/quizzes-config'
 import { EditQuizModal } from '../../_components/edit-quiz-modal'
 import { DeleteQuizModal } from '../../_components/delete-quiz-modal'
 
 interface QuizDetailViewProps {
-  id: string
+  /** GET /api/assessments/[id] shape, loaded on the server by page.tsx (which 404s when missing). */
+  initialAssessment: TakeableAssessment
+  /** Parent course title, resolved server-side (instead of loading the whole course catalog). */
+  courseTitle: string
 }
 
 /**
  * Real details page for a single quiz/exam/project, replacing the modal
  * that used to open from the Quizzes & Exams table's "View" button.
- * Fetches directly from /api/assessments/:id so this page also works
- * when linked to directly, without the admin catalog list being loaded
- * first.
+ * The assessment and its course title arrive from the server page.
  */
-export function QuizDetailView({ id }: QuizDetailViewProps) {
+export function QuizDetailView({ initialAssessment, courseTitle }: QuizDetailViewProps) {
+  const id = initialAssessment.id
   const router = useRouter()
-  const [assessment, setAssessment] = useState<TakeableAssessment | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const assessment: TakeableAssessment | null = initialAssessment
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const { data: courseCatalog } = useCourseCatalog()
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/assessments/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Quiz/exam not found')
-          return
-        }
-        setAssessment(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load quiz/exam') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
 
   const handleDeleteModalClose = async () => {
     setDeleting(false)
@@ -59,23 +38,11 @@ export function QuizDetailView({ id }: QuizDetailViewProps) {
     }
   }
 
-  if (loading) {
+  if (!assessment) {
     return (
       <div>
         <PageHeader title="Quiz / Exam Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !assessment) {
-    return (
-      <div>
-        <PageHeader title="Quiz / Exam Details" />
-        <EmptyState icon={ClipboardX} title="Quiz/exam not found" description={error || 'This quiz/exam does not exist or was deleted.'} />
+        <EmptyState icon={ClipboardX} title="Quiz/exam not found" description="This quiz/exam does not exist or was deleted." />
         <div className="mt-4">
           <UniversalButton href="/dashboard/e-learning/quizzes" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Quizzes & Exams
@@ -84,8 +51,6 @@ export function QuizDetailView({ id }: QuizDetailViewProps) {
       </div>
     )
   }
-
-  const courseTitle = courseCatalog.find((c) => c.id === assessment.courseId)?.title ?? 'Unknown course'
 
   return (
     <div>

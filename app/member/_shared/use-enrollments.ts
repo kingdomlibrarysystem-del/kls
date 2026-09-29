@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { useSharedList } from '@/lib/client/use-shared-list'
 
 /** Real Enrollment shape, matching /api/enrollments' serializeEnrollment (see app/api/enrollments/route.ts). */
 export interface CourseEnrollment {
@@ -29,21 +29,9 @@ export interface CourseEnrollment {
  */
 export function useEnrollments() {
   const { user } = useAuth()
-  const [data, setData] = useState<CourseEnrollment[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const refetch = useCallback(async () => {
-    if (!user) { setData([]); return }
-    const res = await fetch(`/api/enrollments?userId=${user.id}&pageSize=1000`)
-    const json = await res.json()
-    setData(json.data ?? [])
-  }, [user])
-
-  useEffect(() => {
-    refetch().finally(() => setLoading(false))
-  }, [refetch])
-
-  return { data, loading, refetch }
+  // Shared + de-duplicated per URL (see lib/client/use-shared-list.ts): every
+  // component on a page reuses one request, revisits render cached data first.
+  return useSharedList<CourseEnrollment>(user ? `/api/enrollments?userId=${user.id}&pageSize=1000` : null)
 }
 
 /** Percentage complete, derived from completedLessonIds — never stored directly. */

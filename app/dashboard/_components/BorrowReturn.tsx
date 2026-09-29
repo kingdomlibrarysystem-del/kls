@@ -10,8 +10,7 @@ import {
   ClipboardList,
   Bookmark,
 } from "lucide-react";
-import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
-import { useReservationsAdmin } from "@/app/dashboard/reservations/_components/use-reservations-admin";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
 const statusColor: Record<string, string> = {
   active: "var(--green-light)",
@@ -21,23 +20,18 @@ const statusColor: Record<string, string> = {
   rejected: "var(--text-muted)",
 };
 
-/** Real Borrow/Return/Reservations summary — stats and the recent-loans table both read the real /api/borrowings and /api/reservations, replacing fabricated numbers and rows. */
-export default function BorrowReturn() {
-  const { data: borrowings } = useBorrowingsAdmin();
-  const { data: reservations } = useReservationsAdmin();
-
-  const active = borrowings.filter((b) => b.status === "active").length;
-  const overdue = borrowings.filter((b) => b.status === "overdue").length;
-  const dueToday = borrowings.filter((b) => b.status === "active" && b.dueDate === new Date().toISOString().split("T")[0]).length;
+/** Real Borrow/Return/Reservations summary. Counts and the 6 most recent loans come from server-side aggregate queries (lib/data/admin-dashboard.ts), not from downloading every borrowing and reservation into the browser. */
+export default function BorrowReturn({ borrow, reservationsTotal }: { borrow: AdminDashboardData["borrow"]; reservationsTotal: number }) {
+  const { active, overdue, dueToday } = borrow;
 
   const stats = [
     { icon: <BookOpen size={16} />, label: "Currently", value: active, color: "var(--teal-light)" },
     { icon: <AlertTriangle size={16} />, label: "Overdue Items", value: overdue, color: "var(--red-light)" },
-    { icon: <Calendar size={16} />, label: "Reservations", value: reservations.length, color: "var(--gold)" },
+    { icon: <Calendar size={16} />, label: "Reservations", value: reservationsTotal, color: "var(--gold)" },
     { icon: <Calendar size={16} />, label: "Due Today", value: dueToday, color: "var(--orange-light)" },
   ];
 
-  const recentLoans = borrowings.slice(0, 6);
+  const recentLoans = borrow.recent;
 
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>

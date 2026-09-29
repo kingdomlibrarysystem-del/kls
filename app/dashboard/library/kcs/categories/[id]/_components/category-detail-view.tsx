@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FolderOpen, Hash, Layers, Calendar, Globe, ArrowLeft, Pencil, Trash2, FolderX } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useCategories, removeCategory } from '@/lib/kcs-taxonomy/use-categories'
@@ -15,7 +14,8 @@ import { CategoryEditModal } from './category-edit-modal'
 import { CategoryRelatedPanel } from './category-related-panel'
 
 interface CategoryDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialCategory: Category
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -23,7 +23,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
@@ -39,33 +39,13 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
  * the shared useCategories/useResources stores since the single-category
  * API response doesn't include either.
  */
-export function CategoryDetailView({ id }: CategoryDetailViewProps) {
+export function CategoryDetailView({ initialCategory }: CategoryDetailViewProps) {
   const router = useRouter()
-  const [category, setCategory] = useState<Category | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [category, setCategory] = useState<Category | null>(initialCategory)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const { data: allCategories } = useCategories()
   const { data: resources } = useResources()
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/categories/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Category not found')
-          return
-        }
-        setCategory(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load category') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
 
   const parentName = category?.parentId
     ? allCategories.find((c) => c.id === category.parentId)?.name.en ?? null
@@ -79,23 +59,11 @@ export function CategoryDetailView({ id }: CategoryDetailViewProps) {
     router.push('/dashboard/library/kcs')
   }
 
-  if (loading) {
+  if (!category) {
     return (
       <div>
         <PageHeader title="Category Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !category) {
-    return (
-      <div>
-        <PageHeader title="Category Details" />
-        <EmptyState icon={FolderX} title="Category not found" description={error || 'This category does not exist or was deleted.'} />
+        <EmptyState icon={FolderX} title="Category not found" description={'This category does not exist or was deleted.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/library/kcs" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to KCS Map

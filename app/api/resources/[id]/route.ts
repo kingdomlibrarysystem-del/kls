@@ -3,85 +3,21 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { serializeResource, getResourceDetail } from '@/lib/data/resources'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-function serializeResource(r: {
-  id: string
-  title: string
-  author: string
-  publisher: string
-  categoryId: string | null
-  type: string
-  format: string
-  language: string
-  year: number
-  pages: number
-  isbn: string
-  price: number
-  borrowPrice: number
-  borrowDurationDays: number
-  freePreviewChapterCount: number
-  totalQty: number
-  availableQty: number
-  status: string
-  coverImages: string[]
-  bindingType: string
-  mediaType: string
-  description: string
-  tags: string[]
-  documentUrl: string | null
-  audioUrl: string | null
-  videoUrl: string | null
-  avgRating: number
-  reviewCount: number
-}, chapterCount: number) {
-  return {
-    id: r.id,
-    title: r.title,
-    author: r.author,
-    publisher: r.publisher,
-    categoryId: r.categoryId ?? '',
-    type: r.type,
-    format: r.format,
-    language: r.language,
-    year: r.year,
-    pages: r.pages,
-    isbn: r.isbn,
-    price: r.price,
-    borrowPrice: r.borrowPrice,
-    borrowDurationDays: r.borrowDurationDays,
-    freePreviewChapterCount: r.freePreviewChapterCount,
-    totalQty: r.totalQty,
-    availableQty: r.availableQty,
-    status: r.status.toLowerCase(),
-    coverImages: r.coverImages,
-    bindingType: r.bindingType,
-    mediaType: r.mediaType,
-    description: r.description,
-    tags: r.tags,
-    documentUrl: r.documentUrl ?? undefined,
-    audioUrl: r.audioUrl ?? undefined,
-    videoUrl: r.videoUrl ?? undefined,
-    avgRating: r.avgRating,
-    reviewCount: r.reviewCount,
-    chapterCount,
-  }
-}
-
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
-  const resource = await prisma.resource.findUnique({ where: { id } })
+  const resource = await getResourceDetail(id)
   if (!resource) {
     return NextResponse.json({ data: null, message: 'Resource not found', code: 'error', status: 404 }, { status: 404 })
   }
 
-  const chapterCount = await prisma.chapter.count({ where: { resourceId: id } })
-
-  return NextResponse.json({ data: serializeResource(resource, chapterCount), message: 'Resource fetched successfully', code: 'success', status: 200 })
+  return NextResponse.json({ data: resource, message: 'Resource fetched successfully', code: 'success', status: 200 })
 }
 
 /**

@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { BookOpen, CalendarDays, Hash, User, ShieldAlert, ArrowLeft, ShieldOff, Award } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { CertificatePreview } from '../../_components/certificate-preview'
@@ -11,7 +10,8 @@ import { RevokeCertificateModal } from '../../_components/revoke-certificate-mod
 import { revokeCertificateAdmin, type CertificateRecord } from '../../_components/use-certificates-admin'
 
 interface CertificateDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialCertificate: CertificateRecord
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -19,41 +19,20 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-24 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /**
  * Real details page for a single issued certificate, replacing the modal
- * that used to open from the Certificates table's "View" button. Fetches
- * directly from /api/certificates/:id rather than looking the row up out
- * of the already-loaded list, so this page also works when linked to
- * directly (e.g. from a verification lookup) without the list loaded first.
+ * that used to open from the Certificates table's "View" button. The
+ * certificate is loaded on the server by page.tsx, so this page renders
+ * with its data even when linked to directly (e.g. a verification lookup).
  */
-export function CertificateDetailView({ id }: CertificateDetailViewProps) {
-  const [certificate, setCertificate] = useState<CertificateRecord | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function CertificateDetailView({ initialCertificate }: CertificateDetailViewProps) {
+  const [certificate, setCertificate] = useState<CertificateRecord | null>(initialCertificate)
   const [revoking, setRevoking] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/certificates/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Certificate not found')
-          return
-        }
-        setCertificate(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load certificate') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
 
   const handleRevokeConfirm = async () => {
     if (!certificate) return
@@ -66,23 +45,11 @@ export function CertificateDetailView({ id }: CertificateDetailViewProps) {
     setRevoking(false)
   }
 
-  if (loading) {
+  if (!certificate) {
     return (
       <div>
         <PageHeader title="Certificate Details" />
-        <div className="space-y-3 max-w-2xl">
-          <Skeleton className="h-56 w-full rounded-lg" />
-          <Skeleton className="h-32 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !certificate) {
-    return (
-      <div>
-        <PageHeader title="Certificate Details" />
-        <EmptyState icon={Award} title="Certificate not found" description={error || 'This certificate does not exist or was deleted.'} />
+        <EmptyState icon={Award} title="Certificate not found" description={'This certificate does not exist or was deleted.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/e-learning/certificates" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Certificates

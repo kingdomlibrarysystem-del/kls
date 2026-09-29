@@ -1,19 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   User, Mail, BookOpen, Calendar, RotateCcw, AlertTriangle, DollarSign,
   ArrowLeft, CheckCircle, XCircle, BookX,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { statusConfig, daysOverdue, type Borrowing } from '../../_components/borrowings-data'
 import { approveBorrowing, rejectBorrowing, returnBorrowing, waiveFine } from '../../_components/use-borrowings-admin'
 
 interface BorrowingDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialBorrowing: Borrowing
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -21,43 +21,22 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-24 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /**
  * Real details page for a single borrowing record, replacing the modal
- * that used to open from the Borrowings table's "View" button. Fetches
- * directly from /api/borrowings/:id (matching the Users pilot pattern)
- * rather than relying on the admin table's already-loaded list, and
+ * that used to open from the Borrowings table's "View" button. The record
+ * is loaded on the server by page.tsx, and the view
  * reuses the same approve/reject/return/waiveFine mutators the table's
  * inline actions already call, so business rules stay in one place.
  */
-export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
-  const [borrowing, setBorrowing] = useState<Borrowing | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function BorrowingDetailView({ initialBorrowing }: BorrowingDetailViewProps) {
+  const [borrowing, setBorrowing] = useState<Borrowing | null>(initialBorrowing)
   const [actionPending, setActionPending] = useState(false)
   const [toast, setToast] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/borrowings/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Borrowing not found')
-          return
-        }
-        setBorrowing(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load borrowing') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
@@ -75,23 +54,11 @@ export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
     }
   }
 
-  if (loading) {
+  if (!borrowing) {
     return (
       <div>
         <PageHeader title="Borrowing Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !borrowing) {
-    return (
-      <div>
-        <PageHeader title="Borrowing Details" />
-        <EmptyState icon={BookX} title="Borrowing not found" description={error || 'This borrowing record does not exist or was deleted.'} />
+        <EmptyState icon={BookX} title="Borrowing not found" description={'This borrowing record does not exist or was deleted.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/library/borrowings" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Borrowings

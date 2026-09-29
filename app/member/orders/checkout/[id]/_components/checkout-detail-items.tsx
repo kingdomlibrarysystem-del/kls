@@ -23,7 +23,7 @@ export function CheckoutDetailItems({ items }: { items: MemberCheckoutItem[] }) 
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{item.amount.toLocaleString()} RWF</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }} suppressHydrationWarning>{item.amount.toLocaleString()} RWF</div>
             <div style={{ fontSize: 11, color: statusConfig[item.status].color, marginTop: 1 }}>{statusConfig[item.status].label}</div>
           </div>
         </div>

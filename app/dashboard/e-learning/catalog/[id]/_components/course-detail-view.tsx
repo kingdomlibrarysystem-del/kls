@@ -1,24 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, Pencil, Archive, BookX } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { useUsers } from '@/app/dashboard/users/_components/use-users'
 import { EditCourseModal } from '../../_components/edit-course-modal'
 import { ArchiveCourseModal } from '../../_components/archive-course-modal'
 import { archiveCourseInCatalog, refetchCourseCatalog } from '../../../_shared/use-course-catalog'
 import { statusConfig, type CourseCatalogEntry } from '../../_components/catalog-config'
 import { CourseInfoCard } from './course-info-card'
 import { CourseRelatedPanels } from './course-related-panels'
+import type { CourseLessonRow } from './course-lessons-panel'
+import type { EnrollmentRecord } from '../../../enrollments/_components/use-enrollments-admin'
 
 interface CourseDetailViewProps {
-  id: string
+  /** GET /api/courses/[id] shape, loaded on the server by page.tsx (which 404s when missing). */
+  initialCourse: CourseApiResponse
+  /** This course's lessons/enrollments for the related panels, loaded server-side alongside the course. */
+  lessons: CourseLessonRow[]
+  enrollments: EnrollmentRecord[]
 }
 
-interface CourseApiResponse {
+export interface CourseApiResponse {
   id: string
   title: string
   description: string
@@ -29,6 +33,8 @@ interface CourseApiResponse {
   lecturerId?: string
   createdAt: string
   students?: number
+  /** Lecturer display name, resolved server-side by serializeCourse. */
+  instructor?: string
 }
 
 function toCatalogEntry(d: CourseApiResponse): CourseCatalogEntry {
@@ -46,44 +52,26 @@ function toCatalogEntry(d: CourseApiResponse): CourseCatalogEntry {
   }
 }
 
-async function fetchCourse(id: string): Promise<CourseCatalogEntry | null> {
+async function fetchCourse(id: string): Promise<CourseApiResponse | null> {
   const res = await fetch(`/api/courses/${id}`)
   const json = await res.json()
   if (json.code !== 'success' || !json.data) return null
-  return toCatalogEntry(json.data)
+  return json.data
 }
 
 /**
  * Real details page for a single catalog course, replacing the modal that
- * used to open from the catalog table's "View" button. Fetches directly
- * from /api/courses/:id (rather than looking the row up out of the
- * already-loaded catalog list) so this page also works when linked to
- * directly without the list having loaded first.
+ * used to open from the catalog table's "View" button. The course arrives
+ * from the server page. The instructor name comes from the course payload
+ * itself (serializeCourse resolves it) instead of downloading the full
+ * user list via useUsers() just to look one name up.
  */
-export function CourseDetailView({ id }: CourseDetailViewProps) {
-  const { users } = useUsers()
-  const [course, setCourse] = useState<CourseCatalogEntry | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function CourseDetailView({ initialCourse, lessons, enrollments }: CourseDetailViewProps) {
+  const id = initialCourse.id
+  const [course, setCourse] = useState<CourseCatalogEntry | null>(() => toCatalogEntry(initialCourse))
+  const [instructor, setInstructor] = useState(initialCourse.instructor)
   const [editing, setEditing] = useState(false)
   const [archiving, setArchiving] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetchCourse(id)
-      .then((entry) => {
-        if (cancelled) return
-        if (!entry) {
-          setError('Course not found')
-          return
-        }
-        setCourse(entry)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load course') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
 
   const handleArchiveConfirm = async () => {
     if (course) {
@@ -97,23 +85,11 @@ export function CourseDetailView({ id }: CourseDetailViewProps) {
     setArchiving(false)
   }
 
-  if (loading) {
+  if (!course) {
     return (
       <div>
         <PageHeader title="Course Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !course) {
-    return (
-      <div>
-        <PageHeader title="Course Details" />
-        <EmptyState icon={BookX} title="Course not found" description={error || 'This course does not exist or was deleted.'} />
+        <EmptyState icon={BookX} title="Course not found" description="This course does not exist or was deleted." />
         <div className="mt-4">
           <UniversalButton href="/dashboard/e-learning/catalog" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Catalog
@@ -151,10 +127,10 @@ export function CourseDetailView({ id }: CourseDetailViewProps) {
 
         <CourseInfoCard
           course={course}
-          instructorName={course.lecturerId ? (users.find((u) => u.id === course.lecturerId)?.name ?? '—') : 'None assigned'}
+          instructorName={course.lecturerId ? (instructor || '—') : 'None assigned'}
         />
 
-        <CourseRelatedPanels courseId={course.id} />
+        <CourseRelatedPanels courseId={course.id} lessons={lessons} enrollments={enrollments} />
       </div>
 
       <EditCourseModal
@@ -162,8 +138,11 @@ export function CourseDetailView({ id }: CourseDetailViewProps) {
         onClose={async () => {
           setEditing(false)
           await refetchCourseCatalog()
-          const entry = await fetchCourse(id)
-          if (entry) setCourse(entry)
+          const fresh = await fetchCourse(id)
+          if (fresh) {
+            setCourse(toCatalogEntry(fresh))
+            setInstructor(fresh.instructor)
+          }
         }}
       />
       <ArchiveCourseModal course={archiving ? course : null} onClose={() => setArchiving(false)} onConfirm={handleArchiveConfirm} />

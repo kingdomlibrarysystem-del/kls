@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react'
 import { User, Mail, Smartphone, BookOpen, DollarSign, Calendar, Tag, Hash, ArrowLeft, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { typeConfig, statusConfig, type Transaction } from '../../_components/sales-data'
 
 interface TransactionDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialOrder: OrderDetail
 }
 
-interface OrderDetail extends Transaction {
+export interface OrderDetail extends Transaction {
   paidAt: string | null
 }
 
@@ -21,7 +21,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-24 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
@@ -29,50 +29,31 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 /**
  * Real details page for a single Order (sale/rental), replacing the
  * modal that used to open from the Sales & Rentals table's "View"
- * button. Fetches directly from /api/orders/:id — that route also
- * re-polls PayPack for pending orders — rather than reading the row
- * out of the already-loaded admin list.
+ * button. The stored order is loaded on the server by page.tsx; only a
+ * still-pending order is re-read from /api/orders/:id (which re-polls
+ * PayPack/Stripe) after mount.
  */
-export function TransactionDetailView({ id }: TransactionDetailViewProps) {
-  const [order, setOrder] = useState<OrderDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function TransactionDetailView({ initialOrder }: TransactionDetailViewProps) {
+  const [order, setOrder] = useState<OrderDetail | null>(initialOrder)
 
+  // The stored state came from the server page. Only while payment is still
+  // pending does the route have anything new (it re-polls the payment
+  // provider), so refresh once in that case instead of on every visit.
   useEffect(() => {
+    if (!(initialOrder.status === 'pending')) return
     let cancelled = false
-    setLoading(true)
-    fetch(`/api/orders/${id}`)
+    fetch(`C:/Program Files/Git/api/orders/${initialOrder.id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Transaction not found')
-          return
-        }
-        setOrder(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load transaction') })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .then((json) => { if (!cancelled && json.code === 'success' && json.data) setOrder(json.data) })
+      .catch(() => {})
     return () => { cancelled = true }
-  }, [id])
+  }, [initialOrder])
 
-  if (loading) {
+  if (!order) {
     return (
       <div>
         <PageHeader title="Transaction Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !order) {
-    return (
-      <div>
-        <PageHeader title="Transaction Details" />
-        <EmptyState icon={AlertTriangle} title="Transaction not found" description={error || 'This transaction does not exist.'} />
+        <EmptyState icon={AlertTriangle} title="Transaction not found" description={'This transaction does not exist.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/library/sales" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Sales & Rentals

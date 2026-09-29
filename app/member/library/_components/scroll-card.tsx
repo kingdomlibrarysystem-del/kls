@@ -7,7 +7,6 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { getParentName, getScrollImage, type Category } from '@/lib/kcs-taxonomy'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
@@ -26,8 +25,8 @@ function useIsFavorited(id: string) {
 /** The one readable-online match for this scroll, if any — a real `categoryId` FK match, not a title-string hack. */
 function useReadableResource(categoryId: string) {
   const { data: resources } = useResources()
-  const content = useReadableContent()
-  return findResourcesForScroll(categoryId, resources).find((r) => !!content[r.id])
+  // chapterCount comes with the resource list (was: download every chapter in the library).
+  return findResourcesForScroll(categoryId, resources).find((r) => r.chapterCount > 0)
 }
 
 /** This scroll's reading-progress percent, if the member has started reading it. */

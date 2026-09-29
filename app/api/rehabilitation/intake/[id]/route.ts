@@ -1,34 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-
-function serializeIntake(i: {
-  id: string
-  userId: string
-  concernArea: string
-  history: string
-  goals: string
-  status: string
-  reviewedById: string | null
-  reviewNotes: string | null
-  submittedAt: Date
-  user?: { name: string | null; firstName: string | null; lastName: string | null }
-}) {
-  return {
-    id: i.id,
-    userId: i.userId,
-    memberName: i.user ? (i.user.name ?? `${i.user.firstName ?? ''} ${i.user.lastName ?? ''}`.trim()) : undefined,
-    concernArea: i.concernArea,
-    history: i.history,
-    goals: i.goals,
-    status: i.status,
-    reviewedById: i.reviewedById,
-    reviewNotes: i.reviewNotes,
-    submittedAt: i.submittedAt.toISOString(),
-  }
-}
-
-const DETAIL_INCLUDE = { user: { select: { name: true, firstName: true, lastName: true } } } as const
+import { serializeIntake, DETAIL_INCLUDE } from '@/lib/data/rehab-intakes'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

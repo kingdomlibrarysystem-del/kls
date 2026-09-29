@@ -9,6 +9,16 @@
 > behavior by accident. This rule exists to keep the app problem-free as it
 > grows. A change is NOT complete until its PROGRESS.md entry is written.
 
+# Standing rule — server-first data loading & performance (added 2026-09-29)
+
+> **Rule (per project owner):** pages load their data on the server and pass
+> it down as props; no `useEffect` fetch-on-mount unless there is truly no
+> other way (post-action refresh, payment polling, live data, browser-only
+> data); no fake loading delays; never download a whole collection to
+> count/filter/find one row; Prisma queries select only what they render,
+> run in parallel, and hit indexed fields. Full rule with examples:
+> **PERFORMANCE.md → Rule 15**.
+
 # Standing rule — shadcn + Tailwind, light AND dark (added 2026-09-29)
 
 > **Rule (per project owner):** admin (`/dashboard`) and member (`/member`)
@@ -5817,3 +5827,145 @@ confirmed to contain `dark:bg-card!` (important), `dark:text-success`, etc.
 (Env note: `npm uninstall cn` pruned the undeclared `jsdom` that
 `markdown-editor-config.test.ts` imports - restored with
 `npm install --no-save jsdom`; that suite passes 55/55.)
+
+## 2026-09-29 - Performance pass 1: server-loaded pages, no fetch-on-mount, aggregate dashboard, Prisma indexes
+New standing rule: PERFORMANCE.md -> Rule 15 (pointer at the top of this file).
+Goal: pages arrive with their data (no skeleton + client fetch on every
+visit), no duplicate/oversized requests. Behaviour is unchanged unless noted.
+
+**Infrastructure (new files)**
+- `lib/server/page-session.ts` - `getPageSession()` (React `cache()`d, one
+  session lookup per request), `requirePageAuth()`, `requireStaffPage()`,
+  `canAccessOwned()` - page-side twins of `lib/auth/require-role.ts`
+  (redirect / 404 instead of 401/403 JSON).
+- `lib/server/to-plain.ts` (`toPlain()` = exact API JSON shape),
+  `lib/server/object-id.ts` (`isObjectId()`: malformed id -> 404, was a 500).
+- `lib/data/*.ts` - one loader + serializer per domain, imported by BOTH the
+  API route and the page (serializers MOVED out of the routes, not copied):
+  invitations, roles, users (+`USER_DETAIL_SELECT`, no more full-document
+  `include`), borrowings, reservations, certificates, news-articles,
+  courses, enrollments (list route's duplicate serializer removed), lessons,
+  assessments, resources, categories, orders (`serialize` renamed
+  `serializeOrder`), checkouts, reviews, chapters (`gateChapters`/
+  `isEntitled`/`serializeChapter` moved; still re-exported from
+  `app/api/chapters/route.ts` for existing importers/tests),
+  beauty-appointments, counseling-sessions, donation-campaigns, donations,
+  rehab-intakes, rehab-sessions, research-projects, research-papers,
+  admin-dashboard.
+- `lib/server/news-article-page.ts`, `lib/server/reader-page.ts` - shared
+  page loaders.
+- `lib/client/use-shared-list.ts` - de-duplicated, stale-while-revalidate
+  client list cache (one request per URL for all mounted consumers; cached
+  data shown instantly on revisit; always revalidates on mount).
+- `components/ui/local-date.tsx` - hydration-safe locale date.
+- `app/dashboard/loading.tsx`, `app/member/loading.tsx`
+  (`components/app-shell/page-skeleton.tsx`) - instant skeleton during
+  server navigation; `app/dashboard/not-found.tsx`, `app/member/not-found.tsx`
+  (`components/app-shell/portal-not-found.tsx`).
+
+**Detail pages converted to server loading (28 views):** the page checks the
+session (staff pages: `requireStaffPage`; member pages: `requirePageAuth` +
+the same owner-or-staff rule as the API, another member's record -> 404),
+loads the record, calls `notFound()` when missing, and passes `initialX`. The
+view's fetch-on-mount effect + skeleton branch are removed; views that
+re-read after an action keep a quiet `load()` for that only.
+Admin: invitations, roles, users, library resource, KCS category, borrowing,
+sales transaction, reservation, e-learning course/lesson/quiz/enrollment/
+certificate, news article, beauty appointment, counseling session, donation,
+donation campaign, rehab intake, rehab schedule session, research project,
+research paper. Member: borrowing, reservation, certificate, order, checkout,
+news article (+ public `/news/[id]`, now with `generateMetadata`), library
+resource page, reader (member + admin `/dashboard/library/read/[id]`).
+
+**Wasteful fetches removed**
+- Invitation/user detail mounted `useInvitations()`/`useUsers()` (whole list,
+  pageSize=1000) only for Resend/Cancel/Edit/Delete -> standalone
+  `resendInvitationRequest`/`removeInvitationRequest`/`updateUserRequest`/
+  `removeUserRequest` (the hooks now call these too).
+- Course detail: `useUsers()` (all users) for one lecturer name -> the course
+  payload's `instructor`; Lessons/Enrollments panels downloaded all lessons +
+  all courses + all enrollments -> courseId-scoped server queries passed as
+  props (`getCourseLessonRows`, `getCourseEnrollments`).
+- Lesson detail: all courses + all lessons for a title and prev/next ->
+  `getCourseTitle` + course-scoped siblings (closing Edit now calls
+  `router.refresh()` so they stay current). Quiz detail: course catalog ->
+  `getCourseTitle`.
+- News article reader: all categories for one color -> `getNewsCategoryColor`.
+- `useReadableContent()` (GET /api/chapters grouped mode = EVERY chapter body
+  in the library + 3 entitlement queries per priced book) was mounted by the
+  library resource cards, scroll cards, scroll detail, both resource detail
+  pages and the reader. Cards/details now use `resource.chapterCount`
+  (`isResourceReadable()`); the reader gets ONE book's gated chapters from the
+  server. `refreshReadableContent()` is a no-op unless something loaded the
+  catalog, so admin chapter saves stop re-downloading it.
+- Member library resource page: whole catalog (`useResources`) -> one
+  resource + reviews from the server; category name resolved server-side
+  (`getCategoryName()` read a client cache, so a direct visit showed
+  "Uncategorized" - fixed).
+- Payment detail pages (sales transaction, member order, member checkout):
+  stored state from the server; only a still-PENDING record triggers ONE
+  client re-read of the route (which re-polls PayPack/Stripe).
+
+**Admin home (/dashboard):** six widgets each downloaded full lists
+(resources, borrowings x3, users, reservations, publications, projects) to
+count/sum/slice. Now `page.tsx` calls `getAdminDashboardData()` - 11 parallel
+aggregate queries (groupBy/count/aggregate + `take`) - and passes props to
+BorrowReturn, WelcomeSection, InventoryOverview, RightPanels, MiddleSection,
+StatsBar. Counts are now exact past 1000 rows. **Behaviour fix:** "Recently
+Added" (both panels) used `[...resources].slice(-4).reverse()` on a
+createdAt-DESC list, i.e. showed the 4 OLDEST items; now the 4 newest.
+"Popular" joins borrows by resourceId instead of by title string.
+
+**Member hooks de-duplicated:** `useEnrollments`, `useBorrowings`,
+`useCertificates`, `useAssessmentAttempts`, `useCheckouts`, `useReservations`
+(member) now use `useSharedList` - same `{ data, loading, refetch }` API and
+URLs, but one request per page instead of one per component (the member home
+fired several twice), instant render on revisit, and `refetch()` updates
+every consumer.
+
+**Fake delays removed** (`LOAD_DELAY_MS` 400 ms `setTimeout` skeletons):
+ai-tools, beauty appointments, counseling sessions, health checkups, rehab
+intake, KCS pillar view, member favorites.
+
+**Prisma:** `@@index`es added for list filters/sorts - Borrow (userId+
+borrowDate, resourceId+status, status+dueDate), Reservation (userId+
+reservationDate, resourceId+status), Lesson (courseId+order), Assessment,
+AssessmentAttempt, Certificate, Enrollment (courseId), Notification
+(recipientId+createdAt), Message (channelId+sentAt), Channel, Resource
+(categoryId, status), Course (lecturerId), SessionRequest, ResearchPaper,
+Publication, AuditLog (timestamp). **Needs human action:** run
+`npx prisma db push` to create them in MongoDB (withheld, as in earlier
+phases). Resource GET now runs its two queries in parallel.
+
+**Hydration safety:** server-rendered views format locale dates/numbers, so
+`suppressHydrationWarning` was added to every `DetailRow` value span and to
+the inline RWF/number/date elements (+`ClaimCountdown`), and `<LocalDate>` is
+used where a date is its own element.
+
+**Interactions to watch**
+- Any new detail page must follow Rule 15 (loader in `lib/data`, used by the
+  route too). Changing a serializer now changes both the page and the API.
+- Widgets on `/dashboard` now REQUIRE props (no hooks); only
+  `app/dashboard/page.tsx` mounts them.
+- `CourseLessonsPanel`/`CourseEnrollmentsPanel`/`CourseRelatedPanels`,
+  `ReaderView`, `NewsArticleView`, member `ResourceDetailView`,
+  `ResourceReviews` now take data props (all call sites updated).
+- `useSharedList` caches per URL for the browser session; code that mutates
+  one of those lists must still call the hook's `refetch()` (unchanged).
+
+**Not done yet (next passes):** list pages still fetch on mount through the
+module-cache hooks (useResources, useCourseCatalog, admin list hooks with
+`pageSize=1000`) - next step is server-seeding those caches + real
+pagination; member home `CurrentlyReading` still uses `useResources` for book
+titles (the reading-progress API could include them); KCS category detail's
+related-data panel; `lesson-viewer-view`/`course-redirect-view` still resolve
+through catalog hooks. Pre-existing bug noticed, not changed: admin user
+detail shows `user.joinDate`, which the API never returns (it returns
+`createdAt`), so "Joined" is blank.
+
+Verification: `npx tsc --noEmit` clean; `npx next build` exit 0; `npx vitest
+run` 214 pass + the 6 known cart/order-sparse DB failures + DB-contention
+flakes (borrow-reserve-concurrency; reviews passes 5/5 alone); `npx prisma
+validate` valid. `npx prisma generate` could not replace the query-engine DLL
+(locked by a running dev server) - indexes don't change the client API;
+re-run generate after stopping the dev server.

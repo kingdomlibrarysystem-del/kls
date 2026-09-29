@@ -13,8 +13,7 @@ import {
   Newspaper,
   FlaskConical,
 } from "lucide-react";
-import { usePublications } from "@/app/dashboard/publishing/_shared/use-publications";
-import { useResearchProjects } from "@/app/dashboard/research/_shared/use-research-projects";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
 const publishingItems = [
   { icon: <Upload size={12} />, label: "Submit Manuscript", sub: "Submit your work", href: "/dashboard/publishing" },
@@ -68,12 +67,8 @@ function StatRow({ values }: { values: [string, string][] }) {
  * fabricated stats/actions for it here would misrepresent the module
  * as further along than it is.
  */
-export default function RightPanels() {
-  const { data: publications } = usePublications();
-  const { data: projects } = useResearchProjects();
-
-  const inProgress = publications.filter((p) => p.status === "SUBMITTED" || p.status === "UNDER_REVIEW").length;
-  const published = publications.filter((p) => p.status === "PUBLISHED").length;
+export default function RightPanels({ publications, projects }: { publications: AdminDashboardData["publications"]; projects: AdminDashboardData["projects"] }) {
+  const { inProgress, published } = publications;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -85,7 +80,7 @@ export default function RightPanels() {
           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)" }}>PUBLISHING SERVICES</span>
         </div>
         <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 8 }}>Discover. Publish. Transform.</div>
-        <StatRow values={[[String(publications.length), "Books"], [String(inProgress), "In Progress"], [String(published), "Published"]]} />
+        <StatRow values={[[String(publications.total), "Books"], [String(inProgress), "In Progress"], [String(published), "Published"]]} />
         <ItemGrid items={publishingItems} />
         <Link href="/dashboard/publishing" className="btn btn-gold btn-sm" style={{ width: "100%", justifyContent: "center", textAlign: "center" }}>Start Publishing →</Link>
       </div>
@@ -97,7 +92,7 @@ export default function RightPanels() {
           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--teal-light)" }}>RESEARCH SERVICES</span>
         </div>
         <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 8 }}>Discover. Publish. Transform.</div>
-        <StatRow values={[[String(projects.length), "Projects"], [String(projects.filter((p) => p.status === "ACTIVE").length), "Active"]]} />
+        <StatRow values={[[String(projects.total), "Projects"], [String(projects.active), "Active"]]} />
         <ItemGrid items={researchItems} />
         <Link href="/dashboard/research" className="btn btn-outline-dim btn-sm" style={{ width: "100%", justifyContent: "center", textAlign: "center", color: "var(--teal-light)", borderColor: "var(--teal)" }}>Go to Research Center →</Link>
       </div>

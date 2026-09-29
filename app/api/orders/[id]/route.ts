@@ -5,6 +5,7 @@ import { findTransaction } from '@/lib/paypack'
 import { retrieveCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { settleOrder } from '../settle'
+import { serializeOrder } from '@/lib/data/orders'
 
 /**
  * Status-refresh endpoint — a member polls this while waiting on either
@@ -25,7 +26,7 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
   if (auth.response) return auth.response
 
   if (order.status !== 'PENDING') {
-    return NextResponse.json({ data: serialize(order), message: 'Order fetched', code: 'success', status: 200 })
+    return NextResponse.json({ data: serializeOrder(order), message: 'Order fetched', code: 'success', status: 200 })
   }
 
   if (order.paypackRef) {
@@ -33,7 +34,7 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
       const remote = await findTransaction(order.paypackRef)
       if (remote.status !== order.paypackStatus) {
         const updated = await settleOrder(order.id, { paypackStatus: remote.status, providerStatus: remote.status })
-        return NextResponse.json({ data: serialize(updated), message: 'Order status refreshed', code: 'success', status: 200 })
+        return NextResponse.json({ data: serializeOrder(updated), message: 'Order status refreshed', code: 'success', status: 200 })
       }
     } catch {
       // PayPack lookup failed — fall through and return the order's last known state rather than blocking the poll.
@@ -44,54 +45,13 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
       const providerStatus = session.payment_status === 'paid' ? 'successful' : session.status === 'expired' ? 'failed' : 'pending'
       if (providerStatus !== 'pending') {
         const updated = await settleOrder(order.id, { providerStatus })
-        return NextResponse.json({ data: serialize(updated), message: 'Order status refreshed', code: 'success', status: 200 })
+        return NextResponse.json({ data: serializeOrder(updated), message: 'Order status refreshed', code: 'success', status: 200 })
       }
     } catch {
       // Stripe lookup failed — fall through and return the order's last known state rather than blocking the poll.
     }
   }
 
-  return NextResponse.json({ data: serialize(order), message: 'Order fetched', code: 'success', status: 200 })
+  return NextResponse.json({ data: serializeOrder(order), message: 'Order fetched', code: 'success', status: 200 })
 })
 
-function serialize(o: {
-  id: string
-  userId: string
-  buyerName: string
-  buyerEmail: string
-  buyerPhone: string
-  resourceId: string
-  resourceTitle: string
-  resourceFormat: string
-  resourceCover: string | null
-  type: string
-  amountRwf: number
-  status: string
-  checkoutId: string | null
-  paypackRef: string | null
-  paypackStatus: string | null
-  stripeSessionId: string | null
-  paidAt: Date | null
-  createdAt: Date
-}) {
-  return {
-    id: o.id,
-    userId: o.userId,
-    buyerName: o.buyerName,
-    buyerEmail: o.buyerEmail,
-    buyerPhone: o.buyerPhone,
-    resourceId: o.resourceId,
-    resourceTitle: o.resourceTitle,
-    resourceFormat: o.resourceFormat,
-    resourceCover: o.resourceCover,
-    type: o.type,
-    amount: o.amountRwf,
-    status: o.status.toLowerCase(),
-    checkoutId: o.checkoutId,
-    paypackRef: o.paypackRef,
-    paypackStatus: o.paypackStatus,
-    stripeSessionId: o.stripeSessionId,
-    paidAt: o.paidAt ? o.paidAt.toISOString() : null,
-    createdAt: o.createdAt.toISOString().split('T')[0],
-  }
-}

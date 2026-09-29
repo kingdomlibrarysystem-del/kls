@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, User, Tag, Globe, Calendar, FileText, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
+import { LocalDate } from '@/components/ui/local-date'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { ElegantButton } from '@/components/ui/elegant-button'
@@ -12,54 +12,39 @@ import { ArticleFormModal } from '../../_components/article-form-modal'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 
 interface ArticleDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing). */
+  initialArticle: NewsArticle
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
-/** Real details page for a single article — Edit is available on any status. */
-export function ArticleDetailView({ id }: ArticleDetailViewProps) {
-  const [article, setArticle] = useState<NewsArticle | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+/** Real details page for a single article — Edit is available on any status. The article arrives from the server page; it is re-read from the API only after an edit. */
+export function ArticleDetailView({ initialArticle }: ArticleDetailViewProps) {
+  const id = initialArticle.id
+  const [article, setArticle] = useState<NewsArticle | null>(initialArticle)
   const [editOpen, setEditOpen] = useState(false)
 
+  /** Re-reads the article after an edit; keeps the last known copy if that fails. */
   const loadArticle = () => {
-    setLoading(true)
     fetch(`/api/news/articles/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Article not found'); return }
-        setArticle(json.data)
-      })
-      .catch(() => setError('Failed to load article'))
-      .finally(() => setLoading(false))
+      .then((json) => { if (json.code === 'success' && json.data) setArticle(json.data) })
+      .catch(() => {})
   }
 
-  useEffect(() => { loadArticle() }, [id])
-
-  if (loading) {
+  if (!article) {
     return (
       <div>
         <PageHeader title="Article Details" />
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-lg" /><Skeleton className="h-40 w-full rounded-lg" /></div>
-      </div>
-    )
-  }
-
-  if (error || !article) {
-    return (
-      <div>
-        <PageHeader title="Article Details" />
-        <EmptyState icon={FileText} title="Article not found" description={error || 'This article does not exist.'} />
+        <EmptyState icon={FileText} title="Article not found" description="This article does not exist." />
         <div className="mt-4"><UniversalButton href="/dashboard/news/articles" variant="outline" icon={<ArrowLeft size={14} />}>Back to Articles</UniversalButton></div>
       </div>
     )
@@ -90,7 +75,7 @@ export function ArticleDetailView({ id }: ArticleDetailViewProps) {
           <DetailRow icon={<User size={13} />} label="Author" value={article.authorName} />
           <DetailRow icon={<Tag size={13} />} label="Category" value={article.category} />
           <DetailRow icon={<Globe size={13} />} label="Language" value={article.language.toUpperCase()} />
-          {article.publishedAt && <DetailRow icon={<Calendar size={13} />} label="Published" value={new Date(article.publishedAt).toLocaleDateString()} />}
+          {article.publishedAt && <DetailRow icon={<Calendar size={13} />} label="Published" value={<LocalDate value={article.publishedAt} />} />}
         </div>
 
         <div className="bg-w-100 border border-w-300 rounded p-4">
