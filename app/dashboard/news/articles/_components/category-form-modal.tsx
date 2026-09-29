@@ -46,17 +46,17 @@ export function CategoryFormModal({ open, onClose, onCreated }: CategoryFormModa
   return (
     <Modal open={open} onClose={handleClose} title="New Category" size="sm">
       <div className="space-y-3">
-        {formError && <p className="text-red-600 text-xs font-lato">{formError}</p>}
+        {formError && <p className="text-red-600 dark:text-destructive text-xs font-lato">{formError}</p>}
         <div>
-          <label className="font-lato text-xs font-semibold text-w-800 block mb-1">Name *</label>
+          <label className="font-lato text-xs font-semibold text-w-800 dark:text-foreground block mb-1">Name *</label>
           <FormInput id="new-cat-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ministry Updates" />
         </div>
         <div>
-          <label className="font-lato text-xs font-semibold text-w-800 block mb-1">Description (optional)</label>
+          <label className="font-lato text-xs font-semibold text-w-800 dark:text-foreground block mb-1">Description (optional)</label>
           <FormInput id="new-cat-desc" type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" />
         </div>
         <div>
-          <label className="font-lato text-xs font-semibold text-w-800 block mb-1.5">Color</label>
+          <label className="font-lato text-xs font-semibold text-w-800 dark:text-foreground block mb-1.5">Color</label>
           <div className="flex items-center gap-2 flex-wrap">
             {CATEGORY_COLOR_PRESETS.map((hex) => (
               <button

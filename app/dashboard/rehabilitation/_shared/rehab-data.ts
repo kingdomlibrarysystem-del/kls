@@ -57,15 +57,15 @@ export interface RehabMilestone {
 }
 
 export const rehabIntakeStatusConfig: Record<RehabIntakeStatus, { label: string; cls: string }> = {
-  SUBMITTED:    { label: 'Submitted',    cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  UNDER_REVIEW: { label: 'Under Review', cls: 'bg-blue-50   text-blue-800   border-blue-200' },
-  PLAN_CREATED: { label: 'Plan Created', cls: 'bg-green-50  text-green-800  border-green-200' },
-  DECLINED:     { label: 'Declined',     cls: 'bg-red-50    text-red-800    border-red-200' },
+  SUBMITTED:    { label: 'Submitted',    cls: 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30' },
+  UNDER_REVIEW: { label: 'Under Review', cls: 'bg-blue-50 dark:bg-info/10   text-blue-800   border-blue-200 dark:border-info/30' },
+  PLAN_CREATED: { label: 'Plan Created', cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30' },
+  DECLINED:     { label: 'Declined',     cls: 'bg-red-50 dark:bg-destructive/10    text-red-800 dark:text-destructive    border-red-200 dark:border-destructive/30' },
 }
 
 export const rehabSessionStatusConfig: Record<RehabSessionStatus, { label: string; cls: string }> = {
-  SCHEDULED: { label: 'Scheduled', cls: 'bg-blue-50  text-blue-800  border-blue-200' },
-  COMPLETED: { label: 'Completed', cls: 'bg-w-100     text-w-800     border-w-300' },
+  SCHEDULED: { label: 'Scheduled', cls: 'bg-blue-50 dark:bg-info/10  text-blue-800  border-blue-200 dark:border-info/30' },
+  COMPLETED: { label: 'Completed', cls: 'bg-w-100     text-w-800 dark:text-foreground     border-w-300' },
   MISSED:    { label: 'Missed',    cls: 'bg-orange-50 text-orange-800 border-orange-200' },
-  CANCELLED: { label: 'Cancelled', cls: 'bg-red-50   text-red-800   border-red-200' },
+  CANCELLED: { label: 'Cancelled', cls: 'bg-red-50 dark:bg-destructive/10   text-red-800 dark:text-destructive   border-red-200 dark:border-destructive/30' },
 }

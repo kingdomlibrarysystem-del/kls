@@ -1,19 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { User, FolderOpen, CalendarDays, Tag, Hash, ArrowLeft, FileX } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { paperStatusConfig, type ResearchPaper } from '../../_components/repository-data'
 
-interface PaperDetailData extends ResearchPaper {
+export interface PaperDetailData extends ResearchPaper {
   abstract: string
 }
 
 interface PaperDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialPaper: PaperDetailData
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -21,7 +20,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
@@ -29,49 +28,16 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 /**
  * Real details page for a single research paper, replacing the modal
  * that used to open from the Paper Repository table's "View" button.
- * Fetches directly from /api/research-papers/:id so this page also
- * works when linked to directly, without the list being loaded first.
+ * The paper is loaded on the server by page.tsx.
  */
-export function PaperDetailView({ id }: PaperDetailViewProps) {
-  const [paper, setPaper] = useState<PaperDetailData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function PaperDetailView({ initialPaper }: PaperDetailViewProps) {
+  const paper: PaperDetailData | null = initialPaper
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/research-papers/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Research paper not found')
-          return
-        }
-        setPaper(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load research paper') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
-
-  if (loading) {
+  if (!paper) {
     return (
       <div>
         <PageHeader title="Paper Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !paper) {
-    return (
-      <div>
-        <PageHeader title="Paper Details" />
-        <EmptyState icon={FileX} title="Paper not found" description={error || 'This research paper does not exist or was removed.'} />
+        <EmptyState icon={FileX} title="Paper not found" description={'This research paper does not exist or was removed.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/research/repository" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Repository

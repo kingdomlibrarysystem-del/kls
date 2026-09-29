@@ -37,9 +37,9 @@ export function NewUserCredentialsModal({ credentials, onClose }: NewUserCredent
     <Modal open={!!credentials} onClose={onClose} title="User Created" size="sm">
       {credentials && (
         <div>
-          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-            <AlertTriangle size={14} className="text-yellow-700 shrink-0" />
-            <p className="font-lato text-xs text-yellow-800">
+          <div className="flex items-center gap-2 bg-yellow-50 dark:bg-warning/10 border border-yellow-200 dark:border-warning/30 rounded p-3 mb-4">
+            <AlertTriangle size={14} className="text-yellow-700 dark:text-warning shrink-0" />
+            <p className="font-lato text-xs text-yellow-800 dark:text-warning">
               This password is shown only once. Copy it now and share it securely with {credentials.name} — it cannot be recovered later, only reset.
             </p>
           </div>
@@ -55,9 +55,9 @@ export function NewUserCredentialsModal({ credentials, onClose }: NewUserCredent
             <button
               onClick={handleCopy}
               aria-label="Copy password"
-              className="shrink-0 p-2 bg-w-100 border border-w-300 rounded hover:bg-w-200 transition-colors"
+              className="shrink-0 p-2 bg-w-100 border border-w-300 rounded hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
             >
-              {copied ? <Check size={16} className="text-green-700" /> : <Copy size={16} className="text-w-700" />}
+              {copied ? <Check size={16} className="text-green-700 dark:text-success" /> : <Copy size={16} className="text-w-700" />}
             </button>
           </div>
 

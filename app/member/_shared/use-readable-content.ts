@@ -68,6 +68,11 @@ function loadReadableContent(): Promise<void> {
  * hard reload.
  */
 export async function refreshReadableContent(): Promise<void> {
+  // Nothing to refresh if no screen in this session ever loaded the catalog.
+  // The reader, library cards and resource pages no longer do (they use the
+  // server-loaded single-book chapters / resource.chapterCount), so this no
+  // longer re-downloads every chapter in the library after each admin save.
+  if (!hasFetched) return
   hasFetched = false
   await loadReadableContent()
 }

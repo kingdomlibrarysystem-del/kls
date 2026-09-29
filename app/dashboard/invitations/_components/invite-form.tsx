@@ -51,12 +51,12 @@ export function InviteForm({ onInvite }: InviteFormProps) {
     <FormSection title="Invite a New User">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {sentTo && (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
+          <div className="flex items-center gap-2 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded mb-4 font-lato text-sm">
             <CheckCircle2 size={15} /> Invitation sent to {sentTo}.
           </div>
         )}
         {submitError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 font-lato text-sm">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded mb-4 font-lato text-sm">
             <AlertCircle size={15} /> {submitError}
           </div>
         )}
@@ -70,7 +70,7 @@ export function InviteForm({ onInvite }: InviteFormProps) {
             <FieldLabel htmlFor="role" required>Role</FieldLabel>
             <select
               id="role"
-              className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
               {...register('role')}
             >
               {invitableRoles.map((r) => <option key={r} value={r}>{r}</option>)}

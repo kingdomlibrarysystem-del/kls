@@ -52,7 +52,7 @@ function buildColumns(): Column<DisplayEnrollment>[] {
       key: 'progress', label: 'Progress', sortable: true,
       render: (e) => (
         <div className="flex items-center gap-2 min-w-25">
-          <div className="flex-1 h-1.5 bg-w-200 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-w-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div className="h-full bg-w-600 rounded-full" style={{ width: `${e.progress}%` }} />
           </div>
           <span className="text-xs text-w-700 font-semibold">{e.progress}%</span>
@@ -104,7 +104,7 @@ export function EnrollmentsView() {
     <select
       value={statusFilter}
       onChange={(ev) => setStatusFilter(ev.target.value as EnrollmentStatus | 'all')}
-      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
     >
       <option value="all">All Statuses</option>
       {(Object.keys(enrollmentStatusConfig) as EnrollmentStatus[]).map((s) => (

@@ -40,7 +40,7 @@ export function CampaignsView() {
       render: (c) => (
         <div className="w-32">
           <p className="text-xs text-w-700 mb-1">{c.raisedRwf.toLocaleString()} / {c.goalRwf.toLocaleString()} RWF</p>
-          <div className="w-full h-1.5 rounded-full bg-w-200 overflow-hidden"><div className="h-full bg-w-600" style={{ width: `${Math.min(100, (c.raisedRwf / c.goalRwf) * 100)}%` }} /></div>
+          <div className="w-full h-1.5 rounded-full bg-w-200 dark:bg-white/10 overflow-hidden"><div className="h-full bg-w-600" style={{ width: `${Math.min(100, (c.raisedRwf / c.goalRwf) * 100)}%` }} /></div>
         </div>
       ),
     },
@@ -53,9 +53,9 @@ export function CampaignsView() {
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
           <UniversalButton href={`/dashboard/donations/campaigns/${c.id}`} aria-label={`View ${c.title}`} variant="secondary" size="sm" icon={<Eye size={12} />} className="!px-2.5 !py-1 !text-xs">View</UniversalButton>
-          <button onClick={() => { setEditing(c); setFormOpen(true) }} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"><Pencil size={12} /> Edit</button>
-          <button onClick={() => handleToggleFeatured(c)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"><Star size={12} className={c.featured ? 'text-yellow-500' : ''} fill={c.featured ? 'currentColor' : 'none'} /></button>
-          {c.status === 'ACTIVE' && <button onClick={() => handleArchive(c)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"><Archive size={12} /> Archive</button>}
+          <button onClick={() => { setEditing(c); setFormOpen(true) }} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"><Pencil size={12} /> Edit</button>
+          <button onClick={() => handleToggleFeatured(c)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"><Star size={12} className={c.featured ? 'text-yellow-500' : ''} fill={c.featured ? 'currentColor' : 'none'} /></button>
+          {c.status === 'ACTIVE' && <button onClick={() => handleArchive(c)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors"><Archive size={12} /> Archive</button>}
         </div>
       ),
     },
@@ -63,7 +63,7 @@ export function CampaignsView() {
 
   return (
     <div>
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <div className="flex justify-end mb-4">
         <ElegantButton variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5"><PlusCircle size={15} /> New Campaign</ElegantButton>
       </div>

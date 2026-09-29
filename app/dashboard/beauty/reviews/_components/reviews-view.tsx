@@ -37,9 +37,9 @@ export function ReviewsView() {
 
   return (
     <div className="space-y-4">
-      {toast && <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       {reviewable.map((appt) => (
-        <div key={appt.id} className="border border-w-300 rounded-lg bg-white p-4">
+        <div key={appt.id} className="border border-w-300 rounded-lg bg-white dark:bg-card! p-4">
           <p className="font-lato text-sm font-semibold text-w-950 mb-2">{appt.serviceName ?? 'Service'} — {appt.providerName ?? 'Provider'}</p>
           <div className="flex items-center gap-1 mb-3">
             {[1, 2, 3, 4, 5].map((n) => (
@@ -53,7 +53,7 @@ export function ReviewsView() {
             value={comment[appt.id] ?? ''}
             onChange={(e) => setComment((c) => ({ ...c, [appt.id]: e.target.value }))}
             placeholder="Share your experience (optional)…"
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none mb-3"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none mb-3"
           />
           <ElegantButton type="button" variant="primary" className="text-sm py-2" onClick={() => handleSubmit(appt.id)}>Submit Review</ElegantButton>
         </div>

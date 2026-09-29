@@ -3,45 +3,18 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff, requireAdmin } from '@/lib/auth/require-role'
-
-const ROLE_INCLUDE = { role: { select: { name: true } } } as const
-
-function serializeUser(u: {
-  id: string
-  name: string | null
-  firstName: string | null
-  lastName: string | null
-  email: string
-  status: string
-  role: { name: string } | null
-  emailVerified: Date | null
-  createdAt: Date
-  notificationPreferences?: unknown
-}) {
-  return {
-    id: u.id,
-    name: u.name ?? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
-    firstName: u.firstName ?? '',
-    lastName: u.lastName ?? '',
-    email: u.email,
-    role: u.role?.name ?? 'Member',
-    status: u.status.toLowerCase(),
-    emailVerified: !!u.emailVerified,
-    createdAt: u.createdAt.toISOString().split('T')[0],
-    notificationPreferences: (u.notificationPreferences as Record<string, boolean> | null) ?? {},
-  }
-}
+import { getUserDetail, serializeUser, USER_DETAIL_SELECT } from '@/lib/data/users'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const auth = await requireOwnerOrStaff(id)
   if (auth.response) return auth.response
 
-  const user = await prisma.user.findUnique({ where: { id }, include: ROLE_INCLUDE })
+  const user = await getUserDetail(id)
   if (!user) {
     return NextResponse.json({ data: null, message: 'User not found', code: 'error', status: 404 }, { status: 404 })
   }
-  return NextResponse.json({ data: serializeUser(user), message: 'User fetched successfully', code: 'success', status: 200 })
+  return NextResponse.json({ data: user, message: 'User fetched successfully', code: 'success', status: 200 })
 }
 
 const updateUserSchema = z.object({
@@ -107,7 +80,7 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
       ...(roleId && { roleId }),
       ...(mergedPreferences && { notificationPreferences: mergedPreferences }),
     },
-    include: ROLE_INCLUDE,
+    select: USER_DETAIL_SELECT,
   })
 
   return NextResponse.json({ data: serializeUser(user), message: 'User updated successfully', code: 'success', status: 200 })

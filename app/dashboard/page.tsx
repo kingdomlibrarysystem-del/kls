@@ -1,47 +1,54 @@
-import BorrowReturn       from "./_components/BorrowReturn";
-import DigitalLibrary     from "./_components/DigitalLibrary";
-import { FooterSection, StatsBar } from "./_components/FooterSection";
-import InventoryOverview  from "./_components/InventoryOverview";
-import MiddleSection      from "./_components/MiddleSection";
-import RightPanels        from "./_components/RightPanels";
-import WelcomeSection     from "./_components/WelcomeSection";
+import BorrowReturn from "./_components/BorrowReturn";
+import DashboardKpis from "./_components/DashboardKpis";
+import DigitalLibrary from "./_components/DigitalLibrary";
+import { FooterSection } from "./_components/FooterSection";
+import InventoryOverview, { QuickActions } from "./_components/InventoryOverview";
+import { PopularResources, RecentlyAdded } from "./_components/MiddleSection";
+import { PublishingServices, ResearchServices } from "./_components/RightPanels";
+import WelcomeSection from "./_components/WelcomeSection";
+import { requireStaffPage } from "@/lib/server/page-session";
+import { getAdminDashboardData } from "@/lib/data/admin-dashboard";
+import { toPlain } from "@/lib/server/to-plain";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
-export default function DashboardPage() {
+/**
+ * Admin home. All widget data is loaded here on the server in one batch of
+ * parallel aggregate queries (lib/data/admin-dashboard.ts) and passed down —
+ * no widget fetches on mount (PERFORMANCE.md rules 1-5, 15).
+ *
+ * Layout (one 16px rhythm everywhere, columns bottom-aligned so no gaps):
+ *   hero → KPI row → [loans + KCS + research (2/3) | quick actions + publishing (1/3)]
+ *   → [inventory | popular | recently added] → [roadmap (2/3) | AI + community (1/3)]
+ */
+export default async function DashboardPage() {
+  await requireStaffPage();
+  const data = toPlain<AdminDashboardData>(await getAdminDashboardData());
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4">
+      <WelcomeSection inventory={data.inventory} />
 
-      {/* ROW 1 – three columns on lg+, stacked single column below */}
-      <div
-        className="grid grid-cols-1 lg:grid-cols-[minmax(180px,280px)_1fr_minmax(160px,256px)] gap-3 lg:gap-0"
-        style={{ maxWidth: "100%" }}
-      >
-        {/* LEFT */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <BorrowReturn />
-        </div>
+      <DashboardKpis borrow={data.borrow} reservationsTotal={data.reservationsTotal} membersTotal={data.membersTotal} />
 
-        {/* CENTRE */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
-          <WelcomeSection />
+      <div className="grid items-stretch gap-4 xl:grid-cols-3">
+        <div className="flex min-w-0 flex-col gap-4 xl:col-span-2">
+          <BorrowReturn borrow={data.borrow} />
           <DigitalLibrary />
-          <InventoryOverview />
+          <ResearchServices projects={data.projects} />
         </div>
-
-        {/* RIGHT */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <RightPanels />
+        <div className="flex min-w-0 flex-col gap-4">
+          <QuickActions />
+          <PublishingServices publications={data.publications} />
         </div>
       </div>
 
-      {/* ROW 2 */}
-      <MiddleSection />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <InventoryOverview inventory={data.inventory} />
+        <PopularResources popular={data.popular} />
+        <RecentlyAdded recent={data.inventory.newest} />
+      </div>
 
-      {/* ROW 3 */}
-      <StatsBar />
-
-      {/* ROW 4 */}
       <FooterSection />
-
     </div>
   );
 }

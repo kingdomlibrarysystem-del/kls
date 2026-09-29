@@ -158,7 +158,7 @@ export default function ELearningPage() {
                       aria-label={`${t("m_elearning.view_course")} ${course.title}`}
                       style={{
                         display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
-                        background: "var(--teal-light)", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none",
+                        background: "var(--teal-light)", color: "var(--primary-foreground)", fontSize: 12, fontWeight: 600, textDecoration: "none",
                       }}
                     >
                       <CheckCircle2 size={13} /> {t("m_elearning.view_course")}
@@ -170,7 +170,7 @@ export default function ELearningPage() {
                       aria-label={course.price > 0 ? `Pay to enroll in ${course.title}` : `Enroll in ${course.title}`}
                       style={{
                         display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
-                        background: "var(--teal-light)", color: "#fff",
+                        background: "var(--teal-light)", color: "var(--primary-foreground)",
                         fontSize: 12, fontWeight: 600, cursor: "pointer",
                         opacity: enrolling === course.id ? 0.7 : 1,
                       }}

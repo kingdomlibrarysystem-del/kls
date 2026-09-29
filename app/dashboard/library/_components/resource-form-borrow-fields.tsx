@@ -37,7 +37,7 @@ export function ResourceFormBorrowFields({ register, errors, setValue, watch }: 
         <FieldLabel htmlFor="borrowDurationPreset" required>Return Period</FieldLabel>
         <select
           id="borrowDurationPreset"
-          className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+          className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           value={isCustom ? 'custom' : String(borrowDurationDays)}
           onChange={(e) => {
             if (e.target.value === 'custom') { setIsCustom(true); return }

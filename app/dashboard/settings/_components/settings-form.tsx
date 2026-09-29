@@ -70,12 +70,12 @@ export function SettingsForm() {
     <div className="max-w-2xl">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {submitSuccess && (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+          <div className="flex items-center gap-2 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
             <CheckCircle2 size={15} /> Settings saved.
           </div>
         )}
         {submitError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm">
             <AlertCircle size={15} /> {submitError}
           </div>
         )}

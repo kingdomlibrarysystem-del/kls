@@ -20,7 +20,7 @@ export function CourseAnalyticsCard({ course }: CourseAnalyticsCardProps) {
           <span>Average Completion</span>
           <span className="font-semibold">{course.avgCompletion}%</span>
         </div>
-        <div className="h-2 bg-w-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-w-200 dark:bg-white/10 rounded-full overflow-hidden">
           <div className="h-full bg-w-600 rounded-full" style={{ width: `${course.avgCompletion}%` }} />
         </div>
       </div>
@@ -41,13 +41,13 @@ export function CourseAnalyticsCard({ course }: CourseAnalyticsCardProps) {
 
       <div>
         <p className="flex items-center gap-1.5 font-lato text-xs font-semibold text-w-700 uppercase tracking-wide mb-2">
-          <TrendingDown size={12} className="text-red-600" /> Dropoff Points
+          <TrendingDown size={12} className="text-red-600 dark:text-destructive" /> Dropoff Points
         </p>
         <ul className="space-y-1">
           {course.dropoffPoints.map((d) => (
             <li key={d.lesson} className="flex items-center justify-between text-xs font-lato text-w-700">
               <span className="truncate">{d.lesson}</span>
-              <span className="text-red-700 font-semibold">{d.dropoffRate}% drop</span>
+              <span className="text-red-700 dark:text-destructive font-semibold">{d.dropoffRate}% drop</span>
             </li>
           ))}
         </ul>

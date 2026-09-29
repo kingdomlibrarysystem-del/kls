@@ -55,11 +55,11 @@ export function ArticlesView() {
       render: (a) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
           <UniversalButton href={`/dashboard/news/articles/${a.id}`} aria-label={`View ${a.title}`} variant="secondary" size="sm" icon={<Eye size={12} />} className="!px-2.5 !py-1 !text-xs">View</UniversalButton>
-          <button onClick={() => { setEditing(a); setFormOpen(true) }} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"><Pencil size={12} /> Edit</button>
+          <button onClick={() => { setEditing(a); setFormOpen(true) }} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"><Pencil size={12} /> Edit</button>
           {a.status === 'DRAFT' && (
-            <button onClick={() => handleSubmit(a)} className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-lato hover:bg-blue-100 transition-colors"><Send size={12} /> Submit</button>
+            <button onClick={() => handleSubmit(a)} className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 dark:bg-info/10 text-blue-700 dark:text-info border border-blue-200 dark:border-info/30 rounded text-xs font-lato hover:bg-blue-100 dark:hover:bg-info/20 transition-colors"><Send size={12} /> Submit</button>
           )}
-          <button onClick={() => setDeleting(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"><Trash2 size={12} /> Delete</button>
+          <button onClick={() => setDeleting(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors"><Trash2 size={12} /> Delete</button>
         </div>
       ),
     },
@@ -67,7 +67,7 @@ export function ArticlesView() {
 
   return (
     <div>
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <div className="flex justify-end gap-2 mb-4">
         <ElegantButton variant="outline" onClick={() => setCatFormOpen(true)} className="flex items-center gap-1.5"><Tag size={15} /> New Category</ElegantButton>
         <ElegantButton variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5"><PlusCircle size={15} /> New Article </ElegantButton>

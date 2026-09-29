@@ -96,14 +96,14 @@ export function ReviewQueueView() {
           <button
             onClick={() => openModal(s, 'approve')}
             aria-label={`Approve ${s.title}`}
-            className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors"
           >
             <CheckCircle size={12} /> Approve
           </button>
           <button
             onClick={() => openModal(s, 'reject')}
             aria-label={`Reject ${s.title}`}
-            className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors"
           >
             <XCircle size={12} /> Reject
           </button>
@@ -115,7 +115,7 @@ export function ReviewQueueView() {
   return (
     <div>
       {toast && (
-        <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+        <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
           {toast}
         </div>
       )}

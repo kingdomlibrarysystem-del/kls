@@ -1,33 +1,34 @@
-'use client'
-
 import Link from 'next/link'
 import { Video, ChevronRight } from 'lucide-react'
-import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
+import type { LessonContentType } from '@/app/member/_shared/lesson-data'
 import { contentTypeConfig } from '../../../lessons/_components/lessons-config'
 import { EmptyState } from '@/components/ui/empty-state'
 
+export interface CourseLessonRow {
+  id: string
+  title: string
+  contentType: LessonContentType
+  durationMinutes: number
+}
+
 interface CourseLessonsPanelProps {
-  courseId: string
+  /** This course's lessons in order, loaded on the server by the page (not the all-courses lesson store). */
+  lessons: CourseLessonRow[]
 }
 
 /** Ordered lesson list for a course's detail page — lets an admin jump straight into any lesson, or "continue" from the first one, without going through the cross-course Lessons table. */
-export function CourseLessonsPanel({ courseId }: CourseLessonsPanelProps) {
-  const { data: lessonsByCourse, loading } = useLessonsByCourse()
-  const lessons = lessonsByCourse[courseId]?.lessons ?? []
-
-  if (loading) return null
-
+export function CourseLessonsPanel({ lessons }: CourseLessonsPanelProps) {
   if (lessons.length === 0) {
     return <EmptyState icon={Video} title="No lessons yet" description="Add the first lesson from the Lessons tab." />
   }
 
   return (
-    <div className="divide-y divide-w-200">
+    <div className="divide-y divide-w-200 dark:divide-white/10">
       {lessons.map((lesson, index) => (
         <Link
           key={lesson.id}
           href={`/dashboard/e-learning/lessons/${lesson.id}`}
-          className="flex items-center justify-between gap-3 py-2.5 hover:bg-form-highlight -mx-2 px-2 rounded transition-colors"
+          className="flex items-center justify-between gap-3 py-2.5 hover:bg-form-highlight dark:hover:bg-white/10 -mx-2 px-2 rounded transition-colors"
         >
           <div className="flex items-center gap-3 min-w-0">
             <span className="font-cinzel text-xs font-bold text-w-500 w-6 shrink-0">#{index + 1}</span>

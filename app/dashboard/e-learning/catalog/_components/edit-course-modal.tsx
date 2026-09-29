@@ -72,11 +72,11 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
             id="edit-description"
             rows={4}
             className={`w-full px-4 py-3 font-lato text-sm border rounded transition-colors focus:outline-none ${
-              errors.description ? 'border-red-500 bg-red-50' : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
+              errors.description ? 'border-red-500 bg-red-50' : 'border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary'
             }`}
             {...register('description')}
           />
-          {errors.description && <p className="text-red-600 text-xs mt-1 font-lato">{errors.description.message}</p>}
+          {errors.description && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.description.message}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -84,7 +84,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
             <FieldLabel htmlFor="edit-category" required>Category</FieldLabel>
             <select
               id="edit-category"
-              className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
               {...register('category')}
             >
               {courseCategories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -95,7 +95,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
             <FieldLabel htmlFor="edit-language" required>Language</FieldLabel>
             <select
               id="edit-language"
-              className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
               {...register('language')}
             >
               {courseLanguages.map((l) => <option key={l} value={l}>{languageLabels[l]}</option>)}
@@ -107,7 +107,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
           <FieldLabel htmlFor="edit-status" required>Status</FieldLabel>
           <select
             id="edit-status"
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
             {...register('status')}
           >
             {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -118,7 +118,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
           <FieldLabel htmlFor="edit-lecturerId">Instructor</FieldLabel>
           <select
             id="edit-lecturerId"
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
             {...register('lecturerId')}
           >
             <option value="">No assigned instructor</option>

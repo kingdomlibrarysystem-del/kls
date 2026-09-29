@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { useSharedList } from '@/lib/client/use-shared-list'
 
 /** Real Certificate shape, matching /api/certificates' serializeCertificate. */
 export interface Certificate {
@@ -26,19 +26,7 @@ export interface Certificate {
  */
 export function useCertificates() {
   const { user } = useAuth()
-  const [data, setData] = useState<Certificate[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const refetch = useCallback(async () => {
-    if (!user) { setData([]); return }
-    const res = await fetch(`/api/certificates?userId=${user.id}&pageSize=1000`)
-    const json = await res.json()
-    setData(json.data ?? [])
-  }, [user])
-
-  useEffect(() => {
-    refetch().finally(() => setLoading(false))
-  }, [refetch])
-
-  return { data, loading, refetch }
+  // Shared + de-duplicated per URL (see lib/client/use-shared-list.ts): every
+  // component on a page reuses one request, revisits render cached data first.
+  return useSharedList<Certificate>(user ? `/api/certificates?userId=${user.id}&pageSize=1000` : null)
 }

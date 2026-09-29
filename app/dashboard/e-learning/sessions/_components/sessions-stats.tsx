@@ -13,11 +13,11 @@ export function SessionsStats({ data }: SessionsStatsProps) {
   }))
 
   const colorFor: Record<SessionStatus, string> = {
-    PENDING: 'text-yellow-700',
-    APPROVED: 'text-green-700',
-    REJECTED: 'text-red-700',
+    PENDING: 'text-yellow-700 dark:text-warning',
+    APPROVED: 'text-green-700 dark:text-success',
+    REJECTED: 'text-red-700 dark:text-destructive',
     COMPLETED: 'text-w-600',
-    UNAVAILABLE: 'text-gray-600',
+    UNAVAILABLE: 'text-gray-600 dark:text-muted-foreground',
   }
 
   const stats = [

@@ -65,7 +65,7 @@ export function RelatedResourceCard({ resource, action, className, style }: Rela
           {resource.price.toLocaleString()} RWF
         </span>
         <span
-          className={isDialectB ? '' : `flex items-center gap-1 text-xs font-lato ${outOfStock ? 'text-red-700' : 'text-w-700'}`}
+          className={isDialectB ? '' : `flex items-center gap-1 text-xs font-lato ${outOfStock ? 'text-red-700 dark:text-destructive' : 'text-w-700'}`}
           style={isDialectB ? { display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: outOfStock ? 'var(--red-light)' : 'var(--text-secondary)' } : undefined}
         >
           <Package size={11} /> {resource.availableQty} available

@@ -18,8 +18,8 @@ export function RepositoryStats() {
 
   const stats = [
     { label: 'Total Papers', value: papers.length, color: 'text-w-950' },
-    { label: 'Published', value: published, color: 'text-green-700' },
-    { label: 'Submitted', value: submitted, color: 'text-yellow-700' },
+    { label: 'Published', value: published, color: 'text-green-700 dark:text-success' },
+    { label: 'Submitted', value: submitted, color: 'text-yellow-700 dark:text-warning' },
     { label: 'Draft', value: draft, color: 'text-w-600' },
   ]
 

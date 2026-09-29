@@ -3,6 +3,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Invitation } from './invitations-data'
 
+/** Resends an invitation (PATCH status back to PENDING). Standalone so a page that only needs this action doesn't mount useInvitations() and download the whole list. */
+export async function resendInvitationRequest(id: string): Promise<void> {
+  const res = await fetch(`/api/invitations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'PENDING' }),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message ?? 'Failed to resend invitation')
+}
+
+/** Cancels (deletes) an invitation. Standalone for the same reason as resendInvitationRequest. */
+export async function removeInvitationRequest(id: string): Promise<void> {
+  const res = await fetch(`/api/invitations/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const json = await res.json().catch(() => null)
+    throw new Error(json?.message ?? 'Failed to cancel invitation')
+  }
+}
+
 /** Fetches the real invitation list from /api/invitations and exposes Create/Resend/Cancel that hit the real API, then refetch. */
 export function useInvitations() {
   const [invitations, setInvitations] = useState<Invitation[]>([])
@@ -48,22 +68,12 @@ export function useInvitations() {
   }, [refetch])
 
   const resendInvitation = useCallback(async (id: string) => {
-    const res = await fetch(`/api/invitations/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'PENDING' }),
-    })
-    const json = await res.json()
-    if (!res.ok) throw new Error(json.message ?? 'Failed to resend invitation')
+    await resendInvitationRequest(id)
     await refetch()
   }, [refetch])
 
   const removeInvitation = useCallback(async (id: string) => {
-    const res = await fetch(`/api/invitations/${id}`, { method: 'DELETE' })
-    if (!res.ok) {
-      const json = await res.json().catch(() => null)
-      throw new Error(json?.message ?? 'Failed to cancel invitation')
-    }
+    await removeInvitationRequest(id)
     await refetch()
   }, [refetch])
 

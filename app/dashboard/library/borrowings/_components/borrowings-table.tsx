@@ -51,8 +51,8 @@ export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onAp
         const days = b.status === 'overdue' ? daysOverdue(b.dueDate) : 0
         return (
           <div>
-            <p className={b.status === 'overdue' ? 'text-red-700 font-semibold' : ''}>{b.returnDate ?? b.dueDate}</p>
-            {days > 0 && <p className="text-xs text-red-600 flex items-center gap-0.5"><AlertTriangle size={11} /> {days}d overdue</p>}
+            <p className={b.status === 'overdue' ? 'text-red-700 dark:text-destructive font-semibold' : ''}>{b.returnDate ?? b.dueDate}</p>
+            {days > 0 && <p className="text-xs text-red-600 dark:text-destructive flex items-center gap-0.5"><AlertTriangle size={11} /> {days}d overdue</p>}
           </div>
         )
       },
@@ -64,8 +64,8 @@ export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onAp
     {
       key: 'fineAmount', label: 'Fine (RWF)',
       render: (b) => b.fineAmount ? (
-        <span className={b.finePaid ? 'text-w-500 line-through text-xs' : 'text-red-700 font-semibold'}>{b.fineAmount.toLocaleString()} {b.finePaid ? '(waived)' : 'RWF'}</span>
-      ) : <span className="text-w-400 text-xs">—</span>,
+        <span className={b.finePaid ? 'text-w-500 line-through text-xs' : 'text-red-700 dark:text-destructive font-semibold'}>{b.fineAmount.toLocaleString()} {b.finePaid ? '(waived)' : 'RWF'}</span>
+      ) : <span className="text-w-400 dark:text-muted-foreground text-xs">—</span>,
     },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
@@ -83,16 +83,16 @@ export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onAp
           </UniversalButton>
           {b.status === 'pending' && (
             <>
-              <button onClick={() => onApprove(b)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">
+              <button onClick={() => onApprove(b)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors">
                 <CheckCircle size={12} /> Approve
               </button>
-              <button onClick={() => onReject(b)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
+              <button onClick={() => onReject(b)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
                 <XCircle size={12} /> Reject
               </button>
             </>
           )}
           {(b.status === 'active' || b.status === 'overdue') && (
-            <button onClick={() => onReturn(b)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+            <button onClick={() => onReturn(b)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
               <RotateCcw size={12} /> Return
             </button>
           )}
@@ -114,7 +114,7 @@ export function BorrowingsTable({ data, statusFilter, onStatusFilterChange, onAp
       searchPlaceholder="Search member, book, ISBN, ID..."
       searchFilter={(r, q) => r.memberName.toLowerCase().includes(q) || r.memberEmail.toLowerCase().includes(q) || r.resourceTitle.toLowerCase().includes(q) || r.isbn.includes(q) || r.id.toLowerCase().includes(q)}
       filters={
-        <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value as BorrowStatus | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none">
+        <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value as BorrowStatus | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
           <option value="all">All Statuses</option>
           {(Object.keys(statusConfig) as BorrowStatus[]).map((s) => <option key={s} value={s}>{statusConfig[s].label}</option>)}
         </select>

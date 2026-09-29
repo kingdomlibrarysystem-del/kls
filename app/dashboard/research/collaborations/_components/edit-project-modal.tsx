@@ -59,7 +59,7 @@ export function EditProjectModal({ project, onClose }: EditProjectModalProps) {
   return (
     <Modal open onClose={close} title="Edit Research Project" size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {submitError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {submitError}</div>}
+        {submitError && <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {submitError}</div>}
 
         <div>
           <FieldLabel htmlFor="edit-title" required>Title</FieldLabel>
@@ -68,14 +68,14 @@ export function EditProjectModal({ project, onClose }: EditProjectModalProps) {
 
         <div>
           <FieldLabel htmlFor="edit-description" required>Description</FieldLabel>
-          <textarea id="edit-description" rows={4} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" {...register('description')} />
-          {errors.description && <p className="text-red-600 text-xs mt-1 font-lato">{errors.description.message}</p>}
+          <textarea id="edit-description" rows={4} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('description')} />
+          {errors.description && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.description.message}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="edit-status" required>Status</FieldLabel>
-            <select id="edit-status" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('status')}>
+            <select id="edit-status" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('status')}>
               <option value="ACTIVE">Active</option>
               <option value="COMPLETED">Completed</option>
               <option value="SUSPENDED">Suspended</option>
@@ -89,7 +89,7 @@ export function EditProjectModal({ project, onClose }: EditProjectModalProps) {
 
         <div>
           <FieldLabel htmlFor="edit-contributorIds">Contributors</FieldLabel>
-          <select id="edit-contributorIds" multiple size={5} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('contributorIds')}>
+          <select id="edit-contributorIds" multiple size={5} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('contributorIds')}>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
           <p className="font-lato text-xs text-w-600 mt-1">Ctrl/Cmd-click to select multiple — replaces the full contributor list.</p>

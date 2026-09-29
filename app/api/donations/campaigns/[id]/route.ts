@@ -3,36 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
-
-function serializeCampaign(c: {
-  id: string
-  title: string
-  description: string
-  coverImage: string | null
-  category: string
-  goalRwf: number
-  raisedRwf: number
-  status: string
-  startDate: Date
-  endDate: Date | null
-  featured: boolean
-  createdById: string
-}) {
-  return {
-    id: c.id,
-    title: c.title,
-    description: c.description,
-    coverImage: c.coverImage,
-    category: c.category,
-    goalRwf: c.goalRwf,
-    raisedRwf: c.raisedRwf,
-    status: c.status,
-    startDate: c.startDate.toISOString(),
-    endDate: c.endDate ? c.endDate.toISOString() : null,
-    featured: c.featured,
-    createdById: c.createdById,
-  }
-}
+import { serializeCampaign } from '@/lib/data/donation-campaigns'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

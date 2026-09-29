@@ -24,7 +24,7 @@ export function AccountInfoSection() {
   }, [user])
 
   return (
-    <div className="bg-form-section border border-w-400 rounded-lg p-6 mt-6">
+    <div className="bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-6 mt-6">
       <SectionHeader>Account Information</SectionHeader>
       <div className="space-y-4 font-lato text-sm text-w-700">
         <div className="flex justify-between">
@@ -33,13 +33,13 @@ export function AccountInfoSection() {
         </div>
         <div className="flex justify-between">
           <span>Account Status:</span>
-          <span className={`font-semibold ${info?.status === 'active' ? 'text-green-700' : 'text-red-700'}`}>
+          <span className={`font-semibold ${info?.status === 'active' ? 'text-green-700 dark:text-success' : 'text-red-700'}`}>
             {info ? info.status.charAt(0).toUpperCase() + info.status.slice(1) : '—'}
           </span>
         </div>
         <div className="flex justify-between">
           <span>Email Verified:</span>
-          <span className={`font-semibold ${info?.emailVerified ? 'text-green-700' : 'text-red-700'}`}>
+          <span className={`font-semibold ${info?.emailVerified ? 'text-green-700 dark:text-success' : 'text-red-700'}`}>
             {info ? (info.emailVerified ? 'Yes' : 'No') : '—'}
           </span>
         </div>

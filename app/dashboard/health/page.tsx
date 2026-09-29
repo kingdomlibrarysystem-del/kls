@@ -23,7 +23,7 @@ export default function HealthSystemPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map((s) => (
-          <Link key={s.title} href={s.href} className="bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 hover:border-w-600 transition-colors">
+          <Link key={s.title} href={s.href} className="bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 hover:border-w-600 dark:hover:border-primary transition-colors">
             <div className="flex items-center gap-2 text-w-600">{s.icon}
               <h3 className="font-cinzel text-sm font-semibold text-w-950">{s.title}</h3>
             </div>

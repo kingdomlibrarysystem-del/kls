@@ -16,7 +16,7 @@ export function MyAppointmentsList({ appointments }: MyAppointmentsListProps) {
   }
 
   return (
-    <div className="bg-white border border-w-300 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-card! border border-w-300 rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-w-300 font-cinzel text-sm font-semibold text-w-950">My Appointments</div>
       {appointments.map((appt) => {
         const cancellable = appt.status === 'PENDING' || appt.status === 'CONFIRMED'
@@ -33,7 +33,7 @@ export function MyAppointmentsList({ appointments }: MyAppointmentsListProps) {
               <button
                 onClick={() => cancelBeautyAppointment(appt.id)}
                 aria-label={`Cancel appointment with ${appt.providerName ?? 'provider'}`}
-                className="flex items-center gap-1 text-xs font-lato font-semibold text-red-600 hover:text-red-800"
+                className="flex items-center gap-1 text-xs font-lato font-semibold text-red-600 dark:text-destructive hover:text-red-800"
               >
                 <XCircle size={13} /> Cancel
               </button>

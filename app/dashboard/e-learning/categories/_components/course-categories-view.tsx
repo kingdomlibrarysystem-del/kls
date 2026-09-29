@@ -86,8 +86,8 @@ export function CourseCategoriesView() {
       {toast && (
         <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded font-lato text-sm border ${
           toast.type === 'success'
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : 'bg-red-50 border-red-200 text-red-800'
+            ? 'bg-green-50 dark:bg-success/10 border-green-200 dark:border-success/30 text-green-800 dark:text-success'
+            : 'bg-red-50 dark:bg-destructive/10 border-red-200 dark:border-destructive/30 text-red-800 dark:text-destructive'
         }`}>
           {toast.type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
           {toast.msg}
@@ -154,7 +154,7 @@ export function CourseCategoriesView() {
             No categories yet. Add your first category above — it will appear in the Add/Edit Course category dropdown.
           </p>
         ) : (
-          <ul className="divide-y divide-w-100 border border-w-200 rounded-lg overflow-hidden bg-white">
+          <ul className="divide-y divide-w-100 border border-w-200 rounded-lg overflow-hidden bg-white dark:bg-card!">
             {categories.map((c) => (
               <li key={c.id} className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0">
@@ -168,14 +168,14 @@ export function CourseCategoriesView() {
                   <button
                     onClick={() => startEdit(c)}
                     aria-label={`Edit ${c.name}`}
-                    className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors"
+                    className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => setConfirmDelete(c)}
                     aria-label={`Delete ${c.name}`}
-                    className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                    className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -188,12 +188,12 @@ export function CourseCategoriesView() {
 
       {confirmDelete && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-w-950/50" onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null) }}>
-          <div className="relative z-[10000] bg-white rounded-lg border border-w-300 w-full max-w-sm shadow-xl p-5">
+          <div className="relative z-[10000] bg-white dark:bg-card! rounded-lg border border-w-300 w-full max-w-sm shadow-xl p-5">
             <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Delete category?</h3>
             <p className="font-lato text-sm text-w-700 mb-4">
               Are you sure you want to delete <span className="font-semibold">{confirmDelete.name}</span>?
               {courseCountFor(confirmDelete.name) > 0 && (
-                <span className="block text-xs text-red-600 mt-1">
+                <span className="block text-xs text-red-600 dark:text-destructive mt-1">
                   {courseCountFor(confirmDelete.name)} course(s) use this category and must be reassigned first.
                 </span>
               )}

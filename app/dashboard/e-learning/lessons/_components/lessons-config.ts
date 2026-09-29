@@ -2,7 +2,7 @@ export type { Lesson, LessonContentType, CourseLessons } from '@/app/member/_sha
 import type { LessonContentType } from '@/app/member/_shared/lesson-data'
 
 export const contentTypeConfig: Record<LessonContentType, { label: string; cls: string }> = {
-  VIDEO: { label: 'Video', cls: 'bg-blue-50 text-blue-800 border-blue-200' },
+  VIDEO: { label: 'Video', cls: 'bg-blue-50 dark:bg-info/10 text-blue-800 border-blue-200 dark:border-info/30' },
   TEXT: { label: 'Text', cls: 'bg-w-100 text-w-700 border-w-300' },
   FILE: { label: 'File', cls: 'bg-purple-50 text-purple-800 border-purple-200' },
 }

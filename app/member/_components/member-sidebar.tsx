@@ -26,6 +26,7 @@ import {
   Mail,
   ExternalLink,
   Newspaper,
+  ArrowLeftRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
@@ -443,6 +444,17 @@ export default function MemberSidebar() {
             >
               <User size={13} /> {t("member.my_profile")} <ExternalLink size={11} style={{ marginLeft: "auto", opacity: 0.5 }} />
             </a>
+            {/* Staff can use both portals — link back to the admin dashboard */}
+            {user && user.role !== "member" && (
+              <Link
+                href="/dashboard"
+                role="menuitem"
+                onClick={() => setProfileOpen(false)}
+                style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", fontSize: 13, fontWeight: 600, color: "var(--gold)", textDecoration: "none", borderTop: "1px solid var(--border)" }}
+              >
+                <ArrowLeftRight size={13} /> Switch to Admin Dashboard
+              </Link>
+            )}
             <button
               onClick={handleLogout}
               style={{

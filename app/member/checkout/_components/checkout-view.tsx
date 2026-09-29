@@ -156,7 +156,7 @@ export function CheckoutView() {
             <button
               onClick={startCheckout}
               disabled={submitting || (rail === 'PAYPACK' && !phone.trim())}
-              style={{ padding: '11px 16px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: submitting ? 0.7 : 1 }}
+              style={{ padding: '11px 16px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: submitting ? 0.7 : 1 }}
             >
               {submitting && <Loader2 size={15} className="animate-spin" />}
               Pay {totalRwf.toLocaleString()} RWF

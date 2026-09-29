@@ -180,7 +180,7 @@ chapters: [],
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {submitError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
             <AlertCircle size={13} /> {submitError}
           </div>
         )}

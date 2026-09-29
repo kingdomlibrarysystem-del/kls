@@ -3,34 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
-
-function serializePaper(p: {
-  id: string
-  title: string
-  abstract: string
-  authorId: string
-  authorName: string
-  projectId: string
-  project: { title: string }
-  keywords: string[]
-  publishedAt: Date
-  status: string
-}) {
-  return {
-    id: p.id,
-    title: p.title,
-    abstract: p.abstract,
-    authorId: p.authorId,
-    author: p.authorName,
-    projectId: p.projectId,
-    project: p.project.title,
-    keywords: p.keywords,
-    publishedAt: p.publishedAt.toISOString().split('T')[0],
-    status: p.status,
-  }
-}
-
-const INCLUDE = { project: { select: { title: true } } } as const
+import { serializePaper, INCLUDE } from '@/lib/data/research-papers'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireStaff()

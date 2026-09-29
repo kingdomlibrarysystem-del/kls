@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, Target, Tag, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -11,43 +11,29 @@ import { useCampaignDonations } from '../../../_shared/use-donations-admin'
 import { CampaignDonationsList } from './campaign-donations-list'
 
 interface CampaignDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialCampaign: DonationCampaign
 }
 
 /** Campaign detail — goal/raised progress bar, real donations list, manual reconciliation via CampaignDonationsList. */
-export function CampaignDetailView({ id }: CampaignDetailViewProps) {
-  const [campaign, setCampaign] = useState<DonationCampaign | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function CampaignDetailView({ initialCampaign }: CampaignDetailViewProps) {
+  const id = initialCampaign.id
+  const [campaign, setCampaign] = useState<DonationCampaign | null>(initialCampaign)
   const { data: donations, loading: donationsLoading } = useCampaignDonations(id)
-  const [refreshKey, setRefreshKey] = useState(0)
 
-  useEffect(() => {
-    setLoading(true)
+  /** Re-reads the campaign (raised total) after a donation is reconciled; keeps the last copy if that fails. */
+  const refreshCampaign = () => {
     fetch(`/api/donations/campaigns/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Campaign not found'); return }
-        setCampaign(json.data)
-      })
-      .catch(() => setError('Failed to load campaign'))
-      .finally(() => setLoading(false))
-  }, [id, refreshKey])
-
-  if (loading) {
-    return (
-      <div>
-        <PageHeader title="Campaign Details" />
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-lg" /><Skeleton className="h-40 w-full rounded-lg" /></div>
-      </div>
-    )
+      .then((json) => { if (json.code === 'success' && json.data) setCampaign(json.data) })
+      .catch(() => {})
   }
 
-  if (error || !campaign) {
+  if (!campaign) {
     return (
       <div>
         <PageHeader title="Campaign Details" />
-        <EmptyState icon={AlertTriangle} title="Campaign not found" description={error || 'This campaign does not exist.'} />
+        <EmptyState icon={AlertTriangle} title="Campaign not found" description={'This campaign does not exist.'} />
         <div className="mt-4"><UniversalButton href="/dashboard/donations/campaigns" variant="outline" icon={<ArrowLeft size={14} />}>Back to Campaigns</UniversalButton></div>
       </div>
     )
@@ -69,12 +55,12 @@ export function CampaignDetailView({ id }: CampaignDetailViewProps) {
 
         <div className="bg-form-highlight border border-w-300 rounded p-4 space-y-3">
           <div className="flex items-center gap-2 font-lato text-xs text-w-700"><Tag size={13} /> {campaign.category}</div>
-          <div className="flex items-center gap-2 font-lato text-sm font-semibold text-w-950"><Target size={14} /> {campaign.raisedRwf.toLocaleString()} / {campaign.goalRwf.toLocaleString()} RWF ({progressPercent.toFixed(0)}%)</div>
-          <div className="w-full h-2 rounded-full bg-w-200 overflow-hidden"><div className="h-full bg-w-600" style={{ width: `${progressPercent}%` }} /></div>
+          <div className="flex items-center gap-2 font-lato text-sm font-semibold text-w-950" suppressHydrationWarning><Target size={14} /> {campaign.raisedRwf.toLocaleString()} / {campaign.goalRwf.toLocaleString()} RWF ({progressPercent.toFixed(0)}%)</div>
+          <div className="w-full h-2 rounded-full bg-w-200 dark:bg-white/10 overflow-hidden"><div className="h-full bg-w-600" style={{ width: `${progressPercent}%` }} /></div>
         </div>
 
         <h2 className="font-cinzel text-sm font-semibold text-w-950">Donations</h2>
-        {donationsLoading ? <Skeleton className="h-32 w-full rounded-lg" /> : <CampaignDonationsList donations={donations} onRefreshed={() => setRefreshKey((k) => k + 1)} />}
+        {donationsLoading ? <Skeleton className="h-32 w-full rounded-lg" /> : <CampaignDonationsList donations={donations} onRefreshed={refreshCampaign} />}
       </div>
     </div>
   )

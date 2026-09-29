@@ -45,16 +45,16 @@ export function SmartSearchPanel() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search resources, publications, research papers..."
             aria-label="Semantic search query"
-            className="w-full pl-8 pr-4 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+            className="w-full pl-8 pr-4 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           />
         </div>
-        <button type="submit" className="px-4 py-2 bg-w-600 text-white rounded font-lato text-sm font-semibold hover:bg-w-700 transition-colors">
+        <button type="submit" className="px-4 py-2 bg-w-600 text-white dark:text-primary-foreground rounded font-lato text-sm font-semibold hover:bg-w-700 transition-colors">
           Search
         </button>
       </form>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-3 font-lato text-xs">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded mb-3 font-lato text-xs">
           <AlertCircle size={13} /> {error}
         </div>
       )}
@@ -70,7 +70,7 @@ export function SmartSearchPanel() {
       ) : (
         <ul className="space-y-2" aria-label="Search results">
           {results.map((r) => (
-            <li key={r.id} className="flex items-start gap-2 bg-white border border-w-300 rounded-lg p-3">
+            <li key={r.id} className="flex items-start gap-2 bg-white dark:bg-card! border border-w-300 rounded-lg p-3">
               <span className="text-w-600 mt-0.5">{typeIcon[r.type]}</span>
               <div>
                 <p className="font-lato text-sm font-semibold text-w-950">{r.title}</p>

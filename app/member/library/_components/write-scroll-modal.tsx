@@ -49,7 +49,7 @@ export function WriteScrollModal({ open, onClose, onSubmitted }: WriteScrollModa
               onClick={() => setType(t)}
               style={{
                 padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                background: type === t ? 'var(--gold)' : 'transparent', color: type === t ? '#fff' : 'var(--text-secondary)',
+                background: type === t ? 'var(--gold)' : 'transparent', color: type === t ? 'var(--primary-foreground)' : 'var(--text-secondary)',
               }}
             >
               {t}
@@ -81,7 +81,7 @@ export function WriteScrollModal({ open, onClose, onSubmitted }: WriteScrollModa
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: canSubmit ? 'pointer' : 'not-allowed', opacity: canSubmit ? 1 : 0.5 }}
+            style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, cursor: canSubmit ? 'pointer' : 'not-allowed', opacity: canSubmit ? 1 : 0.5 }}
           >
             Submit Scroll
           </button>

@@ -10,7 +10,7 @@ import { useTwoFactor } from '@/app/member/_shared/use-two-factor'
 const TWO_FACTOR_ELIGIBLE_ROLES: UserRole[] = ['admin', 'manager', 'staff']
 
 const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-section)', color: 'var(--text-primary)', fontSize: 14, outline: 'none' }
-const buttonStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }
+const buttonStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }
 
 /**
  * Real TOTP-based 2FA — same flow as the dashboard's TwoFactorSection,

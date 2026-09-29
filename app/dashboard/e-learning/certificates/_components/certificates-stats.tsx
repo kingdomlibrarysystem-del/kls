@@ -10,8 +10,8 @@ export function CertificatesStats({ data }: CertificatesStatsProps) {
 
   const stats = [
     { label: 'Total Issued', value: data.length, color: 'text-w-950' },
-    { label: 'Valid', value: data.length - revoked, color: 'text-green-700' },
-    { label: 'Revoked', value: revoked, color: 'text-red-700' },
+    { label: 'Valid', value: data.length - revoked, color: 'text-green-700 dark:text-success' },
+    { label: 'Revoked', value: revoked, color: 'text-red-700 dark:text-destructive' },
   ]
 
   return (

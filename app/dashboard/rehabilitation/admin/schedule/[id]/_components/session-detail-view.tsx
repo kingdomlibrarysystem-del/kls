@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, User, Users, Calendar, CheckCheck, CalendarX, Ban } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { rehabSessionStatusConfig, type RehabSession } from '../../../../_shared/rehab-data'
@@ -11,7 +10,8 @@ import { completeSession, markSessionMissed, cancelSessionAdmin } from '../../..
 import { RecordMilestoneForm } from './record-milestone-form'
 
 interface SessionDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialSession: RehabSession
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -19,46 +19,30 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /** Real details page for a single rehab session, mirrors Counseling's SessionDetailView + adds an inline Record Milestone form. */
-export function SessionDetailView({ id }: SessionDetailViewProps) {
-  const [session, setSession] = useState<RehabSession | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function SessionDetailView({ initialSession }: SessionDetailViewProps) {
+  const id = initialSession.id
+  const [session, setSession] = useState<RehabSession | null>(initialSession)
   const [milestoneAdded, setMilestoneAdded] = useState(0)
 
+  /** Re-reads the record after an action (the first copy comes from the server page); keeps the last known copy if the refresh fails. */
   const load = () => {
-    setLoading(true)
     fetch(`/api/rehabilitation/schedule/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Session not found'); return }
-        setSession(json.data)
-      })
-      .catch(() => setError('Failed to load session'))
-      .finally(() => setLoading(false))
+      .then((json) => { if (json.code === 'success' && json.data) setSession(json.data) })
+      .catch(() => {})
   }
 
-  useEffect(() => { Promise.resolve().then(load) }, [id])
-
-  if (loading) {
+  if (!session) {
     return (
       <div>
         <PageHeader title="Session Details" />
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-lg" /><Skeleton className="h-40 w-full rounded-lg" /></div>
-      </div>
-    )
-  }
-
-  if (error || !session) {
-    return (
-      <div>
-        <PageHeader title="Session Details" />
-        <EmptyState icon={Calendar} title="Session not found" description={error || 'This session does not exist.'} />
+        <EmptyState icon={Calendar} title="Session not found" description={'This session does not exist.'} />
         <div className="mt-4"><UniversalButton href="/dashboard/rehabilitation/admin/schedule" variant="outline" icon={<ArrowLeft size={14} />}>Back to Schedule</UniversalButton></div>
       </div>
     )

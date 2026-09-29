@@ -220,7 +220,7 @@ export function DrawingDialog({ open, onClose, onInsertUrl }: DrawingDialogProps
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-3xl rounded-xl border border-w-200 bg-white p-5 shadow-2xl flex flex-col gap-3 max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-3xl rounded-xl border border-w-200 bg-white dark:bg-card! p-5 shadow-2xl flex flex-col gap-3 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h4 className="font-cinzel text-sm font-bold uppercase tracking-widest text-w-950">Drawing</h4>
           <button type="button" onClick={onClose} aria-label="Close drawing" className="text-w-600 hover:text-w-950 transition cursor-pointer">
@@ -241,7 +241,7 @@ export function DrawingDialog({ open, onClose, onInsertUrl }: DrawingDialogProps
               aria-pressed={tool === t}
               title={label}
               className={`flex h-8 w-8 items-center justify-center rounded border cursor-pointer transition ${
-                tool === t ? 'border-w-600 bg-w-100 text-w-950' : 'border-w-300 text-w-700 hover:border-w-400'
+                tool === t ? 'border-w-600 dark:border-primary/60 bg-w-100 text-w-950' : 'border-w-300 text-w-700 hover:border-w-400'
               }`}
             >
               <Icon size={15} />
@@ -269,7 +269,7 @@ export function DrawingDialog({ open, onClose, onInsertUrl }: DrawingDialogProps
           <div className="ml-auto flex items-center gap-1.5">
             <button type="button" onClick={undo} aria-label="Undo" title="Undo" className="flex h-8 w-8 items-center justify-center rounded border border-w-300 text-w-700 hover:border-w-400 cursor-pointer transition"><Undo2 size={14} /></button>
             <button type="button" onClick={redo} aria-label="Redo" title="Redo" className="flex h-8 w-8 items-center justify-center rounded border border-w-300 text-w-700 hover:border-w-400 cursor-pointer transition"><Redo2 size={14} /></button>
-            <button type="button" onClick={clearCanvas} aria-label="Clear drawing" title="Clear" className="flex h-8 items-center gap-1 rounded border border-red-200 text-red-700 px-2 text-xs font-lato hover:bg-red-50 cursor-pointer transition"><Trash2 size={13} /> Clear</button>
+            <button type="button" onClick={clearCanvas} aria-label="Clear drawing" title="Clear" className="flex h-8 items-center gap-1 rounded border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-2 text-xs font-lato hover:bg-red-50 dark:hover:bg-destructive/10 cursor-pointer transition"><Trash2 size={13} /> Clear</button>
           </div>
         </div>
 
@@ -283,13 +283,13 @@ export function DrawingDialog({ open, onClose, onInsertUrl }: DrawingDialogProps
               onKeyDown={(e) => { if (e.key === 'Enter') setTool('pen') }}
               placeholder="Type then click on the canvas to place it"
               aria-label="Text to place on the drawing"
-              className="flex-1 font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white text-w-950 focus:outline-none focus:border-w-500"
+              className="flex-1 font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white dark:bg-card! text-w-950 focus:outline-none focus:border-w-500 dark:focus:border-primary"
             />
-            <button type="button" onClick={() => { if (textDraft.trim()) setTool('pen') }} className="rounded border border-w-300 text-w-800 px-2 py-1 text-xs font-lato hover:bg-w-100 cursor-pointer transition">Done</button>
+            <button type="button" onClick={() => { if (textDraft.trim()) setTool('pen') }} className="rounded border border-w-300 text-w-800 dark:text-foreground px-2 py-1 text-xs font-lato hover:bg-w-100 dark:hover:bg-white/10 cursor-pointer transition">Done</button>
           </div>
         )}
 
-        <div className="rounded-lg border border-w-200 overflow-hidden bg-white">
+        <div className="rounded-lg border border-w-200 overflow-hidden bg-white dark:bg-card!">
           <canvas
             ref={canvasRef}
             width={CANVAS_W}
@@ -303,11 +303,11 @@ export function DrawingDialog({ open, onClose, onInsertUrl }: DrawingDialogProps
           />
         </div>
 
-        {error && <p className="text-red-600 text-xs font-lato">{error}</p>}
+        {error && <p className="text-red-600 dark:text-destructive text-xs font-lato">{error}</p>}
 
         <div className="flex items-center justify-end gap-2 pt-1 border-t border-w-200">
-          <button type="button" onClick={onClose} className="rounded-lg border border-w-300 text-w-800 px-4 py-1.5 text-xs font-lato hover:bg-w-100 transition cursor-pointer">Cancel</button>
-          <button type="button" onClick={uploadAndInsert} className="rounded-lg bg-w-950 text-white px-4 py-1.5 text-xs font-lato font-semibold hover:opacity-90 transition cursor-pointer">
+          <button type="button" onClick={onClose} className="rounded-lg border border-w-300 text-w-800 dark:text-foreground px-4 py-1.5 text-xs font-lato hover:bg-w-100 dark:hover:bg-white/10 transition cursor-pointer">Cancel</button>
+          <button type="button" onClick={uploadAndInsert} className="rounded-lg bg-w-950 text-white dark:text-primary-foreground px-4 py-1.5 text-xs font-lato font-semibold hover:opacity-90 transition cursor-pointer">
             Save Drawing & Insert
           </button>
         </div>

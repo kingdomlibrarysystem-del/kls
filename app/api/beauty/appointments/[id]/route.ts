@@ -1,35 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-
-function serializeAppointment(a: {
-  id: string
-  userId: string
-  providerId: string
-  serviceId: string
-  dateTime: Date
-  notes: string | null
-  status: string
-  provider?: { name: string }
-  service?: { name: string; priceRwf: number }
-  user?: { name: string | null; firstName: string | null; lastName: string | null }
-}) {
-  return {
-    id: a.id,
-    userId: a.userId,
-    providerId: a.providerId,
-    providerName: a.provider?.name,
-    serviceId: a.serviceId,
-    serviceName: a.service?.name,
-    priceRwf: a.service?.priceRwf,
-    memberName: a.user ? (a.user.name ?? `${a.user.firstName ?? ''} ${a.user.lastName ?? ''}`.trim()) : undefined,
-    dateTime: a.dateTime.toISOString(),
-    notes: a.notes,
-    status: a.status,
-  }
-}
-
-const DETAIL_INCLUDE = { provider: { select: { name: true } }, service: { select: { name: true, priceRwf: true } }, user: { select: { name: true, firstName: true, lastName: true } } } as const
+import { serializeAppointment, DETAIL_INCLUDE } from '@/lib/data/beauty-appointments'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

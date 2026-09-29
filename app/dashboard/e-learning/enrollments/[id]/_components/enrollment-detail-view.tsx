@@ -1,18 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { User, BookOpen, CalendarDays, Percent, ArrowLeft, GraduationCap } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { enrollmentStatusConfig, type EnrollmentStatus } from '../../_components/enrollments-data'
 
 interface EnrollmentDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialEnrollment: EnrollmentDetail
 }
 
-interface EnrollmentDetail {
+export interface EnrollmentDetail {
   id: string
   member: string
   courseId: string
@@ -31,59 +30,26 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /**
  * Real details page for a single enrollment, replacing the modal that
- * used to open from the Enrollments table's "View" button. Fetches
- * directly from /api/enrollments/:id, matching the Users pilot's
- * pattern, so this page also works when linked to directly. Read-only —
+ * used to open from the Enrollments table's "View" button. The enrollment
+ * is loaded on the server by page.tsx. Read-only —
  * the source table has no edit/delete modal for enrollments, so none is
  * added here either.
  */
-export function EnrollmentDetailView({ id }: EnrollmentDetailViewProps) {
-  const [enrollment, setEnrollment] = useState<EnrollmentDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function EnrollmentDetailView({ initialEnrollment }: EnrollmentDetailViewProps) {
+  const enrollment: EnrollmentDetail | null = initialEnrollment
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/enrollments/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Enrollment not found')
-          return
-        }
-        setEnrollment(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load enrollment') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
-
-  if (loading) {
+  if (!enrollment) {
     return (
       <div>
         <PageHeader title="Enrollment Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !enrollment) {
-    return (
-      <div>
-        <PageHeader title="Enrollment Details" />
-        <EmptyState icon={GraduationCap} title="Enrollment not found" description={error || 'This enrollment does not exist or was deleted.'} />
+        <EmptyState icon={GraduationCap} title="Enrollment not found" description={'This enrollment does not exist or was deleted.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/e-learning/enrollments" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Enrollments
@@ -123,7 +89,7 @@ export function EnrollmentDetailView({ id }: EnrollmentDetailViewProps) {
             <span className="font-lato text-xs text-w-700">Course Progress</span>
             <span className="font-lato text-xs text-w-700 font-semibold">{enrollment.progress}%</span>
           </div>
-          <div className="h-2 bg-w-200 rounded-full overflow-hidden">
+          <div className="h-2 bg-w-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div className="h-full bg-w-600 rounded-full" style={{ width: `${enrollment.progress}%` }} />
           </div>
         </div>

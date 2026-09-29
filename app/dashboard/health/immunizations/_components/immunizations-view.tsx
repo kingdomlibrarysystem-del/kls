@@ -20,7 +20,7 @@ export function ImmunizationsView() {
   }
 
   return (
-    <div className="bg-white border border-w-300 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-card! border border-w-300 rounded-lg overflow-hidden">
       {immunizations.map((imm) => {
         const overdue = isOverdue(imm.nextDue)
         return (
@@ -32,7 +32,7 @@ export function ImmunizationsView() {
             </div>
             {imm.nextDue && (
               <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${
-                overdue ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
+                overdue ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 dark:bg-success/10 text-green-800 dark:text-success border-green-200 dark:border-success/30'
               }`}>
                 {overdue && <AlertTriangle size={11} />} Next due {imm.nextDue}
               </span>

@@ -1,33 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-
-function serializeSession(s: {
-  id: string
-  userId: string
-  counselorId: string
-  proposedTime: Date
-  mode: string
-  reason: string
-  status: string
-  counselor?: { name: string; specialty: string }
-  user?: { name: string | null; firstName: string | null; lastName: string | null }
-}) {
-  return {
-    id: s.id,
-    userId: s.userId,
-    counselorId: s.counselorId,
-    counselorName: s.counselor?.name,
-    counselorSpecialty: s.counselor?.specialty,
-    memberName: s.user ? (s.user.name ?? `${s.user.firstName ?? ''} ${s.user.lastName ?? ''}`.trim()) : undefined,
-    proposedTime: s.proposedTime.toISOString(),
-    mode: s.mode,
-    reason: s.reason,
-    status: s.status,
-  }
-}
-
-const DETAIL_INCLUDE = { counselor: { select: { name: true, specialty: true } }, user: { select: { name: true, firstName: true, lastName: true } } } as const
+import { serializeSession, DETAIL_INCLUDE } from '@/lib/data/counseling-sessions'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -51,10 +51,10 @@ export interface CounselingConsent {
 }
 
 export const counselingSessionStatusConfig: Record<CounselingSessionStatus, { label: string; cls: string }> = {
-  PENDING:   { label: 'Pending',   cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  CONFIRMED: { label: 'Confirmed', cls: 'bg-green-50  text-green-800  border-green-200' },
-  COMPLETED: { label: 'Completed', cls: 'bg-w-100      text-w-800      border-w-300' },
-  CANCELLED: { label: 'Cancelled', cls: 'bg-red-50    text-red-800    border-red-200' },
+  PENDING:   { label: 'Pending',   cls: 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30' },
+  CONFIRMED: { label: 'Confirmed', cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30' },
+  COMPLETED: { label: 'Completed', cls: 'bg-w-100      text-w-800 dark:text-foreground      border-w-300' },
+  CANCELLED: { label: 'Cancelled', cls: 'bg-red-50 dark:bg-destructive/10    text-red-800 dark:text-destructive    border-red-200 dark:border-destructive/30' },
 }
 
 export const counselingModeLabels: Record<CounselingSessionMode, string> = {

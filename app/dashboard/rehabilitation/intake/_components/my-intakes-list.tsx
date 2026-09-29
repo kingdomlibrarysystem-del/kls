@@ -15,7 +15,7 @@ export function MyIntakesList({ intakes }: MyIntakesListProps) {
   }
 
   return (
-    <div className="bg-white border border-w-300 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-card! border border-w-300 rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-w-300 font-cinzel text-sm font-semibold text-w-950">My Assessments</div>
       {intakes.map((intake) => (
         <div key={intake.id} className="px-4 py-3 border-b border-w-200 last:border-b-0 flex items-center gap-3 flex-wrap">

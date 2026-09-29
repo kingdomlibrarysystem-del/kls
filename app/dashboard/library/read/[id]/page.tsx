@@ -1,4 +1,5 @@
 import { ReaderView } from '@/app/member/library/read/[resourceId]/_components/reader-view'
+import { loadReaderData } from '@/lib/server/reader-page'
 
 interface AdminReaderPageProps {
   params: Promise<{ id: string }>
@@ -15,8 +16,8 @@ interface AdminReaderPageProps {
  */
 export default async function AdminReaderPage({ params, searchParams }: AdminReaderPageProps) {
   const { id } = await params
-  const { chapter, preview } = await searchParams
+  const [{ chapter, preview }, data] = await Promise.all([searchParams, loadReaderData(id)])
   return (
-    <ReaderView resourceId={id} initialChapterId={chapter} forcePreview={preview === '1'} backHref="/dashboard/library" />
+    <ReaderView resourceId={id} resource={data.resource} readableChapters={data.readableChapters} initialChapterId={chapter} forcePreview={preview === '1'} backHref="/dashboard/library" />
   )
 }

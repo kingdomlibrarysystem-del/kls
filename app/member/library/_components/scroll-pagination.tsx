@@ -23,7 +23,7 @@ export function ScrollPagination({ page, totalPages, onPage }: ScrollPaginationP
       aria-current={active ? 'page' : undefined}
       style={{
         minWidth: 22, height: 22, borderRadius: 5, border: '1px solid var(--border)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-        background: active ? 'var(--gold)' : 'transparent', color: active ? '#fff' : 'var(--text-secondary)',
+        background: active ? 'var(--gold)' : 'transparent', color: active ? 'var(--primary-foreground)' : 'var(--text-secondary)',
       }}
     >
       {n}

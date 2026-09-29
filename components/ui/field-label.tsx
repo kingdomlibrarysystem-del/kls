@@ -1,3 +1,5 @@
+import { Label } from '@/components/ui/label'
+
 interface FieldLabelProps {
   htmlFor: string
   children: React.ReactNode
@@ -6,13 +8,13 @@ interface FieldLabelProps {
 
 export function FieldLabel({ htmlFor, children, required }: FieldLabelProps) {
   return (
-    <label
+    <Label
       htmlFor={htmlFor}
-      className="block text-sm font-lato font-normal text-w-950 mb-2"
+      className="flex text-sm font-lato font-normal text-foreground mb-2 gap-0"
       style={{ letterSpacing: '0.5px' }}
     >
       {children}
-      {required && <span className="text-amber-600 ml-1">*</span>}
-    </label>
+      {required && <span className="text-primary ml-1">*</span>}
+    </Label>
   )
 }

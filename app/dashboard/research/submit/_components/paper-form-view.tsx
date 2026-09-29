@@ -75,13 +75,13 @@ export function PaperFormView() {
       <FormSection title="Paper Details">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {submittedKeywords && (
-            <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 font-lato text-sm">
+            <div className="flex items-start gap-2 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded mb-4 font-lato text-sm">
               <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
               <span>Paper submitted for review and added to the repository. Keywords: {submittedKeywords.join(', ')}</span>
             </div>
           )}
           {submitError && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 font-lato text-sm">
+            <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded mb-4 font-lato text-sm">
               <AlertCircle size={15} /> {submitError}
             </div>
           )}
@@ -98,11 +98,11 @@ export function PaperFormView() {
               rows={5}
               placeholder="Summarize the paper's purpose, method, and findings…"
               className={`w-full px-4 py-3 font-lato text-sm border rounded transition-colors focus:outline-none ${
-                errors.abstract ? 'border-red-500 bg-red-50' : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
+                errors.abstract ? 'border-red-500 bg-red-50' : 'border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary'
               }`}
               {...register('abstract')}
             />
-            {errors.abstract && <p className="text-red-600 text-xs mt-1 font-lato">{errors.abstract.message}</p>}
+            {errors.abstract && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.abstract.message}</p>}
           </div>
 
           <div>
@@ -122,20 +122,20 @@ export function PaperFormView() {
               <FieldLabel htmlFor="projectId" required>Linked Project</FieldLabel>
               <select
                 id="projectId"
-                className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+                className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
                 {...register('projectId')}
               >
                 <option value="">Select project…</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
-              {errors.projectId && <p className="text-red-600 text-xs mt-1 font-lato">{errors.projectId.message}</p>}
+              {errors.projectId && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.projectId.message}</p>}
             </div>
 
             <div>
               <FieldLabel htmlFor="paperFile">Manuscript File</FieldLabel>
               <label
                 htmlFor="paperFile"
-                className="flex items-center gap-2 px-4 py-3 font-lato text-sm border border-dashed border-w-400 bg-form-bg rounded cursor-pointer text-w-700 hover:border-w-600 transition-colors"
+                className="flex items-center gap-2 px-4 py-3 font-lato text-sm border border-dashed border-w-400 bg-form-bg dark:bg-white/5 rounded cursor-pointer text-w-700 hover:border-w-600 dark:hover:border-primary transition-colors"
               >
                 <UploadCloud size={16} /> Choose file…
                 <input id="paperFile" type="file" accept=".pdf,.doc,.docx" className="hidden" aria-label="Upload manuscript file" />

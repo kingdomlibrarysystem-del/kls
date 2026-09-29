@@ -27,7 +27,7 @@ export function CertificatePreview({ certificate }: CertificatePreviewProps) {
       {certificate.revoked && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span
-            className="flex items-center gap-2 px-4 py-1.5 rounded border-2 border-red-600 text-red-600 font-cinzel font-bold text-sm tracking-widest"
+            className="flex items-center gap-2 px-4 py-1.5 rounded border-2 border-red-600 text-red-600 dark:text-destructive font-cinzel font-bold text-sm tracking-widest"
             style={{ transform: 'rotate(-12deg)' }}
           >
             <ShieldAlert size={16} /> REVOKED
@@ -49,11 +49,11 @@ export function CertificatePreview({ certificate }: CertificatePreviewProps) {
         <div className="flex items-center justify-between w-full mt-6 pt-3 border-t border-dashed border-w-300">
           <div className="text-left">
             <p className="font-lato text-[10px] text-w-500 uppercase tracking-wide">Issued</p>
-            <p className="font-lato text-xs text-w-800 font-semibold">{certificate.issuedAt}</p>
+            <p className="font-lato text-xs text-w-800 dark:text-foreground font-semibold">{certificate.issuedAt}</p>
           </div>
           <div className="text-right">
             <p className="font-lato text-[10px] text-w-500 uppercase tracking-wide">Verification Code</p>
-            <p className="font-mono text-xs text-w-800 font-semibold">{certificate.verificationCode}</p>
+            <p className="font-mono text-xs text-w-800 dark:text-foreground font-semibold">{certificate.verificationCode}</p>
           </div>
         </div>
       </div>

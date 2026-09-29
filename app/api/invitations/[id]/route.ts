@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { getInvitationById } from '@/lib/data/invitations'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -14,10 +15,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params
 
-  const invitation = await prisma.invitation.findUnique({
-    where: { id },
-    include: { role: { select: { id: true, name: true } } },
-  })
+  const invitation = await getInvitationById(id)
 
   if (!invitation) {
     return NextResponse.json({ data: null, message: 'Invitation not found', code: 'error', status: 404 }, { status: 404 })

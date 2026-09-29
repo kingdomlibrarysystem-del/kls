@@ -10,8 +10,8 @@ import { useLibraryReports } from './use-library-reports'
 import type { OverdueEntry, TopResourceEntry, FineEntry, FineStatus } from './reports-data'
 
 const fineStatusConfig: Record<FineStatus, { label: string; cls: string }> = {
-  UNPAID: { label: 'Unpaid', cls: 'bg-red-50    text-red-800    border-red-200'    },
-  PAID:   { label: 'Paid',   cls: 'bg-green-50  text-green-800  border-green-200'  },
+  UNPAID: { label: 'Unpaid', cls: 'bg-red-50 dark:bg-destructive/10    text-red-800 dark:text-destructive    border-red-200 dark:border-destructive/30'    },
+  PAID:   { label: 'Paid',   cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30'  },
   WAIVED: { label: 'Waived', cls: 'bg-w-100     text-w-600      border-w-300'      },
 }
 
@@ -22,7 +22,7 @@ const overdueColumns: Column<OverdueEntry>[] = [
   {
     key: 'daysOverdue', label: 'Overdue', sortable: true,
     render: (r) => (
-      <span className="flex items-center gap-1 text-red-700 font-semibold text-xs">
+      <span className="flex items-center gap-1 text-red-700 dark:text-destructive font-semibold text-xs">
         <AlertTriangle size={12} /> {r.daysOverdue}d
       </span>
     ),

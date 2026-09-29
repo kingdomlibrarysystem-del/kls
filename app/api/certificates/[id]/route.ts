@@ -3,28 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-
-function serializeCertificate(c: {
-  id: string
-  userId: string
-  memberName: string
-  courseId: string | null
-  courseTitle: string
-  issuedAt: Date
-  verificationCode: string
-  revoked: boolean
-}) {
-  return {
-    id: c.id,
-    userId: c.userId,
-    member: c.memberName,
-    courseId: c.courseId ?? undefined,
-    course: c.courseTitle,
-    issuedAt: c.issuedAt.toISOString().split('T')[0],
-    verificationCode: c.verificationCode,
-    revoked: c.revoked,
-  }
-}
+import { serializeCertificate } from '@/lib/data/certificates'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -69,7 +69,7 @@ export default function RolesPage() {
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--gold)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--gold)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
           >
             <Plus size={14} /> New Role
           </button>

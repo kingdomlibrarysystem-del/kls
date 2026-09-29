@@ -2,21 +2,22 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, AlertTriangle, BookX } from 'lucide-react'
+import { ChevronLeft, Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, BookX } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
-import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
-import { getCategoryName } from '@/lib/kcs-taxonomy'
-import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
-import { ResourceReviews } from './resource-reviews'
+import { bindingTypeLabels, mediaTypeLabels, isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { ResourceReviews, type Review } from './resource-reviews'
 
 interface ResourceDetailViewProps {
-  resourceId: string
+  /** Loaded on the server by page.tsx; null when it doesn't exist. */
+  resource: Resource | null
+  /** Category display name, resolved server-side. */
+  categoryName: string
+  /** This resource's reviews, loaded server-side. */
+  initialReviews: Review[]
 }
 
 /**
@@ -26,37 +27,24 @@ interface ResourceDetailViewProps {
  * (staff-only, edit/archive actions) and the public /library/[id] (no
  * member sidebar/favorites/cart-sync). Reuses the exact same real data
  * hooks and modals as resource-card.tsx rather than re-implementing
- * borrow/reserve/buy/cart logic a second time.
+ * borrow/reserve/buy/cart logic a second time. The resource, its category
+ * name and its reviews come from the server page — previously this view
+ * downloaded the whole catalog (useResources) and every chapter in the
+ * library (useReadableContent) just to show one book.
  */
-export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
+export function ResourceDetailView({ resource, categoryName, initialReviews }: ResourceDetailViewProps) {
   const { user, isAuthenticated } = useAuth()
-  const { data: resources, loading, error } = useResources()
-  const readableContent = useReadableContent()
   const favorites = useFavorites(user?.id)
   const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   useCart(user?.id)
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading resource">
-        <Skeleton style={{ height: 40, borderRadius: 8 }} />
-        <Skeleton style={{ height: 320, borderRadius: 8 }} />
-      </div>
-    )
-  }
-
-  if (error) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load this resource" description={error} style={{ color: 'var(--text-secondary)' }} />
-  }
-
-  const resource = resources.find((r) => r.id === resourceId)
   if (!resource) {
     return <EmptyState icon={BookX} title="Resource not found" description="This resource doesn't exist in the Kingdom Library." style={{ color: 'var(--text-secondary)' }} />
   }
 
   const liked = favorites.some((f) => f.id === resource.id)
-  const isReadable = !!readableContent[resource.id] || !!resource.documentUrl
+  const isReadable = isResourceReadable(resource)
   const outOfStock = resource.availableQty === 0
   const inCartRental = isInCart(resource.id, 'RENTAL')
   const inCartSale = isInCart(resource.id, 'SALE')
@@ -116,8 +104,8 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>to reserve</span></span>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{resource.borrowPrice > 0 ? `${resource.borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {resource.borrowDurationDays} days</span>
+            <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }} suppressHydrationWarning>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'} <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>to reserve</span></span>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }} suppressHydrationWarning>{resource.borrowPrice > 0 ? `${resource.borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {resource.borrowDurationDays} days</span>
           </div>
 
           {(inCartRental || inCartSale) && (
@@ -128,7 +116,7 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
             {isReadable && (
-              <Link href={`/member/library/read/${resource.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+              <Link href={`/member/library/read/${resource.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
                 <BookOpenCheck size={14} /> {resource.price > 0 ? 'Preview' : 'Read'}
               </Link>
             )}
@@ -173,14 +161,14 @@ export function ResourceDetailView({ resourceId }: ResourceDetailViewProps) {
             </div>
           )}
 
-          <ResourceReviews resourceId={resource.id} />
+          <ResourceReviews resourceId={resource.id} initialReviews={initialReviews} />
         </div>
 
         <div style={{ width: 240, flexShrink: 0 }}>
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Details</h3>
             {[
-              ['Category', getCategoryName(resource.categoryId)],
+              ['Category', categoryName],
               ['Language', resource.language],
               ['Pages', `${resource.pages}`],
               ['Binding', bindingTypeLabels[resource.bindingType]],

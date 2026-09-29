@@ -40,14 +40,14 @@ export function DeleteProjectModal({ project, onClose }: DeleteProjectModalProps
   return (
     <Modal open onClose={onClose} title="Delete Research Project" size="sm">
       <div>
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded p-3 mb-4">
-          <AlertTriangle size={14} className="text-red-600 shrink-0" />
-          <p className="font-lato text-xs text-red-700">This action cannot be undone.</p>
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 rounded p-3 mb-4">
+          <AlertTriangle size={14} className="text-red-600 dark:text-destructive shrink-0" />
+          <p className="font-lato text-xs text-red-700 dark:text-destructive">This action cannot be undone.</p>
         </div>
         <p className="font-lato text-sm text-w-700 mb-4">
           Are you sure you want to delete <span className="font-semibold text-w-950">&ldquo;{project.title}&rdquo;</span>?
         </p>
-        {error && <p className="font-lato text-xs text-red-700 mb-4">{error}</p>}
+        {error && <p className="font-lato text-xs text-red-700 dark:text-destructive mb-4">{error}</p>}
         <div className="flex gap-2">
           <ElegantButton variant="primary" loading={deleting} onClick={handleDelete} className="flex-1 text-sm py-2 bg-red-600 border-red-700 hover:bg-red-700">Delete</ElegantButton>
           <ElegantButton variant="outline" onClick={onClose} className="flex-1 text-sm py-2">Cancel</ElegantButton>

@@ -57,7 +57,6 @@ export type NavItem = {
   icon: React.ReactNode;
   label: string;
   href?: string;
-  active?: boolean;
   subItems?: SubItem[];
 };
 
@@ -67,7 +66,7 @@ export type NavItem = {
  * so the two never drift out of sync.
  */
 export const adminMainNav: NavItem[] = [
-  { icon: <LayoutDashboard size={16} />, label: "Dashboard", href: "/dashboard", active: true },
+  { icon: <LayoutDashboard size={16} />, label: "Dashboard", href: "/dashboard" },
   {
     icon: <BookOpen size={16} />, label: "Digital Library",
     subItems: [
@@ -191,7 +190,7 @@ export const adminMgmtNav: NavItem[] = [
 
 /** Member-role nav — note this intentionally points at `/dashboard/*` routes, a pre-existing inconsistency (see CLAUDE.md) left as-is here. */
 export const memberNav: NavItem[] = [
-  { icon: <Home size={16} />, label: "Dashboard", href: "/member", active: true },
+  { icon: <Home size={16} />, label: "Dashboard", href: "/member" },
   { icon: <BookOpen size={16} />, label: "Library", href: "/dashboard/library" },
   { icon: <GraduationCap size={16} />, label: "E-Learning", href: "/dashboard/e-learning" },
   { icon: <RotateCcw size={16} />, label: "My Borrowings", href: "/dashboard/library/borrowings" },

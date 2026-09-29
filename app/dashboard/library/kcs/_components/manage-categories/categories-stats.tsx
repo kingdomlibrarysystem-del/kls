@@ -16,7 +16,7 @@ export function CategoriesStats({ categories, resources }: CategoriesStatsProps)
   const stats = [
     { label: 'Total Categories', value: categories.length, color: 'text-w-950' },
     { label: 'Root Sections', value: rootSections, color: 'text-w-600' },
-    { label: 'Avg Resources / Category', value: avgResources, color: 'text-green-700' },
+    { label: 'Avg Resources / Category', value: avgResources, color: 'text-green-700 dark:text-success' },
   ]
 
   return (

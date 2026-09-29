@@ -79,7 +79,7 @@ export default function AdminBorrowingsPage() {
     <PageTransition>
       <PageHeader title="Borrowings Management" subtitle="All member borrowings — approve, track, process returns and fines" />
 
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
 
       <BorrowingsStats data={data} />
 

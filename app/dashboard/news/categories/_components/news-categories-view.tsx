@@ -112,7 +112,7 @@ export function NewsCategoriesView() {
 
   return (
     <div>
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
 
       <div className="flex justify-end mb-4">
         <ElegantButton variant="primary" onClick={openCreate} className="flex items-center gap-1.5">
@@ -125,7 +125,7 @@ export function NewsCategoriesView() {
       ) : (
         <div className="space-y-2">
           {categories.map((c) => (
-            <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3 border border-w-200 rounded-lg bg-white">
+            <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3 border border-w-200 rounded-lg bg-white dark:bg-card!">
               <div className="flex items-center gap-3">
                 <span
                   className="w-4 h-4 rounded-full shrink-0"
@@ -138,10 +138,10 @@ export function NewsCategoriesView() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => openEdit(c)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors cursor-pointer">
+                <button onClick={() => openEdit(c)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors cursor-pointer">
                   <Pencil size={12} /> Edit
                 </button>
-                <button onClick={() => setDeleting(c)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors cursor-pointer">
+                <button onClick={() => setDeleting(c)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors cursor-pointer">
                   <Trash2 size={12} /> Delete
                 </button>
               </div>
@@ -153,17 +153,17 @@ export function NewsCategoriesView() {
       {/* Create / Edit modal */}
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Category' : 'New Category'} size="sm">
         <div className="space-y-3">
-          {formError && <p className="text-red-600 text-xs font-lato">{formError}</p>}
+          {formError && <p className="text-red-600 dark:text-destructive text-xs font-lato">{formError}</p>}
           <div>
-            <label className="font-lato text-xs font-semibold text-w-800 block mb-1">Name *</label>
+            <label className="font-lato text-xs font-semibold text-w-800 dark:text-foreground block mb-1">Name *</label>
             <FormInput id="cat-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ministry Updates" />
           </div>
           <div>
-            <label className="font-lato text-xs font-semibold text-w-800 block mb-1">Description (optional)</label>
+            <label className="font-lato text-xs font-semibold text-w-800 dark:text-foreground block mb-1">Description (optional)</label>
             <FormInput id="cat-desc" type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" />
           </div>
           <div>
-            <label className="font-lato text-xs font-semibold text-w-800 block mb-1.5">Color</label>
+            <label className="font-lato text-xs font-semibold text-w-800 dark:text-foreground block mb-1.5">Color</label>
             <div className="flex items-center gap-2 flex-wrap">
               {CATEGORY_COLOR_PRESETS.map((hex) => (
                 <button
@@ -198,7 +198,7 @@ export function NewsCategoriesView() {
 
       {/* Delete confirm modal */}
       <Modal open={!!deleting} onClose={() => setDeleting(null)} title="Delete Category" size="sm">
-        <p className="font-lato text-sm text-w-800 mb-4">
+        <p className="font-lato text-sm text-w-800 dark:text-foreground mb-4">
           Delete <strong>{deleting?.name}</strong>? Existing articles using this category will keep their category text but it will no longer appear in the dropdown.
         </p>
         <div className="flex justify-end gap-2">

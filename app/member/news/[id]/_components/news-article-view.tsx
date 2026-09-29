@@ -1,17 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, User, FileText, BookOpen, Globe2 } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
+import { LocalDate } from '@/components/ui/local-date'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import { useLanguage } from '@/contexts/language-context'
 import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
-import { resolveCategoryColor } from '@/app/dashboard/news/_shared/news-data'
-import { useNewsCategories } from '@/app/dashboard/news/_shared/use-news-categories'
+import { DEFAULT_CATEGORY_COLOR } from '@/app/dashboard/news/_shared/news-data'
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--bg-card)',
@@ -23,49 +21,21 @@ const cardStyle: React.CSSProperties = {
  * Full reading view of one published article — the page the email
  * "Read Article" buttons point at (/news/[id] when public, /member/news/[id]
  * inside the member portal). Only ever displays articles the news API
- * exposes, and works on the public site with no login required.
+ * exposes, and works on the public site with no login required. The
+ * article and its category color are loaded on the server by the page
+ * (null = not found / not visible to this viewer), so it arrives
+ * already rendered — no skeleton, and readable by search engines.
  */
-export function NewsArticleView({ id, backPath = '/member/news' }: { id: string; backPath?: string }) {
+export function NewsArticleView({ article, categoryColor, backPath = '/member/news' }: { article: NewsArticle | null; categoryColor?: string | null; backPath?: string }) {
   const { t } = useLanguage()
-  const categories = useNewsCategories()
-  const [article, setArticle] = useState<NewsArticle | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
 
-  useEffect(() => {
-    let cancelled = false
-    fetch(`/api/news/articles/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) { setArticle(null); setError(json.message ?? t('m_news.not_found')); return }
-        setArticle(json.data)
-        setError('')
-      })
-      .catch(() => { if (!cancelled) { setArticle(null); setError('Failed to load article') } })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Skeleton style={{ height: 22, width: 160, borderRadius: 8 }} />
-        <Skeleton style={{ height: 120, width: '100%', borderRadius: 12 }} />
-        <Skeleton style={{ height: 30, width: '70%', borderRadius: 8 }} />
-        <Skeleton style={{ height: 220, width: '100%', borderRadius: 12 }} />
-      </div>
-    )
-  }
-
-  if (error || !article) {
+  if (!article) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <EmptyState
           icon={FileText}
           title={t('m_news.not_found')}
-          description={error || t('m_news.not_found_desc')}
+          description={t('m_news.not_found_desc')}
           style={cardStyle}
         />
         <div>
@@ -77,7 +47,7 @@ export function NewsArticleView({ id, backPath = '/member/news' }: { id: string;
     )
   }
 
-  const color = resolveCategoryColor(article.category, categories)
+  const color = categoryColor || DEFAULT_CATEGORY_COLOR
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -111,7 +81,7 @@ export function NewsArticleView({ id, backPath = '/member/news' }: { id: string;
           </span>
           {article.publishedAt && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <Calendar size={12} /> {new Date(article.publishedAt).toLocaleDateString()}
+              <Calendar size={12} /> <LocalDate value={article.publishedAt} />
             </span>
           )}
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>

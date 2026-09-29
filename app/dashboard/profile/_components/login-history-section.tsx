@@ -15,7 +15,7 @@ const columns: Column<LoginEvent>[] = [
   {
     key: 'success', label: 'Result', sortable: true,
     render: (e) => (
-      <span className={`flex items-center gap-1 text-xs font-semibold ${e.success ? 'text-green-700' : 'text-red-700'}`}>
+      <span className={`flex items-center gap-1 text-xs font-semibold ${e.success ? 'text-green-700 dark:text-success' : 'text-red-700'}`}>
         {e.success ? <CheckCircle2 size={13} /> : <XCircle size={13} />} {e.success ? 'Success' : 'Failed'}
       </span>
     ),
@@ -28,7 +28,7 @@ export function LoginHistorySection() {
   const { data: loginHistory, loading, error } = useLoginHistory(user?.id)
 
   return (
-    <div className="bg-form-section border border-w-400 rounded-lg p-6 mt-6">
+    <div className="bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-6 mt-6">
       <h3 className="font-cinzel text-lg font-semibold text-w-950 mb-4 flex items-center gap-2">
         <History size={18} className="text-w-600" /> Login History
       </h3>

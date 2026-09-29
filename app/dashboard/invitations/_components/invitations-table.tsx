@@ -41,7 +41,7 @@ function buildColumns(
             variant="ghost"
             size="icon"
             aria-label={`View invitation for ${i.email}`}
-            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            className="text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950"
           >
             <Eye size={14} />
           </UniversalButton>
@@ -50,11 +50,11 @@ function buildColumns(
               <button
                 onClick={() => onResend(i)}
                 aria-label={`Resend invitation to ${i.email}`}
-                className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
               >
                 <RefreshCcw size={12} /> Resend
               </button>
-              <button onClick={() => onCancel(i)} aria-label={`Cancel invitation to ${i.email}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+              <button onClick={() => onCancel(i)} aria-label={`Cancel invitation to ${i.email}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
                 <XCircle size={14} />
               </button>
             </>
@@ -97,7 +97,7 @@ export function InvitationsTable({ invitations, loading, onResendInvitation, onR
   return (
     <div>
       {toast && (
-        <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+        <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
           {toast}
         </div>
       )}

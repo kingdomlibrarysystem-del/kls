@@ -22,8 +22,8 @@ function buildColumns(onRevoke: (c: CertificateRecord) => void): Column<Certific
     {
       key: 'status', label: 'Status', sortable: true,
       render: (c) => c.revoked
-        ? <span className="px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-red-50 text-red-800 border-red-200">Revoked</span>
-        : <span className="px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-green-50 text-green-800 border-green-200">Valid</span>,
+        ? <span className="px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-red-50 dark:bg-destructive/10 text-red-800 dark:text-destructive border-red-200 dark:border-destructive/30">Revoked</span>
+        : <span className="px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-green-50 dark:bg-success/10 text-green-800 dark:text-success border-green-200 dark:border-success/30">Valid</span>,
     },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
@@ -34,11 +34,11 @@ function buildColumns(onRevoke: (c: CertificateRecord) => void): Column<Certific
             variant="ghost"
             size="icon"
             aria-label={`View certificate for ${c.member}`}
-            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            className="text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950"
             icon={<Eye size={14} />}
           />
           {!c.revoked && (
-            <button onClick={() => onRevoke(c)} aria-label={`Revoke certificate for ${c.member}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+            <button onClick={() => onRevoke(c)} aria-label={`Revoke certificate for ${c.member}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
               <ShieldOff size={14} />
             </button>
           )}

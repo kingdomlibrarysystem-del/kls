@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff, requireAdmin } from '@/lib/auth/require-role'
+import { getRoleDetail } from '@/lib/data/roles'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -14,19 +15,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params
 
-  const role = await prisma.role.findUnique({
-    where: { id },
-    include: { _count: { select: { users: true } } },
-  })
+  const role = await getRoleDetail(id)
 
   if (!role) {
     return NextResponse.json({ data: null, message: 'Role not found', code: 'error', status: 404 }, { status: 404 })
   }
 
-  const { _count, ...roleFields } = role
-
   return NextResponse.json({
-    data: { ...roleFields, userCount: _count.users },
+    data: role,
     message: 'Role fetched successfully',
     code: 'success',
     status: 200,

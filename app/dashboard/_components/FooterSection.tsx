@@ -1,121 +1,86 @@
 "use client";
+
 import { useState } from "react";
-import {
-  Brain,
-  Map,
-  Mic,
-  Glasses,
-  Globe,
-  Bell,
-  Gamepad2,
-  Lock,
-  Users,
-  Download,
-  Clock,
-  Bot,
-  Rocket,
-} from "lucide-react";
-import { useUsers } from "@/app/dashboard/users/_components/use-users";
-import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
+import { useRouter } from "next/navigation";
+import { Brain, Map, Mic, Glasses, Globe, Bell, Gamepad2, Lock, Bot, Rocket, Send, Users, Quote } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { SectionCard } from "./section-card";
 
 const features = [
-  { icon: <Brain size={20} />, label: "AI Knowledge Engine", sub: "Smart recommendations" },
-  { icon: <Map size={20} />, label: "Knowledge Map", sub: "Visualize connections" },
-  { icon: <Mic size={20} />, label: "Voice Search", sub: "Search with your voice" },
-  { icon: <Glasses size={20} />, label: "AR/VR Library", sub: "Immersive Experience" },
-  { icon: <Globe size={20} />, label: "Multi-Language AI", sub: "Instant Translation" },
-  { icon: <Bell size={20} />, label: "Smart Notifications", sub: "Personalized Alerts" },
-  { icon: <Gamepad2 size={20} />, label: "Gamified Learning", sub: "Earn, Learn, Grow" },
-  { icon: <Lock size={20} />, label: "Blockchain Security", sub: "Library in Your Pocket" },
+  { icon: <Brain />, label: "AI Knowledge Engine", sub: "Smart recommendations" },
+  { icon: <Map />, label: "Knowledge Map", sub: "Visualize connections" },
+  { icon: <Mic />, label: "Voice Search", sub: "Search with your voice" },
+  { icon: <Glasses />, label: "AR/VR Library", sub: "Immersive Experience" },
+  { icon: <Globe />, label: "Multi-Language AI", sub: "Instant Translation" },
+  { icon: <Bell />, label: "Smart Notifications", sub: "Personalized Alerts" },
+  { icon: <Gamepad2 />, label: "Gamified Learning", sub: "Earn, Learn, Grow" },
+  { icon: <Lock />, label: "Blockchain Security", sub: "Library in Your Pocket" },
 ];
 
-/** Real member count (/api/users) and real items-borrowed count (/api/borrowings) — "Resources Sold" and "Countries Reached" were removed entirely (no Sales/Transaction model, no geo data anywhere in the app). */
-export function StatsBar() {
-  const { users } = useUsers();
-  const { data: borrowings } = useBorrowingsAdmin();
+const communityLinks = ["Forums", "Study Groups", "Live Events", "Share Resources", "Leaderboard"];
 
-  const globalStats = [
-    { icon: <Users size={24} />, value: users.length.toLocaleString(), label: "Active Members" },
-    { icon: <Download size={24} />, value: borrowings.length.toLocaleString(), label: "Items Borrowed" },
-    { icon: <Clock size={24} />, value: "24/7", label: "Library Access" },
-  ];
-
-  return (
-    <div
-      className="flex flex-wrap justify-center sm:justify-around gap-4"
-      style={{ background: "var(--stats-gradient)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 16px" }}
-    >
-      {globalStats.map((s) => (
-        <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ display: "flex", alignItems: "center" }}>{s.icon}</span>
-          <div>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: "var(--gold)" }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>{s.label}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
+/**
+ * Bottom row: roadmap features (2/3) + AI assistant, daily inspiration and
+ * community hub (1/3). The old StatsBar numbers now live in DashboardKpis.
+ */
 export function FooterSection() {
+  const router = useRouter();
   const [aiInput, setAiInput] = useState("");
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-0">
-      {/* Innovative features */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8, letterSpacing: 0.3 }}>
-          <Rocket size={14} /> WHAT'S NEXT – INNOVATIVE FEATURES
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+    <div className="grid gap-4 xl:grid-cols-3">
+      <SectionCard
+        icon={<Rocket />}
+        title="WHAT'S NEXT – INNOVATIVE FEATURES"
+        description="On the roadmap for the Kingdom Library."
+        className="xl:col-span-2"
+      >
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {features.map((f) => (
-            <div key={f.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "var(--bg-subtle)", borderRadius: 6, padding: "8px 4px", border: "1px solid var(--border-light)", textAlign: "center" }}>
-              <span style={{ display: "flex", alignItems: "center" }}>{f.icon}</span>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-primary)" }}>{f.label}</div>
-              <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{f.sub}</div>
+            <div key={f.label} className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-4 text-center">
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary [&_svg]:size-5">{f.icon}</span>
+              <span className="text-xs font-semibold text-foreground">{f.label}</span>
+              <span className="text-[11px] text-muted-foreground">{f.sub}</span>
             </div>
           ))}
         </div>
-      </div>
+      </SectionCard>
 
-      {/* AI + Community */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
-          <div className="flex flex-col sm:flex-row" style={{ gap: 12, alignItems: "start" }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--gold)", marginBottom: 4 }}>
-                <Bot size={14} /> AI Kingdom Assistant
-              </div>
-              <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 10, lineHeight: 1.4 }}>
-                Ask me anything about the Kingdom Library. I can help you find resources, recommend books, and much more!
-              </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center", background: "var(--bg-hover)", border: "1px solid var(--border)", borderRadius: 5, padding: "0 10px" }}>
-                <input value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Ask Anything" style={{ background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 11, flex: 1, padding: "8px 0" }} />
-                <button className="btn btn-gold btn-sm" style={{ padding: "4px 8px" }}>›</button>
-              </div>
-            </div>
-            <div className="w-full sm:w-40" style={{ background: "var(--inspiration-bg)", border: "1px solid var(--border-gold)", borderRadius: 7, padding: "10px", textAlign: "center", flexShrink: 0 }}>
-              <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 700, marginBottom: 4, letterSpacing: 1 }}>DAILY INSPIRATION</div>
-              <div style={{ fontSize: 9, color: "var(--text-secondary)", lineHeight: 1.5, fontStyle: "italic", marginBottom: 6 }}>
-                "For the earth will be filled with the knowledge of the glory of the Lord as the waters cover the sea."
-              </div>
-              <div style={{ fontSize: 8, color: "var(--gold)" }}>Habakkuk 2:14</div>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col gap-4">
+        <SectionCard icon={<Bot />} tone="gold" title="AI Kingdom Assistant" description="Ask me anything about the Kingdom Library — find resources, get recommendations, and more.">
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => { e.preventDefault(); router.push("/dashboard/ai"); }}
+          >
+            <Input value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Ask anything…" className="h-9 text-sm" />
+            <Button type="submit" size="icon-lg" aria-label="Ask the AI assistant"><Send /></Button>
+          </form>
+          <figure className="mt-4 rounded-lg border border-primary/25 p-4 text-center" style={{ background: "var(--inspiration-bg)" }}>
+            <Quote className="mx-auto mb-2 size-4 text-primary" />
+            <p className="text-[11px] font-bold tracking-widest text-primary">DAILY INSPIRATION</p>
+            <blockquote className="mt-2 text-xs italic leading-relaxed text-muted-foreground">
+              &ldquo;For the earth will be filled with the knowledge of the glory of the Lord as the waters cover the sea.&rdquo;
+            </blockquote>
+            <figcaption className="mt-2 text-[11px] font-semibold text-primary">Habakkuk 2:14</figcaption>
+          </figure>
+        </SectionCard>
 
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
-          <div style={{ textAlign: "center", marginBottom: 8 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "var(--gold)" }}>KINGDOM COMMUNITY HUB</div>
-            <div style={{ fontSize: 9, color: "var(--text-muted)" }}>Connect. Collaborate. Grow Together.</div>
-          </div>
-          <div className="flex flex-wrap justify-center" style={{ gap: 16 }}>
-            {["Forums","Study Groups","Live Events","Share Resources","Leaderboard"].map((l) => (
-              <button key={l} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontSize: 10, fontWeight: 600, padding: "2px 0" }}>{l}</button>
+        <SectionCard
+          icon={<Users />}
+          tone="gold"
+          title="Kingdom Community Hub"
+          description="Connect. Collaborate. Grow Together."
+          action={<Badge variant="outline" className="text-muted-foreground">Coming soon</Badge>}
+          className="flex-1"
+        >
+          <div className="flex flex-wrap gap-2">
+            {communityLinks.map((l) => (
+              <span key={l} className="rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">{l}</span>
             ))}
           </div>
-        </div>
+        </SectionCard>
       </div>
     </div>
   );

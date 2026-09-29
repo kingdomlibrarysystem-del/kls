@@ -34,7 +34,7 @@ export function FilePickerField({ id, accept, label, value, fileName, onChange, 
   return (
     <div>
       {value ? (
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border border-w-300 bg-w-100 rounded font-lato text-sm text-w-800">
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border border-w-300 bg-w-100 rounded font-lato text-sm text-w-800 dark:text-foreground">
           <span className="truncate">{fileName || label}</span>
           <button
             type="button"
@@ -48,7 +48,7 @@ export function FilePickerField({ id, accept, label, value, fileName, onChange, 
       ) : (
         <label
           htmlFor={id}
-          className="flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-w-400 bg-form-bg rounded cursor-pointer font-lato text-sm text-w-700 hover:border-w-600 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-w-400 bg-form-bg dark:bg-white/5 rounded cursor-pointer font-lato text-sm text-w-700 hover:border-w-600 dark:hover:border-primary transition-colors"
         >
           <UploadCloud size={16} /> Choose file…
         </label>

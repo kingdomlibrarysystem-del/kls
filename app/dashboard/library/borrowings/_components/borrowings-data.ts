@@ -22,9 +22,9 @@ export interface Borrowing {
 }
 
 export const statusConfig: Record<BorrowStatus, { label: string; cls: string }> = {
-  pending: { label: 'Pending', cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  active: { label: 'Active', cls: 'bg-green-50  text-green-800  border-green-200' },
-  overdue: { label: 'Overdue', cls: 'bg-red-50    text-red-800    border-red-200' },
+  pending: { label: 'Pending', cls: 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30' },
+  active: { label: 'Active', cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30' },
+  overdue: { label: 'Overdue', cls: 'bg-red-50 dark:bg-destructive/10    text-red-800 dark:text-destructive    border-red-200 dark:border-destructive/30' },
   returned: { label: 'Returned', cls: 'bg-w-50      text-w-700      border-w-300' },
   rejected: { label: 'Rejected', cls: 'bg-w-100     text-w-600      border-w-300' },
 }

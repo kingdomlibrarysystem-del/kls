@@ -38,12 +38,12 @@ export function CourseQuizzesPanel({ courseId }: CourseQuizzesPanelProps) {
   }
 
   return (
-    <div className="divide-y divide-w-200">
+    <div className="divide-y divide-w-200 dark:divide-white/10">
       {quizzes.map((q) => (
         <Link
           key={q.id}
           href={`/dashboard/e-learning/quizzes/${q.id}`}
-          className="flex items-center justify-between gap-3 py-2.5 hover:bg-form-highlight -mx-2 px-2 rounded transition-colors"
+          className="flex items-center justify-between gap-3 py-2.5 hover:bg-form-highlight dark:hover:bg-white/10 -mx-2 px-2 rounded transition-colors"
         >
           <div className="min-w-0">
             <p className="font-lato text-sm font-semibold text-w-950 truncate">{q.title}</p>

@@ -1,65 +1,33 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { ArrowLeft, Award, Download } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { CertificatePreview } from '@/app/dashboard/e-learning/certificates/_components/certificate-preview'
 import type { Certificate } from '@/app/member/_shared/use-certificates'
 
 interface CertificateDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialCertificate: Certificate
 }
 
 /**
  * Real details page for a single certificate, replacing the modal that
  * used to open from both the member Certificates list and the admin
- * Downloads center's "View / Download" row. Fetches directly from
- * /api/certificates/:id so this page also works when linked to
- * directly (e.g. shared verification links) without either list being
- * loaded first. Download stays a print-to-PDF affordance, same as the
+ * Downloads center's "View / Download" row. The certificate is loaded on
+ * the server by page.tsx (owner-or-staff checked there). Download stays a print-to-PDF affordance, same as the
  * modal it replaces, since no real file-generation backend exists yet.
  */
-export function CertificateDetailView({ id }: CertificateDetailViewProps) {
-  const [certificate, setCertificate] = useState<Certificate | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function CertificateDetailView({ initialCertificate }: CertificateDetailViewProps) {
+  const certificate: Certificate | null = initialCertificate
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/certificates/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Certificate not found')
-          return
-        }
-        setCertificate(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load certificate') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading certificate">
-        <Skeleton style={{ height: 32, width: 160, borderRadius: 6 }} />
-        <Skeleton style={{ height: 220, borderRadius: 8 }} />
-      </div>
-    )
-  }
-
-  if (error || !certificate) {
+  if (!certificate) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <EmptyState
           icon={Award}
           title="Certificate not found"
-          description={error || 'This certificate does not exist or was removed.'}
+          description={'This certificate does not exist or was removed.'}
           style={{ color: 'var(--text-secondary)' }}
         />
         <div>

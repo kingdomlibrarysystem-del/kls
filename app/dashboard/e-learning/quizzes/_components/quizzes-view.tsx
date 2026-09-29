@@ -108,13 +108,13 @@ export function QuizzesView() {
             variant="ghost"
             size="icon"
             aria-label={`View ${a.title}`}
-            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            className="text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950"
             icon={<Eye size={14} />}
           />
-          <button onClick={() => setEditing(a)} aria-label={`Edit ${a.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
+          <button onClick={() => setEditing(a)} aria-label={`Edit ${a.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
-          <button onClick={() => setDeleting(a)} aria-label={`Delete ${a.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+          <button onClick={() => setDeleting(a)} aria-label={`Delete ${a.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
             <Trash2 size={14} />
           </button>
         </div>
@@ -127,7 +127,7 @@ export function QuizzesView() {
       value={kindFilter}
       onChange={(e) => setKindFilter(e.target.value as AssessmentKind | 'all')}
       aria-label="Filter by type"
-      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
     >
       <option value="all">All Types</option>
       {(Object.keys(kindConfig) as AssessmentKind[]).map((k) => (
@@ -141,11 +141,11 @@ export function QuizzesView() {
       <div className="flex justify-end items-center gap-2 mb-3">
         <Link
           href="/dashboard/e-learning/quizzes/review"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-lato font-semibold border border-w-400 rounded text-w-700 hover:bg-w-100 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-lato font-semibold border border-w-400 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 transition-colors"
         >
           <ClipboardCheck size={15} /> Review Queue
           {pendingReviewCount > 0 && (
-            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">{pendingReviewCount}</span>
+            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 dark:text-warning rounded-full text-xs font-bold">{pendingReviewCount}</span>
           )}
         </Link>
         <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>

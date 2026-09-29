@@ -72,7 +72,7 @@ export function ReviewQueueView() {
       key: 'openCount', label: 'Pending Review', render: (a) => {
         const isProject = catalog[a.assessmentId]?.kind === 'PROJECT'
         return (
-          <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-xs font-lato">
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-warning/10 text-amber-800 dark:text-warning border border-amber-200 dark:border-warning/30 rounded text-xs font-lato">
             <Clock size={11} /> {isProject ? 'Project submission' : `${Object.keys(a.openAnswers ?? {}).length} open question(s)`}
           </span>
         )
@@ -85,7 +85,7 @@ export function ReviewQueueView() {
           <button
             onClick={() => setGrading(a)}
             aria-label={`Grade ${catalog[a.assessmentId]?.title ?? a.assessmentId}`}
-            className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
           >
             <ClipboardCheck size={12} /> Grade
           </button>
@@ -97,7 +97,7 @@ export function ReviewQueueView() {
   return (
     <div>
       {toast && (
-        <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+        <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
           {toast}
         </div>
       )}

@@ -7,7 +7,6 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useResources, findResourcesForScroll } from '@/app/dashboard/library/_components/use-resources'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
 import { useReadingProgress, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { getParentName, getScrollImage, type Category } from '@/lib/kcs-taxonomy'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
@@ -26,8 +25,8 @@ function useIsFavorited(id: string) {
 /** The one readable-online match for this scroll, if any — a real `categoryId` FK match, not a title-string hack. */
 function useReadableResource(categoryId: string) {
   const { data: resources } = useResources()
-  const content = useReadableContent()
-  return findResourcesForScroll(categoryId, resources).find((r) => !!content[r.id])
+  // chapterCount comes with the resource list (was: download every chapter in the library).
+  return findResourcesForScroll(categoryId, resources).find((r) => r.chapterCount > 0)
 }
 
 /** This scroll's reading-progress percent, if the member has started reading it. */
@@ -142,7 +141,7 @@ export function ScrollCard({ scroll }: ScrollProps) {
               <Link
                 href={`/member/library/read/${readableResource.id}`}
                 aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
               >
                 <BookOpenCheck size={14} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
               </Link>
@@ -225,7 +224,7 @@ export function ScrollListItem({ scroll }: ScrollProps) {
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/member/library/read/${readableResource.id}` }}
           role="link"
           aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
         >
           <BookOpenCheck size={12} /> {typeof readingPercent === 'number' ? `${readingPercent}%` : 'Read'}
         </span>

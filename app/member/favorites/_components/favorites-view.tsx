@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Heart, BookOpen, GraduationCap, Eye, X } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
@@ -16,9 +15,6 @@ function detailHref(item: FavoriteItem) {
   return item.type === 'COURSE' ? '/member/e-learning' : `/library/${item.id}`
 }
 
-/** Simulated network delay before the shared favorites store's initial snapshot is shown. */
-const LOAD_DELAY_MS = 400
-
 /**
  * Favorites list with a real "Remove from favorites" action — reads/writes
  * the shared use-favorites store, so removing here (or favoriting from the
@@ -26,14 +22,8 @@ const LOAD_DELAY_MS = 400
  */
 export function FavoritesView() {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
   const [removeError, setRemoveError] = useState('')
   const favorites = useFavorites(user?.id)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), LOAD_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [])
 
   const handleRemove = (id: string) => {
     setRemoveError('')
@@ -43,16 +33,6 @@ export function FavoritesView() {
     } catch (error) {
       setRemoveError(error instanceof Error ? error.message : 'Could not remove favorite')
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" aria-label="Loading favorites">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} style={{ height: 72, borderRadius: 8 }} />
-        ))}
-      </div>
-    )
   }
 
   if (favorites.length === 0) {

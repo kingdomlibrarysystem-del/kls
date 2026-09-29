@@ -21,7 +21,7 @@ export function ReservationsTable({ data, statusFilter, onStatusFilterChange, on
   const columns: Column<Reservation>[] = [
     {
       key: 'queuePosition', label: 'Queue', sortable: true,
-      render: (r) => (['pending', 'notified'].includes(r.status) ? <QueueBadge position={r.queuePosition} /> : <span className="text-w-400 text-xs">—</span>),
+      render: (r) => (['pending', 'notified'].includes(r.status) ? <QueueBadge position={r.queuePosition} /> : <span className="text-w-400 dark:text-muted-foreground text-xs">—</span>),
     },
     {
       key: 'memberName', label: 'Member', sortable: true,
@@ -45,8 +45,8 @@ export function ReservationsTable({ data, statusFilter, onStatusFilterChange, on
       key: 'totalCopies', label: 'Stock', sortable: false,
       render: (r) => (
         <div>
-          <p className="text-xs font-lato"><span className="text-red-700 font-semibold">{r.borrowedCopies}</span><span className="text-w-600"> / {r.totalCopies} borrowed</span></p>
-          <p className={`text-xs font-lato ${r.totalCopies - r.borrowedCopies === 0 ? 'text-red-600' : 'text-green-700'}`}>{r.totalCopies - r.borrowedCopies} available</p>
+          <p className="text-xs font-lato"><span className="text-red-700 dark:text-destructive font-semibold">{r.borrowedCopies}</span><span className="text-w-600"> / {r.totalCopies} borrowed</span></p>
+          <p className={`text-xs font-lato ${r.totalCopies - r.borrowedCopies === 0 ? 'text-red-600' : 'text-green-700 dark:text-success'}`}>{r.totalCopies - r.borrowedCopies} available</p>
         </div>
       ),
     },
@@ -71,7 +71,7 @@ export function ReservationsTable({ data, statusFilter, onStatusFilterChange, on
           )
         }
         if (r.status === 'expired') return <span className="flex items-center gap-1 text-xs text-w-500 font-lato"><AlertTriangle size={11} /> Window closed</span>
-        return <span className="text-w-400 text-xs">—</span>
+        return <span className="text-w-400 dark:text-muted-foreground text-xs">—</span>
       },
     },
     {
@@ -92,21 +92,21 @@ export function ReservationsTable({ data, statusFilter, onStatusFilterChange, on
             View
           </UniversalButton>
           {r.status === 'pending' && r.queuePosition === 1 && (r.totalCopies - r.borrowedCopies) > 0 && (
-            <button onClick={() => onNotify(r)} className="flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded text-xs font-lato hover:bg-yellow-100 transition-colors">
+            <button onClick={() => onNotify(r)} className="flex items-center gap-1 px-2.5 py-1 bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border border-yellow-200 dark:border-warning/30 rounded text-xs font-lato hover:bg-yellow-100 dark:hover:bg-warning/20 transition-colors">
               <Bell size={12} /> Notify
             </button>
           )}
           {r.status === 'pending' && (
-            <button onClick={() => onCancel(r)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+            <button onClick={() => onCancel(r)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
               <XCircle size={12} /> Cancel
             </button>
           )}
           {r.status === 'notified' && (
             <>
-              <button onClick={() => onConvertToBorrow(r)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">
+              <button onClick={() => onConvertToBorrow(r)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors">
                 <ArrowRightCircle size={12} /> Convert to Borrow
               </button>
-              <button onClick={() => onExpire(r)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+              <button onClick={() => onExpire(r)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
                 <AlertTriangle size={12} /> Expire
               </button>
             </>
@@ -125,7 +125,7 @@ export function ReservationsTable({ data, statusFilter, onStatusFilterChange, on
       searchPlaceholder="Search member, book, email..."
       searchFilter={(r, q) => r.memberName.toLowerCase().includes(q) || r.memberEmail.toLowerCase().includes(q) || r.resourceTitle.toLowerCase().includes(q) || r.resourceAuthor.toLowerCase().includes(q)}
       filters={
-        <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value as ReservationStatus | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none">
+        <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value as ReservationStatus | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
           <option value="all">All Statuses</option>
           {(Object.keys(statusConfig) as ReservationStatus[]).map((s) => <option key={s} value={s}>{statusConfig[s].label}</option>)}
         </select>

@@ -6,6 +6,7 @@ import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { notifyUser } from '@/lib/notify'
 import { enrollmentConfirmedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
+import { serializeEnrollment, INCLUDE } from '@/lib/data/enrollments'
 
 /**
  * Real Enrollment API, replacing app/member/_shared/enrollment-data.ts
@@ -16,39 +17,6 @@ import { appBaseUrl } from '@/lib/mailer'
  * rather than stored redundantly (the admin mock stored it directly,
  * which could silently drift from the real completed-lessons list).
  */
-function serializeEnrollment(e: {
-  id: string
-  userId: string
-  user: { name: string | null; firstName: string | null; lastName: string | null }
-  courseId: string
-  course: { title: string }
-  status: string
-  enrolledAt: Date
-  completedLessonIds: string[]
-  totalLessons: number
-  assessmentPassed: boolean
-  paid: boolean
-}) {
-  const memberName = e.user.name ?? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim()
-  const progress = e.totalLessons > 0 ? Math.round((e.completedLessonIds.length / e.totalLessons) * 100) : 0
-  return {
-    id: e.id,
-    userId: e.userId,
-    member: memberName,
-    courseId: e.courseId,
-    courseTitle: e.course.title,
-    enrolledAt: e.enrolledAt.toISOString().split('T')[0],
-    status: e.status,
-    progress,
-    completedLessonIds: e.completedLessonIds,
-    totalLessons: e.totalLessons,
-    assessmentPassed: e.assessmentPassed,
-    paid: e.paid,
-  }
-}
-
-const INCLUDE = { user: { select: { name: true, firstName: true, lastName: true } }, course: { select: { title: true } } } as const
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')

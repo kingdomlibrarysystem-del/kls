@@ -9,6 +9,29 @@
 > behavior by accident. This rule exists to keep the app problem-free as it
 > grows. A change is NOT complete until its PROGRESS.md entry is written.
 
+# Standing rule — server-first data loading & performance (added 2026-09-29)
+
+> **Rule (per project owner):** pages load their data on the server and pass
+> it down as props; no `useEffect` fetch-on-mount unless there is truly no
+> other way (post-action refresh, payment polling, live data, browser-only
+> data); no fake loading delays; never download a whole collection to
+> count/filter/find one row; Prisma queries select only what they render,
+> run in parallel, and hit indexed fields. Full rule with examples:
+> **PERFORMANCE.md → Rule 15**.
+
+# Standing rule — shadcn + Tailwind, light AND dark (added 2026-09-29)
+
+> **Rule (per project owner):** admin (`/dashboard`) and member (`/member`)
+> UI is built with **shadcn/ui components + Tailwind**, using the theme
+> tokens in `app/globals.css` (`bg-card`, `text-foreground`,
+> `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`,
+> `text-success`, `text-warning`, `text-info`...). Every surface must look
+> right in **both light and dark mode** — any light-only class
+> (`bg-white`, `bg-red-50`, `bg-form-bg`, `hover:bg-w-100`...) needs a
+> `dark:` counterpart. **Do not change font families** (keep `font-cinzel`,
+> `font-lato`, `.cinzel` etc.) and **do not change logic** — design passes
+> are markup/class changes only.
+
 ---
 
 # Autonomous Run Progress
@@ -5721,3 +5744,312 @@ no-img-element warning); `npx vitest run` 180 pass + the same 6 pre-existing
 cart/order-sparse DB failures (one-off borrow-reserve-concurrency timeout is
 the known SQLite-contention flake - clean in the previous round); `npx next
 build` exit 0 (181 pages).
+
+## 2026-09-29 - Design pass 1: shadcn theme foundation + light/dark sweep (admin + member)
+New standing rule (see top of file): shadcn/ui + Tailwind, light AND dark,
+no font-family or logic changes. This first pass fixes the foundation and
+every shared component, then sweeps all admin/member pages for classes that
+broke in dark mode. Markup/class changes only - no behaviour changed.
+
+- **Theme tokens (`app/globals.css`):** shadcn semantic tokens were still the
+  stock neutral/grey set. Remapped `--background/--card/--popover/--primary/
+  --secondary/--muted/--accent/--border/--input/--ring/--chart-*/--sidebar-*`
+  onto the gold palette for `:root` (light) and `.dark`. `--primary` is gold
+  `#d4a843` with dark foreground in both modes. Added `--success`,
+  `--warning`, `--info` (+ `--color-*` in `@theme inline`) so status colors
+  are tokens usable as `text-success`, `bg-warning/10`, etc.
+- **Bug fix:** removed the `@media (prefers-color-scheme: dark) :root:not(.light)`
+  block. `ThemeProvider` never sets `.light`, so on an OS in dark mode every
+  shadcn surface (and `body` via `bg-background`) turned dark while the app
+  was in light mode. Theme is now purely class-driven (`.dark`).
+- `.card-hover:hover` and `.btn-outline-dim:hover` used a white border
+  (invisible in light mode) -> `var(--border-gold)`.
+- **New shadcn primitives** (`components/ui/`, base-nova / Base UI): avatar,
+  badge, card, dropdown-menu, input, label, progress, select, separator,
+  switch, table, tabs, textarea, tooltip. The CLI generated a broken
+  `import { cn } from "cn"` and added a stray `cn` npm package - imports
+  fixed to `@/lib/utils`, package removed (package.json unchanged).
+  `tooltip` needs a `TooltipProvider` - not mounted yet; mount it before
+  first use.
+- **Shared components rebuilt on tokens/shadcn (same props and behaviour):**
+  - `data-table.tsx` - shadcn `Input`, `Button` (pagination/export),
+    `TableHeader/Row/Head/Cell`; card surface, muted header, accent row hover.
+    Kept a plain `<table>` in our own scroll div (shadcn `<Table>` adds a
+    second overflow wrapper that breaks the scroll-edge fade), and forced
+    `whitespace-normal` on cells so wrapping is unchanged. Fixes the table
+    body blending into the page in dark mode (`bg-white` was forced to
+    `#0a0d1a` by the global override).
+  - `modal.tsx` - card tokens, blurred backdrop, shadcn ghost close button,
+    `role="dialog"`. Deliberately still a portal, not Base UI Dialog: modals
+    host the Cloudinary widget/editor popovers rendered outside the modal DOM,
+    and an outside-press dialog would close on them.
+  - `form-input.tsx` (shadcn input styling, `aria-invalid`, destructive
+    error), `field-label.tsx` (shadcn `Label`), `form-section.tsx`,
+    `form-container.tsx`, `empty-state.tsx` (icon in muted circle badge).
+  - `elegant-button.tsx` / `universal-button.tsx` - focus-visible ring;
+    dark variants (primary: dark text on gold, secondary/outline/ghost hover
+    no longer flash cream).
+- **Codemod sweep (206 files in `app/dashboard` + `app/member`, plus
+  `components/ui/*`, `components/profile-dropdown.tsx`):** added a `dark:`
+  counterpart next to each light-only class, only where the line had no
+  dark variant for that property. Map: `bg-white -> dark:bg-card!`
+  (important to beat the global `.dark .bg-white` override),
+  `bg-form-bg -> dark:bg-white/5`, `bg-form-section -> dark:bg-secondary`,
+  `border-w-500 -> dark:border-white/15`, `border-w-600/700 -> dark:border-primary/60`,
+  `focus:border-w-* -> dark:focus:border-primary`, `bg-w-200/400 -> dark:bg-white/10`,
+  `hover:bg-w-* -> dark:hover:bg-white/5..15`, `text-w-800/900 -> dark:text-foreground`,
+  `text-w-400 -> dark:text-muted-foreground`, red/green/yellow/amber/blue
+  status `-50/-200/-600..800` -> `destructive/success/warning/info` tokens.
+  `components/home` and public pages untouched.
+- **Contrast:** white text on gold (`var(--gold)`, ~2.2:1) and on
+  `var(--teal-light)` buttons -> `var(--primary-foreground)` (25 inline
+  styles across member library/cart/checkout/orders/assessments/sessions/
+  profile, dashboard roles/KCS/welcome tabs). Tailwind `bg-w-600..950 +
+  text-white` got `dark:text-primary-foreground` (9 files), since the global
+  override turns those backgrounds bright gold in dark mode.
+
+**Interactions to watch:** status config objects (`cls: '...'`) now carry
+extra `dark:` classes - any code that string-compares those values would
+break (checked: none do). `bg-white` inside admin/member now renders
+`--card` (#111828) in dark instead of `#0a0d1a`, so cards separate from the
+page. The public site's `.dark` overrides in globals.css are unchanged.
+
+**Not done yet (next passes):** page-by-page swap of hand-rolled tab bars,
+selects, badges and stat cards to shadcn `Tabs/Select/Badge/Card`; Dialect-B
+(inline `style={{}}`) pages are theme-correct already via CSS vars but not yet
+converted to Tailwind classes.
+
+Verification: `npx tsc --noEmit` clean; `eslint components/ui` 0 errors
+(1 pre-existing img warning); `npx vitest run` 159 pass + the same 6
+pre-existing cart/order-sparse DB failures + the known
+borrow-reserve-concurrency flake; `npx next build` exit 0; generated CSS
+confirmed to contain `dark:bg-card!` (important), `dark:text-success`, etc.
+(Env note: `npm uninstall cn` pruned the undeclared `jsdom` that
+`markdown-editor-config.test.ts` imports - restored with
+`npm install --no-save jsdom`; that suite passes 55/55.)
+
+## 2026-09-29 - Performance pass 1: server-loaded pages, no fetch-on-mount, aggregate dashboard, Prisma indexes
+New standing rule: PERFORMANCE.md -> Rule 15 (pointer at the top of this file).
+Goal: pages arrive with their data (no skeleton + client fetch on every
+visit), no duplicate/oversized requests. Behaviour is unchanged unless noted.
+
+**Infrastructure (new files)**
+- `lib/server/page-session.ts` - `getPageSession()` (React `cache()`d, one
+  session lookup per request), `requirePageAuth()`, `requireStaffPage()`,
+  `canAccessOwned()` - page-side twins of `lib/auth/require-role.ts`
+  (redirect / 404 instead of 401/403 JSON).
+- `lib/server/to-plain.ts` (`toPlain()` = exact API JSON shape),
+  `lib/server/object-id.ts` (`isObjectId()`: malformed id -> 404, was a 500).
+- `lib/data/*.ts` - one loader + serializer per domain, imported by BOTH the
+  API route and the page (serializers MOVED out of the routes, not copied):
+  invitations, roles, users (+`USER_DETAIL_SELECT`, no more full-document
+  `include`), borrowings, reservations, certificates, news-articles,
+  courses, enrollments (list route's duplicate serializer removed), lessons,
+  assessments, resources, categories, orders (`serialize` renamed
+  `serializeOrder`), checkouts, reviews, chapters (`gateChapters`/
+  `isEntitled`/`serializeChapter` moved; still re-exported from
+  `app/api/chapters/route.ts` for existing importers/tests),
+  beauty-appointments, counseling-sessions, donation-campaigns, donations,
+  rehab-intakes, rehab-sessions, research-projects, research-papers,
+  admin-dashboard.
+- `lib/server/news-article-page.ts`, `lib/server/reader-page.ts` - shared
+  page loaders.
+- `lib/client/use-shared-list.ts` - de-duplicated, stale-while-revalidate
+  client list cache (one request per URL for all mounted consumers; cached
+  data shown instantly on revisit; always revalidates on mount).
+- `components/ui/local-date.tsx` - hydration-safe locale date.
+- `app/dashboard/loading.tsx`, `app/member/loading.tsx`
+  (`components/app-shell/page-skeleton.tsx`) - instant skeleton during
+  server navigation; `app/dashboard/not-found.tsx`, `app/member/not-found.tsx`
+  (`components/app-shell/portal-not-found.tsx`).
+
+**Detail pages converted to server loading (28 views):** the page checks the
+session (staff pages: `requireStaffPage`; member pages: `requirePageAuth` +
+the same owner-or-staff rule as the API, another member's record -> 404),
+loads the record, calls `notFound()` when missing, and passes `initialX`. The
+view's fetch-on-mount effect + skeleton branch are removed; views that
+re-read after an action keep a quiet `load()` for that only.
+Admin: invitations, roles, users, library resource, KCS category, borrowing,
+sales transaction, reservation, e-learning course/lesson/quiz/enrollment/
+certificate, news article, beauty appointment, counseling session, donation,
+donation campaign, rehab intake, rehab schedule session, research project,
+research paper. Member: borrowing, reservation, certificate, order, checkout,
+news article (+ public `/news/[id]`, now with `generateMetadata`), library
+resource page, reader (member + admin `/dashboard/library/read/[id]`).
+
+**Wasteful fetches removed**
+- Invitation/user detail mounted `useInvitations()`/`useUsers()` (whole list,
+  pageSize=1000) only for Resend/Cancel/Edit/Delete -> standalone
+  `resendInvitationRequest`/`removeInvitationRequest`/`updateUserRequest`/
+  `removeUserRequest` (the hooks now call these too).
+- Course detail: `useUsers()` (all users) for one lecturer name -> the course
+  payload's `instructor`; Lessons/Enrollments panels downloaded all lessons +
+  all courses + all enrollments -> courseId-scoped server queries passed as
+  props (`getCourseLessonRows`, `getCourseEnrollments`).
+- Lesson detail: all courses + all lessons for a title and prev/next ->
+  `getCourseTitle` + course-scoped siblings (closing Edit now calls
+  `router.refresh()` so they stay current). Quiz detail: course catalog ->
+  `getCourseTitle`.
+- News article reader: all categories for one color -> `getNewsCategoryColor`.
+- `useReadableContent()` (GET /api/chapters grouped mode = EVERY chapter body
+  in the library + 3 entitlement queries per priced book) was mounted by the
+  library resource cards, scroll cards, scroll detail, both resource detail
+  pages and the reader. Cards/details now use `resource.chapterCount`
+  (`isResourceReadable()`); the reader gets ONE book's gated chapters from the
+  server. `refreshReadableContent()` is a no-op unless something loaded the
+  catalog, so admin chapter saves stop re-downloading it.
+- Member library resource page: whole catalog (`useResources`) -> one
+  resource + reviews from the server; category name resolved server-side
+  (`getCategoryName()` read a client cache, so a direct visit showed
+  "Uncategorized" - fixed).
+- Payment detail pages (sales transaction, member order, member checkout):
+  stored state from the server; only a still-PENDING record triggers ONE
+  client re-read of the route (which re-polls PayPack/Stripe).
+
+**Admin home (/dashboard):** six widgets each downloaded full lists
+(resources, borrowings x3, users, reservations, publications, projects) to
+count/sum/slice. Now `page.tsx` calls `getAdminDashboardData()` - 11 parallel
+aggregate queries (groupBy/count/aggregate + `take`) - and passes props to
+BorrowReturn, WelcomeSection, InventoryOverview, RightPanels, MiddleSection,
+StatsBar. Counts are now exact past 1000 rows. **Behaviour fix:** "Recently
+Added" (both panels) used `[...resources].slice(-4).reverse()` on a
+createdAt-DESC list, i.e. showed the 4 OLDEST items; now the 4 newest.
+"Popular" joins borrows by resourceId instead of by title string.
+
+**Member hooks de-duplicated:** `useEnrollments`, `useBorrowings`,
+`useCertificates`, `useAssessmentAttempts`, `useCheckouts`, `useReservations`
+(member) now use `useSharedList` - same `{ data, loading, refetch }` API and
+URLs, but one request per page instead of one per component (the member home
+fired several twice), instant render on revisit, and `refetch()` updates
+every consumer.
+
+**Fake delays removed** (`LOAD_DELAY_MS` 400 ms `setTimeout` skeletons):
+ai-tools, beauty appointments, counseling sessions, health checkups, rehab
+intake, KCS pillar view, member favorites.
+
+**Prisma:** `@@index`es added for list filters/sorts - Borrow (userId+
+borrowDate, resourceId+status, status+dueDate), Reservation (userId+
+reservationDate, resourceId+status), Lesson (courseId+order), Assessment,
+AssessmentAttempt, Certificate, Enrollment (courseId), Notification
+(recipientId+createdAt), Message (channelId+sentAt), Channel, Resource
+(categoryId, status), Course (lecturerId), SessionRequest, ResearchPaper,
+Publication, AuditLog (timestamp). **Needs human action:** run
+`npx prisma db push` to create them in MongoDB (withheld, as in earlier
+phases). Resource GET now runs its two queries in parallel.
+
+**Hydration safety:** server-rendered views format locale dates/numbers, so
+`suppressHydrationWarning` was added to every `DetailRow` value span and to
+the inline RWF/number/date elements (+`ClaimCountdown`), and `<LocalDate>` is
+used where a date is its own element.
+
+**Interactions to watch**
+- Any new detail page must follow Rule 15 (loader in `lib/data`, used by the
+  route too). Changing a serializer now changes both the page and the API.
+- Widgets on `/dashboard` now REQUIRE props (no hooks); only
+  `app/dashboard/page.tsx` mounts them.
+- `CourseLessonsPanel`/`CourseEnrollmentsPanel`/`CourseRelatedPanels`,
+  `ReaderView`, `NewsArticleView`, member `ResourceDetailView`,
+  `ResourceReviews` now take data props (all call sites updated).
+- `useSharedList` caches per URL for the browser session; code that mutates
+  one of those lists must still call the hook's `refetch()` (unchanged).
+
+**Not done yet (next passes):** list pages still fetch on mount through the
+module-cache hooks (useResources, useCourseCatalog, admin list hooks with
+`pageSize=1000`) - next step is server-seeding those caches + real
+pagination; member home `CurrentlyReading` still uses `useResources` for book
+titles (the reading-progress API could include them); KCS category detail's
+related-data panel; `lesson-viewer-view`/`course-redirect-view` still resolve
+through catalog hooks. Pre-existing bug noticed, not changed: admin user
+detail shows `user.joinDate`, which the API never returns (it returns
+`createdAt`), so "Joined" is blank.
+
+Verification: `npx tsc --noEmit` clean; `npx next build` exit 0; `npx vitest
+run` 214 pass + the 6 known cart/order-sparse DB failures + DB-contention
+flakes (borrow-reserve-concurrency; reviews passes 5/5 alone); `npx prisma
+validate` valid. `npx prisma generate` could not replace the query-engine DLL
+(locked by a running dev server) - indexes don't change the client API;
+re-run generate after stopping the dev server.
+
+## 2026-09-29 - Admin home (/dashboard) redesign: product-grade layout, shadcn cards, no gaps
+Owner review (screenshots): mismatched card sizes, 9-11px text, a short left
+column leaving a large empty area, "Recently Added" shown twice. Rebuilt the
+layout with one card shell and a 16px rhythm; all content, counts and links kept.
+
+- **New:** `app/dashboard/_components/section-card.tsx` (`SectionCard` on shadcn
+  `Card` - header/description/action/footer, theme tokens; title is a plain
+  heading so it inherits the dashboard font, NOT shadcn `CardTitle`'s
+  `font-heading`) + `SectionLink`; `DashboardKpis.tsx` (6 equal KPI cards:
+  Currently Borrowed, Overdue, Due Today, Reservations, Active Members, Items
+  Borrowed - each links to its page).
+- **Layout (`app/dashboard/page.tsx`):** hero -> KPI row -> [loans + KCS (2/3) |
+  quick actions + publishing + research (1/3)] -> [inventory | popular | recently
+  added] -> [roadmap (2/3) | AI assistant + inspiration + community (1/3)]. The
+  last card of each column is `flex-1`, so column bottoms line up.
+- **Widgets rewritten on Tailwind + shadcn (Button/buttonVariants, Input, Badge,
+  Table parts), light/dark via tokens:** WelcomeSection (hero; "24/7 Library
+  Access" moved here as a badge), BorrowReturn (actions + recent-loans table with
+  status badges; its 4 count tiles moved to DashboardKpis), DigitalLibrary (KCS
+  8-pillar grid, 4 columns), InventoryOverview (donut on `--chart-*` tokens) +
+  new `QuickActions` export, MiddleSection -> `PopularResources` +
+  `RecentlyAdded` exports, RightPanels, FooterSection.
+- **Removed duplication:** the second "Recently Added" list (it was in both
+  InventoryOverview and MiddleSection) and the `StatsBar` band (its numbers
+  are KPI cards now). `StatsBar` export deleted - it was only used by the page.
+- **Small behaviour changes (were dead UI):** KCS pillar tiles and the Your
+  Scroll/Search tiles now link to the KCS map / library (they had
+  `cursor: pointer` but no action); popular/recent rows link to
+  `/dashboard/library/[id]`; the AI Assistant send button opens `/dashboard/ai`
+  (it did nothing); Community Hub links had no destination, so they are shown
+  as chips under a "Coming soon" badge instead of fake buttons.
+
+**Interactions:** only `app/dashboard/page.tsx` mounts these widgets (checked).
+Data still comes from `getAdminDashboardData()` - no new queries.
+
+Verification: `npx tsc --noEmit` clean; eslint on the widgets clean (remaining
+issues are pre-existing in topbar/mobile-bottom-nav/sidebar-search-results);
+`npx next build` exit 0. Not visually verified in a browser by the agent.
+
+**Follow-up (owner review):** the KCS card was stretched to match the taller
+right column, leaving empty space. RightPanels now exports `PublishingServices`
+(right column, `flex-1`) and `ResearchServices` (moved under DigitalLibrary in
+the main column, wide layout: stats beside a 3-column link grid, "Go to
+Research Center" in the header, `flex-1`). DigitalLibrary no longer stretches.
+The default `RightPanels` export was removed (only the page used it).
+
+## 2026-09-29 - Admin sidebar: correct active state, collapse toggle, home link, portal switch
+- **Bug:** "Dashboard" stayed highlighted on every admin page (hard-coded
+  `active: true` in nav-data + `currentRoute.startsWith('/dashboard')`), and
+  section sub-links used prefix matching so e.g. E-Learning "Overview"
+  (/dashboard/e-learning) lit up together with its siblings. New
+  `app/dashboard/_components/route-match.ts`: `routeMatches()` (portal roots
+  /dashboard and /member match exactly; others match the path or a child path)
+  and `activeHrefAmong()` (only the most specific sibling is active). Used by
+  sidebar-nav-item, sidebar-nav-section, sidebar-search-results,
+  mobile-more-menu. The `active` field was removed from `NavItem` and nav-data.
+- Active rows no longer draw the inset gold left border (owner request) — the
+  gold tint background + gold text remain.
+- Sidebar links are `next/link` now (were `<a href>` = full page reload on
+  every click). In collapsed mode a section icon is active when any of its
+  pages is, links to its first page, and shows its label as a tooltip.
+- Header: the brand (logo + KINGDOM LIBRARY) is a link to `/` (landing
+  page); collapsing moved to a separate PanelLeftClose/PanelLeftOpen button
+  (the whole header used to be the collapse toggle).
+- Profile menu (sidebar bottom): staff get **Switch to Member Portal** (admin
+  sidebar) and **Switch to Admin Dashboard** (member sidebar, non-member roles
+  only) — middleware already allowed staff into /member but nothing linked it.
+  The portal switch lives ONLY in the profile menu (owner request; the
+  temporary sidebar button and `components/app-shell/portal-switch-link.tsx`
+  were removed).
+- Languages moved from the bottom of the admin nav list into the same profile
+  menu (owner request): `sidebar-footer.tsx` now exports `ProfileMenuLanguages`
+  (3 compact GB/FR/RW buttons, active one highlighted from the `googtrans`
+  cookie; same Google Translate mechanism). `SidebarFooter` export removed —
+  only `sidebar.tsx` used it. Menu order: email, My Profile, Switch to Member
+  Portal (staff), Language, Log Out.
+
+Verification: `npx tsc --noEmit` clean; eslint on the touched files clean
+(2 pre-existing unused-`t` warnings in member-sidebar); `npx next build`
+exit 0 (two earlier runs failed intermittently with Turbopack
+"next/font/google queries have exactly one entry" — not related to these
+files; likely the Google Fonts download / the running dev server sharing .next).
+

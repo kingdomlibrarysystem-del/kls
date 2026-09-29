@@ -1,65 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Calendar, Hash, Users, ArrowLeft, FolderX } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { projectStatusConfig, type ResearchProjectSummary } from '../../_components/collaborations-data'
 import { ContributorAvatar } from '../../_components/contributor-avatar'
 
 interface ProjectDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialProject: ResearchProjectSummary
 }
 
 /**
  * Real details page for a single research project's collaboration record,
  * replacing the modal that used to open from a collaboration card's "View
- * Details" button. Fetches directly from /api/research-projects/:id so
- * this page also works when linked to directly rather than requiring the
- * grid to already be loaded.
+ * Details" button. The project is loaded on the server by page.tsx.
  */
-export function ProjectDetailView({ id }: ProjectDetailViewProps) {
-  const [project, setProject] = useState<ResearchProjectSummary | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function ProjectDetailView({ initialProject }: ProjectDetailViewProps) {
+  const project: ResearchProjectSummary | null = initialProject
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    fetch(`/api/research-projects/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return
-        if (json.code !== 'success' || !json.data) {
-          setError(json.message ?? 'Research project not found')
-          return
-        }
-        setProject(json.data)
-      })
-      .catch(() => { if (!cancelled) setError('Failed to load research project') })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [id])
-
-  if (loading) {
+  if (!project) {
     return (
       <div>
         <PageHeader title="Project Details" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !project) {
-    return (
-      <div>
-        <PageHeader title="Project Details" />
-        <EmptyState icon={FolderX} title="Project not found" description={error || 'This research project does not exist or was deleted.'} />
+        <EmptyState icon={FolderX} title="Project not found" description={'This research project does not exist or was deleted.'} />
         <div className="mt-4">
           <UniversalButton href="/dashboard/research/collaborations" variant="outline" icon={<ArrowLeft size={14} />}>
             Back to Collaborations

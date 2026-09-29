@@ -48,7 +48,7 @@ export function RevenueConfigForm() {
   }
 
   return (
-    <div className="bg-form-section border border-w-400 rounded-lg p-5 mt-6 max-w-md">
+    <div className="bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5 mt-6 max-w-md">
       <h3 className="flex items-center gap-1.5 font-cinzel text-sm font-semibold text-w-950 mb-1">
         <Settings2 size={14} className="text-w-600" /> Default Revenue Share
       </h3>
@@ -58,12 +58,12 @@ export function RevenueConfigForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {submitSuccess && (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-3 py-2 rounded mb-3 font-lato text-xs">
+          <div className="flex items-center gap-2 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-3 py-2 rounded mb-3 font-lato text-xs">
             <CheckCircle2 size={13} /> Default shares updated for future approvals.
           </div>
         )}
         {(submitError || errors.platformShare?.message) && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-3 font-lato text-xs">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded mb-3 font-lato text-xs">
             <AlertCircle size={13} /> {submitError || errors.platformShare?.message}
           </div>
         )}

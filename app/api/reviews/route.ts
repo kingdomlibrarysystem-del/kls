@@ -3,18 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
-
-function serializeReview(r: { id: string; userId: string; rating: number; comment: string | null; createdAt: Date; updatedAt: Date; user: { firstName: string | null; lastName: string | null } }) {
-  return {
-    id: r.id,
-    userId: r.userId,
-    userName: `${r.user.firstName ?? ''} ${r.user.lastName ?? ''}`.trim() || 'Member',
-    rating: r.rating,
-    comment: r.comment,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }
-}
+import { serializeReview } from '@/lib/data/reviews'
 
 /** Recomputes and persists Resource.avgRating/reviewCount from real Review rows — called after every create/update/delete so the denormalized fields never drift from the source of truth. */
 async function recomputeResourceRating(resourceId: string) {

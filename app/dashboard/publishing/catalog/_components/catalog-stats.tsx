@@ -10,7 +10,7 @@ export function CatalogStats({ data }: CatalogStatsProps) {
 
   const stats = [
     { label: 'Total Published', value: data.length, color: 'text-w-950' },
-    { label: 'Featured', value: featured, color: 'text-green-700' },
+    { label: 'Featured', value: featured, color: 'text-green-700 dark:text-success' },
   ]
 
   return (

@@ -35,7 +35,7 @@ function buildColumns(
     {
       key: 'mode', label: 'Mode', sortable: true,
       render: (r) => r.mode === 'INSTANT' ? (
-        <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded text-xs font-lato font-semibold w-fit">
+        <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 dark:bg-warning/10 border border-yellow-200 dark:border-warning/30 text-yellow-800 dark:text-warning rounded text-xs font-lato font-semibold w-fit">
           <Zap size={10} /> Instant
         </span>
       ) : <span className="text-w-500 text-xs">Scheduled</span>,
@@ -56,10 +56,10 @@ function buildColumns(
           <div className="flex items-center justify-end gap-1.5">
             {r.status === 'PENDING' && !isLapsed && (
               <>
-                <button onClick={() => onOpenModal(r, 'approve')} aria-label={`Approve session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">
+                <button onClick={() => onOpenModal(r, 'approve')} aria-label={`Approve session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors">
                   <CheckCircle size={12} /> Approve
                 </button>
-                <button onClick={() => onOpenModal(r, 'reject')} aria-label={`Reject session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
+                <button onClick={() => onOpenModal(r, 'reject')} aria-label={`Reject session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
                   <XCircle size={12} /> Reject
                 </button>
               </>
@@ -70,12 +70,12 @@ function buildColumns(
               </button>
             )}
             {r.status === 'APPROVED' && (
-              <button onClick={() => onNotify(r)} aria-label={`Notify learner and lecturer for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+              <button onClick={() => onNotify(r)} aria-label={`Notify learner and lecturer for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
                 <Bell size={12} /> Notify
               </button>
             )}
             {r.status !== 'PENDING' && (
-              <Link href={`/dashboard/e-learning/sessions/${r.id}/room`} aria-label={`Enter room for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+              <Link href={`/dashboard/e-learning/sessions/${r.id}/room`} aria-label={`Enter room for session with ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-700 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
                 <Video size={12} /> Room
               </Link>
             )}
@@ -166,7 +166,7 @@ export function SessionsView() {
     <select
       value={statusFilter}
       onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'all')}
-      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
     >
       <option value="all">All Statuses</option>
       {(Object.keys(sessionStatusConfig) as SessionStatus[]).map((s) => (
@@ -177,7 +177,7 @@ export function SessionsView() {
 
   return (
     <>
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <SessionsStats data={requests} />
       {requests.length === 0 ? (
         <EmptyState icon={CalendarClock} title="No session requests yet" description="Requests learners make across all courses will appear here." />

@@ -23,7 +23,7 @@ export function DeleteCategoryModal({ category, resourceCount, onClose, onConfir
           </p>
           {resourceCount > 0 ? (
             <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 mb-4">
-              <AlertCircle size={14} className="text-red-600 shrink-0" />
+              <AlertCircle size={14} className="text-red-600 dark:text-destructive shrink-0" />
               <p className="font-lato text-xs text-red-700 dark:text-red-400">
                 This category has {resourceCount} resource(s) assigned. Reassign them first.
               </p>

@@ -14,7 +14,7 @@ export function FormContainer({
   }
 
   return (
-    <div className={`mx-auto ${maxWidthClass[maxWidth]} bg-form-highlight border border-w-300 rounded-lg p-8`}>
+    <div className={`mx-auto ${maxWidthClass[maxWidth]} bg-form-highlight dark:bg-card border border-border rounded-xl p-8 shadow-sm`}>
       {children}
     </div>
   )

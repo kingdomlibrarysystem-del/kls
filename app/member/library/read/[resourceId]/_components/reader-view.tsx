@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, BookX, AlertTriangle } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ChevronLeft, BookX } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 import { useAuth } from '@/contexts/auth-context'
-import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { useReadableContent } from '@/app/member/_shared/use-readable-content'
+import type { Resource } from '@/app/dashboard/library/_components/resources-data'
+import type { Chapter } from '@/app/member/_shared/readable-content-data'
 import { usePdfViewMode } from '@/app/member/_shared/use-pdf-view-mode'
 import { useReadingProgress, startReading, markChapterRead, markBookComplete, getReadingProgressPercent } from '@/app/member/_shared/use-reading-progress'
 import { NotesPanel } from './notes-panel'
@@ -24,6 +23,10 @@ import { ChapterBody } from './chapter-body'
 
 interface ReaderViewProps {
   resourceId: string
+  /** The book, loaded on the server by page.tsx (null when it doesn't exist). */
+  resource: Resource | null
+  /** This book's chapters, gated server-side exactly like GET /api/chapters?resourceId= (null when it has none). */
+  readableChapters: Chapter[] | null
   initialChapterId?: string
   /** Staff-only QA flag — forces the same paywall a non-entitled member would see, instead of the usual staff bypass, so an admin can verify what free-preview readers actually experience. */
   forcePreview?: boolean
@@ -49,18 +52,18 @@ interface ReaderViewProps {
  * level notes both still work (HighlightsNotesList, NotesPanel) since
  * those only read already-stored data, not a live in-body selection.
  */
-export function ReaderView({ resourceId, initialChapterId, forcePreview = false, backHref = '/member/library' }: ReaderViewProps) {
+export function ReaderView({ resourceId, resource, readableChapters, initialChapterId, forcePreview = false, backHref = '/member/library' }: ReaderViewProps) {
   const { user } = useAuth()
-  const { data: resources, loading, error } = useResources()
-  const content = useReadableContent()
   const progressEntries = useReadingProgress(user?.id)
   // Same hook/localStorage key the PDF reader uses, so one reading
   // preference follows the member across both kinds of book.
   const [viewMode, setViewMode] = usePdfViewMode()
 
-  const resource = resources.find((r) => r.id === resourceId)
-  const readable = content[resourceId]
-  const chapters = readable?.chapters ?? []
+  // Only this book's chapters arrive from the server — previously the reader
+  // pulled the whole library's chapter catalog (every book's text) and the
+  // whole resource list just to open one book.
+  const readable = readableChapters && readableChapters.length > 0 ? readableChapters : null
+  const chapters = readable ?? []
   const existingProgress = progressEntries.find((p) => p.resourceId === resourceId)
   const resumeChapterId = initialChapterId ?? existingProgress?.lastChapterId
   const startIndex = resumeChapterId ? Math.max(0, chapters.findIndex((c) => c.id === resumeChapterId)) : 0
@@ -104,25 +107,6 @@ export function ReaderView({ resourceId, initialChapterId, forcePreview = false,
       <ChevronLeft size={16} /> {backHref === '/member/library' ? 'Back to Kingdom Library' : 'Back to Book Inventory'}
     </Link>
   )
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading reader">
-        {backLink}
-        <Skeleton style={{ height: 40, borderRadius: 8 }} />
-        <Skeleton style={{ height: 320, borderRadius: 8 }} />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {backLink}
-        <EmptyState icon={AlertTriangle} title="Couldn't load this book" description={error} style={{ color: 'var(--text-secondary)' }} />
-      </div>
-    )
-  }
 
   // A resource with no authored Chapter rows but a real uploaded PDF gets
   // the page-native PDF reader instead of the plain-text chapter reader —

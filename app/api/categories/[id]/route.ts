@@ -3,43 +3,10 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { serializeCategory } from '@/lib/data/categories'
 
 interface RouteParams {
   params: Promise<{ id: string }>
-}
-
-function serializeCategory(c: {
-  id: string
-  slug: string
-  nameEn: string
-  nameFr: string
-  nameRw: string
-  parentId: string | null
-  code: string | null
-  subtitle: string | null
-  range: string | null
-  theme: string | null
-  description: string | null
-  detail: string | null
-  heroImage: string | null
-  status: string | null
-  createdAt: Date
-}) {
-  return {
-    id: c.id,
-    slug: c.slug,
-    name: { en: c.nameEn, fr: c.nameFr, rw: c.nameRw },
-    parentId: c.parentId,
-    code: c.code ?? undefined,
-    subtitle: c.subtitle ?? undefined,
-    range: c.range ?? undefined,
-    theme: c.theme ?? undefined,
-    description: c.description ?? undefined,
-    detail: c.detail ?? undefined,
-    heroImage: c.heroImage ?? undefined,
-    status: c.status ?? undefined,
-    createdAt: c.createdAt.toISOString().split('T')[0],
-  }
 }
 
 /**

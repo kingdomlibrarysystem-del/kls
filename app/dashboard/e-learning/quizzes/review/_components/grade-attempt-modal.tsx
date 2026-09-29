@@ -86,7 +86,7 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
             <div key={q.id} className="bg-w-100 border border-w-300 rounded p-3 space-y-2">
               {q.context && <p className="text-xs text-w-600 italic">{q.context}</p>}
               <p className="text-xs font-semibold text-w-950">Q{i + 1}. {q.text} <span className="text-w-600 font-normal">({q.marks} marks)</span></p>
-              <div className="bg-white border border-w-300 rounded p-2">
+              <div className="bg-white dark:bg-card! border border-w-300 rounded p-2">
                 <p className="text-xs text-w-700 whitespace-pre-wrap">{attempt.openAnswers?.[q.id] || <span className="italic text-w-500">No answer submitted.</span>}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
                   value={scores[q.id] ?? 0}
                   onChange={(e) => setScoreFor(q.id, Number(e.target.value), q.marks)}
                   aria-label={`Score for question ${i + 1}, out of ${q.marks}`}
-                  className="w-20 px-2 py-1 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+                  className="w-20 px-2 py-1 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
                 />
                 <span className="text-xs text-w-600">/ {q.marks}</span>
               </div>
@@ -110,7 +110,7 @@ export function GradeAttemptModal({ attempt, onClose, onGraded }: GradeAttemptMo
         <p className="font-lato text-sm text-w-950 font-semibold">Final score: {finalScore} / {attempt.totalMarks}</p>
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
             <AlertCircle size={13} /> {error}
           </div>
         )}

@@ -28,11 +28,11 @@ export function ProjectFields({ register, errors }: ProjectFieldsProps) {
           placeholder="Describe the hackathon-style challenge the member must complete and submit…"
           aria-label="Project brief"
           className={`w-full px-3 py-2 font-lato text-sm border rounded transition-colors focus:outline-none resize-vertical ${
-            errors.brief ? 'border-red-500 bg-red-50' : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
+            errors.brief ? 'border-red-500 bg-red-50' : 'border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary'
           }`}
           {...register('brief')}
         />
-        {errors.brief && <p className="text-red-600 text-xs mt-1 font-lato">{errors.brief.message}</p>}
+        {errors.brief && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.brief.message}</p>}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -40,7 +40,7 @@ export function ProjectFields({ register, errors }: ProjectFieldsProps) {
           <FieldLabel htmlFor="project-submission-format" required>Submission Format</FieldLabel>
           <select
             id="project-submission-format"
-            className="w-full px-3 py-2 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+            className="w-full px-3 py-2 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
             {...register('submissionFormat')}
           >
             <option value="">Select format…</option>
@@ -48,7 +48,7 @@ export function ProjectFields({ register, errors }: ProjectFieldsProps) {
               <option key={f} value={f}>{projectSubmissionFormatLabels[f]}</option>
             ))}
           </select>
-          {errors.submissionFormat && <p className="text-red-600 text-xs mt-1 font-lato">{errors.submissionFormat.message}</p>}
+          {errors.submissionFormat && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.submissionFormat.message}</p>}
         </div>
 
         <div>

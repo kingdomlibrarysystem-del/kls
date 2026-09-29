@@ -29,7 +29,7 @@ export function RoleEditModal({ role, onTogglePerm, onClose, onSave }: RoleEditM
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '6px 14px', cursor: 'pointer', fontSize: 11, color: 'var(--text-secondary)' }}>Cancel</button>
-            <button onClick={() => onSave(role)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--gold)', color: '#fff', border: 'none', borderRadius: 5, padding: '6px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+            <button onClick={() => onSave(role)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--gold)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 5, padding: '6px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
               <Check size={14} /> Save
             </button>
           </div>

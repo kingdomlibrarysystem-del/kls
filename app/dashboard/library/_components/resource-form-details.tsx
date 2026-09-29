@@ -44,11 +44,11 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
           rows={3}
           placeholder="A short summary of this resource…"
           className={`w-full px-4 py-3 font-lato text-sm border rounded transition-colors focus:outline-none ${
-            errors.description ? 'border-red-500 bg-red-50' : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
+            errors.description ? 'border-red-500 bg-red-50' : 'border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary'
           }`}
           {...register('description')}
         />
-        {errors.description && <p className="text-red-600 text-xs mt-1 font-lato">{errors.description.message}</p>}
+        {errors.description && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.description.message}</p>}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -60,7 +60,7 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
           <FieldLabel htmlFor="language" required>Language</FieldLabel>
           <select
             id="language"
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
             {...register('language')}
           >
             {LANGUAGE_OPTIONS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
@@ -83,13 +83,13 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
         </div>
         <div>
           <FieldLabel htmlFor="bindingType" required>Binding</FieldLabel>
-          <select id="bindingType" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('bindingType')}>
+          <select id="bindingType" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('bindingType')}>
             {(Object.keys(bindingTypeLabels) as BindingType[]).map((b) => <option key={b} value={b}>{bindingTypeLabels[b]}</option>)}
           </select>
         </div>
         <div>
           <FieldLabel htmlFor="mediaType" required>Media Type</FieldLabel>
-          <select id="mediaType" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('mediaType')}>
+          <select id="mediaType" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('mediaType')}>
             {(Object.keys(mediaTypeLabels) as MediaType[]).map((m) => <option key={m} value={m}>{mediaTypeLabels[m]}</option>)}
           </select>
         </div>
@@ -138,7 +138,7 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
             </div>
           )}
         />
-        <div className="relative w-full h-32 rounded overflow-hidden border border-w-300 bg-w-200 mt-7">
+        <div className="relative w-full h-32 rounded overflow-hidden border border-w-300 bg-w-200 dark:bg-white/10 mt-7">
           {coverImageValue ? (
             <RemoteImage
               src={coverImageValue}
@@ -146,10 +146,10 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
               fill
               sizes="120px"
               className="object-cover"
-              fallback={<div className="w-full h-full flex items-center justify-center"><BookOpen size={20} className="text-w-400" /></div>}
+              fallback={<div className="w-full h-full flex items-center justify-center"><BookOpen size={20} className="text-w-400 dark:text-muted-foreground" /></div>}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center"><BookOpen size={20} className="text-w-400" /></div>
+            <div className="w-full h-full flex items-center justify-center"><BookOpen size={20} className="text-w-400 dark:text-muted-foreground" /></div>
           )}
         </div>
       </div>

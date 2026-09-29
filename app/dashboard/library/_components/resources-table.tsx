@@ -51,7 +51,7 @@ export function ResourcesTable({
       sortable: true,
       render: (r) => (
         <div className="flex items-center gap-3">
-          <div className="relative w-9 h-12 shrink-0 rounded overflow-hidden bg-w-200">
+          <div className="relative w-9 h-12 shrink-0 rounded overflow-hidden bg-w-200 dark:bg-white/10">
             {r.coverImages[0] ? (
               <Image
                 src={r.coverImages[0]}
@@ -61,7 +61,7 @@ export function ResourcesTable({
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
-                <Package size={14} className="text-w-400" />
+                <Package size={14} className="text-w-400 dark:text-muted-foreground" />
                 <span className="font-lato text-[8px] font-semibold text-w-500 uppercase tracking-wide leading-none">Kingdom Library</span>
               </div>
             )}
@@ -128,7 +128,7 @@ export function ResourcesTable({
       render: (r) => (
         <div>
           <p
-            className={`font-semibold ${r.availableQty === 0 ? "text-red-700" : "text-green-700"}`}
+            className={`font-semibold ${r.availableQty === 0 ? "text-red-700" : "text-green-700 dark:text-success"}`}
           >
             {r.availableQty} / {r.totalQty}
           </p>
@@ -168,14 +168,14 @@ export function ResourcesTable({
             <Link
               href={`/dashboard/library/read/${r.id}`}
               aria-label={`Read ${r.title}`}
-              className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
             >
               <BookOpenCheck size={12} /> Read
             </Link>
           ) : r.mediaType === 'TEXT' ? (
             <span
               title="No chapters yet — edit this book and add chapters to make it readable"
-              className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-lato cursor-help"
+              className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-warning/10 text-amber-700 dark:text-warning border border-amber-200 dark:border-warning/30 rounded text-xs font-lato cursor-help"
             >
               <BookOpenCheck size={12} /> No chapters
             </span>
@@ -184,7 +184,7 @@ export function ResourcesTable({
             <Link
               href={`/dashboard/library/read/${r.id}?preview=1`}
               aria-label={`Preview ${r.title} as a member would see it`}
-              className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
             >
               <Eye size={12} /> Preview
             </Link>
@@ -195,14 +195,14 @@ export function ResourcesTable({
             size="sm"
             aria-label={`View ${r.title}`}
             icon={<Eye size={12} />}
-            className="!px-2.5 !py-1 bg-w-100 text-w-950 border-w-300 hover:bg-w-200"
+            className="!px-2.5 !py-1 bg-w-100 text-w-950 border-w-300 hover:bg-w-200 dark:hover:bg-white/10"
           >
             View
           </UniversalButton>
           <button
             onClick={() => onEdit(r)}
             aria-label={`Edit ${r.title}`}
-            className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
           >
             <Pencil size={12} /> Edit
           </button>
@@ -210,7 +210,7 @@ export function ResourcesTable({
             <button
               onClick={() => onArchive(r)}
               aria-label={`Archive ${r.title}`}
-              className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors"
             >
               <Archive size={12} /> Archive
             </button>
@@ -240,7 +240,7 @@ export function ResourcesTable({
             onChange={(e) =>
               onStatusFilterChange(e.target.value as Resource["status"] | "all")
             }
-            className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+            className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           >
             <option value="all">All Statuses</option>
             {(Object.keys(statusConfig) as Resource["status"][]).map((s) => (
@@ -252,7 +252,7 @@ export function ResourcesTable({
           <select
             value={typeFilter}
             onChange={(e) => onTypeFilterChange(e.target.value)}
-            className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+            className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           >
             {types.map((t) => (
               <option key={t} value={t}>

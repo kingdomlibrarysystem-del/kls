@@ -17,7 +17,7 @@ interface CatalogCardProps {
 export function CatalogCard({ book }: CatalogCardProps) {
   return (
     <div className="bg-form-highlight border border-w-300 rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col group">
-      <div className="relative w-full h-56 bg-w-200 overflow-hidden">
+      <div className="relative w-full h-56 bg-w-200 dark:bg-white/10 overflow-hidden">
         {book.coverImages[0] ? (
           <Image
             src={book.coverImages[0]}
@@ -27,7 +27,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
-            <Package size={28} className="text-w-400" />
+            <Package size={28} className="text-w-400 dark:text-muted-foreground" />
             <span className="font-lato text-[10px] font-semibold text-w-500 uppercase tracking-wide">Kingdom Library</span>
           </div>
         )}
@@ -36,7 +36,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
             {languageBadgeLabels[book.language]}
           </span>
           {book.featured && (
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded text-xs font-lato font-semibold">
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border border-yellow-200 dark:border-warning/30 rounded text-xs font-lato font-semibold">
               <Star size={10} fill="currentColor" /> Featured
             </span>
           )}
@@ -53,7 +53,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
 
         <div className="flex items-center justify-between mb-2">
           <span className="font-cinzel text-sm font-bold text-w-600">{book.price.toLocaleString()} RWF</span>
-          <span className={`flex items-center gap-1 text-xs font-lato ${book.quantity === 0 ? 'text-red-700' : 'text-w-700'}`}>
+          <span className={`flex items-center gap-1 text-xs font-lato ${book.quantity === 0 ? 'text-red-700 dark:text-destructive' : 'text-w-700'}`}>
             <Package size={11} /> {book.quantity} in stock
           </span>
         </div>
@@ -62,7 +62,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
           <Link
             href={`/library/${book.id}`}
             aria-label={`View details for ${book.title}`}
-            className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors"
           >
             <Eye size={12} /> Details
           </Link>
@@ -71,8 +71,8 @@ export function CatalogCard({ book }: CatalogCardProps) {
             aria-label={book.featured ? `Remove ${book.title} from featured` : `Mark ${book.title} as featured`}
             className={`flex items-center justify-center p-1.5 rounded border text-xs font-lato transition-colors ${
               book.featured
-                ? 'bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100'
-                : 'bg-white text-w-700 border-w-300 hover:bg-w-100'
+                ? 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30 hover:bg-yellow-100 dark:hover:bg-warning/20'
+                : 'bg-white dark:bg-card! text-w-700 border-w-300 hover:bg-w-100 dark:hover:bg-white/10'
             }`}
           >
             <Star size={13} fill={book.featured ? 'currentColor' : 'none'} />

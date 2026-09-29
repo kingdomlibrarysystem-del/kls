@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ShoppingBag, Coins, Calendar, CheckCircle2, Hash, CreditCard, Smartphone, RotateCw, X, Loader2 } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { statusConfig, type MemberCheckout } from '../../../_components/orders-data'
 import { CheckoutDetailItems } from './checkout-detail-items'
 
 interface CheckoutDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing or not the viewer's). */
+  initialCheckout: MemberCheckout
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -17,7 +17,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ color: 'var(--gold)', marginTop: 2 }}>{icon}</span>
       <span style={{ fontSize: 13, color: 'var(--text-muted)', width: 110, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 600, wordBreak: 'break-word' }}>{value}</span>
+      <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 600, wordBreak: 'break-word' }} suppressHydrationWarning>{value}</span>
     </div>
   )
 }
@@ -29,25 +29,23 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
  * and real retry/cancel actions matching CheckoutOrderCard's (My
  * Orders' collapsed row has no room for all of this, hence a real page).
  */
-export function CheckoutDetailView({ id }: CheckoutDetailViewProps) {
-  const [checkout, setCheckout] = useState<MemberCheckout | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function CheckoutDetailView({ initialCheckout }: CheckoutDetailViewProps) {
+  const [checkout, setCheckout] = useState<MemberCheckout | null>(initialCheckout)
   const [busy, setBusy] = useState<'retry' | 'cancel' | null>(null)
   const [actionError, setActionError] = useState('')
 
-  const load = () => {
-    fetch(`/api/checkout/${id}`)
+  // The stored state came from the server page. Only while payment is still
+  // pending does GET /api/checkout/[id] have anything new (it re-polls the
+  // payment provider), so refresh once in that case instead of on every visit.
+  useEffect(() => {
+    if (initialCheckout.status !== 'pending') return
+    let cancelled = false
+    fetch(`/api/checkout/${initialCheckout.id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Order not found'); return }
-        setCheckout(json.data)
-      })
-      .catch(() => setError('Failed to load order'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [id])
+      .then((json) => { if (!cancelled && json.code === 'success' && json.data) setCheckout(json.data) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [initialCheckout])
 
   const handleRetry = async () => {
     if (!checkout) return
@@ -86,19 +84,10 @@ export function CheckoutDetailView({ id }: CheckoutDetailViewProps) {
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-label="Loading order">
-        <Skeleton style={{ height: 32, width: 160, borderRadius: 6 }} />
-        <Skeleton style={{ height: 240, borderRadius: 8 }} />
-      </div>
-    )
-  }
-
-  if (error || !checkout) {
+  if (!checkout) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <EmptyState icon={ShoppingBag} title="Order not found" description={error || 'This order does not exist or was removed.'} style={{ color: 'var(--text-secondary)' }} />
+        <EmptyState icon={ShoppingBag} title="Order not found" description="This order does not exist or was removed." style={{ color: 'var(--text-secondary)' }} />
         <div><UniversalButton href="/member/orders" variant="gold-outline" icon={<ArrowLeft size={16} />}>Back to My Orders</UniversalButton></div>
       </div>
     )
@@ -137,7 +126,7 @@ export function CheckoutDetailView({ id }: CheckoutDetailViewProps) {
           <button
             onClick={handleRetry}
             disabled={busy !== null}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}
           >
             {busy === 'retry' ? <Loader2 size={14} className="animate-spin" /> : <RotateCw size={14} />} Retry payment
           </button>

@@ -1,80 +1,80 @@
-"use client";
-
 import Link from "next/link";
-import {
-  BookOpen,
-  Star,
-  Plus,
-} from "lucide-react";
-import { useResources } from "@/app/dashboard/library/_components/use-resources";
-import { useBorrowingsAdmin } from "@/app/dashboard/library/borrowings/_components/use-borrowings-admin";
-
-const card: React.CSSProperties = { background: "var(--bg-card)", border: "1px solid var(--border)", padding: "10px 12px", borderRadius: 8 };
+import { BookOpen, Star, Plus, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { SectionCard, SectionLink } from "./section-card";
+import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
 /**
- * Popular Resources and Recently Added, both real. "Popular" is a real
- * borrow-count aggregation over /api/borrowings — not a fabricated
- * ranking. Sales & Store and News & Newspapers panels were removed
- * entirely (per explicit product decision): neither has a real backend
- * (no Sales/Transaction model exists; News is a Phase-9 placeholder),
- * so faking their numbers here would be worse than not showing them.
+ * Popular Resources and Recently Added, both real and computed server-side
+ * (a borrow groupBy for "popular", newest-by-createdAt for "recent"). Sales &
+ * Store and News panels stay removed (no real backend — see git history).
+ * Rows link to the resource's detail page.
  */
-export default function MiddleSection() {
-  const { data: resources } = useResources();
-  const { data: borrowings } = useBorrowingsAdmin();
-
-  const borrowCounts = new Map<string, number>();
-  borrowings.forEach((b) => borrowCounts.set(b.resourceTitle, (borrowCounts.get(b.resourceTitle) ?? 0) + 1));
-
-  const popular = resources
-    .map((r) => ({ resource: r, count: borrowCounts.get(r.title) ?? 0 }))
-    .filter((p) => p.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-
-  const recent = [...resources].slice(-4).reverse();
-
+function ResourceRow({ href, title, sub, trailing }: { href: string; title: string; sub?: string; trailing?: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-0">
-      {/* Popular */}
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-          <Star size={14} /> Popular Resources
-        </div>
-        {popular.length === 0 ? (
-          <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>No borrowing activity yet.</div>
-        ) : (
-          popular.map((p) => (
-            <div key={p.resource.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <span style={{ display: "flex", alignItems: "center" }}><BookOpen size={16} color="var(--gold)" /></span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text-primary)" }}>{p.resource.title}</div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)" }}>{p.resource.type}</div>
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)" }}>{p.count} {p.count === 1 ? "borrow" : "borrows"}</div>
-            </div>
-          ))
-        )}
-        <div style={{ marginTop: 8 }}><Link href="/dashboard/library" className="btn btn-outline-dim btn-sm">View All Resources →</Link></div>
-      </div>
+    <Link href={href} className="group flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <BookOpen className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-foreground">{title}</span>
+        {sub && <span className="block text-xs text-muted-foreground">{sub}</span>}
+      </span>
+      {trailing ?? <ChevronRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />}
+    </Link>
+  );
+}
 
-      {/* Recently Added */}
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-          <Plus size={14} /> Recently Added
+function EmptyLine({ children }: { children: React.ReactNode }) {
+  return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
+}
+
+export function PopularResources({ popular }: { popular: AdminDashboardData["popular"] }) {
+  return (
+    <SectionCard
+      icon={<Star />}
+      title="Popular Resources"
+      description="Most borrowed titles."
+      footer={<SectionLink href="/dashboard/library">View all resources</SectionLink>}
+      contentClassName="px-3"
+    >
+      {popular.length === 0 ? (
+        <EmptyLine>No borrowing activity yet.</EmptyLine>
+      ) : (
+        <div className="divide-y divide-border">
+          {popular.map((p) => (
+            <ResourceRow
+              key={p.resource.id}
+              href={`/dashboard/library/${p.resource.id}`}
+              title={p.resource.title}
+              sub={p.resource.type}
+              trailing={<Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">{p.count} {p.count === 1 ? "borrow" : "borrows"}</Badge>}
+            />
+          ))}
         </div>
-        {recent.length === 0 ? (
-          <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", padding: "10px 0" }}>No resources yet.</div>
-        ) : (
-          recent.map((r) => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BookOpen size={16} color="var(--gold)" /></div>
-              <span style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 500 }}>{r.title}</span>
-            </div>
-          ))
-        )}
-        <div style={{ marginTop: 8 }}><Link href="/dashboard/library" className="btn btn-outline-dim btn-sm">View All Items →</Link></div>
-      </div>
-    </div>
+      )}
+    </SectionCard>
+  );
+}
+
+export function RecentlyAdded({ recent }: { recent: AdminDashboardData["inventory"]["newest"] }) {
+  return (
+    <SectionCard
+      icon={<Plus />}
+      title="Recently Added"
+      description="Newest items in the collection."
+      footer={<SectionLink href="/dashboard/library">View all items</SectionLink>}
+      contentClassName="px-3"
+    >
+      {recent.length === 0 ? (
+        <EmptyLine>No resources yet.</EmptyLine>
+      ) : (
+        <div className="divide-y divide-border">
+          {recent.map((r) => (
+            <ResourceRow key={r.id} href={`/dashboard/library/${r.id}`} title={r.title} sub={r.type} />
+          ))}
+        </div>
+      )}
+    </SectionCard>
   );
 }

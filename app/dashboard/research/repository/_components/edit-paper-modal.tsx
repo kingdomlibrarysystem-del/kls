@@ -53,7 +53,7 @@ export function EditPaperModal({ paper, onClose }: EditPaperModalProps) {
   return (
     <Modal open onClose={close} title="Edit Research Paper" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {error}</div>}
+        {error && <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {error}</div>}
 
         <div>
           <FieldLabel htmlFor="edit-paper-title" required>Title</FieldLabel>
@@ -67,7 +67,7 @@ export function EditPaperModal({ paper, onClose }: EditPaperModalProps) {
           </div>
           <div>
             <FieldLabel htmlFor="edit-paper-status" required>Status</FieldLabel>
-            <select id="edit-paper-status" value={status} onChange={(e) => setStatus(e.target.value as PaperStatus)} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none">
+            <select id="edit-paper-status" value={status} onChange={(e) => setStatus(e.target.value as PaperStatus)} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
               <option value="DRAFT">Draft</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="PUBLISHED">Published</option>

@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, User, Palette, Scissors, Calendar, CheckCircle, CheckCheck, Ban } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { beautyAppointmentStatusConfig, type BeautyAppointment } from '../../../_shared/beauty-data'
 import { confirmBeautyAppointment, completeBeautyAppointment, cancelBeautyAppointmentAdmin } from '../../../_shared/use-beauty-admin'
 
 interface AppointmentDetailViewProps {
-  id: string
+  /** Loaded on the server by page.tsx (which 404s when missing) — no fetch on mount. */
+  initialAppointment: BeautyAppointment
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -18,45 +18,29 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
       <span className="font-lato text-xs text-w-700 w-20 shrink-0">{label}</span>
-      <span className="font-lato text-sm text-w-950 font-medium">{value}</span>
+      <span className="font-lato text-sm text-w-950 font-medium" suppressHydrationWarning>{value}</span>
     </div>
   )
 }
 
 /** Real details page for a single beauty appointment, mirrors borrowing-detail-view.tsx. */
-export function AppointmentDetailView({ id }: AppointmentDetailViewProps) {
-  const [appt, setAppt] = useState<BeautyAppointment | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export function AppointmentDetailView({ initialAppointment }: AppointmentDetailViewProps) {
+  const id = initialAppointment.id
+  const [appt, setAppt] = useState<BeautyAppointment | null>(initialAppointment)
 
+  /** Re-reads the record after an action (the first copy comes from the server page); keeps the last known copy if the refresh fails. */
   const load = () => {
-    setLoading(true)
     fetch(`/api/beauty/appointments/${id}`)
       .then((res) => res.json())
-      .then((json) => {
-        if (json.code !== 'success' || !json.data) { setError(json.message ?? 'Appointment not found'); return }
-        setAppt(json.data)
-      })
-      .catch(() => setError('Failed to load appointment'))
-      .finally(() => setLoading(false))
+      .then((json) => { if (json.code === 'success' && json.data) setAppt(json.data) })
+      .catch(() => {})
   }
 
-  useEffect(load, [id])
-
-  if (loading) {
+  if (!appt) {
     return (
       <div>
         <PageHeader title="Appointment Details" />
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-lg" /><Skeleton className="h-40 w-full rounded-lg" /></div>
-      </div>
-    )
-  }
-
-  if (error || !appt) {
-    return (
-      <div>
-        <PageHeader title="Appointment Details" />
-        <EmptyState icon={Calendar} title="Appointment not found" description={error || 'This appointment does not exist.'} />
+        <EmptyState icon={Calendar} title="Appointment not found" description={'This appointment does not exist.'} />
         <div className="mt-4"><UniversalButton href="/dashboard/beauty/admin" variant="outline" icon={<ArrowLeft size={14} />}>Back to Appointments</UniversalButton></div>
       </div>
     )

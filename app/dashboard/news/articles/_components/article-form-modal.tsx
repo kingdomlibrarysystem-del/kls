@@ -92,12 +92,12 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
     <Modal open={open} onClose={close} title={editing ? 'Edit Article' : 'New Article'} size="3xl">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {submitSuccess && (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+          <div className="flex items-center gap-2 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
             <CheckCircle2 size={15} /> Article saved.
           </div>
         )}
         {submitError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm">
             <AlertCircle size={15} /> {submitError}
           </div>
         )}
@@ -112,10 +112,10 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
           <textarea
             id="summary"
             rows={2}
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
             {...register('summary')}
           />
-          {errors.summary && <p className="text-red-600 text-xs mt-1 font-lato">{errors.summary.message}</p>}
+          {errors.summary && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.summary.message}</p>}
         </div>
 
         <div>
@@ -127,7 +127,7 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
               <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} height={320} language={watch('language') ?? 'EN'} />
             )}
           />
-          {errors.content && <p className="text-red-600 text-xs mt-1 font-lato">{errors.content.message}</p>}
+          {errors.content && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.content.message}</p>}
         </div>
 
         {/* Paragraph alignment */}
@@ -143,7 +143,7 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
                   onClick={() => setValue('align', opt.value)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-lato cursor-pointer transition ${
                     align === opt.value
-                      ? 'border-w-600 bg-w-100 text-w-950 font-semibold'
+                      ? 'border-w-600 dark:border-primary/60 bg-w-100 text-w-950 font-semibold'
                       : 'border-w-300 text-w-700 hover:border-w-400'
                   }`}
                   aria-pressed={align === opt.value}
@@ -161,15 +161,15 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
             <FieldLabel htmlFor="category" required>Category</FieldLabel>
             <select
               id="category"
-              className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
               {...register('category')}
             >
               <option value="">{categoryOptions.length ? 'Select a category…' : 'No categories available'}</option>
               {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            {errors.category && <p className="text-red-600 text-xs mt-1 font-lato">{errors.category.message}</p>}
+            {errors.category && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.category.message}</p>}
             {!categoryOptions.length && (
-              <p className="text-amber-700 text-xs mt-1 font-lato">
+              <p className="text-amber-700 dark:text-warning text-xs mt-1 font-lato">
                 No article categories exist yet. Create one in{' '}
                 <a className="font-semibold underline" href="/dashboard/news/categories">News Categories</a> first, then reload this form.
               </p>
@@ -177,7 +177,7 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
           </div>
           <div>
             <FieldLabel htmlFor="language" required>Language</FieldLabel>
-            <select id="language" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('language')}>
+            <select id="language" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('language')}>
               <option value="EN">English</option>
               <option value="FR">Français</option>
               <option value="RW">Kinyarwanda</option>
@@ -207,14 +207,14 @@ export function ArticleFormModal({ open, editing, onClose, categories = [] }: Ar
               />
             </div>
             {coverImage && (
-              <div className="relative w-full h-28 rounded overflow-hidden border border-w-300 bg-w-200 mt-2">
+              <div className="relative w-full h-28 rounded overflow-hidden border border-w-300 bg-w-200 dark:bg-white/10 mt-2">
                 <RemoteImage
                   src={coverImage}
                   alt="Cover preview"
                   fill
                   sizes="(max-width: 768px) 100vw, 320px"
                   className="object-cover"
-                  fallback={<div className="w-full h-full flex items-center justify-center"><ImageIcon size={18} className="text-w-400" /></div>}
+                  fallback={<div className="w-full h-full flex items-center justify-center"><ImageIcon size={18} className="text-w-400 dark:text-muted-foreground" /></div>}
                 />
               </div>
             )}

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { useSharedList } from '@/lib/client/use-shared-list'
 
 /** Real AssessmentAttempt shape, matching /api/assessment-attempts' serializeAttempt. */
 export interface AssessmentAttempt {
@@ -43,21 +43,9 @@ export const PROJECT_SUBMISSION_KEY = 'project'
  */
 export function useAssessmentAttempts() {
   const { user } = useAuth()
-  const [data, setData] = useState<AssessmentAttempt[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const refetch = useCallback(async () => {
-    if (!user) { setData([]); return }
-    const res = await fetch(`/api/assessment-attempts?userId=${user.id}&pageSize=1000`)
-    const json = await res.json()
-    setData(json.data ?? [])
-  }, [user])
-
-  useEffect(() => {
-    refetch().finally(() => setLoading(false))
-  }, [refetch])
-
-  return { data, loading, refetch }
+  // Shared + de-duplicated per URL (see lib/client/use-shared-list.ts): every
+  // component on a page reuses one request, revisits render cached data first.
+  return useSharedList<AssessmentAttempt>(user ? `/api/assessment-attempts?userId=${user.id}&pageSize=1000` : null)
 }
 
 /**

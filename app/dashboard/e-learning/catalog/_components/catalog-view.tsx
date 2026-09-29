@@ -99,13 +99,13 @@ export function CatalogView() {
             variant="ghost"
             size="icon"
             aria-label={`View ${c.title}`}
-            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            className="text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950"
             icon={<Eye size={14} />}
           />
-          <button onClick={() => setEditing(c)} aria-label={`Edit ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
+          <button onClick={() => setEditing(c)} aria-label={`Edit ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
-          <button onClick={() => setArchiving(c)} aria-label={`Archive ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+          <button onClick={() => setArchiving(c)} aria-label={`Archive ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
             <Archive size={14} />
           </button>
         </div>
@@ -118,7 +118,7 @@ export function CatalogView() {
       <select
         value={statusFilter}
         onChange={(e) => setStatusFilter(e.target.value as CourseStatus | 'all')}
-        className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+        className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
       >
         <option value="all">All Statuses</option>
         {(Object.keys(statusConfig) as CourseStatus[]).map((s) => (
@@ -128,7 +128,7 @@ export function CatalogView() {
       <select
         value={authorFilter}
         onChange={(e) => setAuthorFilter(e.target.value)}
-        className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+        className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         aria-label="Filter by author"
       >
         <option value="all">All Authors</option>

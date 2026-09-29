@@ -37,8 +37,8 @@ export function ReportsView() {
     { icon: UsersIcon, label: 'Total Members', value: report.totalMembers, color: 'text-w-950' },
     { icon: BookOpen, label: 'Active Loans', value: report.activeLoans, color: 'text-teal-700' },
     { icon: GraduationCap, label: 'Active Enrollments', value: report.activeEnrollments, color: 'text-purple-700' },
-    { icon: FileText, label: 'Publications Pending Review', value: report.pendingPublications, color: 'text-yellow-700' },
-    { icon: FlaskConical, label: 'Active Research Projects', value: report.activeResearchProjects, color: 'text-green-700' },
+    { icon: FileText, label: 'Publications Pending Review', value: report.pendingPublications, color: 'text-yellow-700 dark:text-warning' },
+    { icon: FlaskConical, label: 'Active Research Projects', value: report.activeResearchProjects, color: 'text-green-700 dark:text-success' },
     { icon: Sparkles, label: 'Upcoming Beauty Appointments', value: report.upcomingBeautyAppointments, color: 'text-pink-700' },
     { icon: Brain, label: 'Active Counseling Sessions', value: report.activeCounselingSessions, color: 'text-indigo-700' },
     { icon: RefreshCcw, label: 'Active Rehab Intakes', value: report.activeRehabIntakes, color: 'text-orange-700' },
@@ -60,7 +60,7 @@ export function ReportsView() {
         ))}
       </div>
 
-      <div className="bg-form-section border border-w-400 rounded-lg p-5">
+      <div className="bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5">
         <h2 className="font-cinzel text-sm font-semibold text-w-950 mb-4">Module Activity Comparison</h2>
         <div className="space-y-3">
           {trends.map((t) => (
@@ -69,7 +69,7 @@ export function ReportsView() {
                 <span className="font-lato text-xs text-w-700">{t.label}</span>
                 <span className="font-lato text-xs font-semibold text-w-950">{t.value}</span>
               </div>
-              <div className="h-2 bg-w-200 rounded-full overflow-hidden">
+              <div className="h-2 bg-w-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${t.color}`} style={{ width: `${(t.value / t.max) * 100}%` }} />
               </div>
             </div>

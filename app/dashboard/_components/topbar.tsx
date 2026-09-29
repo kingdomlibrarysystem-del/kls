@@ -101,9 +101,7 @@ export default function DashboardTopbar() {
           KLS
         </div>
         <div className="flex-wrap sm:flex-nowrap" style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          <div className="hidden sm:block">
-            <LanguageSwitcher />
-          </div>
+        
 
           <button
             onClick={toggleTheme}
@@ -124,16 +122,7 @@ export default function DashboardTopbar() {
             {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
           </button>
 
-          <div
-            className="hidden sm:flex"
-            style={{
-              color: "var(--text-secondary)",
-              cursor: "pointer",
-              alignItems: "center",
-            }}
-          >
-            <Search size={18} />
-          </div>
+       
           <div style={{ position: "relative", cursor: "pointer" }}>
             <span style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center" }}>
               <Bell size={18} />

@@ -50,8 +50,8 @@ export interface Resource {
 }
 
 export const statusConfig: Record<Resource['status'], { label: string; cls: string }> = {
-  available: { label: 'Available', cls: 'bg-green-50 text-green-800 border-green-200' },
-  out_of_stock: { label: 'Out of Stock', cls: 'bg-red-50   text-red-800   border-red-200' },
+  available: { label: 'Available', cls: 'bg-green-50 dark:bg-success/10 text-green-800 dark:text-success border-green-200 dark:border-success/30' },
+  out_of_stock: { label: 'Out of Stock', cls: 'bg-red-50 dark:bg-destructive/10   text-red-800 dark:text-destructive   border-red-200 dark:border-destructive/30' },
   archived: { label: 'Archived', cls: 'bg-w-100    text-w-600     border-w-300' },
 }
 

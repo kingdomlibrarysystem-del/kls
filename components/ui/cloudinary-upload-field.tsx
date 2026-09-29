@@ -123,7 +123,7 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
             disabled={uploading}
             aria-label={value ? `Replace ${label}` : label}
             className={`w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-lg transition-colors ${
-              value ? 'border-w-500 bg-w-100' : uploading ? 'border-w-300 bg-w-50 cursor-wait' : 'border-w-400 bg-form-bg hover:border-w-600'
+              value ? 'border-w-500 dark:border-white/15 bg-w-100' : uploading ? 'border-w-300 bg-w-50 cursor-wait' : 'border-w-400 bg-form-bg dark:bg-white/5 hover:border-w-600 dark:hover:border-primary'
             }`}
           >
             {uploading ? (
@@ -131,7 +131,7 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
             ) : (
               <UploadCloud size={22} className={value ? 'text-w-700' : 'text-w-500'} />
             )}
-            <p className="font-lato text-sm font-semibold text-w-800 truncate max-w-full px-2">
+            <p className="font-lato text-sm font-semibold text-w-800 dark:text-foreground truncate max-w-full px-2">
               {uploading ? 'Uploading…' : value ? `${fileName || label} · click to change` : label}
             </p>
           </button>
@@ -147,7 +147,7 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
           <X size={12} /> Remove
         </button>
       )}
-      {error && <p className="text-red-600 text-xs mt-1 font-lato">{error}</p>}
+      {error && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{error}</p>}
     </div>
   )
 }

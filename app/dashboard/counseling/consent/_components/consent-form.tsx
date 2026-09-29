@@ -55,9 +55,9 @@ export function ConsentForm() {
     <form onSubmit={handleSubmit} className="max-w-xl bg-form-highlight border border-w-300 rounded-lg p-5 space-y-4">
       <h3 className="font-cinzel text-sm font-semibold text-w-950 flex items-center gap-2"><ShieldCheck size={16} /> Privacy & Consent</h3>
 
-      {toast && <div className="bg-green-50 border border-green-200 text-green-800 px-3 py-2 rounded font-lato text-xs">{toast}</div>}
+      {toast && <div className="bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-3 py-2 rounded font-lato text-xs">{toast}</div>}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
           <AlertCircle size={13} /> {error}
         </div>
       )}
