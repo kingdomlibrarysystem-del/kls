@@ -2,13 +2,14 @@
 import { useRef, useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { BookCopy, User, LogOut, Mail, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { BookCopy, User, LogOut, Mail, ExternalLink, PanelLeftClose, PanelLeftOpen, ArrowLeftRight } from "lucide-react";
 import { adminMainNav, adminMgmtNav, memberNav } from "./nav-data";
 import { flattenNav, searchNav } from "./nav-search";
 import { SidebarNavRow } from "./sidebar-nav-section";
 import { SidebarSearch } from "./sidebar-search";
 import { SidebarSearchResults } from "./sidebar-search-results";
-import { SidebarFooter } from "./sidebar-footer";
+import { ProfileMenuLanguages } from "./sidebar-footer";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -78,54 +79,62 @@ export default function Sidebar() {
         top: 0,
       }}
     >
+      {/* Brand (links to the landing page) + separate collapse/expand toggle */}
       <div
-        role="button"
-        tabIndex={0}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         style={{
-          padding: "16px 14px",
+          padding: collapsed ? "12px 10px" : "16px 12px 16px 14px",
           borderBottom: "1px solid var(--border)",
           display: "flex",
+          flexDirection: collapsed ? "column" : "row",
           alignItems: "center",
-          gap: 12,
-          cursor: "pointer",
-        }}
-        onClick={() => setCollapsed(!collapsed)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setCollapsed(!collapsed);
-          }
+          gap: collapsed ? 8 : 10,
         }}
       >
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            minWidth: 40,
-            background: "linear-gradient(135deg, var(--gold-dim), var(--gold))",
-            borderRadius: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 8px var(--gold-tint)",
-          }}
+        <Link
+          href="/"
+          aria-label="Kingdom Library — go to home page"
+          title="Go to home page"
+          style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: collapsed ? "none" : 1, textDecoration: "none" }}
         >
-          <BookCopy size={21} color="#fff" />
-        </div>
-        {!collapsed && (
-          <div style={{ minWidth: 0 }}>
-            <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", lineHeight: 1.15, letterSpacing: 0.5 }}>
-              KINGDOM
-            </div>
-            <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", lineHeight: 1.15, letterSpacing: 0.5 }}>
-              LIBRARY
-            </div>
-            <div style={{ fontSize: 10, color: "var(--text-secondary)", letterSpacing: 1, marginTop: 2 }}>
-              {isMember ? "MEMBER PORTAL" : "KCS SYSTEM"}
-            </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              minWidth: 40,
+              background: "linear-gradient(135deg, var(--gold-dim), var(--gold))",
+              borderRadius: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 2px 8px var(--gold-tint)",
+            }}
+          >
+            <BookCopy size={21} color="#fff" />
           </div>
-        )}
+          {!collapsed && (
+            <div style={{ minWidth: 0 }}>
+              <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", lineHeight: 1.15, letterSpacing: 0.5 }}>
+                KINGDOM
+              </div>
+              <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)", lineHeight: 1.15, letterSpacing: 0.5 }}>
+                LIBRARY
+              </div>
+              <div style={{ fontSize: 10, color: "var(--text-secondary)", letterSpacing: 1, marginTop: 2 }}>
+                {isMember ? "MEMBER PORTAL" : "KLS SYSTEM"}
+              </div>
+            </div>
+          )}
+        </Link>
+        <button
+          type="button"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
 
       {!collapsed && (
@@ -176,7 +185,6 @@ export default function Sidebar() {
               />
             ))}
 
-            {!collapsed && <SidebarFooter />}
           </>
         )}
       </div>
@@ -287,6 +295,29 @@ export default function Sidebar() {
             >
               <User size={14} /> My Profile <ExternalLink size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />
             </a>
+            {/* Staff may also use the member portal (middleware allows it) */}
+            {!isMember && (
+              <Link
+                href="/member"
+                role="menuitem"
+                onClick={() => setProfileOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "11px 14px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--gold)",
+                  textDecoration: "none",
+                  borderTop: "1px solid var(--border)",
+                }}
+              >
+                <ArrowLeftRight size={14} /> Switch to Member Portal
+              </Link>
+            )}
+            {/* Language (moved here from the bottom of the nav list) */}
+            <ProfileMenuLanguages />
             {/* Logout */}
             <button
               onClick={handleLogout}

@@ -1,5 +1,4 @@
-"use client";
-
+import Link from "next/link";
 import {
   ScrollText,
   History,
@@ -10,78 +9,72 @@ import {
   BookCopy,
   Eye,
   Feather,
-  Monitor,
   BookOpen,
   Search,
 } from "lucide-react";
+import { SectionCard, SectionLink } from "./section-card";
 
 const kcsSections = [
-  { icon: <ScrollText size={18} />, code: "KCS-FND", label: "Foundation", desc: "Constitution of the Kingdom — Origins, Laws, Covenant", color: "var(--card-accent-1)" },
-  { icon: <History size={18} />, code: "KCS-HIS", label: "History", desc: "Record of the Kingdom — Leadership, Patterns, Restorations", color: "var(--card-accent-2)" },
-  { icon: <Lightbulb size={18} />, code: "KCS-WIS", label: "Wisdom", desc: "Knowledge of the Kingdom — Life, Health, Prosperity", color: "var(--card-accent-3)" },
-  { icon: <Radio size={18} />, code: "KCS-PRP", label: "Prophetic", desc: "Voice of the Kingdom — Correction, Promises, Hope", color: "var(--card-accent-1)" },
-  { icon: <Heart size={18} />, code: "KCS-GOS", label: "Gospel", desc: "King's Manifestation — Nature, Authority, Model", color: "var(--card-accent-2)" },
-  { icon: <Rocket size={18} />, code: "KCS-ACT", label: "Acts", desc: "Kingdom Expansion — Birth, Power, Community", color: "var(--card-accent-3)" },
-  { icon: <BookCopy size={18} />, code: "KCS-EPI", label: "Epistles", desc: "Kingdom Explained — Identity, Conduct, Structure", color: "var(--card-accent-1)" },
-  { icon: <Eye size={18} />, code: "KCS-REV", label: "Revelation", desc: "Kingdom Destiny — Throne, Judgment, Eternal", color: "var(--card-accent-2)" },
+  { icon: <ScrollText />, code: "KCS-FND", label: "Foundation", desc: "Constitution of the Kingdom — Origins, Laws, Covenant", color: "var(--card-accent-1)" },
+  { icon: <History />, code: "KCS-HIS", label: "History", desc: "Record of the Kingdom — Leadership, Patterns, Restorations", color: "var(--card-accent-2)" },
+  { icon: <Lightbulb />, code: "KCS-WIS", label: "Wisdom", desc: "Knowledge of the Kingdom — Life, Health, Prosperity", color: "var(--card-accent-3)" },
+  { icon: <Radio />, code: "KCS-PRP", label: "Prophetic", desc: "Voice of the Kingdom — Correction, Promises, Hope", color: "var(--card-accent-1)" },
+  { icon: <Heart />, code: "KCS-GOS", label: "Gospel", desc: "King's Manifestation — Nature, Authority, Model", color: "var(--card-accent-2)" },
+  { icon: <Rocket />, code: "KCS-ACT", label: "Acts", desc: "Kingdom Expansion — Birth, Power, Community", color: "var(--card-accent-3)" },
+  { icon: <BookCopy />, code: "KCS-EPI", label: "Epistles", desc: "Kingdom Explained — Identity, Conduct, Structure", color: "var(--card-accent-1)" },
+  { icon: <Eye />, code: "KCS-REV", label: "Revelation", desc: "Kingdom Destiny — Throne, Judgment, Eternal", color: "var(--card-accent-2)" },
 ];
 
+const tile = "flex items-center gap-3 rounded-lg border border-border bg-muted/60 p-3 transition-colors hover:border-primary/40 hover:bg-muted";
+
+/** The 8 KCS pillars as an even 4-column grid (2 on small screens), plus the Your Scroll / Search shortcuts. */
 export default function DigitalLibrary() {
   return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-        <BookOpen size={16} /> Kingdom Library — KCS Classification
-      </div>
-
-      <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.5 }}>
-        The Bible is not one book — it is a library. Navigate by section to find truth with purpose.
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 5, marginBottom: 6 }}>
+    <SectionCard
+      icon={<BookOpen />}
+      title="Kingdom Library — KCS Classification"
+      description="The Bible is not one book — it is a library. Navigate by section to find truth with purpose."
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs italic text-muted-foreground">Navigation replaces memorization — visit the right scrolls at the right time.</p>
+          <SectionLink href="/dashboard/library/kcs">Open KCS Map</SectionLink>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kcsSections.map((s) => (
-          <div
+          <Link
             key={s.code}
-            style={{
-              background: s.color,
-              border: "1px solid var(--border)",
-              borderRadius: 6,
-              padding: "8px 6px",
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
+            href="/dashboard/library/kcs"
+            className="group flex flex-col rounded-lg border border-border p-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
+            style={{ background: s.color }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-              <span style={{ display: "flex", alignItems: "center", color: "var(--gold)" }}>{s.icon}</span>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--gold)" }}>{s.code}</span>
+            <div className="flex items-center gap-2 text-primary [&_svg]:size-4">
+              {s.icon}
+              <span className="text-[11px] font-bold tracking-wide">{s.code}</span>
             </div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text-primary)", marginBottom: 1 }}>{s.label}</div>
-            <div style={{ fontSize: 8, color: "var(--text-muted)", lineHeight: 1.3 }}>{s.desc}</div>
-          </div>
+            <p className="mt-2 text-sm font-semibold text-foreground">{s.label}</p>
+            <p className="mt-1 text-xs leading-snug text-muted-foreground">{s.desc}</p>
+          </Link>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-        <div style={{ flex: 1, background: "var(--bg-section)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-          <Feather size={16} color="var(--gold)" />
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-primary)" }}>Your Scroll</div>
-            <div style={{ fontSize: 8, color: "var(--text-muted)" }}>Add your Acts & Epistles</div>
-          </div>
-        </div>
-        <div style={{ flex: 1, background: "var(--bg-section)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-          <Search size={16} color="var(--gold)" />
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-primary)" }}>Search</div>
-            <div style={{ fontSize: 8, color: "var(--text-muted)" }}>Navigate the library</div>
-          </div>
-        </div>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Link href="/dashboard/library/kcs" className={tile}>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Feather className="size-4" /></span>
+          <span>
+            <span className="block text-sm font-semibold text-foreground">Your Scroll</span>
+            <span className="block text-xs text-muted-foreground">Add your Acts &amp; Epistles</span>
+          </span>
+        </Link>
+        <Link href="/dashboard/library" className={tile}>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Search className="size-4" /></span>
+          <span>
+            <span className="block text-sm font-semibold text-foreground">Search</span>
+            <span className="block text-xs text-muted-foreground">Navigate the library</span>
+          </span>
+        </Link>
       </div>
-
-      <div style={{ fontSize: 8, color: "var(--text-muted)", textAlign: "center", borderTop: "1px solid var(--border-light)", paddingTop: 6 }}>
-        Navigation replaces memorization — visit the right scrolls at the right time.
-      </div>
-    </div>
+    </SectionCard>
   );
 }

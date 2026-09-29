@@ -5969,3 +5969,87 @@ flakes (borrow-reserve-concurrency; reviews passes 5/5 alone); `npx prisma
 validate` valid. `npx prisma generate` could not replace the query-engine DLL
 (locked by a running dev server) - indexes don't change the client API;
 re-run generate after stopping the dev server.
+
+## 2026-09-29 - Admin home (/dashboard) redesign: product-grade layout, shadcn cards, no gaps
+Owner review (screenshots): mismatched card sizes, 9-11px text, a short left
+column leaving a large empty area, "Recently Added" shown twice. Rebuilt the
+layout with one card shell and a 16px rhythm; all content, counts and links kept.
+
+- **New:** `app/dashboard/_components/section-card.tsx` (`SectionCard` on shadcn
+  `Card` - header/description/action/footer, theme tokens; title is a plain
+  heading so it inherits the dashboard font, NOT shadcn `CardTitle`'s
+  `font-heading`) + `SectionLink`; `DashboardKpis.tsx` (6 equal KPI cards:
+  Currently Borrowed, Overdue, Due Today, Reservations, Active Members, Items
+  Borrowed - each links to its page).
+- **Layout (`app/dashboard/page.tsx`):** hero -> KPI row -> [loans + KCS (2/3) |
+  quick actions + publishing + research (1/3)] -> [inventory | popular | recently
+  added] -> [roadmap (2/3) | AI assistant + inspiration + community (1/3)]. The
+  last card of each column is `flex-1`, so column bottoms line up.
+- **Widgets rewritten on Tailwind + shadcn (Button/buttonVariants, Input, Badge,
+  Table parts), light/dark via tokens:** WelcomeSection (hero; "24/7 Library
+  Access" moved here as a badge), BorrowReturn (actions + recent-loans table with
+  status badges; its 4 count tiles moved to DashboardKpis), DigitalLibrary (KCS
+  8-pillar grid, 4 columns), InventoryOverview (donut on `--chart-*` tokens) +
+  new `QuickActions` export, MiddleSection -> `PopularResources` +
+  `RecentlyAdded` exports, RightPanels, FooterSection.
+- **Removed duplication:** the second "Recently Added" list (it was in both
+  InventoryOverview and MiddleSection) and the `StatsBar` band (its numbers
+  are KPI cards now). `StatsBar` export deleted - it was only used by the page.
+- **Small behaviour changes (were dead UI):** KCS pillar tiles and the Your
+  Scroll/Search tiles now link to the KCS map / library (they had
+  `cursor: pointer` but no action); popular/recent rows link to
+  `/dashboard/library/[id]`; the AI Assistant send button opens `/dashboard/ai`
+  (it did nothing); Community Hub links had no destination, so they are shown
+  as chips under a "Coming soon" badge instead of fake buttons.
+
+**Interactions:** only `app/dashboard/page.tsx` mounts these widgets (checked).
+Data still comes from `getAdminDashboardData()` - no new queries.
+
+Verification: `npx tsc --noEmit` clean; eslint on the widgets clean (remaining
+issues are pre-existing in topbar/mobile-bottom-nav/sidebar-search-results);
+`npx next build` exit 0. Not visually verified in a browser by the agent.
+
+**Follow-up (owner review):** the KCS card was stretched to match the taller
+right column, leaving empty space. RightPanels now exports `PublishingServices`
+(right column, `flex-1`) and `ResearchServices` (moved under DigitalLibrary in
+the main column, wide layout: stats beside a 3-column link grid, "Go to
+Research Center" in the header, `flex-1`). DigitalLibrary no longer stretches.
+The default `RightPanels` export was removed (only the page used it).
+
+## 2026-09-29 - Admin sidebar: correct active state, collapse toggle, home link, portal switch
+- **Bug:** "Dashboard" stayed highlighted on every admin page (hard-coded
+  `active: true` in nav-data + `currentRoute.startsWith('/dashboard')`), and
+  section sub-links used prefix matching so e.g. E-Learning "Overview"
+  (/dashboard/e-learning) lit up together with its siblings. New
+  `app/dashboard/_components/route-match.ts`: `routeMatches()` (portal roots
+  /dashboard and /member match exactly; others match the path or a child path)
+  and `activeHrefAmong()` (only the most specific sibling is active). Used by
+  sidebar-nav-item, sidebar-nav-section, sidebar-search-results,
+  mobile-more-menu. The `active` field was removed from `NavItem` and nav-data.
+- Active rows no longer draw the inset gold left border (owner request) — the
+  gold tint background + gold text remain.
+- Sidebar links are `next/link` now (were `<a href>` = full page reload on
+  every click). In collapsed mode a section icon is active when any of its
+  pages is, links to its first page, and shows its label as a tooltip.
+- Header: the brand (logo + KINGDOM LIBRARY) is a link to `/` (landing
+  page); collapsing moved to a separate PanelLeftClose/PanelLeftOpen button
+  (the whole header used to be the collapse toggle).
+- Profile menu (sidebar bottom): staff get **Switch to Member Portal** (admin
+  sidebar) and **Switch to Admin Dashboard** (member sidebar, non-member roles
+  only) — middleware already allowed staff into /member but nothing linked it.
+  The portal switch lives ONLY in the profile menu (owner request; the
+  temporary sidebar button and `components/app-shell/portal-switch-link.tsx`
+  were removed).
+- Languages moved from the bottom of the admin nav list into the same profile
+  menu (owner request): `sidebar-footer.tsx` now exports `ProfileMenuLanguages`
+  (3 compact GB/FR/RW buttons, active one highlighted from the `googtrans`
+  cookie; same Google Translate mechanism). `SidebarFooter` export removed —
+  only `sidebar.tsx` used it. Menu order: email, My Profile, Switch to Member
+  Portal (staff), Language, Log Out.
+
+Verification: `npx tsc --noEmit` clean; eslint on the touched files clean
+(2 pre-existing unused-`t` warnings in member-sidebar); `npx next build`
+exit 0 (two earlier runs failed intermittently with Turbopack
+"next/font/google queries have exactly one entry" — not related to these
+files; likely the Google Fonts download / the running dev server sharing .next).
+

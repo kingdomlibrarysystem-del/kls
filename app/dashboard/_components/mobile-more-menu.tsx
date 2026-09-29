@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Modal } from "@/components/ui/modal";
+import { routeMatches } from "./route-match";
 import { adminMainNav, adminMgmtNav, memberNav, type NavItem } from "./nav-data";
 
 /** Flattens top-level items and their `subItems` into a single list of real links (drops `href="#"` placeholders). */
@@ -39,7 +40,7 @@ export function MobileMoreMenu({ open, onClose, isMember, currentRoute }: Mobile
           </p>
         )}
         {mainLinks.map((link) => (
-          <MoreMenuLink key={link.href} link={link} active={currentRoute.startsWith(link.href)} onClick={onClose} />
+          <MoreMenuLink key={link.href} link={link} active={routeMatches(currentRoute, link.href)} onClick={onClose} />
         ))}
 
         {mgmtLinks.length > 0 && (
@@ -48,7 +49,7 @@ export function MobileMoreMenu({ open, onClose, isMember, currentRoute }: Mobile
               PLATFORM MANAGEMENT
             </p>
             {mgmtLinks.map((link) => (
-              <MoreMenuLink key={link.href} link={link} active={currentRoute.startsWith(link.href)} onClick={onClose} />
+              <MoreMenuLink key={link.href} link={link} active={routeMatches(currentRoute, link.href)} onClick={onClose} />
             ))}
           </>
         )}

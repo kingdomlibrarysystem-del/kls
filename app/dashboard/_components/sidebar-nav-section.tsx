@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import type { NavItem } from "./nav-data";
 import { SidebarNavItem } from "./sidebar-nav-item";
+import { routeMatches, activeHrefAmong } from "./route-match";
 
 interface SidebarNavSectionProps {
   item: NavItem;
@@ -28,7 +30,7 @@ export function SidebarNavRow({ item, collapsed, currentRoute, expandedSections,
     return <SidebarNavItem item={item} collapsed={collapsed} currentRoute={currentRoute} />;
   }
 
-  const sectionActive = item.subItems.some((sub) => currentRoute.startsWith(sub.href));
+  const sectionActive = item.subItems.some((sub) => routeMatches(currentRoute, sub.href));
   return (
     <SidebarNavSection
       item={item}
@@ -47,7 +49,9 @@ export function SidebarNavRow({ item, collapsed, currentRoute, expandedSections,
 export function SidebarNavSection({ item, currentRoute, expanded, onToggle }: SidebarNavSectionProps) {
   const [hovered, setHovered] = useState(false);
   const subItems = item.subItems ?? [];
-  const sectionActive = subItems.some((sub) => currentRoute.startsWith(sub.href));
+  const sectionActive = subItems.some((sub) => routeMatches(currentRoute, sub.href));
+  // Only the most specific matching sub-link is highlighted.
+  const activeHref = activeHrefAmong(currentRoute, subItems.map((sub) => sub.href));
 
   return (
     <div style={{ marginBottom: 2 }}>
@@ -77,7 +81,6 @@ export function SidebarNavSection({ item, currentRoute, expanded, onToggle }: Si
           color: sectionActive || expanded ? "var(--gold)" : "var(--text-primary)",
           background: sectionActive ? "var(--gold-tint)" : hovered ? "var(--bg-hover)" : "transparent",
           borderRadius: 8,
-          boxShadow: sectionActive ? "inset 2px 0 0 var(--gold)" : "none",
           transition: "background 0.15s, color 0.15s",
         }}
       >
@@ -95,7 +98,7 @@ export function SidebarNavSection({ item, currentRoute, expanded, onToggle }: Si
       {expanded && (
         <div style={{ margin: "2px 0 4px", paddingLeft: 17, marginLeft: 18, borderLeft: "1px solid var(--border)" }}>
           {subItems.map((sub) => (
-            <SidebarSubLink key={sub.href} href={sub.href} label={sub.label} icon={sub.icon} currentRoute={currentRoute} />
+            <SidebarSubLink key={sub.href} href={sub.href} label={sub.label} icon={sub.icon} isActive={sub.href === activeHref} />
           ))}
         </div>
       )}
@@ -108,19 +111,19 @@ function SidebarSubLink({
   href,
   label,
   icon,
-  currentRoute,
+  isActive,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
-  currentRoute: string;
+  isActive: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
-  const isActive = currentRoute.startsWith(href);
 
   return (
-    <a
+    <Link
       href={href}
+      aria-current={isActive ? "page" : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -143,6 +146,6 @@ function SidebarSubLink({
         {icon}
       </span>
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-    </a>
+    </Link>
   );
 }

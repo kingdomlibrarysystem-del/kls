@@ -2,6 +2,7 @@
 import type { MouseEvent } from "react";
 import { CornerDownLeft } from "lucide-react";
 import { highlightParts, type NavSearchHit } from "./nav-search";
+import { routeMatches } from "./route-match";
 
 interface SidebarSearchResultsProps {
   hits: NavSearchHit[];
@@ -24,7 +25,7 @@ export function SidebarSearchResults({ hits, query, currentRoute, onNavigate, on
   return (
     <div style={{ padding: "6px 0 10px" }}>
       {hits.map((hit) => {
-        const isActive = currentRoute.startsWith(hit.href);
+        const isActive = routeMatches(currentRoute, hit.href);
         return (
           <a
             key={`${hit.section}/${hit.label}`}
@@ -42,7 +43,6 @@ export function SidebarSearchResults({ hits, query, currentRoute, onNavigate, on
               borderRadius: 7,
               color: isActive ? "var(--gold)" : "var(--text-secondary)",
               background: isActive ? "var(--gold-tint)" : "transparent",
-              boxShadow: isActive ? "inset 2px 0 0 var(--gold)" : "none",
             }}
             onMouseEnter={(e: MouseEvent<HTMLAnchorElement>) => {
               if (!isActive) e.currentTarget.style.background = "var(--bg-hover)";

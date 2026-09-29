@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import {
   Upload,
@@ -13,90 +11,96 @@ import {
   Newspaper,
   FlaskConical,
 } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { SectionCard } from "./section-card";
 import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
 const publishingItems = [
-  { icon: <Upload size={12} />, label: "Submit Manuscript", sub: "Submit your work", href: "/dashboard/publishing" },
-  { icon: <ClipboardList size={12} />, label: "My Submissions", sub: "Track status", href: "/dashboard/publishing" },
-  { icon: <CheckCircle size={12} />, label: "Review & Approve", sub: "Editorial review", href: "/dashboard/publishing/review" },
-  { icon: <DollarSign size={12} />, label: "Revenue & Royalties", sub: "Earnings", href: "/dashboard/publishing/revenue" },
-  { icon: <BookOpen size={12} />, label: "Publication Catalog", sub: "Browse catalog", href: "/dashboard/publishing/catalog" },
+  { icon: <Upload />, label: "Submit Manuscript", sub: "Submit your work", href: "/dashboard/publishing" },
+  { icon: <ClipboardList />, label: "My Submissions", sub: "Track status", href: "/dashboard/publishing" },
+  { icon: <CheckCircle />, label: "Review & Approve", sub: "Editorial review", href: "/dashboard/publishing/review" },
+  { icon: <DollarSign />, label: "Revenue & Royalties", sub: "Earnings", href: "/dashboard/publishing/revenue" },
+  { icon: <BookOpen />, label: "Publication Catalog", sub: "Browse catalog", href: "/dashboard/publishing/catalog" },
 ];
 
 const researchItems = [
-  { icon: <BarChart3 size={12} />, label: "Research Dashboard", sub: "Overview & Analytics", href: "/dashboard/research" },
-  { icon: <FolderOpen size={12} />, label: "Research Projects", sub: "Manage & Track", href: "/dashboard/research" },
-  { icon: <BookOpen size={12} />, label: "Research Library", sub: "Papers, Journals…", href: "/dashboard/research/repository" },
-  { icon: <Upload size={12} />, label: "Publish Research", sub: "Journals & Papers", href: "/dashboard/research/repository" },
-  { icon: <Handshake size={12} />, label: "Collaborations", sub: "Teams & Partnerships", href: "/dashboard/research/collaborations" },
+  { icon: <BarChart3 />, label: "Research Dashboard", sub: "Overview & Analytics", href: "/dashboard/research" },
+  { icon: <FolderOpen />, label: "Research Projects", sub: "Manage & Track", href: "/dashboard/research" },
+  { icon: <BookOpen />, label: "Research Library", sub: "Papers, Journals…", href: "/dashboard/research/repository" },
+  { icon: <Upload />, label: "Publish Research", sub: "Journals & Papers", href: "/dashboard/research/repository" },
+  { icon: <Handshake />, label: "Collaborations", sub: "Teams & Partnerships", href: "/dashboard/research/collaborations" },
 ];
 
-function ItemGrid({ items }: { items: { icon: React.ReactNode; label: string; sub: string; href: string }[] }) {
+function StatRow({ values, accent }: { values: [number, string][]; accent: "gold" | "teal" }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5, marginBottom: 8 }}>
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${values.length}, minmax(0, 1fr))` }}>
+      {values.map(([v, l]) => (
+        <div key={l} className={cn("rounded-lg border px-2 py-3 text-center", accent === "gold" ? "border-primary/25 bg-primary/5" : "border-info/25 bg-info/5")}>
+          <div suppressHydrationWarning className={cn("font-cinzel text-xl font-bold leading-none", accent === "gold" ? "text-primary" : "text-info")}>{v.toLocaleString()}</div>
+          <div className="mt-1.5 text-[11px] text-muted-foreground">{l}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ItemList({ items, wide = false }: { items: typeof publishingItems; wide?: boolean }) {
+  return (
+    <div className={cn("grid grid-cols-1 gap-1 sm:grid-cols-2", wide ? "lg:grid-cols-3" : "mt-4 xl:grid-cols-1 2xl:grid-cols-2")}>
       {items.map((it) => (
-        <Link key={it.label} href={it.href} style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--bg-subtle)", borderRadius: 5, padding: "4px 5px", border: "1px solid var(--border-light)", textDecoration: "none" }}>
-          <span style={{ display: "flex", alignItems: "center" }}>{it.icon}</span>
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 600, color: "var(--text-primary)" }}>{it.label}</div>
-            <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{it.sub}</div>
-          </div>
+        <Link key={it.label} href={it.href} className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-muted">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-3.5">{it.icon}</span>
+          <span className="min-w-0">
+            <span className="block truncate text-xs font-semibold text-foreground">{it.label}</span>
+            <span className="block truncate text-[11px] text-muted-foreground">{it.sub}</span>
+          </span>
         </Link>
       ))}
     </div>
   );
 }
 
-function StatRow({ values }: { values: [string, string][] }) {
+/** Publishing services card (right column) — real server-side counts. */
+export function PublishingServices({ publications }: { publications: AdminDashboardData["publications"] }) {
+  const { inProgress, published } = publications;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${values.length},1fr)`, gap: 5, marginBottom: 8 }}>
-      {values.map(([v, l]) => (
-        <div key={l} style={{ textAlign: "center", background: "rgba(212,168,67,0.05)", border: "1px solid var(--border-gold)", borderRadius: 5, padding: "5px 4px" }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--gold)" }}>{v}</div>
-          <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{l}</div>
-        </div>
-      ))}
-    </div>
+    <SectionCard
+      icon={<Newspaper />}
+      tone="gold"
+      title="PUBLISHING SERVICES"
+      description="Discover. Publish. Transform."
+      className="flex-1 border-t-2 border-t-primary"
+      footer={
+        <Link href="/dashboard/publishing" className={cn(buttonVariants(), "h-9 w-full font-semibold")}>Start Publishing →</Link>
+      }
+    >
+      <StatRow accent="gold" values={[[publications.total, "Books"], [inProgress, "In Progress"], [published, "Published"]]} />
+      <ItemList items={publishingItems} />
+    </SectionCard>
   );
 }
 
 /**
- * Publishing and Research services, both wired to real data. Beauty &
- * Wellness panel removed entirely (per explicit product decision): it's
- * a Phase-9 "Coming Soon" placeholder with zero backend, and showing
- * fabricated stats/actions for it here would misrepresent the module
- * as further along than it is.
+ * Research services card, laid out wide (stats beside a 3-column link grid)
+ * so it fills the main column under the KCS classification.
  */
-export default function RightPanels({ publications, projects }: { publications: AdminDashboardData["publications"]; projects: AdminDashboardData["projects"] }) {
-  const { inProgress, published } = publications;
-
+export function ResearchServices({ projects }: { projects: AdminDashboardData["projects"] }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-
-      {/* Publishing */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderTop: "2px solid var(--gold)", borderRadius: 8, padding: "10px 12px", marginBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-          <Newspaper size={14} color="var(--gold)" />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--gold)" }}>PUBLISHING SERVICES</span>
-        </div>
-        <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 8 }}>Discover. Publish. Transform.</div>
-        <StatRow values={[[String(publications.total), "Books"], [String(inProgress), "In Progress"], [String(published), "Published"]]} />
-        <ItemGrid items={publishingItems} />
-        <Link href="/dashboard/publishing" className="btn btn-gold btn-sm" style={{ width: "100%", justifyContent: "center", textAlign: "center" }}>Start Publishing →</Link>
+    <SectionCard
+      icon={<FlaskConical />}
+      tone="teal"
+      title="RESEARCH SERVICES"
+      description="Discover. Publish. Transform."
+      className="flex-1 border-t-2 border-t-info"
+      action={
+        <Link href="/dashboard/research" className={cn(buttonVariants({ variant: "outline" }), "h-8 border-info/40 px-3 text-xs font-semibold text-info hover:bg-info/10 hover:text-info")}>Go to Research Center →</Link>
+      }
+    >
+      <div className="grid items-start gap-4 md:grid-cols-[200px_1fr]">
+        <StatRow accent="teal" values={[[projects.total, "Projects"], [projects.active, "Active"]]} />
+        <ItemList items={researchItems} wide />
       </div>
-
-      {/* Research */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderTop: "2px solid var(--teal)", borderRadius: 8, padding: "10px 12px", marginTop: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-          <FlaskConical size={14} color="var(--teal-light)" />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--teal-light)" }}>RESEARCH SERVICES</span>
-        </div>
-        <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 8 }}>Discover. Publish. Transform.</div>
-        <StatRow values={[[String(projects.total), "Projects"], [String(projects.active), "Active"]]} />
-        <ItemGrid items={researchItems} />
-        <Link href="/dashboard/research" className="btn btn-outline-dim btn-sm" style={{ width: "100%", justifyContent: "center", textAlign: "center", color: "var(--teal-light)", borderColor: "var(--teal)" }}>Go to Research Center →</Link>
-      </div>
-
-    </div>
+    </SectionCard>
   );
 }
