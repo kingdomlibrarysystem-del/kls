@@ -23,8 +23,8 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
             type={visible ? 'text' : 'password'}
             className={`w-full px-4 py-3 pr-11 font-lato text-sm border rounded transition-colors ${
               error
-                ? 'border-red-500 bg-red-50'
-                : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
+                ? 'border-red-500 bg-red-50 dark:bg-destructive/10'
+                : 'border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary'
             } focus:outline-none ${className}`}
             style={{ letterSpacing: '0.3px' }}
             {...props}
@@ -38,7 +38,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
             {visible ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
-        {error && <p className="text-red-600 text-xs mt-1 font-lato">{error}</p>}
+        {error && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{error}</p>}
       </div>
     )
   }

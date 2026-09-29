@@ -62,7 +62,7 @@ export function SubscribersView() {
           <p className="font-lato text-xs text-w-700 mt-1">Total Subscribers</p>
         </div>
         <div className="bg-form-highlight border border-w-300 rounded-lg p-4 text-center">
-          <p className="font-cinzel text-2xl font-bold text-green-700">{active}</p>
+          <p className="font-cinzel text-2xl font-bold text-green-700 dark:text-success">{active}</p>
           <p className="font-lato text-xs text-w-700 mt-1">Active</p>
         </div>
         <div className="bg-form-highlight border border-w-300 rounded-lg p-4 text-center">
@@ -78,7 +78,7 @@ export function SubscribersView() {
           placeholder="Search by email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 font-lato text-sm border border-w-300 rounded focus:outline-none focus:border-w-600 bg-white"
+          className="w-full pl-9 pr-4 py-2 font-lato text-sm border border-w-300 rounded focus:outline-none focus:border-w-600 dark:focus:border-primary bg-white dark:bg-card!"
         />
       </div>
 
@@ -99,10 +99,10 @@ export function SubscribersView() {
             </thead>
             <tbody>
               {filtered.map((sub, i) => (
-                <tr key={sub.id} className={`border-t border-w-200 ${i % 2 === 0 ? 'bg-white' : 'bg-form-highlight/40'}`}>
+                <tr key={sub.id} className={`border-t border-w-200 ${i % 2 === 0 ? 'bg-white dark:bg-card!' : 'bg-form-highlight/40'}`}>
                   <td className="px-4 py-3 text-w-950">{sub.email}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sub.active ? 'bg-green-100 text-green-700' : 'bg-w-200 text-w-600'}`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sub.active ? 'bg-green-100 text-green-700 dark:text-success' : 'bg-w-200 dark:bg-white/10 text-w-600'}`}>
                       {sub.active ? 'Active' : 'Disabled'}
                     </span>
                   </td>
@@ -115,7 +115,7 @@ export function SubscribersView() {
                         onClick={() => toggle(sub)}
                         disabled={actionId === sub.id}
                         title={sub.active ? 'Disable' : 'Enable'}
-                        className="p-1.5 rounded hover:bg-w-200 text-w-600 hover:text-w-950 transition-colors disabled:opacity-40"
+                        className="p-1.5 rounded hover:bg-w-200 dark:hover:bg-white/10 text-w-600 hover:text-w-950 transition-colors disabled:opacity-40"
                       >
                         {sub.active ? <BellOff size={14} /> : <BellRing size={14} />}
                       </button>
@@ -123,7 +123,7 @@ export function SubscribersView() {
                         onClick={() => remove(sub.id)}
                         disabled={actionId === sub.id}
                         title="Remove"
-                        className="p-1.5 rounded hover:bg-red-50 text-w-500 hover:text-red-600 transition-colors disabled:opacity-40"
+                        className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-destructive/10 text-w-500 hover:text-red-600 transition-colors disabled:opacity-40"
                       >
                         <Trash2 size={14} />
                       </button>

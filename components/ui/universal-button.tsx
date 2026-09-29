@@ -14,11 +14,11 @@ type UniversalButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 // rather than duplicating their colors here — the other variants use
 // the Tailwind w-* scale already used by ElegantButton/public pages.
 const VARIANT_CLASSES: Record<UniversalButtonVariant, string> = {
-  primary: 'bg-w-600 text-white hover:bg-w-700 active:bg-w-800 border border-w-700',
-  secondary: 'bg-w-400 text-w-950 hover:bg-w-500 active:bg-w-600 border border-w-500',
-  outline: 'bg-transparent text-w-600 hover:bg-w-50 active:bg-w-100 border border-w-600',
-  ghost: 'bg-transparent text-w-700 hover:bg-w-100 border border-transparent',
-  destructive: 'bg-red-600 text-white hover:bg-red-700 border border-red-700',
+  primary: 'bg-w-600 text-white hover:bg-w-700 active:bg-w-800 border border-w-700 shadow-xs dark:text-primary-foreground dark:border-primary dark:hover:bg-primary/85!',
+  secondary: 'bg-w-400 text-w-950 hover:bg-w-500 active:bg-w-600 border border-w-500 dark:bg-secondary dark:border-border dark:hover:bg-accent',
+  outline: 'bg-transparent text-w-600 hover:bg-w-50 active:bg-w-100 border border-w-600 dark:border-primary/60 dark:hover:bg-primary/10',
+  ghost: 'bg-transparent text-w-700 hover:bg-w-100 border border-transparent dark:hover:bg-white/10',
+  destructive: 'bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-xs',
   gold: 'btn btn-gold',
   'gold-outline': 'btn btn-outline',
   'dim-outline': 'btn btn-outline-dim',
@@ -40,7 +40,7 @@ const CSS_DIALECT_SIZE_CLASSES: Partial<Record<UniversalButtonSize, string>> = {
   sm: 'btn-sm',
 }
 
-const BASE_CLASSES = 'kcs-universal-btn inline-flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none'
+const BASE_CLASSES = 'kcs-universal-btn outline-none focus-visible:ring-3 focus-visible:ring-ring/50 inline-flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none'
 const TAILWIND_BASE_CLASSES = 'gap-2 rounded font-lato font-normal transition-all duration-200 ease-in-out'
 
 interface CommonProps {

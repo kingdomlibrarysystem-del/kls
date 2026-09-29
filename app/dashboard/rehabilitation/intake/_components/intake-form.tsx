@@ -43,24 +43,24 @@ export function IntakeForm({ onSubmitted }: IntakeFormProps) {
       <h3 className="font-cinzel text-sm font-semibold text-w-950 flex items-center gap-2"><ClipboardPlus size={16} /> Intake & Assessment</h3>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
           <AlertCircle size={13} /> {error}
         </div>
       )}
 
       <div>
         <FieldLabel htmlFor="concernArea" required>Area of Concern</FieldLabel>
-        <textarea id="concernArea" rows={2} value={concernArea} onChange={(e) => setConcernArea(e.target.value)} placeholder="What are you seeking support for?" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" />
+        <textarea id="concernArea" rows={2} value={concernArea} onChange={(e) => setConcernArea(e.target.value)} placeholder="What are you seeking support for?" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none" />
       </div>
 
       <div>
         <FieldLabel htmlFor="history" required>Relevant History</FieldLabel>
-        <textarea id="history" rows={3} value={history} onChange={(e) => setHistory(e.target.value)} placeholder="Any relevant background staff should know…" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" />
+        <textarea id="history" rows={3} value={history} onChange={(e) => setHistory(e.target.value)} placeholder="Any relevant background staff should know…" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none" />
       </div>
 
       <div>
         <FieldLabel htmlFor="goals" required>Recovery Goals</FieldLabel>
-        <textarea id="goals" rows={2} value={goals} onChange={(e) => setGoals(e.target.value)} placeholder="What would you like to achieve?" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" />
+        <textarea id="goals" rows={2} value={goals} onChange={(e) => setGoals(e.target.value)} placeholder="What would you like to achieve?" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none" />
       </div>
 
       <ElegantButton type="submit" variant="primary" className="text-sm py-2">Submit Assessment</ElegantButton>

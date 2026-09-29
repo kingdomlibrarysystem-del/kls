@@ -29,13 +29,13 @@ export default function PublishingPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map((s) => {
           const card = (
-            <div className={`bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 h-full ${s.href ? 'hover:border-w-600 transition-colors' : ''}`}>
+            <div className={`bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 h-full ${s.href ? 'hover:border-w-600 dark:hover:border-primary transition-colors' : ''}`}>
               <div className="flex items-center gap-2 text-w-600">{s.icon}
                 <h3 className="font-cinzel text-sm font-semibold text-w-950">{s.title}</h3>
               </div>
               <p className="font-lato text-xs text-w-700 leading-relaxed">{s.desc}</p>
               <span className={`inline-block mt-auto px-2 py-0.5 rounded text-xs font-lato w-fit ${
-                s.href ? 'bg-green-50 text-green-700' : 'bg-w-200 text-w-700'
+                s.href ? 'bg-green-50 dark:bg-success/10 text-green-700 dark:text-success' : 'bg-w-200 text-w-700'
               }`}>
                 {s.href ? 'Available' : 'Coming Soon'}
               </span>
@@ -49,7 +49,7 @@ export default function PublishingPage() {
         })}
       </div>
 
-      <div className="mt-8 bg-form-section border border-w-400 rounded-lg p-5">
+      <div className="mt-8 bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5">
         <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
         <ul className="font-lato text-xs text-w-700 space-y-1">
           <li>POST /api/publications — submit a new book (draft)</li>

@@ -27,11 +27,13 @@ export function EmptyState({ icon: Icon, title, description, className, style, a
       className={`flex flex-col items-center justify-center text-center px-6 py-12 ${className ?? ''}`}
       style={style}
     >
-      <Icon size={28} className="text-w-400 dark:text-white/30" style={{ color: style ? 'var(--text-muted)' : undefined, marginBottom: 12 }} />
-      <p className="font-cinzel text-sm font-semibold text-w-950 dark:text-white" style={style ? { color: 'var(--text-primary)' } : undefined}>
+      <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-muted ring-1 ring-border">
+        <Icon size={26} className="text-muted-foreground" />
+      </div>
+      <p className="font-cinzel text-sm font-semibold text-foreground" style={style ? { color: 'var(--text-primary)' } : undefined}>
         {title}
       </p>
-      <p className="font-lato text-xs text-w-700 dark:text-white/50 mt-1.5 max-w-xs" style={style ? { color: 'var(--text-secondary)' } : undefined}>
+      <p className="font-lato text-xs text-muted-foreground mt-1.5 max-w-xs" style={style ? { color: 'var(--text-secondary)' } : undefined}>
         {description}
       </p>
       {action && <div className="mt-4">{action}</div>}

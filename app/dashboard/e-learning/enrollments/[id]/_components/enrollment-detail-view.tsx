@@ -123,7 +123,7 @@ export function EnrollmentDetailView({ id }: EnrollmentDetailViewProps) {
             <span className="font-lato text-xs text-w-700">Course Progress</span>
             <span className="font-lato text-xs text-w-700 font-semibold">{enrollment.progress}%</span>
           </div>
-          <div className="h-2 bg-w-200 rounded-full overflow-hidden">
+          <div className="h-2 bg-w-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div className="h-full bg-w-600 rounded-full" style={{ width: `${enrollment.progress}%` }} />
           </div>
         </div>

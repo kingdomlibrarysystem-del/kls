@@ -38,7 +38,7 @@ export function VerifyByCode() {
   }
 
   return (
-    <div className="bg-form-section border border-w-400 rounded-lg p-5 mb-6">
+    <div className="bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5 mb-6">
       <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-3">Verify Certificate by Code</h3>
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="flex-1">
@@ -57,7 +57,7 @@ export function VerifyByCode() {
       </div>
 
       {result.status === 'found' && (
-        <div className="flex items-start gap-2 mt-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">
+        <div className="flex items-start gap-2 mt-3 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
           <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
           <span>
             Valid certificate — <strong>{result.certificate.member}</strong> completed{' '}
@@ -66,12 +66,12 @@ export function VerifyByCode() {
         </div>
       )}
       {result.status === 'revoked' && (
-        <div className="flex items-center gap-2 mt-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm">
+        <div className="flex items-center gap-2 mt-3 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm">
           <XCircle size={15} /> This certificate has been revoked and is no longer valid.
         </div>
       )}
       {result.status === 'not-found' && (
-        <div className="flex items-center gap-2 mt-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm">
+        <div className="flex items-center gap-2 mt-3 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm">
           <XCircle size={15} /> No certificate found for that code.
         </div>
       )}

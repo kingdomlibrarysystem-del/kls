@@ -21,7 +21,7 @@ export function CampaignDonationsList({ donations, onRefreshed }: CampaignDonati
   }
 
   return (
-    <div className="bg-white border border-w-300 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-card! border border-w-300 rounded-lg overflow-hidden">
       {donations.map((d) => (
         <div key={d.id} className="px-4 py-3 border-b border-w-200 last:border-b-0 flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-40">
@@ -31,7 +31,7 @@ export function CampaignDonationsList({ donations, onRefreshed }: CampaignDonati
           </div>
           <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${donationStatusConfig[d.status].cls}`}>{donationStatusConfig[d.status].label}</span>
           {d.status === 'pending' && (
-            <button onClick={() => handlePoll(d.id)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+            <button onClick={() => handlePoll(d.id)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
               <RefreshCw size={12} /> Check Status
             </button>
           )}

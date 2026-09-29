@@ -28,7 +28,7 @@ export function ServicesView() {
         <select
           value={providerFilter}
           onChange={(e) => setProviderFilter(e.target.value)}
-          className="px-3 py-2.5 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="px-3 py-2.5 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         >
           <option value="all">All Providers</option>
           {providers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -40,7 +40,7 @@ export function ServicesView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((service) => (
-            <div key={service.id} className="border border-w-300 rounded-lg bg-white p-4">
+            <div key={service.id} className="border border-w-300 rounded-lg bg-white dark:bg-card! p-4">
               <p className="font-lato text-xs text-w-600 mb-1">{providers.find((p) => p.id === service.providerId)?.name}</p>
               <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-1">{service.name}</h3>
               <p className="text-xs px-2 py-0.5 bg-w-100 rounded font-lato text-w-700 inline-block mb-2">{service.category}</p>

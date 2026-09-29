@@ -134,15 +134,15 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
                   placeholder="078xxxxxxx"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 font-lato text-sm border border-w-400 rounded focus:border-w-600 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2.5 font-lato text-sm border border-w-400 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded p-3 mb-4 text-left">
-                <AlertCircle size={14} className="text-red-600 shrink-0" />
-                <p className="font-lato text-xs text-red-700">{error}</p>
+              <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 rounded p-3 mb-4 text-left">
+                <AlertCircle size={14} className="text-red-600 dark:text-destructive shrink-0" />
+                <p className="font-lato text-xs text-red-700 dark:text-destructive">{error}</p>
               </div>
             )}
 
@@ -172,7 +172,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
 
         {stage === 'paid' && (
           <>
-            <CheckCircle2 size={32} className="mx-auto text-green-600 mb-3" />
+            <CheckCircle2 size={32} className="mx-auto text-green-600 dark:text-success mb-3" />
             <p className="font-lato text-sm text-w-950 mb-1">{t("m_courses.payment_confirmed")}</p>
             <p className="font-lato text-xs text-w-600 mb-4">
               {t("m_courses.youre_enrolled_in")} <span className="font-semibold">&ldquo;{course.title}&rdquo;</span>.
@@ -185,7 +185,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
 
         {stage === 'failed' && (
           <>
-            <XCircle size={32} className="mx-auto text-red-600 mb-3" />
+            <XCircle size={32} className="mx-auto text-red-600 dark:text-destructive mb-3" />
             <p className="font-lato text-sm text-w-950 mb-1">{t("m_courses.payment_not_completed")}</p>
             {error && <p className="font-lato text-xs text-w-600 mb-4">{error}</p>}
             <ElegantButton variant="outline" onClick={handleClose} className="w-full text-sm py-2">

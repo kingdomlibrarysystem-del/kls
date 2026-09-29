@@ -7,9 +7,9 @@ interface CollaborationsStatsProps {
 /** Active/Completed/Suspended project-count stat cards, derived from the same real project list the grid below renders. */
 export function CollaborationsStats({ data }: CollaborationsStatsProps) {
   const colorFor: Record<ProjectStatus, string> = {
-    ACTIVE: 'text-green-700',
+    ACTIVE: 'text-green-700 dark:text-success',
     COMPLETED: 'text-w-600',
-    SUSPENDED: 'text-red-700',
+    SUSPENDED: 'text-red-700 dark:text-destructive',
   }
 
   const stats = [

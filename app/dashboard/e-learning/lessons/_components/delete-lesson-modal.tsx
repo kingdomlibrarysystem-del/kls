@@ -27,9 +27,9 @@ export function DeleteLessonModal({ lesson, onClose }: DeleteLessonModalProps) {
     <Modal open={!!lesson} onClose={onClose} title="Delete Lesson" size="sm">
       {lesson && (
         <div>
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+          <div className="flex items-center gap-2 bg-amber-50 dark:bg-warning/10 border border-amber-200 dark:border-warning/30 rounded p-3 mb-4">
             <AlertCircle size={14} className="text-amber-600 shrink-0" />
-            <p className="font-lato text-xs text-amber-700">
+            <p className="font-lato text-xs text-amber-700 dark:text-warning">
               Deleting <span className="font-semibold">&ldquo;{lesson.title}&rdquo;</span> from {lesson.courseTitle} cannot be undone.
             </p>
           </div>

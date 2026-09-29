@@ -23,8 +23,8 @@ export function ReportsSummaryCards() {
 
   const stats = [
     { label: 'Total Borrowed (30d)', value: totalBorrowedToday,               color: 'text-w-950'      },
-    { label: 'Overdue Items',        value: overdueList.length,                color: 'text-red-700'    },
-    { label: 'Pending Returns',      value: overdueList.length,                color: 'text-yellow-700' },
+    { label: 'Overdue Items',        value: overdueList.length,                color: 'text-red-700 dark:text-destructive'    },
+    { label: 'Pending Returns',      value: overdueList.length,                color: 'text-yellow-700 dark:text-warning' },
     { label: 'Total Fines (RWF)',    value: totalFines.toLocaleString(),       color: 'text-w-600'      },
     { label: 'Unpaid Fines (RWF)',   value: unpaidFines.toLocaleString(),      color: 'text-orange-700' },
   ]

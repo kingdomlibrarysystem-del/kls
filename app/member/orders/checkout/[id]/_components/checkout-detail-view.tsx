@@ -137,7 +137,7 @@ export function CheckoutDetailView({ id }: CheckoutDetailViewProps) {
           <button
             onClick={handleRetry}
             disabled={busy !== null}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}
           >
             {busy === 'retry' ? <Loader2 size={14} className="animate-spin" /> : <RotateCw size={14} />} Retry payment
           </button>

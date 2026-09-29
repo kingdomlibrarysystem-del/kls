@@ -53,7 +53,7 @@ export default function WelcomeSection() {
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              style={{ background: activeTab === t ? "var(--gold)" : "var(--bg-subtle)", color: activeTab === t ? "#fff" : "var(--text-secondary)", border: activeTab === t ? "none" : "1px solid var(--border)", borderRadius: 4, padding: "3px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+              style={{ background: activeTab === t ? "var(--gold)" : "var(--bg-subtle)", color: activeTab === t ? "var(--primary-foreground)" : "var(--text-secondary)", border: activeTab === t ? "none" : "1px solid var(--border)", borderRadius: 4, padding: "3px 10px", fontSize: 10, fontWeight: 600, cursor: "pointer" }}
             >
               {t === "All" ? "All" : mediaTypeLabels[t]}
             </button>

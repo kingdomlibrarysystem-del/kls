@@ -9,6 +9,19 @@
 > behavior by accident. This rule exists to keep the app problem-free as it
 > grows. A change is NOT complete until its PROGRESS.md entry is written.
 
+# Standing rule — shadcn + Tailwind, light AND dark (added 2026-09-29)
+
+> **Rule (per project owner):** admin (`/dashboard`) and member (`/member`)
+> UI is built with **shadcn/ui components + Tailwind**, using the theme
+> tokens in `app/globals.css` (`bg-card`, `text-foreground`,
+> `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`,
+> `text-success`, `text-warning`, `text-info`...). Every surface must look
+> right in **both light and dark mode** — any light-only class
+> (`bg-white`, `bg-red-50`, `bg-form-bg`, `hover:bg-w-100`...) needs a
+> `dark:` counterpart. **Do not change font families** (keep `font-cinzel`,
+> `font-lato`, `.cinzel` etc.) and **do not change logic** — design passes
+> are markup/class changes only.
+
 ---
 
 # Autonomous Run Progress
@@ -5721,3 +5734,86 @@ no-img-element warning); `npx vitest run` 180 pass + the same 6 pre-existing
 cart/order-sparse DB failures (one-off borrow-reserve-concurrency timeout is
 the known SQLite-contention flake - clean in the previous round); `npx next
 build` exit 0 (181 pages).
+
+## 2026-09-29 - Design pass 1: shadcn theme foundation + light/dark sweep (admin + member)
+New standing rule (see top of file): shadcn/ui + Tailwind, light AND dark,
+no font-family or logic changes. This first pass fixes the foundation and
+every shared component, then sweeps all admin/member pages for classes that
+broke in dark mode. Markup/class changes only - no behaviour changed.
+
+- **Theme tokens (`app/globals.css`):** shadcn semantic tokens were still the
+  stock neutral/grey set. Remapped `--background/--card/--popover/--primary/
+  --secondary/--muted/--accent/--border/--input/--ring/--chart-*/--sidebar-*`
+  onto the gold palette for `:root` (light) and `.dark`. `--primary` is gold
+  `#d4a843` with dark foreground in both modes. Added `--success`,
+  `--warning`, `--info` (+ `--color-*` in `@theme inline`) so status colors
+  are tokens usable as `text-success`, `bg-warning/10`, etc.
+- **Bug fix:** removed the `@media (prefers-color-scheme: dark) :root:not(.light)`
+  block. `ThemeProvider` never sets `.light`, so on an OS in dark mode every
+  shadcn surface (and `body` via `bg-background`) turned dark while the app
+  was in light mode. Theme is now purely class-driven (`.dark`).
+- `.card-hover:hover` and `.btn-outline-dim:hover` used a white border
+  (invisible in light mode) -> `var(--border-gold)`.
+- **New shadcn primitives** (`components/ui/`, base-nova / Base UI): avatar,
+  badge, card, dropdown-menu, input, label, progress, select, separator,
+  switch, table, tabs, textarea, tooltip. The CLI generated a broken
+  `import { cn } from "cn"` and added a stray `cn` npm package - imports
+  fixed to `@/lib/utils`, package removed (package.json unchanged).
+  `tooltip` needs a `TooltipProvider` - not mounted yet; mount it before
+  first use.
+- **Shared components rebuilt on tokens/shadcn (same props and behaviour):**
+  - `data-table.tsx` - shadcn `Input`, `Button` (pagination/export),
+    `TableHeader/Row/Head/Cell`; card surface, muted header, accent row hover.
+    Kept a plain `<table>` in our own scroll div (shadcn `<Table>` adds a
+    second overflow wrapper that breaks the scroll-edge fade), and forced
+    `whitespace-normal` on cells so wrapping is unchanged. Fixes the table
+    body blending into the page in dark mode (`bg-white` was forced to
+    `#0a0d1a` by the global override).
+  - `modal.tsx` - card tokens, blurred backdrop, shadcn ghost close button,
+    `role="dialog"`. Deliberately still a portal, not Base UI Dialog: modals
+    host the Cloudinary widget/editor popovers rendered outside the modal DOM,
+    and an outside-press dialog would close on them.
+  - `form-input.tsx` (shadcn input styling, `aria-invalid`, destructive
+    error), `field-label.tsx` (shadcn `Label`), `form-section.tsx`,
+    `form-container.tsx`, `empty-state.tsx` (icon in muted circle badge).
+  - `elegant-button.tsx` / `universal-button.tsx` - focus-visible ring;
+    dark variants (primary: dark text on gold, secondary/outline/ghost hover
+    no longer flash cream).
+- **Codemod sweep (206 files in `app/dashboard` + `app/member`, plus
+  `components/ui/*`, `components/profile-dropdown.tsx`):** added a `dark:`
+  counterpart next to each light-only class, only where the line had no
+  dark variant for that property. Map: `bg-white -> dark:bg-card!`
+  (important to beat the global `.dark .bg-white` override),
+  `bg-form-bg -> dark:bg-white/5`, `bg-form-section -> dark:bg-secondary`,
+  `border-w-500 -> dark:border-white/15`, `border-w-600/700 -> dark:border-primary/60`,
+  `focus:border-w-* -> dark:focus:border-primary`, `bg-w-200/400 -> dark:bg-white/10`,
+  `hover:bg-w-* -> dark:hover:bg-white/5..15`, `text-w-800/900 -> dark:text-foreground`,
+  `text-w-400 -> dark:text-muted-foreground`, red/green/yellow/amber/blue
+  status `-50/-200/-600..800` -> `destructive/success/warning/info` tokens.
+  `components/home` and public pages untouched.
+- **Contrast:** white text on gold (`var(--gold)`, ~2.2:1) and on
+  `var(--teal-light)` buttons -> `var(--primary-foreground)` (25 inline
+  styles across member library/cart/checkout/orders/assessments/sessions/
+  profile, dashboard roles/KCS/welcome tabs). Tailwind `bg-w-600..950 +
+  text-white` got `dark:text-primary-foreground` (9 files), since the global
+  override turns those backgrounds bright gold in dark mode.
+
+**Interactions to watch:** status config objects (`cls: '...'`) now carry
+extra `dark:` classes - any code that string-compares those values would
+break (checked: none do). `bg-white` inside admin/member now renders
+`--card` (#111828) in dark instead of `#0a0d1a`, so cards separate from the
+page. The public site's `.dark` overrides in globals.css are unchanged.
+
+**Not done yet (next passes):** page-by-page swap of hand-rolled tab bars,
+selects, badges and stat cards to shadcn `Tabs/Select/Badge/Card`; Dialect-B
+(inline `style={{}}`) pages are theme-correct already via CSS vars but not yet
+converted to Tailwind classes.
+
+Verification: `npx tsc --noEmit` clean; `eslint components/ui` 0 errors
+(1 pre-existing img warning); `npx vitest run` 159 pass + the same 6
+pre-existing cart/order-sparse DB failures + the known
+borrow-reserve-concurrency flake; `npx next build` exit 0; generated CSS
+confirmed to contain `dark:bg-card!` (important), `dark:text-success`, etc.
+(Env note: `npm uninstall cn` pruned the undeclared `jsdom` that
+`markdown-editor-config.test.ts` imports - restored with
+`npm install --no-save jsdom`; that suite passes 55/55.)

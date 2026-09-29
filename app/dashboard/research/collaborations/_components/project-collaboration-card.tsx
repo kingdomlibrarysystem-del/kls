@@ -46,10 +46,10 @@ export function ProjectCollaborationCard({ project, onEdit, onDelete }: ProjectC
         >
           View Details
         </UniversalButton>
-        <button onClick={() => onEdit(project)} aria-label={`Edit ${project.title}`} className="shrink-0 p-2 bg-w-100 text-w-950 border border-w-300 rounded hover:bg-w-200 transition-colors">
+        <button onClick={() => onEdit(project)} aria-label={`Edit ${project.title}`} className="shrink-0 p-2 bg-w-100 text-w-950 border border-w-300 rounded hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
           <Pencil size={13} />
         </button>
-        <button onClick={() => onDelete(project)} aria-label={`Delete ${project.title}`} className="shrink-0 p-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 transition-colors">
+        <button onClick={() => onDelete(project)} aria-label={`Delete ${project.title}`} className="shrink-0 p-2 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
           <Trash2 size={13} />
         </button>
       </div>

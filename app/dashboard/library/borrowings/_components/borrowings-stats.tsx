@@ -8,9 +8,9 @@ interface BorrowingsStatsProps {
 export function BorrowingsStats({ data }: BorrowingsStatsProps) {
   const stats = [
     { label: 'Total', value: data.length, color: 'text-w-950' },
-    { label: 'Active', value: data.filter((r) => r.status === 'active').length, color: 'text-green-700' },
-    { label: 'Overdue', value: data.filter((r) => r.status === 'overdue').length, color: 'text-red-700' },
-    { label: 'Pending', value: data.filter((r) => r.status === 'pending').length, color: 'text-yellow-700' },
+    { label: 'Active', value: data.filter((r) => r.status === 'active').length, color: 'text-green-700 dark:text-success' },
+    { label: 'Overdue', value: data.filter((r) => r.status === 'overdue').length, color: 'text-red-700 dark:text-destructive' },
+    { label: 'Pending', value: data.filter((r) => r.status === 'pending').length, color: 'text-yellow-700 dark:text-warning' },
     { label: 'Returned', value: data.filter((r) => r.status === 'returned').length, color: 'text-w-600' },
     { label: 'Unpaid Fines', value: data.filter((r) => r.fineAmount && !r.finePaid).length, color: 'text-orange-700' },
   ]

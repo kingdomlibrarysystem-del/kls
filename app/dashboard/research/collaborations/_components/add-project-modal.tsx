@@ -56,8 +56,8 @@ export function AddProjectModal({ open, onClose }: AddProjectModalProps) {
   return (
     <Modal open={open} onClose={close} title="Add Research Project" size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {submitSuccess && <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm"><CheckCircle2 size={15} /> Project created.</div>}
-        {submitError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {submitError}</div>}
+        {submitSuccess && <div className="flex items-center gap-2 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm"><CheckCircle2 size={15} /> Project created.</div>}
+        {submitError && <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm"><AlertCircle size={15} /> {submitError}</div>}
 
         <div>
           <FieldLabel htmlFor="title" required>Title</FieldLabel>
@@ -66,14 +66,14 @@ export function AddProjectModal({ open, onClose }: AddProjectModalProps) {
 
         <div>
           <FieldLabel htmlFor="description" required>Description</FieldLabel>
-          <textarea id="description" rows={4} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none" {...register('description')} />
-          {errors.description && <p className="text-red-600 text-xs mt-1 font-lato">{errors.description.message}</p>}
+          <textarea id="description" rows={4} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('description')} />
+          {errors.description && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.description.message}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="status" required>Status</FieldLabel>
-            <select id="status" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('status')}>
+            <select id="status" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('status')}>
               <option value="ACTIVE">Active</option>
               <option value="COMPLETED">Completed</option>
               <option value="SUSPENDED">Suspended</option>
@@ -87,7 +87,7 @@ export function AddProjectModal({ open, onClose }: AddProjectModalProps) {
 
         <div>
           <FieldLabel htmlFor="contributorIds">Contributors</FieldLabel>
-          <select id="contributorIds" multiple size={5} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('contributorIds')}>
+          <select id="contributorIds" multiple size={5} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('contributorIds')}>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
           <p className="font-lato text-xs text-w-600 mt-1">Ctrl/Cmd-click to select multiple.</p>

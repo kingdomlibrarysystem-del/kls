@@ -33,7 +33,7 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-w-950">Question {qIndex + 1}</span>
             {fields.length > 1 && (
-              <button type="button" onClick={() => remove(qIndex)} aria-label={`Remove question ${qIndex + 1}`} className="p-1 rounded text-w-600 hover:bg-red-50 hover:text-red-700 transition-colors">
+              <button type="button" onClick={() => remove(qIndex)} aria-label={`Remove question ${qIndex + 1}`} className="p-1 rounded text-w-600 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
                 <Trash2 size={13} />
               </button>
             )}
@@ -43,7 +43,7 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
             <FieldLabel htmlFor={`question-${qIndex}-type`}>Question type</FieldLabel>
             <select
               id={`question-${qIndex}-type`}
-              className="w-full px-3 py-2 font-lato text-xs border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+              className="w-full px-3 py-2 font-lato text-xs border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
               {...register(`questions.${qIndex}.type`)}
             >
               <option value="SINGLE_SELECT">Single-select</option>
@@ -59,7 +59,7 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
               rows={2}
               placeholder="Longer prompt or scenario shown above the question — leave blank for a plain question"
               aria-label={`Question ${qIndex + 1} scenario context`}
-              className="w-full px-3 py-2 font-lato text-xs border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none resize-vertical"
+              className="w-full px-3 py-2 font-lato text-xs border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none resize-vertical"
               {...register(`questions.${qIndex}.context`)}
             />
           </div>
@@ -102,7 +102,7 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
       >
         <Plus size={13} /> Add Question
       </button>
-      {errors.questions?.message && <p className="text-red-600 text-xs font-lato">{errors.questions.message}</p>}
+      {errors.questions?.message && <p className="text-red-600 dark:text-destructive text-xs font-lato">{errors.questions.message}</p>}
     </div>
   )
 }

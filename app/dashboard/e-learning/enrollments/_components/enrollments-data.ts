@@ -21,7 +21,7 @@ export interface Enrollment {
 }
 
 export const enrollmentStatusConfig: Record<EnrollmentStatus, { label: string; cls: string }> = {
-  ACTIVE: { label: 'Active', cls: 'bg-green-50  text-green-800  border-green-200' },
+  ACTIVE: { label: 'Active', cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30' },
   COMPLETED: { label: 'Completed', cls: 'bg-w-100     text-w-700      border-w-300' },
-  DROPPED: { label: 'Dropped', cls: 'bg-red-50    text-red-800    border-red-200' },
+  DROPPED: { label: 'Dropped', cls: 'bg-red-50 dark:bg-destructive/10    text-red-800 dark:text-destructive    border-red-200 dark:border-destructive/30' },
 }

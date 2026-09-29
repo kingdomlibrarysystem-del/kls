@@ -29,7 +29,7 @@ export function RecordsView() {
       {records.map((rec) => {
         const clinic = clinics.find((c) => c.id === rec.clinicId)
         return (
-          <div key={rec.id} className="bg-white border border-w-300 rounded-lg p-5">
+          <div key={rec.id} className="bg-white dark:bg-card! border border-w-300 rounded-lg p-5">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <h3 className="font-cinzel text-sm font-semibold text-w-950">{clinic?.name ?? 'Unknown clinic'}</h3>
               <span className="font-lato text-xs text-w-600">{rec.date}</span>

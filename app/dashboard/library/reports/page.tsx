@@ -14,7 +14,7 @@ export default function BorrowReportsPage() {
       <div className="space-y-8">
         <section>
           <h2 className="flex items-center gap-2 font-cinzel text-sm font-semibold text-w-950 mb-3">
-            <AlertTriangle size={16} className="text-red-600" /> Overdue Items
+            <AlertTriangle size={16} className="text-red-600 dark:text-destructive" /> Overdue Items
           </h2>
           <OverdueTable />
         </section>

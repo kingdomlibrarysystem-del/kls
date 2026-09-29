@@ -149,7 +149,7 @@ export function CartView() {
         <button
           onClick={handlePaySelected}
           disabled={selected.size === 0}
-          style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: selected.size === 0 ? 'not-allowed' : 'pointer', opacity: selected.size === 0 ? 0.5 : 1 }}
+          style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 700, cursor: selected.size === 0 ? 'not-allowed' : 'pointer', opacity: selected.size === 0 ? 0.5 : 1 }}
         >
           Pay {selected.size > 0 ? `Selected (${selected.size})` : 'All'}
         </button>

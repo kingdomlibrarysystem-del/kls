@@ -105,10 +105,10 @@ export function UsersView() {
           >
             View
           </UniversalButton>
-          <button onClick={() => openEdit(u)} aria-label={`Edit ${u.name}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+          <button onClick={() => openEdit(u)} aria-label={`Edit ${u.name}`} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
             <Pencil size={12} /> Edit
           </button>
-          <button onClick={() => setDeleting(u)} aria-label={`Delete ${u.name}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
+          <button onClick={() => setDeleting(u)} aria-label={`Delete ${u.name}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
             <Trash2 size={12} /> Delete
           </button>
         </div>
@@ -128,7 +128,7 @@ export function UsersView() {
       </div>
 
       {toast && (
-        <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>
+        <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>
       )}
 
       {users.length === 0 ? (

@@ -129,7 +129,7 @@ export function ScrollDetailView({ scrollId }: ScrollDetailViewProps) {
                       <Link
                         href={`/member/library/read/${resource.id}`}
                         aria-label={`Read ${resource.title} online`}
-                        style={{ display: 'block', textAlign: 'center', padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+                        style={{ display: 'block', textAlign: 'center', padding: '6px 0', borderRadius: 6, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
                       >
                         Read Online
                       </Link>

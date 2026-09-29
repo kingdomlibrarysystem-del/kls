@@ -47,8 +47,8 @@ export default function SalesRentalsPage() {
 
   const stats = [
     { label: 'Total Transactions', value: data.length, color: 'text-w-950' },
-    { label: 'Paid', value: paidOrders.length, color: 'text-green-700' },
-    { label: 'Pending', value: data.filter((r) => r.status === 'pending').length, color: 'text-yellow-700' },
+    { label: 'Paid', value: paidOrders.length, color: 'text-green-700 dark:text-success' },
+    { label: 'Pending', value: data.filter((r) => r.status === 'pending').length, color: 'text-yellow-700 dark:text-warning' },
     { label: 'Total Revenue (RWF)', value: paidOrders.reduce((sum, r) => sum + r.amount, 0).toLocaleString(), color: 'text-w-600' },
   ]
 
@@ -130,7 +130,7 @@ export default function SalesRentalsPage() {
           searchPlaceholder="Search buyer, resource, ID..."
           searchFilter={(r, q) => r.buyerName.toLowerCase().includes(q) || r.buyerEmail.toLowerCase().includes(q) || r.resourceTitle.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)}
           filters={
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as TransactionType | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none">
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as TransactionType | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
               <option value="all">All Types</option>
               {(Object.keys(typeConfig) as TransactionType[]).map((t) => <option key={t} value={t}>{typeConfig[t].label}</option>)}
             </select>

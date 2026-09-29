@@ -22,7 +22,7 @@ export function CatalogStats() {
 
   const stats = [
     { label: 'Total Courses', value: catalog.length, color: 'text-w-950' },
-    { label: 'Published', value: published, color: 'text-green-700' },
+    { label: 'Published', value: published, color: 'text-green-700 dark:text-success' },
     { label: 'Draft', value: draft, color: 'text-w-600' },
     { label: 'Total Enrolled', value: totalEnrolled, color: 'text-w-600' },
   ]

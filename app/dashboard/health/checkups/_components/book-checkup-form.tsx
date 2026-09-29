@@ -45,7 +45,7 @@ export function BookCheckupForm({ onBooked }: BookCheckupFormProps) {
       <h3 className="font-cinzel text-sm font-semibold text-w-950 flex items-center gap-2"><CalendarPlus size={16} /> Book a Checkup</h3>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
           <AlertCircle size={13} /> {error}
         </div>
       )}
@@ -56,7 +56,7 @@ export function BookCheckupForm({ onBooked }: BookCheckupFormProps) {
           id="clinic"
           value={clinicId}
           onChange={(e) => setClinicIdOverride(e.target.value)}
-          className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+          className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         >
           {clinics.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.specialty}</option>)}
         </select>
@@ -75,7 +75,7 @@ export function BookCheckupForm({ onBooked }: BookCheckupFormProps) {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="e.g. Annual general checkup, follow-up on symptoms…"
-          className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+          className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
         />
       </div>
 

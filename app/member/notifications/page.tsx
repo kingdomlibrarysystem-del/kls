@@ -12,8 +12,8 @@ import type { NotificationType } from '@/app/dashboard/notifications/_components
 import { useMemberNotifications, markMemberNotificationRead } from '@/app/member/_shared/use-member-notifications'
 
 const iconMap: Record<NotificationType, React.ReactNode> = {
-  borrow:      <BookOpen size={18} className="text-green-600" />,
-  reservation: <CalendarClock size={18} className="text-blue-600" />,
+  borrow:      <BookOpen size={18} className="text-green-600 dark:text-success" />,
+  reservation: <CalendarClock size={18} className="text-blue-600 dark:text-info" />,
   course:      <GraduationCap size={18} className="text-purple-600" />,
   publication: <BookCopy size={18} className="text-w-600" />,
   due:         <AlertCircle size={18} className="text-orange-500" />,
@@ -87,8 +87,8 @@ export default function MemberNotificationsPage() {
             href={n.href}
             onClick={() => { handleMarkRead(n.id) }}
             aria-label={`View details for: ${n.title}`}
-            className={`flex items-start gap-4 p-4 rounded-lg border transition-colors hover:border-w-500 ${
-              n.read ? 'bg-white border-w-300' : 'bg-form-highlight border-w-400'
+            className={`flex items-start gap-4 p-4 rounded-lg border transition-colors hover:border-w-500 dark:hover:border-primary/60 ${
+              n.read ? 'bg-white dark:bg-card! border-w-300' : 'bg-form-highlight border-w-400'
             }`}
           >
             <div className="mt-0.5 shrink-0">{iconMap[n.type]}</div>
@@ -102,7 +102,7 @@ export default function MemberNotificationsPage() {
               </div>
               <p className="font-lato text-sm text-w-700 mt-0.5">{n.message}</p>
             </div>
-            <ChevronRight size={18} className="text-w-400 shrink-0 mt-0.5" />
+            <ChevronRight size={18} className="text-w-400 dark:text-muted-foreground shrink-0 mt-0.5" />
           </Link>
         ))}
       </div>

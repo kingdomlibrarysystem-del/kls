@@ -38,14 +38,14 @@ export function AddNoteForm({ sessionId, userId, onAdded }: AddNoteFormProps) {
   return (
     <form onSubmit={handleSubmit} className="bg-form-highlight border border-w-300 rounded-lg p-4 space-y-3">
       <h3 className="font-cinzel text-xs font-semibold text-w-950 flex items-center gap-2"><FileText size={14} /> Add Session Note</h3>
-      {error && <p className="font-lato text-xs text-red-700">{error}</p>}
+      {error && <p className="font-lato text-xs text-red-700 dark:text-destructive">{error}</p>}
       <div>
         <FieldLabel htmlFor="summary" required>Summary</FieldLabel>
-        <textarea id="summary" rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} className="w-full px-3 py-2 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" />
+        <textarea id="summary" rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} className="w-full px-3 py-2 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" />
       </div>
       <div>
         <FieldLabel htmlFor="followUp">Follow-up (optional)</FieldLabel>
-        <textarea id="followUp" rows={2} value={followUp} onChange={(e) => setFollowUp(e.target.value)} className="w-full px-3 py-2 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" />
+        <textarea id="followUp" rows={2} value={followUp} onChange={(e) => setFollowUp(e.target.value)} className="w-full px-3 py-2 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" />
       </div>
       <ElegantButton type="submit" variant="primary" className="text-xs py-1.5">Add Note</ElegantButton>
     </form>

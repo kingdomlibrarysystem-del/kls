@@ -17,7 +17,7 @@ export function ProgressView() {
   return (
     <div className="space-y-3">
       {milestones.map((m) => (
-        <div key={m.id} className="border border-w-300 rounded-lg bg-white p-4">
+        <div key={m.id} className="border border-w-300 rounded-lg bg-white dark:bg-card! p-4">
           <p className="font-lato text-xs text-w-600 mb-1">{new Date(m.achievedAt).toLocaleDateString()}{m.recordedByName && ` · Logged by ${m.recordedByName}`}</p>
           <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-1">{m.title}</h3>
           <p className="font-lato text-sm text-w-700">{m.description}</p>

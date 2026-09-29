@@ -13,8 +13,8 @@ export function UsersStats({ data }: UsersStatsProps) {
 
   const stats = [
     { label: 'Total Users', value: data.length, color: 'text-w-950' },
-    { label: 'Active', value: active, color: 'text-green-700' },
-    { label: 'Suspended', value: suspended, color: 'text-red-700' },
+    { label: 'Active', value: active, color: 'text-green-700 dark:text-success' },
+    { label: 'Suspended', value: suspended, color: 'text-red-700 dark:text-destructive' },
     ...Array.from(roleCounts.entries()).map(([role, count]) => ({
       label: `${role}s`,
       value: count,

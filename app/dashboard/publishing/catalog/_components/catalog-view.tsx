@@ -64,14 +64,14 @@ export function CatalogView() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search published catalog"
-            className="w-full pl-8 pr-4 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+            className="w-full pl-8 pr-4 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           />
         </div>
         <select
           value={languageFilter}
           onChange={(e) => setLanguageFilter(e.target.value as PublishedBook['language'] | 'all')}
           aria-label="Filter by language"
-          className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         >
           <option value="all">All Languages</option>
           {(Object.keys(languageBadgeLabels) as PublishedBook['language'][]).map((l) => (

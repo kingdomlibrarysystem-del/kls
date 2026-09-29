@@ -102,7 +102,7 @@ export function ResourceReviews({ resourceId }: { resourceId: string }) {
             <button
               onClick={handleSubmit}
               disabled={rating === 0 || submitting}
-              style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: rating === 0 || submitting ? 'not-allowed' : 'pointer', opacity: rating === 0 || submitting ? 0.6 : 1 }}
+              style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, cursor: rating === 0 || submitting ? 'not-allowed' : 'pointer', opacity: rating === 0 || submitting ? 0.6 : 1 }}
             >
               {myReview ? 'Update Review' : 'Submit Review'}
             </button>

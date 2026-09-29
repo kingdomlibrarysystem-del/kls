@@ -43,19 +43,19 @@ export function ScheduleSessionForm({ onScheduled }: ScheduleSessionFormProps) {
   return (
     <form onSubmit={handleSubmit} className="bg-form-highlight border border-w-300 rounded-lg p-5 space-y-4 mb-6">
       <h3 className="font-cinzel text-sm font-semibold text-w-950 flex items-center gap-2"><CalendarPlus size={16} /> Schedule Session</h3>
-      {error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs"><AlertCircle size={13} /> {error}</div>}
+      {error && <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs"><AlertCircle size={13} /> {error}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <FieldLabel htmlFor="member" required>Member</FieldLabel>
-          <select id="member" value={userId} onChange={(e) => setUserId(e.target.value)} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none">
+          <select id="member" value={userId} onChange={(e) => setUserId(e.target.value)} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
             <option value="">Select a member…</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
         <div>
           <FieldLabel htmlFor="group">Support Group (optional)</FieldLabel>
-          <select id="group" value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none">
+          <select id="group" value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
             <option value="">None</option>
             {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>

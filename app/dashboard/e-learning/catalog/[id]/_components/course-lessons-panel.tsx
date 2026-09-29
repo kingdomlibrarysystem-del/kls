@@ -22,12 +22,12 @@ export function CourseLessonsPanel({ courseId }: CourseLessonsPanelProps) {
   }
 
   return (
-    <div className="divide-y divide-w-200">
+    <div className="divide-y divide-w-200 dark:divide-white/10">
       {lessons.map((lesson, index) => (
         <Link
           key={lesson.id}
           href={`/dashboard/e-learning/lessons/${lesson.id}`}
-          className="flex items-center justify-between gap-3 py-2.5 hover:bg-form-highlight -mx-2 px-2 rounded transition-colors"
+          className="flex items-center justify-between gap-3 py-2.5 hover:bg-form-highlight dark:hover:bg-white/10 -mx-2 px-2 rounded transition-colors"
         >
           <div className="flex items-center gap-3 min-w-0">
             <span className="font-cinzel text-xs font-bold text-w-500 w-6 shrink-0">#{index + 1}</span>

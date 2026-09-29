@@ -183,7 +183,7 @@ export function ProfileDropdown() {
           <div className="py-1">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-w-100 dark:hover:bg-gray-700/50 transition font-lato w-full text-left"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-destructive hover:bg-w-100 dark:hover:bg-gray-700/50 transition font-lato w-full text-left"
             >
               <span className="text-red-500">
                 <LogOut size={16} />

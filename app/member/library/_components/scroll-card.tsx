@@ -142,7 +142,7 @@ export function ScrollCard({ scroll }: ScrollProps) {
               <Link
                 href={`/member/library/read/${readableResource.id}`}
                 aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
               >
                 <BookOpenCheck size={14} /> {typeof readingPercent === 'number' ? `Continue Reading (${readingPercent}%)` : 'Read Online'}
               </Link>
@@ -225,7 +225,7 @@ export function ScrollListItem({ scroll }: ScrollProps) {
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/member/library/read/${readableResource.id}` }}
           role="link"
           aria-label={readingPercent ? `Continue reading ${scroll.name.en}` : `Read ${scroll.name.en} online`}
-          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
         >
           <BookOpenCheck size={12} /> {typeof readingPercent === 'number' ? `${readingPercent}%` : 'Read'}
         </span>

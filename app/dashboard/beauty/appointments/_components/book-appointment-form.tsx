@@ -48,7 +48,7 @@ export function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
       <h3 className="font-cinzel text-sm font-semibold text-w-950 flex items-center gap-2"><CalendarPlus size={16} /> Book an Appointment</h3>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
           <AlertCircle size={13} /> {error}
         </div>
       )}
@@ -59,7 +59,7 @@ export function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
           id="provider"
           value={providerId}
           onChange={(e) => { setProviderIdOverride(e.target.value); setServiceIdOverride('') }}
-          className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+          className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         >
           {providers.map((p) => <option key={p.id} value={p.id}>{p.name} — {p.location}</option>)}
         </select>
@@ -71,7 +71,7 @@ export function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
           id="service"
           value={serviceId}
           onChange={(e) => setServiceIdOverride(e.target.value)}
-          className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none"
+          className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         >
           {services.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.priceRwf.toLocaleString()} RWF ({s.durationMins} min)</option>)}
         </select>
@@ -90,7 +90,7 @@ export function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any preferences or special requests…"
-          className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+          className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
         />
       </div>
 

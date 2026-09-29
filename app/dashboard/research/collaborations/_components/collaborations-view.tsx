@@ -54,7 +54,7 @@ export function CollaborationsView() {
         <select
           value={contributorFilter}
           onChange={(e) => setContributorFilter(e.target.value)}
-          className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           aria-label="Filter by contributor"
         >
           <option value="all">All Contributors</option>

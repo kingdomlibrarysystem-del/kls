@@ -74,7 +74,7 @@ export function NotesPanel({ resourceId, chapterId, highlight, onClose }: NotesP
           onClick={handleAdd}
           disabled={!draft.trim()}
           aria-label="Add note"
-          style={{ padding: '0 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', cursor: draft.trim() ? 'pointer' : 'not-allowed', opacity: draft.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center' }}
+          style={{ padding: '0 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', cursor: draft.trim() ? 'pointer' : 'not-allowed', opacity: draft.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center' }}
         >
           <Plus size={16} />
         </button>

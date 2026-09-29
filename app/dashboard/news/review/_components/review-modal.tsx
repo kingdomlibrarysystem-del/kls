@@ -47,7 +47,7 @@ export function ReviewModal({ article, action, onClose, onConfirm }: ReviewModal
           {isApprove ? 'Approving' : 'Rejecting'} <span className="font-semibold text-w-950">&ldquo;{article.title}&rdquo;</span> by {article.authorName}.
         </p>
 
-        {error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-3 font-lato text-xs"><AlertCircle size={13} /> {error}</div>}
+        {error && <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded mb-3 font-lato text-xs"><AlertCircle size={13} /> {error}</div>}
 
         <label htmlFor="review-notes" className="block font-lato text-xs font-semibold text-w-700 uppercase tracking-wider mb-1.5">
           Review Notes {!isApprove && <span className="text-red-500">*</span>}
@@ -59,7 +59,7 @@ export function ReviewModal({ article, action, onClose, onConfirm }: ReviewModal
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder={isApprove ? 'Optional feedback for the author…' : 'Explain why this article is being rejected…'}
-          className="w-full px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="w-full px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         />
 
         <div className="flex gap-2 mt-4">

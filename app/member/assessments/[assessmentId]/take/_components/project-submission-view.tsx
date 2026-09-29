@@ -101,7 +101,7 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
           type="submit"
           disabled={submitting}
           aria-label="Submit project"
-          style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+          style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 14, fontWeight: 600, cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}
         >
           <Send size={15} /> {submitting ? 'Submitting…' : 'Submit Project'}
         </button>

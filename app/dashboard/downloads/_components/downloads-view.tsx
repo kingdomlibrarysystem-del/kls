@@ -83,7 +83,7 @@ export function DownloadsView() {
             </div>
             <button
               disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-w-200 text-w-500 rounded text-xs font-lato cursor-not-allowed opacity-70"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-w-200 dark:bg-white/10 text-w-500 rounded text-xs font-lato cursor-not-allowed opacity-70"
             >
               <Lock size={12} />
               <Download size={12} />
@@ -93,7 +93,7 @@ export function DownloadsView() {
         ))}
       </div>
 
-      <div className="mt-8 bg-form-section border border-w-400 rounded-lg p-5">
+      <div className="mt-8 bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5">
         <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
         <ul className="font-lato text-xs text-w-700 space-y-1">
           <li>GET /api/downloads/reports/:id/file — generate/stream a report as a downloadable file</li>

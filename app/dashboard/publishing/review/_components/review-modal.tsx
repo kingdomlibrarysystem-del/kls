@@ -67,7 +67,7 @@ export function ReviewModal({ submission, action, onClose, onConfirm }: ReviewMo
         </p>
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-3 font-lato text-xs">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded mb-3 font-lato text-xs">
             <AlertCircle size={13} /> {error}
           </div>
         )}
@@ -82,7 +82,7 @@ export function ReviewModal({ submission, action, onClose, onConfirm }: ReviewMo
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder={isApprove ? 'Optional feedback for the contributor…' : 'Explain why this submission is being rejected…'}
-          className="w-full px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="w-full px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         />
 
         <div className="flex gap-2 mt-4">

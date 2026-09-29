@@ -157,7 +157,7 @@ function ImageLayoutDialog({ value, onChange, onClose }: { value: string; onChan
   return (
     <div className="kcs-img-layout fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-xl rounded-xl border border-w-200 bg-white p-5 shadow-2xl">
+      <div className="relative w-full max-w-xl rounded-xl border border-w-200 bg-white dark:bg-card! p-5 shadow-2xl">
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-cinzel text-sm font-bold uppercase tracking-widest text-w-950">Image size &amp; alignment</h4>
           <button type="button" onClick={onClose} aria-label="Close image layout" className="text-w-600 hover:text-w-950 transition cursor-pointer">
@@ -178,7 +178,7 @@ function ImageLayoutDialog({ value, onChange, onClose }: { value: string; onChan
                   type="button"
                   onClick={() => pick(i)}
                   title={img.alt || img.url}
-                  className={`relative shrink-0 w-16 h-12 rounded overflow-hidden border-2 cursor-pointer transition ${i === selected ? 'border-w-600 shadow-md' : 'border-w-300 hover:border-w-400'}`}
+                  className={`relative shrink-0 w-16 h-12 rounded overflow-hidden border-2 cursor-pointer transition ${i === selected ? 'border-w-600 dark:border-primary/60 shadow-md' : 'border-w-300 hover:border-w-400'}`}
                 >
                   <img src={img.url} alt="" className="h-full w-full object-cover" />
                   <span className="absolute top-0.5 left-1 text-[9px] font-lato font-bold text-white bg-black/50 rounded px-1">{i + 1}</span>
@@ -187,7 +187,7 @@ function ImageLayoutDialog({ value, onChange, onClose }: { value: string; onChan
             </div>
 
             <div className="mb-3">
-              <p className="font-lato text-xs font-semibold text-w-800 mb-1.5">Alignment</p>
+              <p className="font-lato text-xs font-semibold text-w-800 dark:text-foreground mb-1.5">Alignment</p>
               <div className="grid grid-cols-4 gap-2">
                 {ALIGN_OPTIONS.map((opt) => {
                   const Icon = opt.icon
@@ -197,7 +197,7 @@ function ImageLayoutDialog({ value, onChange, onClose }: { value: string; onChan
                       type="button"
                       onClick={() => setLayout((l) => ({ ...l, align: opt.value }))}
                       className={`flex flex-col items-center gap-1 rounded border px-1 py-2 text-[11px] font-lato cursor-pointer transition ${
-                        layout.align === opt.value ? 'border-w-600 bg-w-100 text-w-950 font-semibold' : 'border-w-300 text-w-700 hover:border-w-400'
+                        layout.align === opt.value ? 'border-w-600 dark:border-primary/60 bg-w-100 text-w-950 font-semibold' : 'border-w-300 text-w-700 hover:border-w-400'
                       }`}
                     >
                       <Icon size={14} />
@@ -210,7 +210,7 @@ function ImageLayoutDialog({ value, onChange, onClose }: { value: string; onChan
 
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <p className="font-lato text-xs font-semibold text-w-800">Width</p>
+                <p className="font-lato text-xs font-semibold text-w-800 dark:text-foreground">Width</p>
                 <span className="font-lato text-xs text-w-600">{layout.width}%</span>
               </div>
               <input
@@ -234,10 +234,10 @@ function ImageLayoutDialog({ value, onChange, onClose }: { value: string; onChan
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-w-200">
               <span className="font-lato text-[11px] text-w-600">Image {selected + 1} of {images.length}</span>
               <div className="flex gap-2">
-                <button type="button" onClick={apply} className="rounded-lg bg-w-950 text-white px-4 py-1.5 text-xs font-lato font-semibold hover:opacity-90 transition cursor-pointer">
+                <button type="button" onClick={apply} className="rounded-lg bg-w-950 text-white dark:text-primary-foreground px-4 py-1.5 text-xs font-lato font-semibold hover:opacity-90 transition cursor-pointer">
                   Apply
                 </button>
-                <button type="button" onClick={onClose} className="rounded-lg border border-w-300 text-w-800 px-4 py-1.5 text-xs font-lato hover:bg-w-100 transition cursor-pointer">
+                <button type="button" onClick={onClose} className="rounded-lg border border-w-300 text-w-800 dark:text-foreground px-4 py-1.5 text-xs font-lato hover:bg-w-100 dark:hover:bg-white/10 transition cursor-pointer">
                   Done
                 </button>
               </div>
@@ -287,7 +287,7 @@ function StyleDropButton({
       {open && (
         <>
           <div className="fixed inset-0 z-[69]" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-full left-0 mb-1 z-[70] w-max max-w-56 rounded-lg border border-w-200 bg-white p-2 shadow-xl">
+          <div className="absolute bottom-full left-0 mb-1 z-[70] w-max max-w-56 rounded-lg border border-w-200 bg-white dark:bg-card! p-2 shadow-xl">
             <div className="grid grid-cols-5 gap-1.5">
               {presets.map((c) => (
                 <button
@@ -304,7 +304,7 @@ function StyleDropButton({
               <input type="color" defaultValue={kind === 'color' ? '#2563eb' : '#fef08a'} onChange={(e) => onPick(e.target.value)} aria-label={`Custom ${label.toLowerCase()}`} className="h-6 w-8 cursor-pointer border border-w-300 rounded" />
               Custom
             </label>
-            <button type="button" onClick={() => { onRemove(); setOpen(false) }} className="mt-2 flex w-full items-center justify-center gap-1 rounded border border-w-300 px-2 py-1 font-lato text-[11px] text-w-700 hover:border-w-500 cursor-pointer transition">
+            <button type="button" onClick={() => { onRemove(); setOpen(false) }} className="mt-2 flex w-full items-center justify-center gap-1 rounded border border-w-300 px-2 py-1 font-lato text-[11px] text-w-700 hover:border-w-500 dark:hover:border-primary/60 cursor-pointer transition">
               <Eraser size={12} /> Remove {label.toLowerCase()}
             </button>
           </div>
@@ -629,7 +629,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
           <select
             value={fontFamily}
             onChange={(e) => applyStyle({ fontFamily: e.target.value })}
-            className="font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white text-w-950 focus:outline-none focus:border-w-500 cursor-pointer"
+            className="font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white dark:bg-card! text-w-950 focus:outline-none focus:border-w-500 dark:focus:border-primary cursor-pointer"
             aria-label="Font family"
           >
             {FONT_FAMILIES.map((f) => (
@@ -649,7 +649,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
               if (!applied) applyStyle({ fontSize: size })
             }}
             title="Applies to the selected text; with no selection it changes the whole document"
-            className="font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white text-w-950 focus:outline-none focus:border-w-500 cursor-pointer"
+            className="font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white dark:bg-card! text-w-950 focus:outline-none focus:border-w-500 dark:focus:border-primary cursor-pointer"
             aria-label="Font size"
           >
             {FONT_SIZES.map((s) => (
@@ -662,7 +662,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
           <select
             value={align}
             onChange={(e) => applyStyle({ align: e.target.value as DocumentAlign })}
-            className="font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white text-w-950 focus:outline-none focus:border-w-500 cursor-pointer"
+            className="font-lato text-xs border border-w-300 rounded px-2 py-1 bg-white dark:bg-card! text-w-950 focus:outline-none focus:border-w-500 dark:focus:border-primary cursor-pointer"
             aria-label="Paragraph alignment"
           >
             {EDITOR_ALIGNMENTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -674,7 +674,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
             onClick={() => setSpellOpen((open) => !open)}
             aria-pressed={spellOpen}
             className={`flex items-center gap-1 font-lato text-xs px-2 py-1 rounded border cursor-pointer transition ${
-              spellOpen ? 'border-w-600 bg-w-100 text-w-950 font-semibold' : 'border-w-300 text-w-700 hover:border-w-400'
+              spellOpen ? 'border-w-600 dark:border-primary/60 bg-w-100 text-w-950 font-semibold' : 'border-w-300 text-w-700 hover:border-w-400'
             }`}
             title="Open spelling report"
           >
@@ -697,9 +697,9 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
       </div>
 
       {spellOpen && dictionaryActive && (
-        <div className="mb-2 rounded-lg border border-red-200 bg-red-50/60 overflow-hidden">
+        <div className="mb-2 rounded-lg border border-red-200 dark:border-destructive/30 bg-red-50/60 overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-red-100">
-            <p className="font-lato text-xs font-semibold text-red-800 flex items-center gap-1.5">
+            <p className="font-lato text-xs font-semibold text-red-800 dark:text-destructive flex items-center gap-1.5">
               <SpellCheck2 size={13} />
               Spelling — {spellIssues.length} issue{spellIssues.length === 1 ? '' : 's'}
             </p>
@@ -713,7 +713,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
             <ul className="max-h-60 overflow-y-auto divide-y divide-red-100">
               {groups.slice(0, 60).map(([word, group]) => (
                 <li key={word} className="flex items-start gap-2 px-3 py-1.5 flex-wrap">
-                  <code className="font-lato text-xs font-bold text-red-700 mt-0.5">{group.word}</code>
+                  <code className="font-lato text-xs font-bold text-red-700 dark:text-destructive mt-0.5">{group.word}</code>
                   <span className="font-lato text-[10px] text-w-500 mt-1">×{group.count}</span>
                   <div className="flex flex-wrap gap-1">
                     {(suggestions.get(word) ?? []).map((s) => (
@@ -721,7 +721,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
                         key={s}
                         type="button"
                         onClick={() => replaceAll(word, s)}
-                        className="font-lato text-[11px] px-2 py-0.5 rounded border border-w-300 bg-white text-w-900 hover:border-w-500 cursor-pointer transition"
+                        className="font-lato text-[11px] px-2 py-0.5 rounded border border-w-300 bg-white dark:bg-card! text-w-900 dark:text-foreground hover:border-w-500 dark:hover:border-primary/60 cursor-pointer transition"
                         title={`Replace every “${group.word}” with “${s}”`}
                       >
                         {s}
@@ -731,7 +731,7 @@ export function MarkdownEditor({ value, onChange, height = 360, language = 'EN' 
                   <button
                     type="button"
                     onClick={() => ignoreWord(word)}
-                    className="ml-auto font-lato text-[11px] px-2 py-0.5 rounded border border-w-300 bg-white text-w-700 hover:border-w-500 cursor-pointer transition"
+                    className="ml-auto font-lato text-[11px] px-2 py-0.5 rounded border border-w-300 bg-white dark:bg-card! text-w-700 hover:border-w-500 dark:hover:border-primary/60 cursor-pointer transition"
                     title={`Ignore “${group.word}” for this session`}
                   >
                     Ignore

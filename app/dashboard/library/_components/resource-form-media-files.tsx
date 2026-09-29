@@ -98,7 +98,7 @@ export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, is
         <div>
 <FieldLabel htmlFor="chapters">{isCreating ? 'Chapters — one per book section' : 'Chapters'}</FieldLabel>
           {fields.length === 0 ? (
-            <p className="font-lato text-xs text-w-600 bg-form-bg border border-dashed border-w-300 rounded px-3 py-4 mb-2">
+            <p className="font-lato text-xs text-w-600 bg-form-bg dark:bg-white/5 border border-dashed border-w-300 rounded px-3 py-4 mb-2">
               No chapters yet. Add a book one chapter at a time — each chapter gets its own title and rich markdown content (images, headings, blocks).
             </p>
           ) : (

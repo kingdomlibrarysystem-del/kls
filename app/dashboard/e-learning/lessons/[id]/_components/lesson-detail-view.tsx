@@ -158,7 +158,7 @@ export function LessonDetailView({ id }: LessonDetailViewProps) {
         </div>
 
         {siblings.length > 0 && (
-          <div className="h-1.5 rounded-full bg-w-200 overflow-hidden max-w-md">
+          <div className="h-1.5 rounded-full bg-w-200 dark:bg-white/10 overflow-hidden max-w-md">
             <div className="h-full bg-w-600" style={{ width: `${((position + 1) / siblings.length) * 100}%` }} />
           </div>
         )}

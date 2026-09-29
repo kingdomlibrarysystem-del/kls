@@ -15,9 +15,9 @@ export function DeleteUserModal({ user, onClose, onConfirm }: DeleteUserModalPro
     <Modal open={!!user} onClose={onClose} title="Delete User" size="sm">
       {user && (
         <div>
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded p-3 mb-4">
-            <AlertTriangle size={14} className="text-red-600 shrink-0" />
-            <p className="font-lato text-xs text-red-700">This action cannot be undone.</p>
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 rounded p-3 mb-4">
+            <AlertTriangle size={14} className="text-red-600 dark:text-destructive shrink-0" />
+            <p className="font-lato text-xs text-red-700 dark:text-destructive">This action cannot be undone.</p>
           </div>
           <p className="font-lato text-sm text-w-700 mb-4">
             Are you sure you want to delete <span className="font-semibold text-w-950">&ldquo;{user.name}&rdquo;</span>?

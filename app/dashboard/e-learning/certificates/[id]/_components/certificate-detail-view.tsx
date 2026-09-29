@@ -116,11 +116,11 @@ export function CertificateDetailView({ id }: CertificateDetailViewProps) {
         <div className="flex items-center justify-between gap-3">
           <span className="font-lato text-xs font-semibold text-w-700 uppercase tracking-wide">Record</span>
           {certificate.revoked ? (
-            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-red-50 text-red-800 border-red-200 shrink-0">
+            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-red-50 dark:bg-destructive/10 text-red-800 dark:text-destructive border-red-200 dark:border-destructive/30 shrink-0">
               <ShieldAlert size={12} /> Revoked
             </span>
           ) : (
-            <span className="px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-green-50 text-green-800 border-green-200 shrink-0">
+            <span className="px-2.5 py-0.5 rounded border text-xs font-lato font-semibold bg-green-50 dark:bg-success/10 text-green-800 dark:text-success border-green-200 dark:border-success/30 shrink-0">
               Valid
             </span>
           )}

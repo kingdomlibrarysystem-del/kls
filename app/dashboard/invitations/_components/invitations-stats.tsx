@@ -8,8 +8,8 @@ interface InvitationsStatsProps {
 export function InvitationsStats({ invitations }: InvitationsStatsProps) {
   const stats = [
     { label: 'Total Invitations', value: invitations.length, color: 'text-w-950' },
-    { label: 'Pending', value: invitations.filter((i) => i.status === 'PENDING').length, color: 'text-yellow-700' },
-    { label: 'Accepted', value: invitations.filter((i) => i.status === 'ACCEPTED').length, color: 'text-green-700' },
+    { label: 'Pending', value: invitations.filter((i) => i.status === 'PENDING').length, color: 'text-yellow-700 dark:text-warning' },
+    { label: 'Accepted', value: invitations.filter((i) => i.status === 'ACCEPTED').length, color: 'text-green-700 dark:text-success' },
     { label: 'Expired', value: invitations.filter((i) => i.status === 'EXPIRED').length, color: 'text-w-600' },
   ]
 

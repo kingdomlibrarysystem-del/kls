@@ -26,11 +26,11 @@ export const ElegantButton = React.forwardRef<
   ) => {
     const variantClasses = {
       primary:
-        'bg-w-600 text-white hover:bg-w-700 active:bg-w-800 border border-w-700',
+        'bg-w-600 text-white hover:bg-w-700 active:bg-w-800 border border-w-700 shadow-xs dark:text-primary-foreground dark:border-primary dark:hover:bg-primary/85!',
       secondary:
-        'bg-w-400 text-w-950 hover:bg-w-500 active:bg-w-600 border border-w-500',
+        'bg-w-400 text-w-950 hover:bg-w-500 active:bg-w-600 border border-w-500 dark:bg-secondary dark:border-border dark:hover:bg-accent',
       outline:
-        'bg-transparent text-w-600 hover:bg-w-50 active:bg-w-100 border border-w-600',
+        'bg-transparent text-w-600 hover:bg-w-50 active:bg-w-100 border border-w-600 dark:border-primary/60 dark:hover:bg-primary/10',
     }
 
     return (
@@ -42,6 +42,7 @@ export const ElegantButton = React.forwardRef<
           px-6 py-3 font-lato text-sm font-normal rounded
           transition-all duration-200 ease-in-out
           disabled:opacity-60 disabled:cursor-not-allowed
+          outline-none focus-visible:ring-3 focus-visible:ring-ring/50
           flex items-center justify-center gap-2
           ${variantClasses[variant]}
           ${fullWidth ? 'w-full' : ''}

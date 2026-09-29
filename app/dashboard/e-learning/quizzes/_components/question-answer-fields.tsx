@@ -65,12 +65,12 @@ export function QuestionAnswerFields({ qIndex, type, correctOptionIndex, correct
           />
         </div>
       ))}
-      {errors.questions?.[qIndex]?.options && <p className="text-red-600 text-xs font-lato">{errors.questions[qIndex]?.options?.message}</p>}
+      {errors.questions?.[qIndex]?.options && <p className="text-red-600 dark:text-destructive text-xs font-lato">{errors.questions[qIndex]?.options?.message}</p>}
       {isMulti && errors.questions?.[qIndex]?.correctOptionIndices && (
-        <p className="text-red-600 text-xs font-lato">{errors.questions[qIndex]?.correctOptionIndices?.message}</p>
+        <p className="text-red-600 dark:text-destructive text-xs font-lato">{errors.questions[qIndex]?.correctOptionIndices?.message}</p>
       )}
       {!isMulti && errors.questions?.[qIndex]?.correctOptionIndex && (
-        <p className="text-red-600 text-xs font-lato">{errors.questions[qIndex]?.correctOptionIndex?.message}</p>
+        <p className="text-red-600 dark:text-destructive text-xs font-lato">{errors.questions[qIndex]?.correctOptionIndex?.message}</p>
       )}
     </div>
   )

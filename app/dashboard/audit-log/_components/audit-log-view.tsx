@@ -72,7 +72,7 @@ export function AuditLogView() {
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value as AuditAction | 'all')}
             aria-label="Filter by action"
-            className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+            className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           >
             <option value="all">All Actions</option>
             {(Object.keys(auditActionLabels) as AuditAction[]).map((a) => (

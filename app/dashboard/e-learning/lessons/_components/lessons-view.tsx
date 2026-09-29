@@ -104,10 +104,10 @@ export function LessonsView() {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (r) => (
         <div className="flex items-center justify-end gap-1">
-          <button onClick={() => reorderLesson(r.courseId, r.lessonId, 'up')} disabled={r.order === 1} aria-label={`Move ${r.title} up`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none">
+          <button onClick={() => reorderLesson(r.courseId, r.lessonId, 'up')} disabled={r.order === 1} aria-label={`Move ${r.title} up`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none">
             <ArrowUp size={13} />
           </button>
-          <button onClick={() => reorderLesson(r.courseId, r.lessonId, 'down')} disabled={r.order === courseLessonCount(r.courseId)} aria-label={`Move ${r.title} down`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none">
+          <button onClick={() => reorderLesson(r.courseId, r.lessonId, 'down')} disabled={r.order === courseLessonCount(r.courseId)} aria-label={`Move ${r.title} down`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none">
             <ArrowDown size={13} />
           </button>
           <UniversalButton
@@ -115,13 +115,13 @@ export function LessonsView() {
             variant="ghost"
             size="icon"
             aria-label={`View ${r.title}`}
-            className="text-w-700 hover:bg-w-100 hover:text-w-950"
+            className="text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950"
             icon={<Eye size={14} />}
           />
-          <button onClick={() => setEditing(r)} aria-label={`Edit ${r.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 hover:text-w-950 transition-colors">
+          <button onClick={() => setEditing(r)} aria-label={`Edit ${r.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
-          <button onClick={() => setDeleting(r)} aria-label={`Delete ${r.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+          <button onClick={() => setDeleting(r)} aria-label={`Delete ${r.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
             <Trash2 size={14} />
           </button>
         </div>
@@ -134,7 +134,7 @@ export function LessonsView() {
       value={courseFilter}
       onChange={(e) => setCourseFilter(e.target.value)}
       aria-label="Filter by course"
-      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
     >
       <option value="all">All Courses</option>
       {courseCatalog.map((c) => (

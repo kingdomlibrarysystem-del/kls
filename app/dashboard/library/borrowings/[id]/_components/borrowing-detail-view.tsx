@@ -155,7 +155,7 @@ export function BorrowingDetailView({ id }: BorrowingDetailViewProps) {
         </div>
       </div>
 
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
 
       <div className="max-w-2xl space-y-4">
         <div className="flex items-center justify-between">

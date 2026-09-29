@@ -29,9 +29,9 @@ export function ProjectGradeFields({ assessment, attempt, score, onScoreChange }
       <p className="text-xs font-semibold text-w-950">
         Submission format: {assessment.submissionFormat ? projectSubmissionFormatLabels[assessment.submissionFormat] : '—'}
       </p>
-      <div className="bg-white border border-w-300 rounded p-2">
+      <div className="bg-white dark:bg-card! border border-w-300 rounded p-2">
         {submission && assessment.submissionFormat === 'LINK' ? (
-          <a href={submission} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-700 underline break-all">{submission}</a>
+          <a href={submission} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-700 dark:text-info underline break-all">{submission}</a>
         ) : (
           <p className="text-xs text-w-700 whitespace-pre-wrap">{submission || <span className="italic text-w-500">No submission recorded.</span>}</p>
         )}
@@ -46,7 +46,7 @@ export function ProjectGradeFields({ assessment, attempt, score, onScoreChange }
           value={score}
           onChange={(e) => onScoreChange(Math.max(0, Math.min(Number(e.target.value), maxMarks)))}
           aria-label={`Score out of ${maxMarks}`}
-          className="w-20 px-2 py-1 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="w-20 px-2 py-1 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         />
         <span className="text-xs text-w-600">/ {maxMarks}</span>
       </div>

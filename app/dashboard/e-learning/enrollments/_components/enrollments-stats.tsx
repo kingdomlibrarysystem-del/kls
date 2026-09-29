@@ -14,9 +14,9 @@ export function EnrollmentsStats({ data }: EnrollmentsStatsProps) {
   }))
 
   const colorFor: Record<EnrollmentStatus, string> = {
-    ACTIVE: 'text-green-700',
+    ACTIVE: 'text-green-700 dark:text-success',
     COMPLETED: 'text-w-600',
-    DROPPED: 'text-red-700',
+    DROPPED: 'text-red-700 dark:text-destructive',
   }
 
   const stats = [

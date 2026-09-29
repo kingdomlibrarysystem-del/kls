@@ -70,7 +70,7 @@ export function CampaignDetailView({ id }: CampaignDetailViewProps) {
         <div className="bg-form-highlight border border-w-300 rounded p-4 space-y-3">
           <div className="flex items-center gap-2 font-lato text-xs text-w-700"><Tag size={13} /> {campaign.category}</div>
           <div className="flex items-center gap-2 font-lato text-sm font-semibold text-w-950"><Target size={14} /> {campaign.raisedRwf.toLocaleString()} / {campaign.goalRwf.toLocaleString()} RWF ({progressPercent.toFixed(0)}%)</div>
-          <div className="w-full h-2 rounded-full bg-w-200 overflow-hidden"><div className="h-full bg-w-600" style={{ width: `${progressPercent}%` }} /></div>
+          <div className="w-full h-2 rounded-full bg-w-200 dark:bg-white/10 overflow-hidden"><div className="h-full bg-w-600" style={{ width: `${progressPercent}%` }} /></div>
         </div>
 
         <h2 className="font-cinzel text-sm font-semibold text-w-950">Donations</h2>

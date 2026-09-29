@@ -11,7 +11,7 @@ interface SubmissionPreviewProps {
 export function SubmissionPreview({ submission }: SubmissionPreviewProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-4 bg-form-highlight border border-w-300 rounded-lg p-3">
-      <div className="relative w-full sm:w-24 h-32 shrink-0 rounded overflow-hidden bg-w-200">
+      <div className="relative w-full sm:w-24 h-32 shrink-0 rounded overflow-hidden bg-w-200 dark:bg-white/10">
         <Image src={submission.coverImage} alt={submission.title} fill className="object-cover" sizes="96px" />
       </div>
       <div className="flex-1 min-w-0">

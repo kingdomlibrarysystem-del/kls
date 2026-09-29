@@ -23,17 +23,17 @@ function buildColumns(onConfirm: (a: Appointment) => void, onComplete: (a: Appoi
       render: (a) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
           {a.status === 'PENDING' && (
-            <button onClick={() => onConfirm(a)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors">
+            <button onClick={() => onConfirm(a)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors">
               <CheckCircle size={12} /> Confirm
             </button>
           )}
           {a.status === 'CONFIRMED' && (
-            <button onClick={() => onComplete(a)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 transition-colors">
+            <button onClick={() => onComplete(a)} className="flex items-center gap-1 px-2.5 py-1 bg-w-100 text-w-950 border border-w-300 rounded text-xs font-lato hover:bg-w-200 dark:hover:bg-white/10 transition-colors">
               <CheckCheck size={12} /> Complete
             </button>
           )}
           {(a.status === 'PENDING' || a.status === 'CONFIRMED') && (
-            <button onClick={() => onCancel(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-lato hover:bg-red-100 transition-colors">
+            <button onClick={() => onCancel(a)} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
               <Ban size={12} /> Cancel
             </button>
           )}
@@ -81,7 +81,7 @@ export function AppointmentsAdminView() {
 
   return (
     <div>
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
 
       <DataTable<Appointment>
         data={tableData}
@@ -90,7 +90,7 @@ export function AppointmentsAdminView() {
         searchPlaceholder="Search member, clinic, reason..."
         searchFilter={(a, q) => (a.memberName ?? '').toLowerCase().includes(q) || (a.clinicName ?? '').toLowerCase().includes(q) || a.reason.toLowerCase().includes(q)}
         filters={
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as AppointmentStatus | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as AppointmentStatus | 'all')} className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none">
             <option value="all">All Statuses</option>
             {(Object.keys(appointmentStatusConfig) as AppointmentStatus[]).map((s) => <option key={s} value={s}>{appointmentStatusConfig[s].label}</option>)}
           </select>

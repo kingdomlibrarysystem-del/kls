@@ -142,7 +142,7 @@ export function QuizDetailView({ id }: QuizDetailViewProps) {
                     {q.options.map((opt, oIndex) => {
                       const isCorrect = q.type === 'SINGLE_SELECT' ? oIndex === q.correctOptionIndex : (q.correctOptionIndices ?? []).includes(oIndex)
                       return (
-                        <li key={oIndex} className={`flex items-center gap-1.5 text-xs ${isCorrect ? 'text-green-700 font-semibold' : 'text-w-700'}`}>
+                        <li key={oIndex} className={`flex items-center gap-1.5 text-xs ${isCorrect ? 'text-green-700 dark:text-success font-semibold' : 'text-w-700'}`}>
                           {isCorrect ? <CheckCircle2 size={12} /> : <Circle size={12} />}
                           {opt}
                         </li>

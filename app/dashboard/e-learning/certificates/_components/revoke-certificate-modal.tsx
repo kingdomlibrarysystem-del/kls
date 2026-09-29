@@ -23,9 +23,9 @@ export function RevokeCertificateModal({ certificate, onClose, onConfirm }: Revo
             Are you sure you want to revoke the certificate for{' '}
             <span className="font-semibold text-w-950">{certificate.member}</span> ({certificate.course})?
           </p>
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded p-3 mb-4">
-            <AlertCircle size={14} className="text-red-600 shrink-0" />
-            <p className="font-lato text-xs text-red-700">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 rounded p-3 mb-4">
+            <AlertCircle size={14} className="text-red-600 dark:text-destructive shrink-0" />
+            <p className="font-lato text-xs text-red-700 dark:text-destructive">
               Verification lookups for code {certificate.verificationCode} will report this certificate as invalid. This cannot be undone from this screen.
             </p>
           </div>

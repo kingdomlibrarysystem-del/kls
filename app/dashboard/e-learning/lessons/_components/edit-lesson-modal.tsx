@@ -69,7 +69,7 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="edit-lesson-type" required>Content Type</FieldLabel>
-            <select id="edit-lesson-type" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('contentType')}>
+            <select id="edit-lesson-type" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('contentType')}>
               {(Object.keys(contentTypeLabels) as (keyof typeof contentTypeLabels)[]).map((t) => (
                 <option key={t} value={t}>{contentTypeLabels[t]}</option>
               ))}
@@ -87,11 +87,11 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
             id="edit-lesson-content"
             rows={2}
             className={`w-full px-4 py-3 font-lato text-sm border rounded transition-colors focus:outline-none ${
-              errors.content ? 'border-red-500 bg-red-50' : 'border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600'
+              errors.content ? 'border-red-500 bg-red-50' : 'border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary'
             }`}
             {...register('content')}
           />
-          {errors.content && <p className="text-red-600 text-xs mt-1 font-lato">{errors.content.message}</p>}
+          {errors.content && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.content.message}</p>}
         </div>
 
         <LessonMediaUpload
@@ -108,7 +108,7 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
             control={control}
             render={({ field }) => <MarkdownEditor value={field.value ?? ''} onChange={field.onChange} />}
           />
-          {errors.contentMarkdown && <p className="text-red-600 text-xs mt-1 font-lato">{errors.contentMarkdown.message}</p>}
+          {errors.contentMarkdown && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.contentMarkdown.message}</p>}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">

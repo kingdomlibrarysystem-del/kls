@@ -54,7 +54,7 @@ function ResourceCover({ resource, liked, height }: { resource: Resource; liked:
         </div>
       </Link>
       {resource.status === 'available' && resource.availableQty > 0 && (
-        <span style={{ position: 'absolute', top: 10, left: 10, background: 'var(--gold)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20 }}>Featured</span>
+        <span style={{ position: 'absolute', top: 10, left: 10, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20 }}>Featured</span>
       )}
       <button
         onClick={(e) => { e.stopPropagation(); toggleFavorite(resource.id, 'RESOURCE', resource.title, resource.author) }}

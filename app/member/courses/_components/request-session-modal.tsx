@@ -131,7 +131,7 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
               id="request-session-course"
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
-              className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+              className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
             >
               {pickable.map((c) => <option key={c.id} value={c.id}>{c.title} — {c.instructor}</option>)}
             </select>
@@ -145,7 +145,7 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
             type="datetime-local"
             value={proposedTime}
             onChange={(e) => setProposedTime(e.target.value)}
-            className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+            className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
           />
         </div>
 
@@ -157,7 +157,7 @@ export function RequestSessionModal({ course, onClose, availableCourses }: Reque
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={t("m_request.notes_placeholder")}
-            className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+            className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
           />
         </div>
 

@@ -52,14 +52,14 @@ export function ResourceFormBasics({ register, errors, leafCategories, rootCateg
             id="categoryId"
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none text-left flex justify-between items-center"
+            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none text-left flex justify-between items-center"
           >
-            <span className={categoryId ? 'text-w-950' : 'text-w-400'}>{selectedLabel}</span>
+            <span className={categoryId ? 'text-w-950' : 'text-w-400 dark:text-muted-foreground'}>{selectedLabel}</span>
             <span className="text-w-500">▾</span>
           </button>
           {errors.categoryId && <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>}
           {open && (
-            <div className="absolute z-[99999] top-full left-0 w-full mt-1 bg-white border border-w-300 rounded shadow-lg max-h-60 overflow-y-auto">
+            <div className="absolute z-[99999] top-full left-0 w-full mt-1 bg-white dark:bg-card! border border-w-300 rounded shadow-lg max-h-60 overflow-y-auto">
               {rootCategories.map((root) => {
                 const children = leafCategories.filter((c) => c.parentId === root.id)
                 return children.length > 0 ? (
@@ -72,7 +72,7 @@ export function ResourceFormBasics({ register, errors, leafCategories, rootCateg
                         key={c.id}
                         type="button"
                         onMouseDown={() => { setValue('categoryId', c.id, { shouldValidate: true }); setOpen(false) }}
-                        className={`w-full text-left px-4 py-2 font-lato text-sm hover:bg-w-100 ${categoryId === c.id ? 'bg-w-100 font-semibold' : ''}`}
+                        className={`w-full text-left px-4 py-2 font-lato text-sm hover:bg-w-100 dark:hover:bg-white/10 ${categoryId === c.id ? 'bg-w-100 font-semibold' : ''}`}
                       >
                         {c.name.en}
                       </button>
@@ -83,7 +83,7 @@ export function ResourceFormBasics({ register, errors, leafCategories, rootCateg
                     key={root.id}
                     type="button"
                     onMouseDown={() => { setValue('categoryId', root.id, { shouldValidate: true }); setOpen(false) }}
-                    className={`w-full text-left px-4 py-2 font-lato text-sm hover:bg-w-100 ${categoryId === root.id ? 'bg-w-100 font-semibold' : ''}`}
+                    className={`w-full text-left px-4 py-2 font-lato text-sm hover:bg-w-100 dark:hover:bg-white/10 ${categoryId === root.id ? 'bg-w-100 font-semibold' : ''}`}
                   >
                     {root.name.en} {root.code ? `(${root.code})` : ''}
                   </button>

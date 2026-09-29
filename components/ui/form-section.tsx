@@ -5,9 +5,9 @@ interface FormSectionProps {
 
 export function FormSection({ title, children }: FormSectionProps) {
   return (
-    <div className="bg-form-section border border-w-400 rounded-lg p-6 mb-6">
+    <div className="bg-form-section dark:bg-secondary/60 border border-border rounded-xl p-6 mb-6 shadow-xs">
       {title && (
-        <h3 className="font-cinzel text-lg font-semibold text-w-900 mb-4">
+        <h3 className="font-cinzel text-lg font-semibold text-w-900 dark:text-foreground mb-4">
           {title}
         </h3>
       )}

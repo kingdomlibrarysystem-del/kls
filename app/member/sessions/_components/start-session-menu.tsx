@@ -73,7 +73,7 @@ export function StartSessionMenu() {
         onClick={() => setMenuOpen((o) => !o)}
         aria-label="Start or schedule a session"
         aria-expanded={menuOpen}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
       >
         <Zap size={16} /> New Session <ChevronDown size={14} />
       </button>
@@ -103,7 +103,7 @@ export function StartSessionMenu() {
               id="instant-course"
               value={courseId}
               onChange={(e) => { setCourseId(e.target.value); setInstantError('') }}
-              className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 bg-form-bg focus:bg-form-highlight focus:border-w-600 focus:outline-none"
+              className="w-full px-4 py-3 font-lato text-sm border rounded border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 focus:bg-form-highlight dark:focus:bg-white/10 focus:border-w-600 dark:focus:border-primary focus:outline-none"
             >
               {myCourses.map((c) => <option key={c.id} value={c.id}>{c.title} — {c.instructor}</option>)}
             </select>

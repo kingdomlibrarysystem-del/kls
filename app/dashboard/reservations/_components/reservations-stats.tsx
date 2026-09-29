@@ -8,11 +8,11 @@ interface ReservationsStatsProps {
 export function ReservationsStats({ data }: ReservationsStatsProps) {
   const stats = [
     { label: 'Total', value: data.length, color: 'text-w-950' },
-    { label: 'Waiting', value: data.filter((r) => r.status === 'pending').length, color: 'text-blue-700' },
-    { label: 'Notified', value: data.filter((r) => r.status === 'notified').length, color: 'text-yellow-700' },
-    { label: 'Claimed', value: data.filter((r) => r.status === 'claimed').length, color: 'text-green-700' },
+    { label: 'Waiting', value: data.filter((r) => r.status === 'pending').length, color: 'text-blue-700 dark:text-info' },
+    { label: 'Notified', value: data.filter((r) => r.status === 'notified').length, color: 'text-yellow-700 dark:text-warning' },
+    { label: 'Claimed', value: data.filter((r) => r.status === 'claimed').length, color: 'text-green-700 dark:text-success' },
     { label: 'Expired', value: data.filter((r) => r.status === 'expired').length, color: 'text-w-600' },
-    { label: 'Cancelled', value: data.filter((r) => r.status === 'cancelled').length, color: 'text-red-700' },
+    { label: 'Cancelled', value: data.filter((r) => r.status === 'cancelled').length, color: 'text-red-700 dark:text-destructive' },
   ]
 
   return (

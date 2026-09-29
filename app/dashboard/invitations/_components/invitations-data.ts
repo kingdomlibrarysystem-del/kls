@@ -11,7 +11,7 @@ export interface Invitation {
 }
 
 export const invitationStatusConfig: Record<InvitationStatus, { label: string; cls: string }> = {
-  PENDING:  { label: 'Pending',  cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  ACCEPTED: { label: 'Accepted', cls: 'bg-green-50  text-green-800  border-green-200'  },
+  PENDING:  { label: 'Pending',  cls: 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30' },
+  ACCEPTED: { label: 'Accepted', cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30'  },
   EXPIRED:  { label: 'Expired',  cls: 'bg-w-100     text-w-700      border-w-300'      },
 }

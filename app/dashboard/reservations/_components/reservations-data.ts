@@ -21,11 +21,11 @@ export interface Reservation {
 }
 
 export const statusConfig: Record<ReservationStatus, { label: string; cls: string }> = {
-  pending: { label: 'Waiting', cls: 'bg-blue-50   text-blue-800   border-blue-200' },
-  notified: { label: 'Notified — Claim', cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  claimed: { label: 'Claimed', cls: 'bg-green-50  text-green-800  border-green-200' },
+  pending: { label: 'Waiting', cls: 'bg-blue-50 dark:bg-info/10   text-blue-800   border-blue-200 dark:border-info/30' },
+  notified: { label: 'Notified — Claim', cls: 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30' },
+  claimed: { label: 'Claimed', cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30' },
   expired: { label: 'Expired', cls: 'bg-w-100     text-w-600      border-w-300' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-50    text-red-700    border-red-200' },
+  cancelled: { label: 'Cancelled', cls: 'bg-red-50 dark:bg-destructive/10    text-red-700 dark:text-destructive    border-red-200 dark:border-destructive/30' },
 }
 
 // claimDeadline is set 48h from notifiedAt for "notified" rows

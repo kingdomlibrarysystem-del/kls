@@ -62,7 +62,7 @@ export function UserFormModal({ open, editing, onClose, onSave }: UserFormModalP
     <Modal open={open} onClose={onClose} title={editing ? `Edit User: ${editing.name}` : 'Add New User'} size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {submitError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs">
             <AlertCircle size={13} /> {submitError}
           </div>
         )}
@@ -80,13 +80,13 @@ export function UserFormModal({ open, editing, onClose, onSave }: UserFormModalP
         <div className="grid grid-cols-2 gap-4">
           <div>
             <FieldLabel htmlFor="role" required>Role</FieldLabel>
-            <select id="role" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('role')}>
+            <select id="role" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('role')}>
               {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
             </select>
           </div>
           <div>
             <FieldLabel htmlFor="status" required>Status</FieldLabel>
-            <select id="status" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('status')}>
+            <select id="status" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('status')}>
               {(['active', 'inactive', 'suspended'] as UserStatus[]).map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             </select>
           </div>

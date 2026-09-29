@@ -97,18 +97,18 @@ export function TwoFactorSection() {
   }
 
   return (
-    <div className="bg-form-section border border-w-400 rounded-lg p-6 mt-6">
+    <div className="bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-6 mt-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-cinzel text-lg font-semibold text-w-950 flex items-center gap-2">
           <ShieldCheck size={18} className="text-w-600" /> Two-Factor Authentication
         </h3>
-        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${enabled ? 'bg-green-50 text-green-800 border-green-200' : 'bg-w-100 text-w-700 border-w-300'}`}>
+        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${enabled ? 'bg-green-50 dark:bg-success/10 text-green-800 dark:text-success border-green-200 dark:border-success/30' : 'bg-w-100 text-w-700 border-w-300'}`}>
           {enabled ? 'Enabled' : 'Disabled'}
         </span>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded font-lato text-xs mb-4">{error}</div>
+        <div className="bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded font-lato text-xs mb-4">{error}</div>
       )}
 
       {enabled && step === 'idle' && (
@@ -159,7 +159,7 @@ export function TwoFactorSection() {
 
       {step === 'recovery' && (
         <div>
-          <p className="font-lato text-sm text-green-700 mb-3">Two-factor authentication is now enabled.</p>
+          <p className="font-lato text-sm text-green-700 dark:text-success mb-3">Two-factor authentication is now enabled.</p>
           <div>
             <p className="flex items-center gap-1.5 font-lato text-xs font-semibold text-w-700 uppercase tracking-wide mb-2">
               <KeyRound size={12} /> Recovery Codes

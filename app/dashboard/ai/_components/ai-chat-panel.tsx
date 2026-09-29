@@ -47,10 +47,10 @@ export function AiChatPanel() {
       >
         {messages.map((m) => (
           <div key={m.id} className={`flex items-start gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <span className={`flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${m.role === 'user' ? 'bg-w-600 text-white' : 'bg-w-200 text-w-700'}`}>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${m.role === 'user' ? 'bg-w-600 text-white dark:text-primary-foreground' : 'bg-w-200 dark:bg-white/10 text-w-700'}`}>
               {m.role === 'user' ? <User size={12} /> : <Bot size={12} />}
             </span>
-            <div className={`font-lato text-xs px-3 py-2 rounded-lg max-w-[80%] ${m.role === 'user' ? 'bg-w-600 text-white' : 'bg-white border border-w-300 text-w-950'}`}>
+            <div className={`font-lato text-xs px-3 py-2 rounded-lg max-w-[80%] ${m.role === 'user' ? 'bg-w-600 text-white dark:text-primary-foreground' : 'bg-white dark:bg-card! border border-w-300 text-w-950'}`}>
               {m.text}
             </div>
           </div>
@@ -58,7 +58,7 @@ export function AiChatPanel() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-2 font-lato text-xs">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-3 py-2 rounded mb-2 font-lato text-xs">
           <AlertCircle size={13} /> {error}
         </div>
       )}
@@ -70,9 +70,9 @@ export function AiChatPanel() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about borrowing, courses, certificates..."
           aria-label="Chat message"
-          className="flex-1 px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="flex-1 px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         />
-        <button type="submit" aria-label="Send message" className="px-3 py-2 bg-w-600 text-white rounded hover:bg-w-700 transition-colors">
+        <button type="submit" aria-label="Send message" className="px-3 py-2 bg-w-600 text-white dark:text-primary-foreground rounded hover:bg-w-700 transition-colors">
           <Send size={14} />
         </button>
       </form>

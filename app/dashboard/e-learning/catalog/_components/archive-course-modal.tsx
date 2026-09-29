@@ -23,9 +23,9 @@ export function ArchiveCourseModal({ course, onClose, onConfirm }: ArchiveCourse
             Are you sure you want to archive <span className="font-semibold text-w-950">&ldquo;{course.title}&rdquo;</span>?
           </p>
           {course.enrolledCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+            <div className="flex items-center gap-2 bg-amber-50 dark:bg-warning/10 border border-amber-200 dark:border-warning/30 rounded p-3 mb-4">
               <AlertCircle size={14} className="text-amber-600 shrink-0" />
-              <p className="font-lato text-xs text-amber-700">
+              <p className="font-lato text-xs text-amber-700 dark:text-warning">
                 {course.enrolledCount} member(s) are enrolled. Archiving sets the course back to Draft and hides it from new enrollments; existing enrollments are unaffected.
               </p>
             </div>

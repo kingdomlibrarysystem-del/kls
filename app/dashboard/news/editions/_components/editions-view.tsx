@@ -37,13 +37,13 @@ export function EditionsView() {
 
   return (
     <div>
-      {toast && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded font-lato text-sm">{toast}</div>}
+      {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {catalog.map((a) => (
-          <div key={a.id} className="border border-w-300 rounded-lg overflow-hidden bg-white">
+          <div key={a.id} className="border border-w-300 rounded-lg overflow-hidden bg-white dark:bg-card!">
             {a.coverImage && (
-              <div className="relative w-full h-32 bg-w-200">
-                <RemoteImage src={a.coverImage} alt={a.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" fallback={<div className="w-full h-full flex items-center justify-center"><BookOpen size={24} className="text-w-400" /></div>} />
+              <div className="relative w-full h-32 bg-w-200 dark:bg-white/10">
+                <RemoteImage src={a.coverImage} alt={a.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" fallback={<div className="w-full h-full flex items-center justify-center"><BookOpen size={24} className="text-w-400 dark:text-muted-foreground" /></div>} />
               </div>
             )}
             <div className="p-4">
@@ -58,7 +58,7 @@ export function EditionsView() {
               <div className="flex items-center justify-between gap-2">
                 <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${articleStatusConfig[a.status].cls}`}>{articleStatusConfig[a.status].label}</span>
                 {a.status === 'APPROVED' && (
-                  <button onClick={() => handlePublish(a)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-lato hover:bg-green-100 transition-colors"><Send size={12} /> Publish</button>
+                  <button onClick={() => handlePublish(a)} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors"><Send size={12} /> Publish</button>
                 )}
               </div>
             </div>

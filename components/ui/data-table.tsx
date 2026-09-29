@@ -2,6 +2,10 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, Download } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,15 +38,13 @@ const PAGE_SIZE_DEFAULTS = [10, 25, 50, 100]
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
-  if (!active) return <ChevronUp size={12} className="text-w-400 dark:text-white/30" />
+  if (!active) return <ChevronUp size={12} className="text-muted-foreground/50" />
   return dir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
 }
 
 function PaginationBar({
   page, totalPages, onPage,
 }: { page: number; totalPages: number; onPage: (n: number) => void }) {
-  const btnBase = 'border border-w-300 dark:border-white/10 rounded font-lato text-xs text-w-700 dark:text-white/60 hover:bg-w-100 dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
-
   const pills = Array.from({ length: totalPages }, (_, i) => i + 1)
     .filter((n) => n === 1 || n === totalPages || Math.abs(n - page) <= 2)
     .reduce<(number | '…')[]>((acc, n, i, arr) => {
@@ -52,36 +54,35 @@ function PaginationBar({
     }, [])
 
   return (
-    <div className="flex items-center justify-between mt-4">
-      <p className="font-lato text-xs text-w-700 dark:text-white/60">Page {page} of {totalPages}</p>
+    <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+      <p className="font-lato text-xs text-muted-foreground">Page {page} of {totalPages}</p>
       <div className="flex items-center gap-1">
-        <button className={`${btnBase} px-2 py-1.5`} disabled={page === 1} onClick={() => onPage(1)}>First</button>
-        <button className={`${btnBase} p-1.5`} disabled={page === 1} onClick={() => onPage(page - 1)}>
+        <Button variant="outline" size="sm" className="font-lato text-xs" disabled={page === 1} onClick={() => onPage(1)}>First</Button>
+        <Button variant="outline" size="icon-sm" aria-label="Previous page" disabled={page === 1} onClick={() => onPage(page - 1)}>
           <ChevronLeft size={14} />
-        </button>
+        </Button>
 
         {pills.map((n, i) =>
           n === '…' ? (
-            <span key={`e${i}`} className="px-1.5 font-lato text-xs text-w-600 dark:text-white/40">…</span>
+            <span key={`e${i}`} className="px-1.5 font-lato text-xs text-muted-foreground">…</span>
           ) : (
-            <button
+            <Button
               key={n}
+              variant={page === n ? 'default' : 'outline'}
+              size="icon-sm"
+              aria-current={page === n ? 'page' : undefined}
               onClick={() => onPage(n as number)}
-              className={`px-2.5 py-1 rounded text-xs font-lato border transition-colors ${
-                page === n
-                  ? 'bg-w-600 text-white border-w-600'
-                  : 'border-w-300 dark:border-white/10 text-w-700 dark:text-white/60 hover:bg-w-100 dark:hover:bg-white/10'
-              }`}
+              className="font-lato text-xs"
             >
               {n}
-            </button>
+            </Button>
           )
         )}
 
-        <button className={`${btnBase} p-1.5`} disabled={page === totalPages} onClick={() => onPage(page + 1)}>
+        <Button variant="outline" size="icon-sm" aria-label="Next page" disabled={page === totalPages} onClick={() => onPage(page + 1)}>
           <ChevronRight size={14} />
-        </button>
-        <button className={`${btnBase} px-2 py-1.5`} disabled={page === totalPages} onClick={() => onPage(totalPages)}>Last</button>
+        </Button>
+        <Button variant="outline" size="sm" className="font-lato text-xs" disabled={page === totalPages} onClick={() => onPage(totalPages)}>Last</Button>
       </div>
     </div>
   )
@@ -92,12 +93,10 @@ function ScrollEdgeFade({ side }: { side: 'left' | 'right' }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute top-0 bottom-0 w-8 z-10 ${side === 'left' ? 'left-0' : 'right-0'}`}
-      style={{
-        background: side === 'left'
-          ? 'linear-gradient(to right, rgba(0,0,0,0.06), transparent)'
-          : 'linear-gradient(to left, rgba(0,0,0,0.06), transparent)',
-      }}
+      className={cn(
+        'pointer-events-none absolute top-0 bottom-0 w-8 z-10 from-foreground/10 to-transparent',
+        side === 'left' ? 'left-0 bg-linear-to-r' : 'right-0 bg-linear-to-l'
+      )}
     />
   )
 }
@@ -187,18 +186,18 @@ export function DataTable<T>({
   return (
     <div>
       {/* Toolbar */}
-      <div className="bg-form-highlight dark:bg-white/5 border border-w-300 dark:border-white/10 rounded-lg p-3 mb-3 flex flex-wrap gap-3 items-center justify-between">
+      <div className="bg-card text-card-foreground border border-border rounded-xl p-3 mb-3 flex flex-wrap gap-3 items-center justify-between shadow-xs">
         <div className="flex flex-wrap gap-3 flex-1 items-center">
           {/* Search */}
           {searchFilter && (
             <div className="relative min-w-[220px] flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-w-600 dark:text-white/40" />
-              <input
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 type="text"
                 placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-                className="w-full pl-8 pr-4 py-2 font-lato text-sm border border-w-400 dark:border-white/10 bg-white dark:bg-white/5 text-w-950 dark:text-white placeholder:text-w-500 dark:placeholder:text-white/30 rounded focus:border-w-600 focus:outline-none"
+                className="h-9 pl-8 pr-4 font-lato text-sm bg-background"
               />
             </div>
           )}
@@ -206,11 +205,11 @@ export function DataTable<T>({
           {/* Extra filters slot */}
           {filters}
 
-          {/* Page size */}
+          {/* Page size — native select kept so it stays keyboard/mobile friendly */}
           <select
             value={pageSize}
             onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
-            className="px-3 py-2 font-lato text-sm border border-w-400 dark:border-white/10 bg-white dark:bg-white/5 text-w-950 dark:text-white rounded focus:border-w-600 focus:outline-none"
+            className="h-9 px-3 font-lato text-sm border border-input bg-background text-foreground rounded-lg outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
             {pageSizeOptions.map((n) => <option key={n} value={n}>{n} per page</option>)}
           </select>
@@ -218,61 +217,64 @@ export function DataTable<T>({
 
         {/* Export */}
         {onExport && (
-          <button
-            onClick={onExport}
-            className="flex items-center gap-1.5 px-3 py-2 border border-w-400 dark:border-white/10 bg-white dark:bg-white/5 rounded font-lato text-sm text-w-700 dark:text-white/60 hover:bg-w-100 dark:hover:bg-white/10 transition-colors"
-          >
+          <Button variant="outline" onClick={onExport} className="h-9 px-3 font-lato">
             <Download size={13} /> Export CSV
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Result count */}
-      <p className="font-lato text-xs text-w-700 dark:text-white/50 mb-2">
+      <p className="font-lato text-xs text-muted-foreground mb-2">
         {caption ?? `Showing ${paged.length} of ${filtered.length} record${filtered.length !== 1 ? 's' : ''}${filtered.length !== data.length ? ` (filtered from ${data.length})` : ''}`}
       </p>
 
-      {/* Table */}
-      <div className="relative bg-white dark:bg-white/5 border border-w-300 dark:border-white/10 rounded-lg overflow-hidden">
+      {/* Table — plain <table> inside our own scroll container (not shadcn's
+          <Table>, which adds a second overflow wrapper and would break the
+          scroll-edge fade measurement), with shadcn row/cell primitives. */}
+      <div className="relative bg-card text-card-foreground border border-border rounded-xl overflow-hidden shadow-xs">
         {scrollState.canScrollLeft && <ScrollEdgeFade side="left" />}
         {scrollState.canScrollRight && <ScrollEdgeFade side="right" />}
         <div ref={scrollRef} onScroll={updateScrollState} className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-form-section dark:bg-white/10 border-b border-w-300 dark:border-white/10">
-              <tr>
+          <table className="w-full caption-bottom text-sm">
+            <TableHeader className="bg-muted/60">
+              <TableRow className="hover:bg-transparent">
                 {columns.map((col) => (
-                  <th
+                  <TableHead
                     key={col.key}
                     onClick={col.sortable ? () => handleSort(col.key) : undefined}
-                    className={`px-4 py-3 text-left font-lato text-xs font-semibold text-w-700 dark:text-white/70 uppercase tracking-wider ${col.sortable ? 'cursor-pointer select-none hover:text-w-950 dark:hover:text-white transition-colors' : ''} ${col.className ?? ''}`}
+                    className={cn(
+                      'h-11 px-4 text-left font-lato text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-normal',
+                      col.sortable && 'cursor-pointer select-none hover:text-foreground transition-colors',
+                      col.className
+                    )}
                   >
                     <span className="flex items-center gap-1">
                       {col.label}
                       {col.sortable && <SortIndicator active={sortKey === col.key} dir={sortDir} />}
                     </span>
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-w-200 dark:divide-white/10">
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {paged.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="px-4 py-12 text-center font-lato text-sm text-w-700 dark:text-white/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={columns.length} className="px-4 py-12 text-center font-lato text-sm text-muted-foreground whitespace-normal">
                     {emptyMessage}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 paged.map((row) => (
-                  <tr key={rowKey(row)} className="hover:bg-form-highlight dark:hover:bg-white/5 transition-colors">
+                  <TableRow key={rowKey(row)} className="hover:bg-accent/60">
                     {columns.map((col) => (
-                      <td key={col.key} className={`px-4 py-3 font-lato text-sm text-w-950 dark:text-white/80 ${col.className ?? ''}`}>
+                      <TableCell key={col.key} className={cn('px-4 py-3 font-lato text-sm text-foreground whitespace-normal', col.className)}>
                         {col.render(row)}
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))
               )}
-            </tbody>
+            </TableBody>
           </table>
         </div>
       </div>

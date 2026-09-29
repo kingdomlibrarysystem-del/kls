@@ -23,7 +23,7 @@ export function ContributorAvatar({ contributor }: ContributorAvatarProps) {
     <div
       title={contributor.name}
       aria-label={contributor.name}
-      className="w-8 h-8 rounded-full bg-w-600 text-white flex items-center justify-center font-cinzel text-xs font-semibold border-2 border-white shadow-sm shrink-0"
+      className="w-8 h-8 rounded-full bg-w-600 text-white dark:text-primary-foreground flex items-center justify-center font-cinzel text-xs font-semibold border-2 border-white shadow-sm shrink-0"
     >
       {getInitials(contributor.name)}
     </div>

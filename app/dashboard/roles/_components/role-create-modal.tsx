@@ -48,7 +48,7 @@ export function RoleCreateModal({ open, form, onChange, onClose, onCreate }: Rol
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '6px 14px', cursor: 'pointer', fontSize: 11, color: 'var(--text-secondary)' }}>Cancel</button>
-          <button onClick={onCreate} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--gold)', color: '#fff', border: 'none', borderRadius: 5, padding: '6px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+          <button onClick={onCreate} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--gold)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 5, padding: '6px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
             <Plus size={14} /> Create Role
           </button>
         </div>

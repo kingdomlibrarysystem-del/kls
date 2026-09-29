@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface ModalProps {
   open: boolean;
@@ -22,6 +24,13 @@ const sizeMap = {
   "5xl": "max-w-5xl",
 };
 
+/**
+ * App-wide modal. Kept as a lightweight portal (rather than a focus-trapping
+ * dialog primitive) on purpose: several modals host third-party widgets that
+ * render outside the modal DOM (Cloudinary upload widget, editor popovers),
+ * and an outside-press-dismiss dialog would close on those clicks. Styling
+ * uses the shadcn theme tokens so it follows light/dark mode.
+ */
 export function Modal({
   open,
   onClose,
@@ -44,21 +53,34 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-w-950/50" onClick={onClose} />
       <div
-        className={`relative z-[10000] bg-white rounded-lg border border-w-300 w-full ${sizeMap[size]} shadow-xl flex flex-col max-h-[90vh]`}
+        className="absolute inset-0 bg-black/50 backdrop-blur-[2px] animate-in fade-in-0 duration-150"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={cn(
+          "relative z-[10000] w-full flex flex-col max-h-[90vh] rounded-xl border border-border bg-card text-card-foreground shadow-2xl ring-1 ring-foreground/5 animate-in fade-in-0 zoom-in-95 duration-150",
+          sizeMap[size],
+        )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-w-300 shrink-0">
-          <h2 className="font-cinzel text-base font-semibold text-w-950">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
+          <h2 className="font-cinzel text-base font-semibold text-foreground">
             {title}
           </h2>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
-            className="text-w-600 hover:text-w-950 transition-colors p-1 rounded hover:bg-w-100"
+            aria-label="Close"
+            className="text-muted-foreground hover:text-foreground"
           >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Scrollable body */}

@@ -41,8 +41,8 @@ function buildColumns(onEdit: (p: ResearchPaper) => void, onDelete: (p: Research
       render: (p) => (
         <div className="flex items-center justify-end gap-1.5">
           <UniversalButton href={`/dashboard/research/repository/${p.id}`} aria-label={`View ${p.title}`} variant="outline" size="sm" icon={<Eye size={12} />}>View</UniversalButton>
-          <button onClick={() => onEdit(p)} aria-label={`Edit ${p.title}`} className="p-2 bg-w-100 text-w-950 border border-w-300 rounded hover:bg-w-200 transition-colors"><Pencil size={12} /></button>
-          <button onClick={() => onDelete(p)} aria-label={`Delete ${p.title}`} className="p-2 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 transition-colors"><Trash2 size={12} /></button>
+          <button onClick={() => onEdit(p)} aria-label={`Edit ${p.title}`} className="p-2 bg-w-100 text-w-950 border border-w-300 rounded hover:bg-w-200 dark:hover:bg-white/10 transition-colors"><Pencil size={12} /></button>
+          <button onClick={() => onDelete(p)} aria-label={`Delete ${p.title}`} className="p-2 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors"><Trash2 size={12} /></button>
         </div>
       ),
     },
@@ -86,7 +86,7 @@ export function RepositoryView() {
     <select
       value={authorFilter}
       onChange={(e) => setAuthorFilter(e.target.value)}
-      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+      className="px-3 py-2 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
       aria-label="Filter by author"
     >
       <option value="all">All Authors</option>

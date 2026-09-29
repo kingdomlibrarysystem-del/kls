@@ -39,13 +39,13 @@ export function ProvidersView() {
             placeholder="Search by provider name or location..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+            className="w-full pl-9 pr-4 py-2.5 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           />
         </div>
         <select
           value={specialtyFilter}
           onChange={(e) => setSpecialtyFilter(e.target.value)}
-          className="px-3 py-2.5 font-lato text-sm border border-w-400 bg-white rounded focus:border-w-600 focus:outline-none"
+          className="px-3 py-2.5 font-lato text-sm border border-w-400 bg-white dark:bg-card! rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
         >
           {specialties.map((s) => <option key={s} value={s}>{s === 'all' ? 'All Specialties' : s}</option>)}
         </select>
@@ -56,9 +56,9 @@ export function ProvidersView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((provider) => (
-            <div key={provider.id} className="border border-w-300 rounded-lg overflow-hidden bg-white">
-              <div className="relative w-full h-32 bg-w-200">
-                <RemoteImage src={provider.image} alt={provider.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" fallback={<div className="w-full h-full flex items-center justify-center"><PaletteIcon size={24} className="text-w-400" /></div>} />
+            <div key={provider.id} className="border border-w-300 rounded-lg overflow-hidden bg-white dark:bg-card!">
+              <div className="relative w-full h-32 bg-w-200 dark:bg-white/10">
+                <RemoteImage src={provider.image} alt={provider.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" fallback={<div className="w-full h-full flex items-center justify-center"><PaletteIcon size={24} className="text-w-400 dark:text-muted-foreground" /></div>} />
               </div>
               <div className="p-4">
                 <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-1">{provider.name}</h3>

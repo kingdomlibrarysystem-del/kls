@@ -85,7 +85,7 @@ export default function AssessmentsPage() {
               <Link
                 href={`/member/assessments/${a.id}/take`}
                 aria-label={`Start ${a.title}`}
-                style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "var(--gold)", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none" }}
+                style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "var(--gold)", color: "var(--primary-foreground)", fontSize: 12, fontWeight: 600, textDecoration: "none" }}
               >
                 Start
               </Link>

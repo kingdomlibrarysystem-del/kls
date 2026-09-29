@@ -27,13 +27,13 @@ export default function ResearchPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map((s) => {
           const card = (
-            <div className={`bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 h-full ${s.href ? 'hover:border-w-600 transition-colors' : ''}`}>
+            <div className={`bg-form-highlight border border-w-300 rounded-lg p-5 flex flex-col gap-2 h-full ${s.href ? 'hover:border-w-600 dark:hover:border-primary transition-colors' : ''}`}>
               <div className="flex items-center gap-2 text-w-600">{s.icon}
                 <h3 className="font-cinzel text-sm font-semibold text-w-950">{s.title}</h3>
               </div>
               <p className="font-lato text-xs text-w-700 leading-relaxed">{s.desc}</p>
               <span className={`inline-block mt-auto px-2 py-0.5 rounded text-xs font-lato w-fit ${
-                s.href ? 'bg-green-50 text-green-700' : 'bg-w-200 text-w-700'
+                s.href ? 'bg-green-50 dark:bg-success/10 text-green-700 dark:text-success' : 'bg-w-200 text-w-700'
               }`}>
                 {s.href ? 'Available' : 'Coming Soon'}
               </span>

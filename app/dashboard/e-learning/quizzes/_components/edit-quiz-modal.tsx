@@ -106,13 +106,13 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <FieldLabel htmlFor="edit-quiz-course" required>Course</FieldLabel>
-            <select id="edit-quiz-course" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('courseId')}>
+            <select id="edit-quiz-course" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('courseId')}>
               {courseCatalog.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           </div>
           <div>
             <FieldLabel htmlFor="edit-quiz-kind" required>Type</FieldLabel>
-            <select id="edit-quiz-kind" className="w-full px-4 py-3 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none" {...register('kind')}>
+            <select id="edit-quiz-kind" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('kind')}>
               <option value="QUIZ">Quiz</option>
               <option value="EXAM">Exam</option>
               <option value="PROJECT">Project</option>

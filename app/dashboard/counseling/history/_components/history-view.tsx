@@ -19,7 +19,7 @@ export function HistoryView() {
       {notes.map((note) => {
         const withheld = note.summary === 'Withheld per your privacy settings.'
         return (
-          <div key={note.id} className="border border-w-300 rounded-lg bg-white p-4">
+          <div key={note.id} className="border border-w-300 rounded-lg bg-white dark:bg-card! p-4">
             <p className="font-lato text-xs text-w-600 mb-2">{new Date(note.createdAt).toLocaleDateString()}</p>
             {withheld ? (
               <p className="font-lato text-sm text-w-600 flex items-center gap-2 italic"><EyeOff size={14} /> Withheld per your privacy settings.</p>

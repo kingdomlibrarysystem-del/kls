@@ -27,12 +27,12 @@ export interface NewsArticle {
 }
 
 export const articleStatusConfig: Record<NewsArticleStatus, { label: string; cls: string }> = {
-  DRAFT:        { label: 'Draft',        cls: 'bg-w-100      text-w-800      border-w-300' },
-  SUBMITTED:    { label: 'Submitted',    cls: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
-  UNDER_REVIEW: { label: 'Under Review', cls: 'bg-blue-50   text-blue-800   border-blue-200' },
+  DRAFT:        { label: 'Draft',        cls: 'bg-w-100      text-w-800 dark:text-foreground      border-w-300' },
+  SUBMITTED:    { label: 'Submitted',    cls: 'bg-yellow-50 dark:bg-warning/10 text-yellow-800 dark:text-warning border-yellow-200 dark:border-warning/30' },
+  UNDER_REVIEW: { label: 'Under Review', cls: 'bg-blue-50 dark:bg-info/10   text-blue-800   border-blue-200 dark:border-info/30' },
   APPROVED:     { label: 'Approved',     cls: 'bg-teal-50   text-teal-800   border-teal-200' },
-  REJECTED:     { label: 'Rejected',     cls: 'bg-red-50    text-red-800    border-red-200' },
-  PUBLISHED:    { label: 'Published',    cls: 'bg-green-50  text-green-800  border-green-200' },
+  REJECTED:     { label: 'Rejected',     cls: 'bg-red-50 dark:bg-destructive/10    text-red-800 dark:text-destructive    border-red-200 dark:border-destructive/30' },
+  PUBLISHED:    { label: 'Published',    cls: 'bg-green-50 dark:bg-success/10  text-green-800 dark:text-success  border-green-200 dark:border-success/30' },
 }
 
 /** Row shape of /api/news/categories (NewsArticleCategory). */
