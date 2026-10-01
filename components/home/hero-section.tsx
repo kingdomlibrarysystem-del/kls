@@ -129,10 +129,10 @@ export function HeroSection() {
             style={{ animationDuration: `${ANIM_DURATION}ms` }}
           >
             <div className="absolute left-0 top-10 w-36 h-52 rounded-lg overflow-hidden shadow-lg z-0">
-              <Image src={slide.images.left} alt="cover" fill className="object-cover" sizes="144px" />
+              <Image src={slide.images.left} alt="cover" fill className="object-cover" sizes="144px" loading="eager" />
             </div>
             <div className="absolute right-0 bottom-10 w-32 h-48 rounded-lg overflow-hidden shadow-lg z-0">
-              <Image src={slide.images.right} alt="cover" fill className="object-cover" sizes="128px" />
+              <Image src={slide.images.right} alt="cover" fill className="object-cover" sizes="128px" loading="eager" />
             </div>
             <div className="relative w-56 h-80 md:w-64 md:h-96 rounded-lg overflow-hidden shadow-2xl z-10">
               <Image src={slide.images.center} alt="featured cover" fill className="object-cover" priority sizes="(max-width: 768px) 224px, 256px" />

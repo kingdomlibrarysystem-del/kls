@@ -126,6 +126,8 @@ model User {
   rehabGroupMemberships     RehabGroupMember[]
   newsArticles              NewsArticle[]
   newsSubscriptions         NewsSubscription[]
+  newsComments              NewsArticleComment[]
+  newsReactions             NewsArticleReaction[]
   donationCampaigns         DonationCampaign[]
   donations                 Donation[]
 
@@ -367,6 +369,7 @@ model Resource {
   avgRating               Float             @default(0)
   reviewCount             Int               @default(0)
   reviews                 Review[]
+  views                   ResourceView[]
   borrows                 Borrow[]
   reservations            Reservation[]
   /// Not truly one-to-many in practice — exactly one Publication ever
@@ -387,6 +390,21 @@ model Resource {
   // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
   @@index([categoryId])
   @@index([status])
+}
+
+/// One row per unique viewer of a resource ("Read" clicked on the landing
+/// page's trending books). viewerKey is "u:<userId>" for signed-in readers or
+/// "a:<random browser id>" for anonymous ones, so each person counts once.
+/// The trending list ranks resources by the number of these rows.
+model ResourceView {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  resourceId String   @db.ObjectId
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  viewerKey  String
+  createdAt  DateTime @default(now())
+
+  @@unique([resourceId, viewerKey])
+  @@index([resourceId])
 }
 
 /// Real member review of a Resource — one per user per resource
@@ -1983,6 +2001,9 @@ model NewsArticle {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
+  comments    NewsArticleComment[]
+  reactions   NewsArticleReaction[]
+
   @@index([status])
   @@index([category])
   @@index([publishedAt])
@@ -1995,6 +2016,54 @@ enum NewsArticleStatus {
   APPROVED
   REJECTED
   PUBLISHED
+}
+
+/// Moderation state of a reader comment — HIDDEN comments stay in the DB
+/// (for audit) but are never shown on the public/member article page.
+enum NewsCommentStatus {
+  VISIBLE
+  HIDDEN
+}
+
+enum NewsReactionType {
+  LIKE
+  DISLIKE
+}
+
+/// A signed-in reader's comment on a published news article. Admins
+/// moderate these at /dashboard/news/engagement (hide/show/delete).
+model NewsArticleComment {
+  id         String            @id @default(auto()) @map("_id") @db.ObjectId
+  articleId  String            @db.ObjectId
+  article    NewsArticle       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId     String            @db.ObjectId
+  user       User              @relation(fields: [userId], references: [id])
+  /// Display name snapshotted at posting time (same pattern as NewsArticle.authorName).
+  authorName String
+  body       String
+  status     NewsCommentStatus @default(VISIBLE)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([articleId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+/// One like OR dislike per reader per article (switching replaces it,
+/// clicking the same one again removes it).
+model NewsArticleReaction {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  articleId String           @db.ObjectId
+  article   NewsArticle      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String           @db.ObjectId
+  user      User             @relation(fields: [userId], references: [id])
+  type      NewsReactionType
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([articleId, userId])
+  @@index([articleId, type])
 }
 
 /// Category-level alert subscription ("Publication Alerts" in the

@@ -167,6 +167,7 @@ export const adminMgmtNav: NavItem[] = [
       { icon: <ScrollText size={14} />,    label: "Articles",     href: "/dashboard/news/articles" },
       { icon: <ClipboardList size={14} />, label: "Review Queue", href: "/dashboard/news/review" },
       { icon: <BookOpen size={14} />,      label: "Editions",     href: "/dashboard/news/editions" },
+      { icon: <MessageSquare size={14} />, label: "Comments & Reactions", href: "/dashboard/news/engagement" },
       { icon: <Mail size={14} />,          label: "Subscribers",  href: "/dashboard/news/subscribers" },
       { icon: <Tag size={14} />,           label: "Categories",   href: "/dashboard/news/categories" },
     ],

@@ -2,15 +2,14 @@
 
 import Link from 'next/link'
 import { ArrowRight, BookMarked, FlaskConical, Globe } from 'lucide-react'
-import { useRepository } from '@/app/dashboard/research/repository/_components/use-repository'
+import type { HomePaper } from '@/lib/data/home'
 import { useLanguage } from '@/contexts/language-context'
 
 const tagIcons = [<FlaskConical size={16} key="f" />, <Globe size={16} key="g" />, <BookMarked size={16} key="b" />]
 
-export function ResearchSection() {
+/** Latest published papers, loaded on the server (lib/data/home.ts). It used to call the staff-only /api/research-papers from the browser, which returned 401 for every signed-out visitor. */
+export function ResearchSection({ papers: published }: { papers: HomePaper[] }) {
   const { t } = useLanguage()
-  const { data: papers } = useRepository()
-  const published = papers.filter((p) => p.status === 'PUBLISHED').slice(0, 3)
 
   if (published.length === 0) return null
 
@@ -62,7 +61,7 @@ export function ResearchSection() {
                 </p>
                 <div className={`flex items-center justify-between border-t pt-4 text-xs font-lato ${i === 0 ? 'border-w-800 dark:border-white/10 text-w-400 dark:text-gray-400' : 'border-w-200 dark:border-white/10 text-w-700 dark:text-gray-400'}`}>
                   <p className={`font-semibold ${i === 0 ? 'text-w-200 dark:text-amber-200' : 'text-w-950 dark:text-gray-100'}`}>{paper.author}</p>
-                  <span className={`px-2 py-1 rounded ${i === 0 ? 'bg-w-800 dark:bg-white/10 text-w-300 dark:text-gray-200' : 'bg-w-100 dark:bg-white/5 text-w-700 dark:text-gray-300'}`}>
+                  <span suppressHydrationWarning className={`px-2 py-1 rounded ${i === 0 ? 'bg-w-800 dark:bg-white/10 text-w-300 dark:text-gray-200' : 'bg-w-100 dark:bg-white/5 text-w-700 dark:text-gray-300'}`}>
                     {new Date(paper.publishedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </span>
                 </div>

@@ -6053,3 +6053,217 @@ exit 0 (two earlier runs failed intermittently with Turbopack
 "next/font/google queries have exactly one entry" — not related to these
 files; likely the Google Fonts download / the running dev server sharing .next).
 
+## 2026-09-30 - News articles: comments + like/dislike (account required), admin moderation, custom 404
+**Schema** (`prisma/schema.prisma`): enums `NewsCommentStatus` (VISIBLE/HIDDEN)
+and `NewsReactionType` (LIKE/DISLIKE); models `NewsArticleComment` (articleId,
+userId, `authorName` snapshot, body, status; indexes articleId+status+createdAt,
+status+createdAt, userId) and `NewsArticleReaction` (`@@unique([articleId, userId])`
+= one reaction per reader; index articleId+type). Relations added on
+`NewsArticle` (comments/reactions, `onDelete: Cascade`) and `User`
+(newsComments/newsReactions). **Needs human action:** `npx prisma db push`
+(creates the unique/secondary indexes) and restart the dev server +
+`npx prisma generate` (the engine DLL was locked by the running dev server;
+the client JS/types did regenerate and the new tests pass against the DB).
+
+**API** (standard `{ data, message, code, status }`, `withErrorHandling`):
+- `GET /api/news/articles/[id]/engagement` - public; counts, the caller's own
+  reaction (when signed in), visible comments.
+- `PUT /api/news/articles/[id]/reaction` `{ type: LIKE|DISLIKE|null }` -
+  `requireAuth`, PUBLISHED articles only, upsert on the unique pair, null
+  clears; rate-limited 60/min.
+- `POST /api/news/articles/[id]/comments` `{ body }` - `requireAuth`,
+  PUBLISHED only, 1-2000 chars (zod), rate-limited 10/min, author name from
+  the user record.
+- `DELETE /api/news/articles/[id]/reactions` - staff: reset an article's reactions.
+- `GET /api/news/comments` - staff: all comments (any status) for moderation.
+- `PATCH /api/news/comments/[id]` `{ status }` - staff: hide/show.
+- `DELETE /api/news/comments/[id]` - the comment's author or staff.
+
+**Data layer:** `lib/data/news-engagement.ts` (`getArticleEngagement`,
+`getReactionCounts`, `getAdminComments`, `getArticleEngagementStats` - groupBy,
+no N+1); Prisma-free shared types/`COMMENT_MAX_LENGTH` in
+`lib/news-engagement-shared.ts` (the client component imports from there so
+Prisma never reaches the browser bundle).
+
+**Reader UI** (`/news/[id]` public and `/member/news/[id]`): new
+`app/member/news/[id]/_components/article-engagement.tsx` (shadcn Button/
+Textarea + tokens) under the article body: like/dislike buttons with counts
+(optimistic, rolled back on failure), comment composer with counter, comment
+list (initials avatar, local date/time), delete for own comments (staff: any).
+Everyone can read; signed-out readers who try to react, and the comment box,
+show a **Join the conversation** prompt with Sign in / Create account links
+that carry `?redirect=` back to the article. Engagement is loaded on the
+server in `lib/server/news-article-page.ts` (`loadReadableArticle` now also
+returns `engagement`, only for PUBLISHED articles) - no fetch on mount.
+
+**Auth redirect:** register page forwards a same-site `?redirect=` to its
+"Sign in" links (inside `<Suspense>` for `useSearchParams`); the login form
+now only follows same-site redirect paths (was passing any value to
+`router.push` - open-redirect fix) and forwards it to "Create one".
+
+**Admin:** new `/dashboard/news/engagement` (server page + `engagement-view.tsx`):
+KPI cards (comments, hidden, likes, dislikes) and shadcn Tabs - **Comments**
+(DataTable: search, status filter, Hide/Show/Delete, link to article) and
+**Article reactions** (likes/dislikes/comments per article, link to admin +
+public article, Reset reactions). Linked from the News overview cards and the
+sidebar News section ("Comments & Reactions").
+
+**404:** `components/app-shell/not-found-content.tsx` - one designed not-found
+(large faint "404", icon badge, Cinzel title, actions, theme tokens) used by
+the new site-wide `app/not-found.tsx` (replaces Next's default "404 | This page
+could not be found.") and by `PortalNotFound` (dashboard + member, compact
+variant with portal-specific links).
+
+**Tests:** `app/api/__tests__/news-engagement.test.ts` - 7 real-DB tests
+(account required for both actions, like/switch/clear, empty comment rejected,
+comment visible publicly, only staff hide + hidden leaves public view, delete
+own vs. others). 7/7 pass.
+
+Verification: `npx tsc --noEmit` clean; eslint on new files clean (remaining
+errors are pre-existing in news `use-articles`, `review-modal`,
+`subscribers-view`); `npx next build` exit 0.
+
+**Follow-up 1 — runtime error "Cannot read properties of undefined (reading
+'count')" at `prisma.newsArticleReaction`:** the running dev server still held
+the Prisma client generated before the new models (the `prisma generate` DLL
+lock). Fix = restart the dev server after `npx prisma generate`. Hardening:
+`loadReadableArticle` now `.catch()`es the engagement load (logs, returns null)
+so comments/reactions can never break the article page.
+
+**Follow-up 2 — article reader layout (owner request):** `NewsArticleView` is
+now a responsive grid — xl: [More articles 260px | article | Likes + comments
+360px]; lg: [article | likes + comments] with More articles below; mobile: one
+column (article, engagement, more). The article stays first in the DOM; rails
+are placed with grid col/row classes and are sticky (`top-4`, own scroll when
+taller than the viewport). New `more-articles.tsx` (thumbnail, 2-line title,
+category/Edition + date, "All" link to the news list) fed by the new
+`getMoreArticles(excludeId, 8)` in `lib/data/news-articles.ts` (published,
+newest first, excluding the current article) — loaded in parallel inside
+`loadReadableArticle` (`moreArticles` field, `.catch()` → []). Public
+`/news/[id]` container widened from `max-w-3xl` to `max-w-[1440px]`; member
+page passes the same props. Engagement sign-in prompt now always stacks (it
+sits in a 360px rail). Verification: tsc clean, eslint clean, build exit 0.
+
+**Follow-up 3 — empty right rail:** `GET /api/news/articles/[id]/engagement`
+returned 500 on the owner's running dev server (still the pre-migration Prisma
+client; a direct `node` query with the regenerated client returns counts fine),
+so `engagement` was null and the rail was hidden. The view now ALWAYS renders
+the rail for PUBLISHED articles: when the server load fails it starts from
+empty data (buttons + comment box still shown) and `ArticleEngagementSection`
+shows a small "couldn't be loaded right now" notice (`loadFailed` prop).
+Real fix on that machine: stop dev server → `npx prisma generate` →
+`npx prisma db push` → `npm run dev`.
+
+## 2026-10-01 - News comments/likes API rebuilt from scratch on flat endpoints (supersedes the API list above)
+**Why:** on the owner's dev server (Next 16 / Turbopack) every route nested
+under `app/api/news/articles/[id]/` returned the HTML 404 page - including the
+pre-existing `save` route - while the same code worked in the production
+build. The owner had hit this in the News module before and asked to discard
+the comments/likes API and rebuild it. **Do not add new routes under
+`app/api/news/articles/[id]/`.**
+
+**Discarded:** `app/api/news/articles/[id]/{engagement,reaction,comments,reactions}/`
+(that folder is back to its git state: `route.ts`, `save/`, `notify-subscribers.ts`).
+
+**Current API (flat, under `/api/news/`):**
+- `GET /api/news/engagement?articleId=` - public; counts, caller's reaction,
+  visible comments; 404 for unknown/unpublished articles.
+- `PUT /api/news/reactions` `{ articleId, type: LIKE|DISLIKE|null }` -
+  `requireAuth`; PUBLISHED only; upsert on the unique pair, null clears; 60/min.
+- `DELETE /api/news/reactions?articleId=` - staff: reset an article's reactions.
+- `POST /api/news/comments` `{ articleId, body }` - `requireAuth`; PUBLISHED
+  only; 1-2000 chars; 10/min.
+- `GET /api/news/comments` - staff moderation list (unchanged).
+- `PATCH` / `DELETE /api/news/comments/[id]` - staff hide/show; author or
+  staff delete (unchanged).
+New shared helper `isPublishedArticle()` in `lib/data/news-engagement.ts`.
+
+**Callers updated (design/behaviour unchanged):** `article-engagement.tsx`
+(reader) and `engagement-view.tsx` (admin "Reset reactions"). Both now parse
+responses with `.json().catch(() => null)` so a non-JSON reply shows a readable
+message instead of "Unexpected token '<'". Removed the unused `Link` import
+from `news-article-view.tsx` (the owner removed the bottom back bar).
+
+**Tests:** `app/api/__tests__/news-engagement.test.ts` rewritten for the flat
+routes - 10 real-DB tests (account required for like and comment, like/switch/
+clear, unpublished rejected for reaction + comment + engagement, staff-only
+reset and hide, hidden leaves public view, delete own vs. others). Setup/
+cleanup hooks have a 60s timeout (remote DB). 10/10 pass.
+
+**Verified on the owner's running dev server (port 3001):** engagement 200
+with data, reactions/comments 401 when signed out, article page renders the
+reactions/comments rail with the sign-in prompt. `npx tsc --noEmit` clean,
+eslint clean, `npx next build` exit 0 (one earlier build failed only because
+the running dev server was mid-write on `.next/dev/types/validator.ts`).
+
+**Follow-up (owner request) — ask to sign in only on submit:**
+`article-engagement.tsx` now always shows the comment box + "Post comment" and
+the like/dislike buttons to everyone. No sign-in card is rendered up front; a
+signed-out reader sees it only after pressing Post comment (`authPrompt =
+'comment'`, shown under the box) or like/dislike (`'react'`, shown under the
+buttons). The typed comment is saved to `sessionStorage`
+(`kls-news-comment-draft:<articleId>`) on every change and restored on mount
+(deferred one frame so hydration matches), so it survives the trip through
+login/register; it is cleared after a successful post. The prompt's Sign in /
+Create account links carry `?redirect=<article path>#comments`, and the
+section has `id="comments"` (`scroll-mt-24`) so the reader lands back on it.
+API unchanged (still 401 for signed-out writes). Verified on the dev server:
+signed-out HTML contains the textarea and Post button, no sign-in card.
+
+## 2026-10-01 - Landing page: server-loaded data, Trending Books redesign (10 books, Read + views), fixes from the dev log
+**Problems in the owner's dev log for `/`:** `GET /api/research-papers?pageSize=1000`
+-> **401** (public page calling a staff-only API: signed-out visitors never saw
+research), and three slow browser downloads - `/api/resources?pageSize=1000`
+(3.1s), `/api/courses?status=PUBLISHED&pageSize=1000` (2.5s),
+`/api/news/articles?pageSize=5` (3.0s) - plus an LCP warning on a hero cover.
+
+**Fix - the landing page is a Server Component now (Rule 15):**
+- `lib/data/home.ts` `getHomePageData()` - one parallel batch, only what the
+  page shows: 5 news teasers (no `content`), 10 trending books, 3 featured
+  published courses + three `count()`s for the stats, 3 published papers.
+  Each part is wrapped so a failure empties that section instead of breaking
+  the page. `lib/server/home-page.ts` `getCachedHomePageData()` wraps it in
+  `unstable_cache` (60s, tag `home-page`) - the route is dynamic (root layout
+  reads the language cookie), so without it every visit would hit the DB.
+- `app/page.tsx` - no longer `'use client'`; passes props to the sections.
+  Testimonials moved to `components/home/testimonials-section.tsx` (needs the
+  translation hook). The long commented-out "Community" block was dropped.
+- `NewsPaperSection({ items })`, `ELearningSection({ courses, stats })`,
+  `ResearchSection({ papers })` - hooks/`useEffect` fetches removed (`useCourses`,
+  `useRepository`, `useResources` no longer run on the landing page).
+  Server-rendered locale dates got `suppressHydrationWarning`.
+- Hero: the two side covers load `eager` (LCP warning).
+
+**Trending Books (`components/home/trending-books.tsx`) redesign:** up to 10
+books - `grid-cols-2` on phones, `md:grid-cols-5` (two rows) on larger screens.
+Card = cover (2:3, links to the book), title (2 lines), viewers count (eye icon),
+and a **Read** button UNDER the cover (was a hover overlay "View Details"). No
+other fields. Missing/broken covers show a fallback tile (was a crash risk:
+`next/image` with an undefined `src`). New locale keys `common.read`,
+`common.views`, `common.view_singular` (en/fr/rw).
+- **Bug fixed:** the old list took `slice(-4)` of a newest-first list, i.e. the
+  4 OLDEST books. Now: most viewed first, then newest non-archived.
+
+**Views:** new model `ResourceView` (`resourceId`, `viewerKey`,
+`@@unique([resourceId, viewerKey])`, cascade on resource delete; relation
+`Resource.views`). `POST /api/resource-views` `{ resourceId, anonymousId? }` -
+public, rate-limited 60/min; viewer = signed-in user id, else a random id the
+browser keeps in `localStorage` (`kls-anon-viewer-id`), so each person counts
+once per book. Clicking Read (or the cover) fires it with `keepalive` and
+navigates to `/library/[id]`. **Needs human action:** `npx prisma db push`
+(unique index) and restart the dev server so it loads the regenerated client.
+
+**Tests:** `app/api/__tests__/resource-views.test.ts` - 4 real-DB tests
+(validation, one view per viewer, signed-in viewer counted once, trending
+returns the count). 4/4 pass.
+
+**Interactions to watch:** the three home sections now REQUIRE props (only
+`app/page.tsx` mounts them). Home data can be up to 60s stale; call
+`revalidateTag('home-page')` after a publish if that ever matters. View counts
+shown on the home page lag by the same 60s.
+
+Verification: `npx tsc --noEmit` clean; eslint clean on touched files (2
+pre-existing errors in `daily-wisdom.tsx`); `npx next build` exit 0; on the
+production build `/` returned 200 in 0.49s (first) / 0.04s (cached) with 10
+books, 10 Read buttons and no `pageSize=1000` requests.
+

@@ -15,6 +15,9 @@
     "next": "Next",
     "previous": "Previous",
     "or": "or",
+    "read": "Read",
+    "views": "views",
+    "view_singular": "view",
     "view_details": "View Details",
     "explore_more": "Explore More Books",
     "browse_all_courses": "Browse All Courses",
@@ -166,8 +169,7 @@
     "loaded": "Loading news...",
     "not_found": "Article not found",
     "not_found_desc": "This article does not exist or has not been published yet.",
-    "back": "Back to News",
-    "more": "More from the newsroom"
+    "back": "Back to News"
   },
   "daily_wisdom": {
     "label": "Daily Wisdom",

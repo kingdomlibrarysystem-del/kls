@@ -50,3 +50,24 @@ export async function getNewsCategoryColor(name: string): Promise<string | null>
   const category = await prisma.newsArticleCategory.findUnique({ where: { name }, select: { color: true } })
   return category?.color ?? null
 }
+
+/** A compact card for the "More articles" rail next to an article. */
+export interface MoreArticleItem {
+  id: string
+  title: string
+  category: string
+  isEdition: boolean
+  coverImage: string | null
+  publishedAt: string | null
+}
+
+/** Latest published articles other than `excludeId` (one indexed query on status + publishedAt). */
+export async function getMoreArticles(excludeId: string, limit = 8): Promise<MoreArticleItem[]> {
+  const rows = await prisma.newsArticle.findMany({
+    where: { status: 'PUBLISHED', ...(isObjectId(excludeId) && { id: { not: excludeId } }) },
+    orderBy: { publishedAt: 'desc' },
+    take: limit,
+    select: { id: true, title: true, category: true, isEdition: true, coverImage: true, publishedAt: true },
+  })
+  return rows.map((r) => ({ ...r, publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null }))
+}

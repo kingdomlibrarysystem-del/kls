@@ -34,7 +34,9 @@ export function LoginForm() {
   const { login, checkRequiresTotp } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const explicitRedirect = searchParams.get('redirect')
+  // Only same-site paths — never follow an absolute/protocol-relative URL after login (open redirect).
+  const rawRedirect = searchParams.get('redirect')
+  const explicitRedirect = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -152,7 +154,7 @@ export function LoginForm() {
         <GoogleSignInButton callbackUrl={explicitRedirect ?? undefined} />
         <p className="text-center font-lato text-sm text-w-700">
           {t('auth.no_account')}{' '}
-          <Link href="/auth/register" className="text-w-600 hover:text-w-700 font-semibold underline">
+          <Link href={explicitRedirect ? `/auth/register?redirect=${encodeURIComponent(explicitRedirect)}` : "/auth/register"} className="text-w-600 hover:text-w-700 font-semibold underline">
             {t('auth.create_one')}
           </Link>
         </p>

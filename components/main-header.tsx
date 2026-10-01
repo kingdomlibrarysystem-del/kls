@@ -79,7 +79,7 @@ export function MainHeader() {
                 className="font-cinzel text-lg font-bold text-w-950 dark:text-white hidden sm:block animate-in fade-in duration-200"
                 style={{ letterSpacing: "1px" }}
               >
-                {t("common.app_name")}
+                {t("common.app_name")} 
               </h1>
             </Link>
 
