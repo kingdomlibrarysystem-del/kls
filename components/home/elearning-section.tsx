@@ -2,18 +2,17 @@
 
 import Link from 'next/link'
 import { PlayCircle, Award, BookOpen, Users } from 'lucide-react'
-import { useCourses } from '@/app/member/_shared/use-courses'
+import type { HomeCourse } from '@/lib/data/home'
 import { useLanguage } from '@/contexts/language-context'
 
-export function ELearningSection() {
+/** Featured courses + catalog totals, loaded on the server (lib/data/home.ts) — was a browser download of every published course. */
+export function ELearningSection({ courses: featured, stats: totals }: { courses: HomeCourse[]; stats: { courses: number; lessons: number; enrollments: number } }) {
   const { t } = useLanguage()
-  const { data: courses } = useCourses()
-  const featured = courses.slice(0, 3)
 
   const stats = [
-    { icon: <BookOpen size={20} />, value: String(courses.length), label: t('elearning.courses') },
-    { icon: <Users size={20} />, value: String(courses.reduce((sum, c) => sum + c.students, 0)), label: t('elearning.enrollments') },
-    { icon: <Award size={20} />, value: String(courses.reduce((sum, c) => sum + c.lessons, 0)), label: t('elearning.lessons') },
+    { icon: <BookOpen size={20} />, value: String(totals.courses), label: t('elearning.courses') },
+    { icon: <Users size={20} />, value: String(totals.enrollments), label: t('elearning.enrollments') },
+    { icon: <Award size={20} />, value: String(totals.lessons), label: t('elearning.lessons') },
   ]
 
   if (featured.length === 0) return null

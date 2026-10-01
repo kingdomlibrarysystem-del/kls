@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -22,6 +23,21 @@ const registerSchema = z.object({
 })
 
 type RegisterFormData = z.infer<typeof registerSchema>
+
+/** Login link that forwards a same-site `?redirect=` (e.g. back to the news article the visitor wanted to comment on). */
+function LoginLinkInner({ className, children }: { className?: string; children: React.ReactNode }) {
+  const redirect = useSearchParams().get('redirect')
+  const safe = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : null
+  return <Link href={safe ? `/auth/login?redirect=${encodeURIComponent(safe)}` : '/auth/login'} className={className}>{children}</Link>
+}
+
+function LoginLink(props: { className?: string; children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<Link href="/auth/login" className={props.className}>{props.children}</Link>}>
+      <LoginLinkInner {...props} />
+    </Suspense>
+  )
+}
 
 export default function RegisterPage() {
   const { t } = useLanguage()
@@ -59,9 +75,9 @@ export default function RegisterPage() {
           <div className="text-center">
             <h2 className="font-cinzel text-2xl font-semibold text-w-950 mb-4">{t('auth.reg_success_title')}</h2>
             <p className="font-lato text-w-700 mb-6">{t('auth.reg_success_body')}</p>
-            <Link href="/auth/login">
+            <LoginLink>
               <ElegantButton className="w-full">{t('auth.go_to_login')}</ElegantButton>
-            </Link>
+            </LoginLink>
           </div>
         </FormContainer>
       </div>
@@ -123,9 +139,9 @@ export default function RegisterPage() {
 
             <p className="text-center font-lato text-sm text-w-700">
               {t('auth.have_account')}{' '}
-              <Link href="/auth/login" className="text-w-600 hover:text-w-700 font-semibold underline">
+              <LoginLink className="text-w-600 hover:text-w-700 font-semibold underline">
                 {t('auth.sign_in')}
-              </Link>
+              </LoginLink>
             </p>
           </form>
         </FormContainer>

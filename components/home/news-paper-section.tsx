@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Newspaper, ArrowRight, CalendarDays } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useLanguage } from '@/contexts/language-context'
-import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
+import type { HomeNewsItem } from '@/lib/data/home'
 
 const MAX_ITEMS = 5
 
@@ -17,28 +16,13 @@ const MAX_ITEMS = 5
  * pulled LEFT on even rows and RIGHT on odd rows. Photos are square-cornered
  * crops with no border, exactly like newsprint, and each row keeps its
  * height tight (kicker + one-line headline + one line of summary) so the
- * strip stays short. Self-hides when the API is unreachable or no news is
- * published yet (never shows a broken strip).
+ * strip stays short. Items are loaded on the server (lib/data/home.ts) and
+ * passed in; the strip hides itself when no news is published yet.
  */
-export function NewsPaperSection() {
+export function NewsPaperSection({ items }: { items: HomeNewsItem[] }) {
   const { t } = useLanguage()
-  const [items, setItems] = useState<NewsArticle[]>([])
-  const [loaded, setLoaded] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/news/articles?pageSize=5')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-      .then((json) => {
-        if (cancelled) return
-        if (json.code === 'success' && Array.isArray(json.data)) setItems(json.data)
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoaded(true) })
-    return () => { cancelled = true }
-  }, [])
-
-  if (!loaded || items.length === 0) return null
+  if (items.length === 0) return null
 
   const visible = items.slice(0, MAX_ITEMS)
 
@@ -87,7 +71,7 @@ export function NewsPaperSection() {
                       {a.isEdition ? t('news.edition') : a.category}
                     </span>
                     {a.publishedAt && (
-                      <span className="inline-flex items-center gap-1 font-lato text-[10px] text-w-700 dark:text-gray-500">
+                      <span suppressHydrationWarning className="inline-flex items-center gap-1 font-lato text-[10px] text-w-700 dark:text-gray-500">
                         <CalendarDays size={10} /> {dateLabel(a.publishedAt)}
                       </span>
                     )}

@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { ArrowLeft, Calendar, User, FileText, BookOpen, Globe2 } from 'lucide-react'
 import { LocalDate } from '@/components/ui/local-date'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -10,6 +9,10 @@ import { MarkdownContent } from '@/components/ui/markdown-content'
 import { useLanguage } from '@/contexts/language-context'
 import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
 import { DEFAULT_CATEGORY_COLOR } from '@/app/dashboard/news/_shared/news-data'
+import type { ArticleEngagement } from '@/lib/news-engagement-shared'
+import { ArticleEngagementSection } from './article-engagement'
+import { MoreArticles } from './more-articles'
+import type { MoreArticleItem } from '@/lib/data/news-articles'
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--bg-card)',
@@ -25,8 +28,13 @@ const cardStyle: React.CSSProperties = {
  * article and its category color are loaded on the server by the page
  * (null = not found / not visible to this viewer), so it arrives
  * already rendered — no skeleton, and readable by search engines.
+ *
+ * Layout: [more articles | article | likes + comments] on xl screens,
+ * [article | likes + comments] with more articles below on lg, one column
+ * on small screens. The article stays first in the DOM (reading order /
+ * SEO); grid placement moves the rails. Side rails are sticky.
  */
-export function NewsArticleView({ article, categoryColor, backPath = '/member/news' }: { article: NewsArticle | null; categoryColor?: string | null; backPath?: string }) {
+export function NewsArticleView({ article, categoryColor, engagement, moreArticles = [], backPath = '/member/news' }: { article: NewsArticle | null; categoryColor?: string | null; engagement?: ArticleEngagement | null; moreArticles?: MoreArticleItem[]; backPath?: string }) {
   const { t } = useLanguage()
 
   if (!article) {
@@ -48,9 +56,15 @@ export function NewsArticleView({ article, categoryColor, backPath = '/member/ne
   }
 
   const color = categoryColor || DEFAULT_CATEGORY_COLOR
+  // Published articles always get the reactions/comments rail. If the server
+  // could not load existing engagement, start empty (the buttons and comment
+  // box still render) and tell the reader existing comments are unavailable.
+  const isPublished = article.status === 'PUBLISHED'
+  const engagementData: ArticleEngagement | null = engagement ?? (isPublished ? { likes: 0, dislikes: 0, myReaction: null, comments: [] } : null)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[260px_minmax(0,1fr)_360px]">
+    <article className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1 xl:col-start-2">
       <div
         style={{
           background: 'linear-gradient(135deg, #2c2416 0%, #6b5020 100%)',
@@ -129,29 +143,20 @@ export function NewsArticleView({ article, categoryColor, backPath = '/member/ne
         <MarkdownContent markdown={article.content ?? ''} align={(article as NewsArticle & { align?: 'left' | 'center' | 'right' | 'justify' }).align ?? 'left'} />
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-          flexWrap: 'wrap',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '12px 14px',
-        }}
-      >
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-          {t('m_news.more')}
-        </span>
-        <Link
-          href={backPath}
-          style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}
-        >
-          {t('m_news.back')} →
-        </Link>
-      </div>
+
+    </article>
+
+    {/* Right rail: likes + comments (sticky, scrolls on its own when long) */}
+    {engagementData && (
+      <aside className="min-w-0 lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto xl:col-start-3">
+        <ArticleEngagementSection articleId={article.id} initial={engagementData} loadFailed={!engagement} />
+      </aside>
+    )}
+
+    {/* Left rail: other articles (below the article on lg, left column on xl) */}
+    <aside className="min-w-0 lg:col-start-1 lg:row-start-2 xl:sticky xl:top-4 xl:col-start-1 xl:row-start-1 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
+      <MoreArticles items={moreArticles} basePath={backPath} />
+    </aside>
     </div>
   )
 }

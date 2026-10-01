@@ -20,12 +20,12 @@ export async function generateMetadata({ params }: PublicNewsArticlePageProps): 
  */
 export default async function PublicNewsArticlePage({ params }: PublicNewsArticlePageProps) {
   const { id } = await params
-  const { article, categoryColor } = await loadReadableArticle(id)
+  const { article, categoryColor, engagement, moreArticles } = await loadReadableArticle(id)
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:py-10">
         <PageTransition>
-          <NewsArticleView article={article} categoryColor={categoryColor} backPath="/news" />
+          <NewsArticleView article={article} categoryColor={categoryColor} engagement={engagement} moreArticles={moreArticles} backPath="/news" />
         </PageTransition>
       </div>
     </div>
