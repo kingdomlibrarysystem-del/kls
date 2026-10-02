@@ -4,6 +4,7 @@ import { getCategoryDisplayName } from '@/lib/data/categories'
 import { getResourceReviews } from '@/lib/data/reviews'
 import { toPlain } from '@/lib/server/to-plain'
 import { ResourceDetailView } from './_components/resource-detail-view'
+import { RecordResourceView } from '@/components/record-resource-view'
 import type { Resource } from '@/app/dashboard/library/_components/resources-data'
 import type { Review } from './_components/resource-reviews'
 
@@ -18,6 +19,7 @@ export default async function ResourceDetailPage({ params }: ResourceDetailPageP
   const categoryName = resource ? await getCategoryDisplayName(resource.categoryId) : 'Uncategorized'
   return (
     <PageTransition>
+      {resource && <RecordResourceView resourceId={resource.id} />}
       <ResourceDetailView
         resource={resource ? toPlain<Resource>(resource) : null}
         categoryName={categoryName}

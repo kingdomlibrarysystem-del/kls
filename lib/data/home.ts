@@ -28,6 +28,8 @@ export interface HomeCourse {
   instructor: string
   lessons: number
   students: number
+  /** Course cover, when one was uploaded — used as a thumbnail in the hero's E-Learning card. */
+  image: string | null
 }
 
 export interface HomePaper {
@@ -92,7 +94,7 @@ export async function getHomePageData() {
       orderBy: { createdAt: 'desc' },
       take: 3,
       select: {
-        id: true, title: true, category: true,
+        id: true, title: true, category: true, image: true,
         lecturer: { select: { name: true, firstName: true, lastName: true } },
         _count: { select: { lessons: true, enrollments: true } },
       },
@@ -118,6 +120,7 @@ export async function getHomePageData() {
     instructor: (c.lecturer ? c.lecturer.name ?? `${c.lecturer.firstName ?? ''} ${c.lecturer.lastName ?? ''}`.trim() : '') || 'Unassigned',
     lessons: c._count.lessons,
     students: c._count.enrollments,
+    image: c.image ?? null,
   }))
 
   const papers: HomePaper[] = paperRows.map((p) => ({

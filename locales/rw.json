@@ -15,6 +15,7 @@
     "next": "Ibikurikira",
     "previous": "Ibibanjirije",
     "or": "cyangwa",
+    "my_account": "Konti yanjye",
     "read": "Soma",
     "views": "abarebye",
     "view_singular": "uwarebye",
@@ -85,6 +86,19 @@
     "rights": "Uburenganzira bwose bwabitswe."
   },
   "hero": {
+    "eyebrow": "Soma Bibiliya ufite intego",
+    "title_1": "Bibiliya si igitabo kimwe —",
+    "title_2": "ni isomero.",
+    "subtitle": "Bona umuzingo ukwiye mu gihe gikwiye. Soma kuri interineti, kurikira amasomo, kandi ukure mu bumenyi bw'Ubwami.",
+    "cta_read": "Tangira gusoma",
+    "cta_join": "Fungura konti ku buntu",
+    "f1_title": "Soma aho uri hose",
+    "f1_body": "Ibitabo, amajwi n'amashusho",
+    "f2_title": "Shakisha ukurikije ibice",
+    "f2_body": "Ibice umunani, inkuru imwe",
+    "f3_title": "Amasomo n'impamyabumenyi",
+    "f3_body": "Iga ku muvuduko wawe",
+    "paths_title": "Byose ahantu hamwe",
     "bible_verse": "“Kuko isi izuzurwa ubumenyi bw'ubwiza bw'Uwiteka, nk'uko amazi yuzuza inyanja.”",
     "bible_ref": "— Habakuki 2:14",
     "library_tag": "Isomero rya digitale",
@@ -173,7 +187,7 @@
     "more": "Ibindi biva mu biro byandika"
   },
   "daily_wisdom": {
-    "label": "Ubwenge bwo ku munsi",
+    "label": "Impamba yu munsi",
     "verse_1": "Amaaso ni itara ry'umubiri. Nuko amaso yawe aramutse ari meza, umubiri wawe wose uzaba umurika.",
     "ref_1": "— Matayo 6:22",
     "verse_2": "Icyizere ukuze Uwiteka n'umutima wawe wose, kandi ntukishingire ku bwenge bwawe bwite.",

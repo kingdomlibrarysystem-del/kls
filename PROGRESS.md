@@ -6267,3 +6267,167 @@ pre-existing errors in `daily-wisdom.tsx`); `npx next build` exit 0; on the
 production build `/` returned 200 in 0.49s (first) / 0.04s (cached) with 10
 books, 10 Read buttons and no `pageSize=1000` requests.
 
+## 2026-10-02 - Public header: verse bar, mobile menu, language abbreviations; views counted for signed-out visitors
+**Header (`components/main-header.tsx`)**
+- The Bible verse (`hero.bible_verse` / `hero.bible_ref`) moved out of
+  `hero-section.tsx` (it floated over the hero's top-left corner) into a
+  full-width **verse bar at the very top of the header** with its own
+  background (`#2c2416`, dark: `#161e30`; one truncated line on phones, full
+  text from md).
+- **Mobile navigation:** the Library / E-Learning / News sections were
+  `hidden md:flex`, so phones only had one "Browse Library" link. Added a
+  hamburger button (md:hidden, `aria-expanded`/`aria-controls`) that opens a
+  panel with Browse Library + every section and its links (same `navSections`
+  data as desktop); links close the panel.
+- Desktop dropdowns also open on keyboard focus / tap
+  (`group-focus-within`), not only on hover.
+- **Language switcher (`components/language-switcher.tsx`):** the button shows
+  the abbreviation (ENG / FRA / KINY, new `short` field) on all screen sizes;
+  the dropdown still lists full names. The owner removed the translate icon
+  from the header variant mid-change; the icon was removed from the other
+  variant too (its import was gone, which broke the build).
+
+**Views without login (per device)**
+- `lib/client/record-resource-view.ts` (`recordResourceView`) - shared helper:
+  POSTs `/api/resource-views` with this browser's anonymous id
+  (`localStorage` `kls-anon-viewer-id`; a per-load id if storage is blocked).
+  Signed-in readers are still identified by their account on the server.
+- `components/record-resource-view.tsx` (`<RecordResourceView>`) is mounted on
+  the public book page `/library/[id]` and the member book page
+  `/member/library/resource/[id]`, so opening a book from ANY link (Read
+  button, cover, library list, search) counts - not only clicks on the home
+  page. `trending-books.tsx` no longer has its own click handler/copy of the
+  logic.
+- `POST /api/resource-views` now calls `revalidateTag('home-page', { expire: 0 })`
+  when a NEW viewer row is created, so the landing page's counts/ranking
+  update immediately instead of after the 60s cache.
+
+Verification: `npx tsc --noEmit` clean, eslint clean on touched files,
+resource-views tests 4/4, `npx next build` exit 0. On the production build:
+verse bar + `ENG` + menu button present in the HTML; an anonymous POST raised a
+book from 2 to 3 views, a repeat from the same id stayed at 3, and the home
+page showed 3 on the next load (test row deleted afterwards).
+
+## 2026-10-02 - Public profile menu simplified; landing hero + header redesigned around "read the Bible"
+**Profile menu (`components/profile-dropdown.tsx`)** - kept: name + role,
+Dark/Light Mode, Log Out. The per-role link lists (My Borrowings, My Courses,
+Favorites, Manage Users, Audit Log, My Profile, Notifications, Settings) are
+replaced by one **My Account** link: `/dashboard` for admin/manager/staff,
+`/member` for everyone else. New exported helper `accountHomeFor(role)` (also
+used by the hero). Avatar text is dark-on-gold in dark mode.
+
+**Hero (`components/home/hero-section.tsx`)** - the auto-rotating 3-slide
+carousel (generic "Digital Library for the World", centred text, dots) is
+replaced by one focused first screen: eyebrow pill, large Cinzel headline
+"The Bible is not one book - it is a library.", supporting line, primary
+**Start reading** (-> `/library`), secondary **Create a free account**
+(-> `/auth/register`) or **My Account** when signed in, three benefit points,
+and the three covers as a tilted stack with a "Free to read" badge. Below it
+the three former slides are always-visible cards (Digital Library ->
+`/library`, E-Learning -> `/member/e-learning`, Publishing & Research ->
+`/auth/register`) reusing their existing translated tag/body/CTA keys. No
+timers/effects left in the hero. Theme tokens, light + dark.
+- New locale keys (en/fr/rw): `hero.eyebrow`, `title_1`, `title_2`,
+  `subtitle`, `cta_read`, `cta_join`, `f1..f3_title/_body`,
+  `paths_title`; `common.my_account`. **The French and Kinyarwanda strings
+  were written by the agent and should be proofread by a native speaker.**
+  The old `hero.*_heading_*` keys are now unused (left in the locale files).
+
+**Header polish (`components/main-header.tsx`)** - search is a rounded field
+with a search icon and focus ring (`role="search"`); Browse Library is a gold
+pill button with a book icon.
+
+Verification: `npx tsc --noEmit` clean, eslint clean on the three files,
+`npx next build` exit 0; production build HTML contains the new headline,
+both CTAs, the three path cards, the search form and the verse bar. Not
+reviewed visually in a browser by the agent.
+
+**Follow-up (owner request) — hero path cards: gradient + corner image clusters**
+(The owner also removed the three-benefit list and the eyebrow icon from the
+hero; the unused `Compass`/`Award`/`Sparkles` imports were dropped.)
+- Each of the three cards now has a soft tinted gradient
+  (`bg-gradient-to-br from-card via-card to-<tint>/15`): Library = gold
+  (`primary`), E-Learning = blue (`info`), Publishing & Research = green
+  (`success`); the icon chip, hover border and CTA use the same tint. All
+  existing text/links kept.
+- New `components/home/hero-path-art.tsx` - decorative clusters in the card's
+  top-right corner (`aria-hidden`, `pointer-events-none`, ~124x88px, they do
+  not fill the card; the icon+title band has `pr-32 min-h-[92px]` so text
+  never runs under them). One arrangement per card:
+  `LibraryArt` (4 book covers fanned from a bottom pivot, spreading on hover),
+  `ELearningArt` (3 landscape lesson tiles stepping down diagonally + play
+  badge + progress bar), `PublishingArt` (3 stacked CSS manuscript pages, the
+  top one with a cover image, + pen and seal badges).
+- Images are real data: `HeroSection` takes `bookCovers` (first 4 trending
+  book covers) and `courseImages` (featured course images - `image` added to
+  `HomeCourse` / the home loader's course select); missing ones fall back to
+  the bundled `/images/book-A|B|C.jpg`, and `RemoteImage` shows an icon tile if
+  a URL fails. `app/page.tsx` passes both props.
+Verification: tsc + eslint clean, `npx next build` exit 0; production HTML has
+the three tinted cards and 4 fanned covers with real image URLs; the built CSS
+contains the gradient-tint and arbitrary-rotation utilities.
+
+**Follow-up (owner request) — hero right-side visual:** the three tilted book
+covers (`/images/book-A|B|C.jpg`) are replaced by ONE circular photo,
+`/public/hero-img1.jpg` (people praying around a table with open Bibles),
+`rounded-full` with a card-coloured ring, a static dashed gold ring and a soft
+glow behind it. The photo turns slowly and endlessly
+(`animate-[spin_90s_linear_infinite]`); `motion-reduce:animate-none` stops it
+for visitors with reduced-motion enabled. It is the LCP image (`priority`).
+The `book-A|B|C` files stay in `public/images` - `hero-path-art.tsx` still uses
+them as fallbacks. Note: the source photo is only 500x334px, so the circle is
+capped at 420px; a larger original would look sharper on high-density screens.
+Verification: tsc + eslint clean, `npx next build` exit 0, built CSS contains
+`animation: 90s linear infinite spin`.
+
+## 2026-10-02 - Build fix: corrupted dev-generated types failed `npm run build`
+**Error:** `.next/dev/types/routes.d.ts:347 Type error: Unknown keyword or
+identifier` - a stray `Route]>` after the end of the file. Not source code:
+`next dev` generates `.next/dev/types/*` and left the file half-overwritten
+(same thing happened earlier to `validator.ts`). `tsconfig.json` includes
+`.next/dev/types/**/*.ts` (Next adds it itself), so `next build` type-checks
+those dev files too.
+**Fix:** deleted `.next/dev/types` (dev-only cache; the dev server regenerates
+it). **Prevention:** new `scripts/clean-dev-types.mjs` + `"prebuild"` script in
+`package.json`, so every `npm run build` clears that folder first. (The
+tsconfig include was left alone - `next dev` re-adds it.) If a build still
+fails on a `.next/dev/types` file, a running dev server rewrote it mid-build:
+stop the dev server and build again.
+Verification: `npm run build` exit 0 (prebuild ran, Prisma generated, compiled,
+type-check passed).
+
+**Follow-up (owner request) — hero image without the circle:** the owner
+replaced the photo with a transparent-background PNG (`/public/hero-img1.png`,
+1503x1046; the old JPEG is now `hero-img2.jpg`, unused). The circular mask
+(`overflow-hidden rounded-full`), the white ring and the dashed gold ring were
+removed; the image is shown whole (`object-contain`) in a square box (max
+320/420/500px) with only a soft glow behind it and a `drop-shadow-2xl` that
+follows the picture's own outline. It still turns slowly and endlessly
+(`animate-[spin_90s_linear_infinite]`, off under reduced motion).
+Notes: (1) the dev server corrupted `.next/dev/types/routes.d.ts` again while
+running - source type-check is clean (`tsc` errors only under `.next/`);
+(2) `npm run build` fails at `prisma generate` with EPERM while a dev server
+is running (it locks the Prisma engine DLL) - stop the dev server first.
+Verification: eslint clean, `npx next build` exit 0.
+
+**Follow-up (owner request) — larger hero image:** the PNG is 1.44:1 with
+transparent margins, so `object-contain` in a 500px square rendered it only
+~350px tall. The box is now up to 340/480/600px and the image sits in a
+wrapper scaled 1.2x (1.3x on lg) - the scale is on the wrapper because the
+image itself carries the rotation transform; `sizes` raised to match
+(440/620/780px). The hero grid is `lg:grid-cols-2` (was 1.1fr/0.9fr) to give
+the image column more room. The section's `overflow-hidden` contains the
+rotating corners. Verification: eslint clean, `npx next build` exit 0 (after
+clearing a dev-corrupted `.next/dev/types/validator.ts`).
+
+**Follow-up (owner request) — hero top space / alignment:** the large gap above
+the text and image came from the image box being a 600px SQUARE: the row was
+600px tall, the vertically-centred text sat far down, and the 1.3x-scaled
+picture spilled out of the bottom. Now the box has the PNG's own ratio
+(`aspect-[1503/1046]`, max 360/500/620px wide, so ~431px tall on lg) with a
+modest `scale-[1.12] lg:scale-[1.18]`; top padding reduced
+(`pt-8 sm:pt-10 lg:pt-12`, was 10/14/20); grid gap 8/10; the path cards start
+a little lower (`mt-14 lg:mt-20`) to clear the image. Text and image stay
+vertically centred against each other (`items-center`). Verification: eslint +
+source tsc clean, `npx next build` exit 0.
+

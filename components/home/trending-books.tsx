@@ -8,44 +8,14 @@ import { useLanguage } from '@/contexts/language-context'
 import { cn } from '@/lib/utils'
 import type { TrendingBook } from '@/lib/data/home'
 
-const ANON_ID_KEY = 'kls-anon-viewer-id'
-
-/** Stable random id for a signed-out browser, so the same visitor counts as one viewer per book. */
-function anonymousViewerId(): string | undefined {
-  try {
-    let id = window.localStorage.getItem(ANON_ID_KEY)
-    if (!id) {
-      id = (window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 64)
-      window.localStorage.setItem(ANON_ID_KEY, id)
-    }
-    return id
-  } catch {
-    return undefined
-  }
-}
-
-/**
- * Records a view when "Read" is clicked. `keepalive` lets the request finish
- * while the browser navigates to the book page; failures are ignored (the
- * count is a nicety, it must never block opening the book).
- */
-function recordView(resourceId: string) {
-  try {
-    fetch('/api/resource-views', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resourceId, anonymousId: anonymousViewerId() }),
-      keepalive: true,
-    }).catch(() => {})
-  } catch { /* ignore */ }
-}
-
 /**
  * Landing-page "Trending" grid: up to 10 books (most viewed first, then
  * newest), 5 per row on md+ screens (two rows) and 2 per row on phones. Each
  * card shows only the cover, the title, the number of viewers and a "Read"
  * button under the cover. Books come from the server (getTrendingBooks) —
- * the section no longer downloads the whole catalog in the browser.
+ * the section no longer downloads the whole catalog in the browser. Opening
+ * a book (cover or Read) is counted as a view by the book page itself
+ * (RecordResourceView), for signed-in and signed-out visitors alike.
  */
 export function TrendingBooks({ books }: { books: TrendingBook[] }) {
   const { t } = useLanguage()
@@ -77,7 +47,6 @@ export function TrendingBooks({ books }: { books: TrendingBook[] }) {
             <li key={book.id} className="group flex min-w-0 flex-col">
               <Link
                 href={`/library/${book.id}`}
-                onClick={() => recordView(book.id)}
                 aria-label={book.title}
                 className="relative block aspect-[2/3] w-full overflow-hidden rounded-lg bg-muted shadow-md ring-1 ring-black/5 transition-shadow group-hover:shadow-lg dark:ring-white/10"
               >
@@ -109,7 +78,6 @@ export function TrendingBooks({ books }: { books: TrendingBook[] }) {
 
               <Link
                 href={`/library/${book.id}`}
-                onClick={() => recordView(book.id)}
                 className={cn(buttonVariants({ variant: 'default' }), 'mt-3 h-9 w-full gap-2 font-lato font-bold')}
               >
                 <BookOpen /> {t('common.read')}
