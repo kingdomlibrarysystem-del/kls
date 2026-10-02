@@ -24,7 +24,10 @@ export default async function Page() {
   return (
     <main className="min-h-screen bg-white">
       <MainHeader />
-      <HeroSection />
+      <HeroSection
+        bookCovers={data.trendingBooks.flatMap((b) => (b.cover ? [b.cover] : [])).slice(0, 4)}
+        courseImages={data.courses.flatMap((c) => (c.image ? [c.image] : []))}
+      />
       <NewsPaperSection items={data.news} />
       <TrendingBooks books={data.trendingBooks} />
       <ELearningSection courses={data.courses} stats={data.courseStats} />

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -15,8 +16,8 @@ const viewSchema = z.object({
 
 /**
  * POST /api/resource-views  { resourceId, anonymousId? } — public.
- * Records that a reader opened a book from the landing page's trending grid
- * ("Read" button). One row per viewer per resource (signed-in user id, or
+ * Records that a reader opened a book (the book detail pages call this on
+ * load). No login needed. One row per viewer per resource (signed-in user id, or
  * the browser's anonymous id), so repeat clicks don't inflate the count.
  * Returns the resource's unique-viewer total.
  */
@@ -35,11 +36,13 @@ export const POST = withErrorHandling('/api/resource-views', 'POST', async (requ
   const resource = await prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true } })
   if (!resource) throw new ApiError('Resource not found', 404)
 
-  await prisma.resourceView.upsert({
-    where: { resourceId_viewerKey: { resourceId, viewerKey } },
-    create: { resourceId, viewerKey },
-    update: {},
-  })
+  const key = { resourceId_viewerKey: { resourceId, viewerKey } }
+  const already = await prisma.resourceView.findUnique({ where: key, select: { id: true } })
+  if (!already) {
+    await prisma.resourceView.upsert({ where: key, create: { resourceId, viewerKey }, update: {} })
+    // A new viewer changes the landing page's counts/ranking: expire its 60s data cache now.
+    try { revalidateTag('home-page', { expire: 0 }) } catch { /* outside a Next request (tests) */ }
+  }
   const views = await prisma.resourceView.count({ where: { resourceId } })
   return NextResponse.json({ data: { resourceId, views }, message: 'View recorded', code: 'success', status: 200 })
 })

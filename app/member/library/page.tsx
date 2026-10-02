@@ -42,17 +42,17 @@ function resourcesInSection<T extends { categoryId: string }>(
 
 /**
  * Resource-first Kingdom Library: real Resource records are the primary
- * view (search/sort/filter, grid or list), replacing the previous
- * scroll-grouped-by-KCS-section layout — a scroll is still reachable by
- * clicking its section chip (filters resources to that section) or via
- * "Browse the KCS Map" for the pure-taxonomy view with no resource
- * attached yet.
+ * view (search/sort/filter, list by default with grid as the optional
+ * alternate), replacing the previous scroll-grouped-by-KCS-section layout — a
+ * scroll is still reachable by clicking its section chip (filters resources to
+ * that section) or via "Browse the KCS Map" for the pure-taxonomy view with no
+ * resource attached yet.
  */
 export default function MemberLibraryPage() {
   const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState("All");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [view, setView] = useState<"grid" | "list">("list");
   const [sort, setSort] = useState<SortMode>("newest");
   const [showAbout, setShowAbout] = useState(true);
   const [page, setPage] = useState(1);
@@ -178,22 +178,6 @@ export default function MemberLibraryPage() {
             <Info size={14} /> About KCS
           </button>
           <button
-            onClick={() => setView("grid")}
-            aria-label="Grid view"
-            aria-pressed={view === "grid"}
-            style={{
-              padding: "6px 8px",
-              background:
-                view === "grid" ? "rgba(212,168,67,0.15)" : "transparent",
-              border: "1px solid var(--border)",
-              borderRadius: 6,
-              cursor: "pointer",
-              color: view === "grid" ? "var(--gold)" : "var(--text-muted)",
-            }}
-          >
-            <Grid3X3 size={16} />
-          </button>
-          <button
             onClick={() => setView("list")}
             aria-label="List view"
             aria-pressed={view === "list"}
@@ -209,45 +193,25 @@ export default function MemberLibraryPage() {
           >
             <List size={16} />
           </button>
+          <button
+            onClick={() => setView("grid")}
+            aria-label="Grid view"
+            aria-pressed={view === "grid"}
+            style={{
+              padding: "6px 8px",
+              background:
+                view === "grid" ? "rgba(212,168,67,0.15)" : "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              cursor: "pointer",
+              color: view === "grid" ? "var(--gold)" : "var(--text-muted)",
+            }}
+          >
+            <Grid3X3 size={16} />
+          </button>
         </div>
       </div>
 
-      {showAbout && (
-        <div
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--gold-dim, rgba(212,168,67,0.3))",
-            borderRadius: 8,
-            padding: "12px 14px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "var(--gold)",
-              marginBottom: 6,
-              fontFamily: "'Cinzel',serif",
-            }}
-          >
-            Kingdom Classification System (KCS)
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--text-secondary)",
-              lineHeight: 1.6,
-            }}
-          >
-            The KCS organizes Scripture according to divine pattern:{" "}
-            <strong>
-              Foundation → History → Wisdom → Prophetic → Gospels → Acts →
-              Epistles → Revelation
-            </strong>
-            . Click a section below to see the resources filed under it.
-          </div>
-        </div>
-      )}
 
       <div style={{ position: "relative" }}>
         <Search

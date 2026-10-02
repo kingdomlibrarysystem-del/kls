@@ -1,13 +1,13 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
-import { Languages } from "lucide-react"
 import { useLanguage, type Lang } from "@/contexts/language-context"
 
-const languages: { code: Lang; label: string; flag: string }[] = [
-  { code: "en", label: "English", flag: "🇬🇧" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "rw", label: "Kinyarwanda", flag: "🇷🇼" },
+/** `short` is what the header button shows (ENG / FRA / KINY); the dropdown lists the full `label`. */
+const languages: { code: Lang; label: string; short: string; flag: string }[] = [
+  { code: "en", label: "English", short: "ENG", flag: "🇬🇧" },
+  { code: "fr", label: "Français", short: "FRA", flag: "🇫🇷" },
+  { code: "rw", label: "Kinyarwanda", short: "KINY", flag: "🇷🇼" },
 ]
 
 export function LanguageSwitcher({ minimal = false }: { minimal?: boolean }) {
@@ -48,10 +48,12 @@ export function LanguageSwitcher({ minimal = false }: { minimal?: boolean }) {
       <div ref={ref} className="relative">
         <button
           onClick={() => setOpen(!open)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={`Language: ${current.label}`}
           className="flex items-center gap-1.5 text-w-600 dark:text-amber-400 hover:text-w-700 dark:hover:text-amber-300 transition cursor-pointer"
         >
-          <Languages size={16} />
-          <span key={lang} className="text-xs font-semibold hidden sm:inline animate-in fade-in duration-200">{current.label}</span>
+          <span key={lang} className="text-xs font-bold tracking-wide animate-in fade-in duration-200">{current.short}</span>
         </button>
         {open && dropdown}
       </div>
@@ -60,10 +62,9 @@ export function LanguageSwitcher({ minimal = false }: { minimal?: boolean }) {
 
   return (
     <div ref={ref} className="relative flex items-center gap-1.5">
-      <Languages size={16} className="text-w-600 dark:text-amber-400" />
       <button onClick={() => setOpen(!open)} className="flex items-center gap-1 cursor-pointer">
         <span className="text-base">{current.flag}</span>
-        <span key={`${lang}-label`} className="text-xs font-semibold text-w-700 dark:text-gray-300 animate-in fade-in duration-200">{current.label}</span>
+        <span key={`${lang}-label`} className="text-xs font-bold tracking-wide text-w-700 dark:text-gray-300 animate-in fade-in duration-200">{current.short}</span>
         <svg width="10" height="6" viewBox="0 0 10 6" className="text-w-600 dark:text-amber-400" fill="none">
           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" />
         </svg>

@@ -34,10 +34,9 @@ export function NewsPaperSection({ items }: { items: HomeNewsItem[] }) {
       <div className="max-w-5xl mx-auto">
         <div className="text-center border-b-2 border-w-950/80 dark:border-gray-200 pb-3">
           <span className="inline-flex items-center gap-1.5 font-lato text-[11px] font-semibold text-w-600 dark:text-amber-500/70 uppercase tracking-[0.3em]">
-            <Newspaper size={13} className="text-w-500" />
             {t('news.label')}
           </span>
-          <h2 className="font-cinzel font-bold text-3xl md:text-4xl text-w-950 dark:text-gray-100 mt-1" style={{ letterSpacing: '2px' }}>
+          <h2 className="font-cinzel font-bold text-2xl md:text-3xl text-w-950 dark:text-gray-100 mt-1" style={{ letterSpacing: '2px' }}>
             {t('news.title')}
           </h2>
         </div>
