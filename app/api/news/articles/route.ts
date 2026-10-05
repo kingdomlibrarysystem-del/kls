@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { withArticleStats } from '@/lib/data/news-engagement'
 
 /**
  * Real NewsArticle API, mirrors /api/publications' query-param/status
@@ -91,7 +92,8 @@ export const GET = withErrorHandling('/api/news/articles', 'GET', async (request
   const totalPages = Math.ceil(totalItems / pageSize)
 
   return NextResponse.json({
-    data: articles.map(serializeArticle),
+    // Each article carries its views / likes / visible-comment counts (three groupBys for the whole page).
+    data: await withArticleStats(articles.map(serializeArticle)),
     message: 'Articles fetched successfully',
     code: 'success',
     status: 200,

@@ -9,7 +9,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { mediaTypeLabels, isResourceReadable } from '@/app/dashboard/library/_components/resources-data'
+import { isResourceReadable } from '@/app/dashboard/library/_components/resources-data'
+import { MediaTypeName } from '@/components/media-type-name'
 import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_components/catalog-data'
 import { usePublicPublication } from '@/app/dashboard/publishing/_shared/use-publications'
 import { usePublicResource } from '@/app/dashboard/library/_components/use-resources'
@@ -51,7 +52,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
         coverImages: publication.coverImage ? [publication.coverImage] : [],
         description: publication.description,
         bindingType: publication.bindingType ?? 'SOFT',
-        mediaType: publication.mediaType ?? 'TEXT',
+        mediaType: publication.mediaType ?? '',
         price: publication.price ?? 0,
         borrowPrice: 0,
         borrowDurationDays: 14,
@@ -160,7 +161,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
               {available ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
               {available ? 'Available' : 'Unavailable'}
             </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold"><Film size={12} /> {mediaTypeLabels[mediaType]}</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato font-semibold"><Film size={12} /> <MediaTypeName code={mediaType} /></span>
           </div>
 
           <h1 className="font-cinzel text-xl sm:text-2xl font-semibold text-w-950 mb-2 leading-snug">{title}</h1>

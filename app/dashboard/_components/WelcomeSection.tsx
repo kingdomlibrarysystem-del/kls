@@ -8,16 +8,15 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { mediaTypeLabels } from "@/app/dashboard/library/_components/resources-data";
 import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
-
-const tabFilters = ["All", "TEXT", "VIDEO", "AUDIO", "DOCUMENT", "COMBINATION"] as const;
 
 /** Hero: welcome + real library search on the left, real per-mediaType collection totals (aggregated server-side, passed in) on the right. */
 export default function WelcomeSection({ inventory }: { inventory: AdminDashboardData["inventory"] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<typeof tabFilters[number]>("All");
+  const [activeTab, setActiveTab] = useState("All");
+  // Filter chips are the media types actually in the collection (admin-managed names), not a fixed list.
+  const tabFilters = [{ code: "All", name: "All" }, ...inventory.byMediaType.map((m) => ({ code: m.mediaType, name: m.name }))];
   const { totalItems } = inventory;
 
   const handleSearch = () => {
@@ -58,17 +57,17 @@ export default function WelcomeSection({ inventory }: { inventory: AdminDashboar
           <div className="mt-4 flex flex-wrap gap-2">
             {tabFilters.map((t) => (
               <button
-                key={t}
+                key={t.code}
                 type="button"
-                onClick={() => setActiveTab(t)}
+                onClick={() => setActiveTab(t.code)}
                 className={cn(
                   "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
-                  activeTab === t
+                  activeTab === t.code
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-card/70 text-muted-foreground hover:border-primary/50 hover:text-foreground",
                 )}
               >
-                {t === "All" ? "All" : mediaTypeLabels[t]}
+                {t.name}
               </button>
             ))}
           </div>
@@ -92,9 +91,9 @@ export default function WelcomeSection({ inventory }: { inventory: AdminDashboar
           {inventory.byMediaType.length === 0 ? (
             <li className="text-xs text-muted-foreground">No resources yet.</li>
           ) : (
-            inventory.byMediaType.map(({ mediaType, qty }) => (
+            inventory.byMediaType.map(({ mediaType, name, qty }) => (
               <li key={mediaType} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{mediaTypeLabels[mediaType as keyof typeof mediaTypeLabels] ?? mediaType}</span>
+                <span className="text-muted-foreground">{name}</span>
                 <span suppressHydrationWarning className="font-semibold text-foreground">{qty.toLocaleString()}</span>
               </li>
             ))

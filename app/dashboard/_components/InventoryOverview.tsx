@@ -1,17 +1,11 @@
 import Link from "next/link";
 import { Package, Plus, User, BarChart3, Database, Zap } from "lucide-react";
-import { mediaTypeLabels } from "@/app/dashboard/library/_components/resources-data";
 import { SectionCard, SectionLink } from "./section-card";
 import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
 
-// Slice colors come from the theme chart tokens so the donut follows light/dark mode.
-const sliceColors: Record<string, string> = {
-  TEXT: "var(--chart-1)",
-  VIDEO: "var(--chart-4)",
-  AUDIO: "var(--chart-5)",
-  DOCUMENT: "var(--chart-2)",
-  COMBINATION: "var(--chart-3)",
-};
+// Slice colors cycle through the theme chart tokens (follows light/dark mode). Assigned by position, not by
+// media type code, because the list of types is admin-managed.
+const sliceColors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
 const quickActions = [
   { icon: <Plus />, label: "Add New Item", sub: "Add book, audio, video…", href: "/dashboard/library" },
@@ -24,11 +18,11 @@ const quickActions = [
 export default function InventoryOverview({ inventory }: { inventory: AdminDashboardData["inventory"] }) {
   const { totalItems } = inventory;
   const slices = inventory.byMediaType
-    .map(({ mediaType, qty: count }) => ({
-      label: mediaTypeLabels[mediaType as keyof typeof mediaTypeLabels] ?? mediaType,
+    .map(({ name, qty: count }, i) => ({
+      label: name,
       count,
       pct: totalItems > 0 ? Math.round((count / totalItems) * 100) : 0,
-      color: sliceColors[mediaType] ?? "var(--muted-foreground)",
+      color: sliceColors[i % sliceColors.length],
     }))
     .filter((s) => s.count > 0);
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Newspaper, ArrowRight, CalendarDays } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useLanguage } from '@/contexts/language-context'
+import { ArticleStatsRow } from '@/components/news/article-stats'
 import type { HomeNewsItem } from '@/lib/data/home'
 
 const MAX_ITEMS = 5
@@ -81,6 +82,7 @@ export function NewsPaperSection({ items }: { items: HomeNewsItem[] }) {
                   <p className="mt-1 font-lato text-xs text-w-700 dark:text-gray-400 leading-snug line-clamp-1 sm:line-clamp-2">
                     {a.summary}
                   </p>
+                  <ArticleStatsRow stats={a.stats} iconSize={11} className={`mt-1.5 font-lato text-[11px] text-w-700 dark:text-gray-400`} />
                 </div>
               </Link>
             )

@@ -1,8 +1,8 @@
 import type { BindingType, MediaType } from '@/app/dashboard/library/_components/resources-data'
-import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import { bindingTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 
 export type { BindingType, MediaType }
-export { bindingTypeLabels, mediaTypeLabels }
+export { bindingTypeLabels }
 
 /** Published book, per APP_DOC Task 5.1 / Prisma `Publication` (status PUBLISHED). */
 export interface PublishedBook {

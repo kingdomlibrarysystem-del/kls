@@ -1,12 +1,14 @@
 'use client'
 
-import { ArrowLeft, Calendar, User, FileText, BookOpen, Globe2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, Calendar, User, FileText, BookOpen, Globe2, Eye } from 'lucide-react'
 import { LocalDate } from '@/components/ui/local-date'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import { useLanguage } from '@/contexts/language-context'
+import { recordArticleView } from '@/lib/client/record-article-view'
 import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
 import { DEFAULT_CATEGORY_COLOR } from '@/app/dashboard/news/_shared/news-data'
 import type { ArticleEngagement } from '@/lib/news-engagement-shared'
@@ -36,6 +38,17 @@ const cardStyle: React.CSSProperties = {
  */
 export function NewsArticleView({ article, categoryColor, engagement, moreArticles = [], backPath = '/member/news' }: { article: NewsArticle | null; categoryColor?: string | null; engagement?: ArticleEngagement | null; moreArticles?: MoreArticleItem[]; backPath?: string }) {
   const { t } = useLanguage()
+  const articleId = article?.status === 'PUBLISHED' ? article.id : null
+  const [views, setViews] = useState(engagement?.views ?? 0)
+
+  // Count this reader (signed in or not) and show the fresh total. A mount
+  // effect is required: the anonymous device id only exists in the browser.
+  useEffect(() => {
+    if (!articleId) return
+    let cancelled = false
+    recordArticleView(articleId).then((total) => { if (!cancelled && total !== null) setViews(total) })
+    return () => { cancelled = true }
+  }, [articleId])
 
   if (!article) {
     return (
@@ -60,7 +73,7 @@ export function NewsArticleView({ article, categoryColor, engagement, moreArticl
   // could not load existing engagement, start empty (the buttons and comment
   // box still render) and tell the reader existing comments are unavailable.
   const isPublished = article.status === 'PUBLISHED'
-  const engagementData: ArticleEngagement | null = engagement ?? (isPublished ? { likes: 0, dislikes: 0, myReaction: null, comments: [] } : null)
+  const engagementData: ArticleEngagement | null = engagement ?? (isPublished ? { views: 0, likes: 0, dislikes: 0, myReaction: null, comments: [] } : null)
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[260px_minmax(0,1fr)_360px]">
@@ -101,6 +114,11 @@ export function NewsArticleView({ article, categoryColor, engagement, moreArticl
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <Globe2 size={12} /> {article.language?.toUpperCase() ?? 'EN'}
           </span>
+          {isPublished && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <Eye size={12} /> <span suppressHydrationWarning>{views.toLocaleString()}</span> {views === 1 ? t('common.view_singular') : t('common.views')}
+            </span>
+          )}
         </div>
         <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
           <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', padding: '2px 9px', borderRadius: 999 }}>

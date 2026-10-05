@@ -108,7 +108,7 @@ export function MainHeader() {
 
             <Link href="/" className="flex items-center gap-2 flex-shrink-0">
               <Image
-                src="/kls-logo.png"
+                src="/kls-logo.jpg"
                 alt="Logo"
                 width={40}
                 height={40}
@@ -123,13 +123,6 @@ export function MainHeader() {
               </h1>
             </Link>
 
-            <Link
-              href="/library"
-              className="hidden md:flex h-10 shrink-0 items-center gap-2 rounded-full bg-primary px-5 font-lato text-sm font-bold text-primary-foreground shadow-xs transition hover:bg-primary/85"
-            >
-              <BookOpen size={16} />
-              <span>{t("nav.browse_library")}</span>
-            </Link>
 
             <form onSubmit={handleSearch} role="search" className="relative flex-1 min-w-0">
               <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-w-600 dark:text-gray-400" />

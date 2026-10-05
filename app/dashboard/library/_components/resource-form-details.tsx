@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Controller, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue, type UseFormWatch } from 'react-hook-form'
 import { BookOpen } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
-import { bindingTypeLabels, mediaTypeLabels, type BindingType, type MediaType } from './resources-data'
+import { useMediaTypes } from '@/lib/client/use-media-types'
+import { mediaCapabilities } from '@/lib/media-types-shared'
+import { bindingTypeLabels, type BindingType } from './resources-data'
 import { TagInput } from './tag-input'
 import { ResourceFormMediaFiles } from './resource-form-media-files'
 import { ResourceFormBorrowFields } from './resource-form-borrow-fields'
@@ -32,6 +35,8 @@ interface ResourceFormDetailsProps {
 export function ResourceFormDetails({ register, control, errors, setValue, watch, isCreating }: ResourceFormDetailsProps) {
   const coverImageValue = watch('coverImage')
   const mediaType = watch('mediaType')
+  const { mediaTypes, loading: mediaTypesLoading } = useMediaTypes()
+  const capabilities = mediaCapabilities(mediaType, mediaTypes)
   /** Tracks whether the current coverImage came from this picker (vs. the typed-URL text input above it) — so the picker only shows its "uploaded" state for a genuine upload, not a pasted URL. */
   const [coverUploaded, setCoverUploaded] = useState(false)
 
@@ -89,19 +94,26 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
         </div>
         <div>
           <FieldLabel htmlFor="mediaType" required>Media Type</FieldLabel>
-          <select id="mediaType" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('mediaType')}>
-            {(Object.keys(mediaTypeLabels) as MediaType[]).map((m) => <option key={m} value={m}>{mediaTypeLabels[m]}</option>)}
+          <select id="mediaType" disabled={mediaTypesLoading} className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none disabled:opacity-60" {...register('mediaType')}>
+            {mediaTypesLoading && <option value={mediaType}>Loading…</option>}
+            {/* Keeps an edited resource's stored type selectable even if that type was since removed. */}
+            {!mediaTypesLoading && mediaType && !mediaTypes.some((m) => m.code === mediaType) && <option value={mediaType}>{mediaType}</option>}
+            {mediaTypes.map((m) => <option key={m.code} value={m.code}>{m.name}</option>)}
           </select>
+          {errors.mediaType && <p className="text-red-600 dark:text-destructive text-xs mt-1 font-lato">{errors.mediaType.message}</p>}
+          <p className="font-lato text-xs text-w-600 mt-1">
+            Managed in <Link href="/dashboard/library/media-types" className="underline hover:text-w-950">Media Types</Link>.
+          </p>
         </div>
       </div>
 
       <div>
         <FieldLabel htmlFor="freePreviewChapterCount">
-          {mediaType === 'DOCUMENT' || mediaType === 'COMBINATION' ? 'Free Preview Pages' : 'Free Preview pages'}
+          Free Preview Pages
         </FieldLabel>
         <FormInput id="freePreviewChapterCount" type="number" min={0} error={errors.freePreviewChapterCount?.message} {...register('freePreviewChapterCount', { valueAsNumber: true })} />
         <p className="font-lato text-xs text-w-600 mt-1">
-          {mediaType === 'DOCUMENT' || mediaType === 'COMBINATION'
+          {capabilities.allowsDocument
             ? 'How many pages of the uploaded PDF are readable for free before the reader shows a "Buy or Rent" paywall.'
             : 'Readable for free before the reader shows a "Buy to Continue" paywall.'}
           {' '}Ignored while price is 0 — a free resource stays fully readable.
@@ -154,7 +166,7 @@ export function ResourceFormDetails({ register, control, errors, setValue, watch
         </div>
       </div>
 
-      <ResourceFormMediaFiles control={control} setValue={setValue} watch={watch} mediaType={mediaType} isCreating={isCreating} />
+      <ResourceFormMediaFiles control={control} setValue={setValue} watch={watch} capabilities={capabilities} isCreating={isCreating} />
 
       <div>
         <FieldLabel htmlFor="tags">Tags</FieldLabel>

@@ -4,8 +4,9 @@ import { Package } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { UniversalButton } from '@/components/ui/universal-button'
-import type { Resource, BindingType, MediaType } from '@/app/dashboard/library/_components/resources-data'
-import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import type { Resource, BindingType } from '@/app/dashboard/library/_components/resources-data'
+import { bindingTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import { MediaTypeName } from '@/components/media-type-name'
 
 interface CategoryResourcesSectionProps {
   resources: Resource[]
@@ -28,7 +29,7 @@ export function CategoryResourcesSection({ resources }: CategoryResourcesSection
     },
     { key: 'author', label: 'Author', sortable: true, render: (r) => r.author },
     { key: 'bindingType', label: 'Binding', render: (r) => bindingTypeLabels[r.bindingType as BindingType] },
-    { key: 'mediaType', label: 'Media', render: (r) => mediaTypeLabels[r.mediaType as MediaType] },
+    { key: 'mediaType', label: 'Media', render: (r) => <MediaTypeName code={r.mediaType} /> },
     { key: 'price', label: 'Price', sortable: true, render: (r) => `${r.price.toLocaleString()} RWF` },
     {
       key: 'availableQty', label: 'Available', sortable: true,

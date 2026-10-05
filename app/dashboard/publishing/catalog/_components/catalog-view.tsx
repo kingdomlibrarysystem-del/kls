@@ -26,7 +26,7 @@ export function CatalogView() {
       available: true,
       featured: p.featured,
       bindingType: p.bindingType ?? 'SOFT',
-      mediaType: p.mediaType ?? 'TEXT',
+      mediaType: p.mediaType ?? '',
       price: p.price ?? 0,
       quantity: p.quantity ?? 0,
     }))

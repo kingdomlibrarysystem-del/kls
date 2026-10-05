@@ -1,16 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Pencil, Archive, BookOpenCheck, Package } from "lucide-react";
+import { Eye, Pencil, Archive, BookOpenCheck, Package, MessageCircle } from "lucide-react";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { UniversalButton } from "@/components/ui/universal-button";
 import { getCategoryById } from "@/lib/kcs-taxonomy";
 import {
   statusConfig,
   bindingTypeLabels,
-  mediaTypeLabels,
   isResourceReadable,
   type Resource,
 } from "./resources-data";
+import { useMediaTypes } from "@/lib/client/use-media-types";
+import { mediaCapabilities, mediaTypeName } from "@/lib/media-types-shared";
 
 interface ResourcesTableProps {
   data: Resource[];
@@ -32,6 +33,7 @@ export function ResourcesTable({
   onEdit,
   onArchive,
 }: ResourcesTableProps) {
+  const { mediaTypes } = useMediaTypes();
   const tableData = data.filter((r) => {
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
     const matchType =
@@ -57,6 +59,7 @@ export function ResourcesTable({
                 src={r.coverImages[0]}
                 alt={r.title}
                 fill
+                sizes="36px"
                 className="object-cover"
               />
             ) : (
@@ -116,7 +119,7 @@ export function ResourcesTable({
             {bindingTypeLabels[r.bindingType]}
           </span>
           <span className="px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato">
-            {mediaTypeLabels[r.mediaType]}
+            {mediaTypeName(r.mediaType, mediaTypes)}
           </span>
         </div>
       ),
@@ -133,6 +136,17 @@ export function ResourcesTable({
             {r.availableQty} / {r.totalQty}
           </p>
           <p className="text-xs text-w-600">available / total</p>
+        </div>
+      ),
+    },
+    {
+      key: "views",
+      label: "Views / Reviews",
+      sortable: true,
+      render: (r) => (
+        <div className="flex flex-col gap-0.5 text-xs font-lato text-w-700 dark:text-muted-foreground whitespace-nowrap">
+          <span className="inline-flex items-center gap-1" title="Unique viewers"><Eye size={12} /> <span suppressHydrationWarning>{(r.views ?? 0).toLocaleString()}</span></span>
+          <span className="inline-flex items-center gap-1" title="Member reviews"><MessageCircle size={12} /> {r.reviewCount}</span>
         </div>
       ),
     },
@@ -172,7 +186,7 @@ export function ResourcesTable({
             >
               <BookOpenCheck size={12} /> Read
             </Link>
-          ) : r.mediaType === 'TEXT' ? (
+          ) : mediaCapabilities(r.mediaType, mediaTypes).allowsChapters ? (
             <span
               title="No chapters yet — edit this book and add chapters to make it readable"
               className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-warning/10 text-amber-700 dark:text-warning border border-amber-200 dark:border-warning/30 rounded text-xs font-lato cursor-help"

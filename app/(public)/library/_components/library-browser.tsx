@@ -7,11 +7,9 @@ import { UniversalButton } from '@/components/ui/universal-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
-import { mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import { useMediaTypes } from '@/lib/client/use-media-types'
 import { getCategoryById } from '@/lib/kcs-taxonomy'
 import { BookCard } from './book-card'
-
-const formats = ['All', ...Object.values(mediaTypeLabels)]
 
 /**
  * Public book browse grid — search + category + media-type filter over the
@@ -21,6 +19,9 @@ const formats = ['All', ...Object.values(mediaTypeLabels)]
  */
 export function LibraryBrowser() {
   const { data: books, loading, error } = useResources()
+  // Format filter options are the admin-managed media types, not a fixed list. `format` holds a type's code.
+  const { mediaTypes } = useMediaTypes()
+  const formats = [{ code: 'All', name: 'All' }, ...mediaTypes.map((m) => ({ code: m.code, name: m.name }))]
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
   const [search, setSearch] = useState(initialQuery)
@@ -38,7 +39,7 @@ export function LibraryBrowser() {
       b.status !== 'archived' &&
       (b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)) &&
       (category === 'All' || categoryName === category) &&
-      (format === 'All' || mediaTypeLabels[b.mediaType] === format)
+      (format === 'All' || b.mediaType === format)
     )
   })
 
@@ -95,7 +96,7 @@ export function LibraryBrowser() {
                 className="w-full px-4 py-2.5 font-lato text-sm border border-w-500 bg-form-bg rounded focus:border-w-600 focus:outline-none appearance-none pr-8"
               >
                 <option value="All">Media Type</option>
-                {formats.filter((f) => f !== 'All').map((f) => <option key={f} value={f}>{f}</option>)}
+                {formats.filter((f) => f.code !== 'All').map((f) => <option key={f.code} value={f.code}>{f.name}</option>)}
               </select>
               {format !== 'All' && (
                 <button onClick={() => setFormat('All')} aria-label="Clear media type filter" className="absolute right-2 top-1/2 -translate-y-1/2 text-w-600 hover:text-w-950 transition-colors">

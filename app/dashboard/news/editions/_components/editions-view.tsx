@@ -5,6 +5,7 @@ import { BookOpen, Send, Star, AlertTriangle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
+import { ArticleStatsRow } from '@/components/news/article-stats'
 import { articleStatusConfig, type NewsArticle } from '../../_shared/news-data'
 import { useArticles, publishArticle, toggleFeaturedArticle } from '../../_shared/use-articles'
 
@@ -54,7 +55,8 @@ export function EditionsView() {
                 </button>
               </div>
               <p className="font-lato text-xs text-w-600 mb-2 px-2 py-0.5 bg-w-100 rounded inline-block">{a.category}</p>
-              <p className="font-lato text-xs text-w-700 mb-3">{a.summary}</p>
+              <p className="font-lato text-xs text-w-700 mb-2">{a.summary}</p>
+              <ArticleStatsRow stats={a.stats} className="mb-3 font-lato text-xs text-w-700 dark:text-muted-foreground" />
               <div className="flex items-center justify-between gap-2">
                 <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${articleStatusConfig[a.status].cls}`}>{articleStatusConfig[a.status].label}</span>
                 {a.status === 'APPROVED' && (

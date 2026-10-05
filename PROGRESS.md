@@ -19,6 +19,17 @@
 > run in parallel, and hit indexed fields. Full rule with examples:
 > **PERFORMANCE.md → Rule 15**.
 
+# Standing rule — no hardcoded option lists for admin-managed data (added 2026-10-05)
+
+> **Rule (per project owner: "from now never use hardcoded"):** a dropdown,
+> filter, label map, union type, `z.enum` or `=== 'SOME_CODE'` check must
+> never be built from a list written in the code when that list is business
+> data an admin should manage (media types, categories, roles, tags...).
+> Store it in a table, give it an admin page, read it through one loader
+> (`lib/data/<domain>.ts`) / one client hook, and drive behaviour from
+> fields on the row (e.g. `allowsChapters`), not from the row's code.
+> Lifecycle statuses stay enums. Full rule: **RULES.md → Dynamic Data First**.
+
 # Standing rule — shadcn + Tailwind, light AND dark (added 2026-09-29)
 
 > **Rule (per project owner):** admin (`/dashboard`) and member (`/member`)
@@ -6159,8 +6170,12 @@ Real fix on that machine: stop dev server → `npx prisma generate` →
 under `app/api/news/articles/[id]/` returned the HTML 404 page - including the
 pre-existing `save` route - while the same code worked in the production
 build. The owner had hit this in the News module before and asked to discard
-the comments/likes API and rebuild it. **Do not add new routes under
-`app/api/news/articles/[id]/`.**
+the comments/likes API and rebuild it. ~~Do not add new routes under
+`app/api/news/articles/[id]/`.~~ **Correction (2026-10-05):** that folder was
+never the problem - the real cause was a corrupted Turbopack dev cache
+(`.next/dev`), see the 2026-10-05 entry. After clearing it,
+`/api/news/articles/[id]/save` resolves normally in dev. Routes may be added
+there; the flat endpoints below stay because they work and are tested.
 
 **Discarded:** `app/api/news/articles/[id]/{engagement,reaction,comments,reactions}/`
 (that folder is back to its git state: `route.ts`, `save/`, `notify-subscribers.ts`).
@@ -6431,3 +6446,203 @@ a little lower (`mt-14 lg:mt-20`) to clear the image. Text and image stay
 vertically centred against each other (`items-center`). Verification: eslint +
 source tsc clean, `npx next build` exit 0.
 
+## 2026-10-05 - Dev server returned 404 for almost every route: corrupted Turbopack dev cache
+**Symptom (`npm run dev`):** only `/` returned 200. `/auth/login`, `/news`,
+`/library`, `/api/auth/session`, `/api/news/categories`... all returned the 404
+page, which also produced next-auth `CLIENT_FETCH_ERROR Unexpected token '<'`
+(the session endpoint was answering with the HTML 404). All route files
+existed, and `.next/dev/types/routes.d.ts` even listed them.
+**Cause:** the persistent dev cache `.next/dev/cache` (grown to **7.2 GB**
+since September) was stale/corrupt, so Turbopack's dev router no longer matched
+routes. This is the same root cause as (a) the earlier "routes under
+`app/api/news/articles/[id]/` 404 in dev" (wrongly blamed on that folder -
+corrected above) and very likely (b) the repeatedly corrupted
+`.next/dev/types/*.ts` files.
+**Fix:** stopped the dev server, deleted `.next/dev`, restarted. Verified on a
+fresh dev server: `/`, `/auth/login`, `/news`, `/library`, `/api/auth/session`,
+`/api/news/categories`, `/api/news/engagement` -> 200; the previously "broken"
+`GET /api/news/articles/[id]/save` -> 405 (POST-only) and POST -> JSON 400.
+New cache size after those requests: 261 MB.
+**Prevention / tooling:** `npm run dev:clean` (`scripts/clean-dev-cache.mjs`)
+deletes `.next/dev` and starts `next dev`. Use it whenever existing routes 404,
+new routes aren't picked up, or errors point into `.next/dev/types`. Stop any
+running dev server first (Windows locks open files). The production build
+never used this cache, which is why `next build`/`next start` always worked.
+## 2026-10-05 - Media types are admin-managed (no hardcoded list) + /dashboard/library log fixes
+
+**Request:** make media type dynamic so an admin can add new ones and get them
+in the resource form, managed from a sub-item inside Digital Library in the
+sidebar; never use the hardcoded `<select>` built from `mediaTypeLabels`
+again. Also fix the `/dashboard/library` dev log: `GET /api/resources?pageSize=1000`
+sent twice, and `Image ... has "fill" but is missing "sizes"` warnings.
+
+**New standing rule** (top of this file + RULES.md -> Dynamic Data First ->
+"No hardcoded option lists").
+
+**Data model (`prisma/schema.prisma`)**
+- `enum MediaType` removed. `Resource.mediaType` is `String`,
+  `Publication.mediaType` is `String?`; both hold a `ResourceMediaType.code`.
+  Stored values are unchanged ("TEXT", "VIDEO"...), so no data migration.
+- New model `ResourceMediaType`: `code` (unique), `name`, `description`,
+  `allowsChapters`, `allowsDocument`, `allowsAudio`, `allowsVideo`,
+  `isSystem`, `sortOrder`.
+- The five old enum values are created automatically as `isSystem` rows the
+  first time the list is read (`ensureSystemMediaTypes`), with the same
+  behaviour the form used to hardcode: Text -> chapters, Document -> PDF,
+  Audio -> audio, Video -> video, Combination -> PDF + audio + video.
+- **Needs:** stop the dev server, `npx prisma generate`, `npx prisma db push`
+  (creates the unique index on `code`), restart.
+
+**API**
+- `GET /api/media-types` (public), `POST` (staff) - code generated from the
+  name ("Sermon notes" -> `SERMON_NOTES`), 409 on duplicate code/name.
+- `PATCH /api/media-types/[id]` (staff) - name/description/order for any
+  type; the `allows*` flags only on custom types (400 on a built-in one).
+  `code` never changes.
+- `DELETE /api/media-types/[id]` (staff) - 409 for built-in types and for a
+  type still used by a resource or publication.
+- `POST /api/resources` and `PATCH /api/resources/[id]` reject a `mediaType`
+  that is not an existing code (400). Publication approval falls back to
+  `DEFAULT_MEDIA_TYPE_CODE`.
+
+**Admin UI**
+- New page `/dashboard/library/media-types` (server page:
+  `requireStaffPage()` + `getMediaTypesWithUsage()`, one `groupBy` for the
+  per-type resource count). Table with Built-in badge, code, "Contains"
+  badges, resource count; Add / Edit modal with four switches; Delete with
+  confirmation (disabled for built-in and in-use types).
+- Sidebar: Digital Library -> "Media Types" (`nav-data.tsx`).
+- Resource form: the Media Type dropdown lists the managed types
+  (`useMediaTypes()`), a new resource starts on the first type in the admin's
+  order, and the chapters / PDF / audio / video fields show according to the
+  selected type's `allows*` flags.
+
+**Every hardcoded usage removed**
+- `resources-data.ts`: `MediaType` is now `string`; `mediaTypeLabels` deleted
+  (and its re-export in `publishing/catalog/_components/catalog-data.ts`).
+- `resource-form-schema.ts` (`z.enum` -> `z.string().min(1)`),
+  `resource-form-details.tsx`, `resource-form-media-files.tsx` (prop
+  `mediaType` -> `capabilities`), `resource-form-modal.tsx`,
+  `sync-resource-chapters.ts` (`realChaptersFrom(form, allowsChapters)`),
+  `resources-table.tsx`, `library-view.tsx`,
+  `library/[id]/_components/resource-detail-view.tsx` + `resource-detail-rows.tsx`.
+- Display names now come from `<MediaTypeName code>` / `mediaTypeName()`:
+  KCS category + scroll resource tables, `components/ui/related-resource-card.tsx`,
+  member resource detail, public publication detail, public book card,
+  publishing catalog card.
+- Public library "format" filter lists the managed types and filters by code.
+- Admin dashboard: `getAdminDashboardData()` returns `name` with each
+  `byMediaType` row (in the admin's order); `WelcomeSection` chips and
+  `InventoryOverview` use it. Donut colours are assigned by position from
+  the chart tokens instead of a map keyed by code.
+
+**New files:** `lib/media-types-shared.ts` (Prisma-free types/helpers),
+`lib/data/media-types.ts`, `lib/client/use-media-types.ts`,
+`components/media-type-name.tsx`, `app/api/media-types/route.ts`,
+`app/api/media-types/[id]/route.ts`,
+`app/dashboard/library/media-types/page.tsx` + `_components/media-types-view.tsx`
++ `_components/media-type-form-modal.tsx`, `app/api/__tests__/media-types.test.ts`.
+
+**Log fixes**
+- Duplicate `/api/resources?pageSize=1000`: `use-resources.ts` had a cache but
+  no in-flight de-duplication, so components mounting together (and a refetch
+  racing a mount) each sent the request. `fetchResources()` now shares one
+  in-flight promise.
+- `sizes` added to the `fill` cover images in `resources-table.tsx` (36px),
+  `library/[id]/_components/resource-cover-gallery.tsx` and
+  `publishing/catalog/_components/catalog-card.tsx`. A scan of `app/` and
+  `components/` finds no other `fill` image without `sizes`.
+
+**Verified:** `tsc --noEmit` clean; `npx next build` passes;
+`media-types.test.ts` 7/7 and `chapter-authoring-save.test.ts` 13/13 against
+the real database. Not checked in a browser (the running dev server still has
+the old Prisma client until it is restarted).
+
+**Interactions to watch**
+- Anything reading `resource.mediaType` gets a free string now - never compare
+  it to a literal; use `mediaCapabilities(code, mediaTypes)`.
+- A public book whose publication has no media type shows "-" instead of
+  "Text" (the old `?? 'TEXT'` display fallback was a hardcoded code).
+- A custom type with no content switched on would show no upload fields; the
+  admin form requires at least one.
+- Readers still decide what to show from the resource's own data
+  (`documentUrl`, `chapterCount`), so a new type needs no reader change.
+- `LANGUAGE_OPTIONS` and `bindingTypeLabels` in the resource form are still
+  lists in code - same rule applies if they should become admin-managed.
+
+## 2026-10-05 - Article views + views/likes/comments shown on every article; reader numbers on the admin dashboard
+
+**Request:** like the views count on books, add views on news articles; show
+views, likes and number of comments everywhere an article appears (landing
+page news strip, `/news`, `/news/[id]`, `/member/news`, `/member/news/[id]`);
+and show the admin the number of views and comments on articles
+(newsletters) and on books.
+
+**Data model (`prisma/schema.prisma`)**
+- New model `NewsArticleView` (`articleId`, `viewerKey`,
+  `@@unique([articleId, viewerKey])`, `@@index([articleId])`), relation
+  `NewsArticle.views`. Same design as `ResourceView`.
+- **Needs:** stop the dev server, `npx prisma generate`, `npx prisma db push`,
+  restart. Until then every count falls back to 0 (reads are `.catch`ed) and
+  recording a view returns an error that the reader never sees.
+
+**API**
+- New `POST /api/news/views { articleId, anonymousId? }` - public, rate
+  limited, PUBLISHED articles only (404 otherwise). One row per viewer:
+  `u:<userId>` when signed in, `a:<device id>` when signed out (the same
+  `kls-anon-viewer-id` in localStorage that book views use). Returns the
+  unique-viewer total and expires the `home-page` cache tag on a new viewer.
+- `GET /api/news/articles` now returns `stats: { views, likes, comments }`
+  on each article. `GET /api/news/engagement` now includes `views`.
+- `GET /api/resources` and `GET /api/resources/[id]` now return `views`
+  (unique viewers) for each book.
+
+**Loaders (no per-row counting)**
+- `lib/data/news-engagement.ts`: `getArticleStatsMap(ids)` (three groupBys
+  for a whole list: views, LIKE reactions, VISIBLE comments) and
+  `withArticleStats(rows)`. Used by the list API, `getMoreArticles`
+  (`lib/data/news-articles.ts`), the landing page (`lib/data/home.ts`) and the
+  admin dashboard, so the numbers agree everywhere.
+  `getArticleEngagement` adds `views`; `getArticleEngagementStats` adds
+  `views` and now also lists articles that only have views.
+- `lib/data/admin-dashboard.ts`: `getReaderEngagement()` (runs in parallel
+  with the existing batch) -> `data.engagement.articles { views, comments,
+  likes, top[5] }` and `data.engagement.books { views, reviews, top[5] }`.
+- `lib/news-engagement-shared.ts`: `ArticleStats`, `EMPTY_ARTICLE_STATS`,
+  `ArticleEngagement.views`.
+
+**UI**
+- New `components/news/article-stats.tsx` (`<ArticleStatsRow stats>`): eye /
+  thumbs-up / comment icons with numbers, inherits text colour (light + dark).
+- Shown on: landing page news strip (`components/home/news-paper-section.tsx`),
+  the news feed used by `/news` and `/member/news`
+  (`app/member/news/_components/news-feed-view.tsx`: featured card, edition
+  cards, article rows), the "more articles" rail (`more-articles.tsx`).
+- Article page (`news-article-view.tsx`, used by `/news/[id]` and
+  `/member/news/[id]`): records the view on open (new
+  `lib/client/record-article-view.ts`; `anonymousViewerId` is now exported from
+  `record-resource-view.ts`) and shows "N views" in the header, updated with
+  the total the API returns. Likes and the comment count were already shown
+  in the right rail.
+- Admin: Articles table has a "Views / Likes / Comments" column; Editions
+  cards show the same; Comments & Reactions page has an "Article views" KPI
+  and a Views column; Book Inventory table has a "Views / Reviews" column.
+- Admin home: two new cards (`app/dashboard/_components/ReaderEngagement.tsx`)
+  - "News & Newsletters - Readers" (total views, comments, likes + five most
+  viewed articles) and "Books - Readers" (total views, reviews + five most
+  viewed books).
+
+**Verified:** `tsc --noEmit` clean; `npx next build` compiles;
+`news-engagement.test.ts` + `resource-views.test.ts` 17/17 against the real
+database (3 new tests for article views). Not checked in a browser.
+
+**Interactions to watch**
+- "Comments" on a book are its member reviews (`Review` rows) - books have no
+  separate comment feature.
+- List counts show VISIBLE comments only; the admin dashboard total counts
+  all comments (visible + hidden), matching the moderation page.
+- Counts on the landing page come from the 60s `home-page` cache: a new view
+  expires it immediately, a new like or comment shows within a minute.
+- Staff opening a published article through `/news/[id]` or
+  `/member/news/[id]` are counted as viewers too; the admin article detail
+  page does not record views.

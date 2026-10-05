@@ -6,7 +6,7 @@ const ANON_ID_KEY = 'kls-anon-viewer-id'
  * Stable random id for this browser/device, kept in localStorage. Lets a
  * visitor who is NOT signed in still count as exactly one viewer per book.
  */
-function anonymousViewerId(): string | undefined {
+export function anonymousViewerId(): string | undefined {
   try {
     let id = window.localStorage.getItem(ANON_ID_KEY)
     if (!id) {

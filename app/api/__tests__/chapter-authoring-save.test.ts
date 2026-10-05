@@ -33,17 +33,17 @@ function jsonResponse(payload: unknown, ok = true, status = 200) {
 
 describe('realChaptersFrom', () => {
   it('keeps a chapter that has content but no title (it is authored text, not an empty row)', () => {
-    const chapters = realChaptersFrom({ mediaType: 'TEXT', chapters: [{ title: '', content: 'Real prose.' }] })
+    const chapters = realChaptersFrom({ chapters: [{ title: '', content: 'Real prose.' }] }, true)
     expect(chapters).toHaveLength(1)
   })
 
   it('drops a chapter the admin clicked "Add Chapter" on but never typed into', () => {
-    const chapters = realChaptersFrom({ mediaType: 'TEXT', chapters: [{ title: '', content: '   ' }] })
+    const chapters = realChaptersFrom({ chapters: [{ title: '', content: '   ' }] }, true)
     expect(chapters).toHaveLength(0)
   })
 
   it('returns nothing for a non-TEXT resource, which has no chapter editor at all', () => {
-    const chapters = realChaptersFrom({ mediaType: 'DOCUMENT', chapters: [{ title: 'X', content: 'Y' }] })
+    const chapters = realChaptersFrom({ chapters: [{ title: 'X', content: 'Y' }] }, false)
     expect(chapters).toHaveLength(0)
   })
 })

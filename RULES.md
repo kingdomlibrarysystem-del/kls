@@ -128,6 +128,22 @@ constants/
 
 on role, permission, categories, tags, Table resource_types, Table resource_formats, scrolls  Never use static enums for business data managed by admins. while status should be enums (static).
 
+### No hardcoded option lists (added 2026-10-05)
+
+Never build a `<select>`, filter, label map, union type, `z.enum([...])` or
+`=== 'SOME_CODE'` check from a list written in the code when an admin should
+manage that list. Example of what is no longer allowed:
+
+```tsx
+{(Object.keys(mediaTypeLabels) as MediaType[]).map((m) => <option key={m} value={m}>{mediaTypeLabels[m]}</option>)}
+```
+
+Instead: a table (`ResourceMediaType`), an admin page
+(`/dashboard/library/media-types`), one server loader
+(`lib/data/media-types.ts`), one client hook (`useMediaTypes()`), and
+behaviour driven by fields on the row (`allowsChapters`, `allowsDocument`...)
+rather than by the row's code.
+
 ### ❌ Avoid
 
 ```ts

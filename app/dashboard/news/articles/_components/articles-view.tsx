@@ -1,5 +1,7 @@
 'use client'
 
+import { ArticleStatsRow } from '@/components/news/article-stats'
+
 import { useEffect, useState } from 'react'
 import { PlusCircle, Eye, Pencil, Trash2, Send, AlertTriangle, Tag } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
@@ -46,6 +48,10 @@ export function ArticlesView() {
     { key: 'title', label: 'Title', sortable: true, render: (a) => <span className="font-semibold text-w-950 max-w-55 truncate block">{a.title}</span> },
     { key: 'category', label: 'Category', sortable: true, render: (a) => <span className="text-w-700">{a.category}</span> },
     { key: 'isEdition', label: 'Type', render: (a) => <span className="text-xs px-2 py-0.5 bg-w-100 rounded font-lato text-w-700">{a.isEdition ? 'Edition' : 'Article'}</span> },
+    {
+      key: 'stats', label: 'Views · Likes · Comments',
+      render: (a) => <ArticleStatsRow stats={a.stats} className="font-lato text-xs text-w-700 dark:text-muted-foreground whitespace-nowrap" />,
+    },
     {
       key: 'status', label: 'Status', sortable: true,
       render: (a) => <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${articleStatusConfig[a.status].cls}`}>{articleStatusConfig[a.status].label}</span>,

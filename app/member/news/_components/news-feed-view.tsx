@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useLanguage } from '@/contexts/language-context'
+import { ArticleStatsRow } from '@/components/news/article-stats'
 import type { NewsArticle } from '@/app/dashboard/news/_shared/news-data'
 import { resolveCategoryColor } from '@/app/dashboard/news/_shared/news-data'
 import { useNewsCategories } from '@/app/dashboard/news/_shared/use-news-categories'
@@ -90,6 +91,7 @@ export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: str
         <Calendar size={11} /> {dateLabel(a.publishedAt)}
       </span>
       {a.language && <span style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>· {a.language}</span>}
+      <ArticleStatsRow stats={a.stats} iconSize={11} />
     </span>
   )
 
@@ -132,6 +134,7 @@ export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: str
                   </span>
                   <p style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35 }}>{featured.title}</p>
                   <p style={{ marginTop: 4, fontSize: 11, color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.summary}</p>
+                  <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}><ArticleStatsRow stats={featured.stats} iconSize={11} /></div>
                 </div>
               </Link>
             )}
@@ -162,6 +165,7 @@ export function NewsFeedView({ detailPath = '/member/news' }: { detailPath?: str
                   </span>
                   <p style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35 }}>{a.title}</p>
                   <p style={{ marginTop: 4, fontSize: 11, color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.summary}</p>
+                  <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}><ArticleStatsRow stats={a.stats} iconSize={11} /></div>
                 </div>
               </Link>
             ))}

@@ -1,5 +1,7 @@
 import prisma from '@/prisma/client'
 import { isObjectId } from '@/lib/server/object-id'
+import { withArticleStats } from '@/lib/data/news-engagement'
+import type { ArticleStats } from '@/lib/news-engagement-shared'
 
 export function serializeArticle(a: {
   id: string
@@ -59,6 +61,7 @@ export interface MoreArticleItem {
   isEdition: boolean
   coverImage: string | null
   publishedAt: string | null
+  stats: ArticleStats
 }
 
 /** Latest published articles other than `excludeId` (one indexed query on status + publishedAt). */
@@ -69,5 +72,5 @@ export async function getMoreArticles(excludeId: string, limit = 8): Promise<Mor
     take: limit,
     select: { id: true, title: true, category: true, isEdition: true, coverImage: true, publishedAt: true },
   })
-  return rows.map((r) => ({ ...r, publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null }))
+  return withArticleStats(rows.map((r) => ({ ...r, publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null })))
 }

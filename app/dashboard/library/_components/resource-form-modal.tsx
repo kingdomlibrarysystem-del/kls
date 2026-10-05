@@ -7,6 +7,8 @@ import { AlertCircle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { ElegantButton } from "@/components/ui/elegant-button";
 import { useCategories } from "@/lib/kcs-taxonomy/use-categories";
+import { useMediaTypes } from "@/lib/client/use-media-types";
+import { mediaCapabilities } from "@/lib/media-types-shared";
 import { type Resource } from "./resources-data";
 import {
   resourceSchema,
@@ -34,6 +36,10 @@ export function ResourceFormModal({
   const [submitError, setSubmitError] = useState("");
   const [chapterLoadFailed, setChapterLoadFailed] = useState(false);
   const { data: allCategories } = useCategories();
+  const { mediaTypes } = useMediaTypes();
+  /** Whether the edited resource's (admin-managed) media type is chapter-based — replaces a hardcoded `mediaType === 'TEXT'`. */
+  const editingHasChapters = !!editing && mediaCapabilities(editing.mediaType, mediaTypes).allowsChapters;
+  const firstMediaTypeCode = mediaTypes[0]?.code ?? "";
   /**
    * Leaf/scroll-level categories only, grouped under their root pillar label
    * — a real cataloguer classifies a specific book (e.g. "Genesis"), not a
@@ -60,7 +66,7 @@ export function ResourceFormModal({
     if (!open) return
     setChapterLoadFailed(false)
 
-    if (editing && editing.mediaType === 'TEXT') {
+    if (editing && editingHasChapters) {
       fetch(`/api/chapters?resourceId=${editing.id}`)
         .then((r) => r.json())
         .then((json) => {
@@ -155,11 +161,12 @@ chapters: [],
         : {
             ...defaultResourceFormValues,
             categoryId: leafCategories[0]?.id ?? "",
+            mediaType: firstMediaTypeCode,
           },
     )
     setSubmitError("")
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editing, reset, leafCategories.length])
+  }, [open, editing, reset, leafCategories.length, editingHasChapters, firstMediaTypeCode])
 
   const onSubmit = (data: ResourceFormData) => {
     try {

@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film, FileText, Music, Video } from 'lucide-react'
 import { getCategoryName } from '@/lib/kcs-taxonomy'
-import { statusConfig, bindingTypeLabels, mediaTypeLabels, type Resource } from '../../_components/resources-data'
+import { MediaTypeName } from '@/components/media-type-name'
+import { statusConfig, bindingTypeLabels, type Resource } from '../../_components/resources-data'
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
       <span className="text-w-600 mt-0.5 shrink-0">{icon}</span>
@@ -26,7 +27,7 @@ export function ResourceDetailRows({ resource }: { resource: Resource }) {
       <DetailRow icon={<Copy size={13} />} label="Publisher" value={resource.publisher} />
       <DetailRow icon={<Layers size={13} />} label="Status" value={statusConfig[resource.status].label} />
       <DetailRow icon={<BookMarked size={13} />} label="Binding" value={bindingTypeLabels[resource.bindingType]} />
-      <DetailRow icon={<Film size={13} />} label="Media" value={mediaTypeLabels[resource.mediaType]} />
+      <DetailRow icon={<Film size={13} />} label="Media" value={<MediaTypeName code={resource.mediaType} />} />
     </div>
   )
 }

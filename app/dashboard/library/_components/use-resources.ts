@@ -22,20 +22,26 @@ import type { Resource } from './resources-data'
  */
 let cache: Resource[] = []
 let hasFetched = false
+/** The request currently in flight, shared by every caller — two components mounting together (or a refetch racing a mount) used to send /api/resources?pageSize=1000 twice. */
+let inflight: Promise<void> | null = null
 const listeners = new Set<() => void>()
 
 function notify() {
   listeners.forEach((l) => l())
 }
 
-async function fetchResources(): Promise<void> {
-  const res = await fetch('/api/resources?pageSize=1000')
-  if (!res.ok) throw new Error(`Failed to fetch resources (${res.status})`)
-  const json = await res.json()
-  if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch resources')
-  cache = json.data
-  hasFetched = true
-  notify()
+function fetchResources(): Promise<void> {
+  if (inflight) return inflight
+  inflight = (async () => {
+    const res = await fetch('/api/resources?pageSize=1000')
+    if (!res.ok) throw new Error(`Failed to fetch resources (${res.status})`)
+    const json = await res.json()
+    if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch resources')
+    cache = json.data
+    hasFetched = true
+    notify()
+  })().finally(() => { inflight = null })
+  return inflight
 }
 
 /** Live-subscribes to the shared resources store, fetching once on first mount. */
@@ -87,7 +93,7 @@ export async function refetchResources(): Promise<void> {
 }
 
 /** `isbn` is never sent by the client — it's generated server-side (see lib/generate-isbn.ts) and always ignored if present in the request body. `chapterCount` is likewise server-derived (counted from real Chapter rows), never client-supplied. */
-export async function addResource(resource: Omit<Resource, 'id' | 'isbn' | 'avgRating' | 'reviewCount' | 'chapterCount'>): Promise<Resource> {
+export async function addResource(resource: Omit<Resource, 'id' | 'isbn' | 'avgRating' | 'reviewCount' | 'chapterCount' | 'views'>): Promise<Resource> {
   const res = await fetch('/api/resources', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
