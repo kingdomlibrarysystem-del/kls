@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { useCategories } from '@/lib/kcs-taxonomy/use-categories'
+import { useMediaTypes } from '@/lib/client/use-media-types'
+import { mediaCapabilities } from '@/lib/media-types-shared'
 import { type Resource } from './resources-data'
 import { useResources, addResource, updateResource, archiveResource } from './use-resources'
 import { ResourcesStats } from './resources-stats'
@@ -31,6 +33,7 @@ export function LibraryView() {
   const [editing, setEditing] = useState<Resource | null>(null)
   const { data, loading: resourcesLoading, error: resourcesError } = useResources()
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
+  const { mediaTypes } = useMediaTypes()
 
   const loading = resourcesLoading || categoriesLoading
   const error = resourcesError ?? categoriesError
@@ -58,7 +61,7 @@ export function LibraryView() {
         videoUrl: videoUrl || undefined,
       }
       // A TEXT book's readable content lives in Chapter rows.
-      const realChapters = realChaptersFrom({ mediaType: formData.mediaType, chapters })
+      const realChapters = realChaptersFrom({ chapters }, mediaCapabilities(formData.mediaType, mediaTypes).allowsChapters)
 
       if (editingId) {
         await updateResource(editingId, { ...rest, coverImages: [coverImage], ...fileFields })

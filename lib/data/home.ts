@@ -1,4 +1,6 @@
 import prisma from '@/prisma/client'
+import { withArticleStats } from '@/lib/data/news-engagement'
+import type { ArticleStats } from '@/lib/news-engagement-shared'
 
 /** How many books the landing page's trending grid shows (2 rows × 5 on large screens). */
 export const TRENDING_BOOKS_LIMIT = 10
@@ -19,6 +21,8 @@ export interface HomeNewsItem {
   coverImage: string | null
   isEdition: boolean
   publishedAt: string | null
+  /** Views / likes / visible comments shown on the news strip. */
+  stats: ArticleStats
 }
 
 export interface HomeCourse {
@@ -110,7 +114,7 @@ export async function getHomePageData() {
     }), []),
   ])
 
-  const news: HomeNewsItem[] = newsRows.map((n) => ({ ...n, publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null }))
+  const news: HomeNewsItem[] = await withArticleStats(newsRows.map((n) => ({ ...n, publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null })))
 
   const courses: HomeCourse[] = courseRows.map((c) => ({
     id: c.id,

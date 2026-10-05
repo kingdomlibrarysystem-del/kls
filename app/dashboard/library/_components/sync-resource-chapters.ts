@@ -7,12 +7,13 @@ type FormChapter = ResourceFormData['chapters'][number]
 /**
  * The chapter entries an admin actually meant to save: empty rows (no title
  * AND no content) are dropped, because clicking "Add Chapter" without typing
- * anything should not create a blank chapter. Only a TEXT resource has real
- * chapter content — for any other mediaType the editor hides the chapter
- * fields, so there is nothing to reconcile.
+ * anything should not create a blank chapter. Only a media type that allows
+ * chapters (`allowsChapters`, admin-managed) has real chapter content — for
+ * any other type the editor hides the chapter fields, so there is nothing
+ * to reconcile.
  */
-export function realChaptersFrom(formData: Pick<ResourceFormData, 'mediaType' | 'chapters'>): FormChapter[] {
-  return formData.mediaType === 'TEXT'
+export function realChaptersFrom(formData: Pick<ResourceFormData, 'chapters'>, allowsChapters: boolean): FormChapter[] {
+  return allowsChapters
     ? formData.chapters.filter((c) => c.title.trim() || c.content.trim())
     : []
 }

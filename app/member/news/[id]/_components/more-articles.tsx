@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Newspaper, ArrowRight } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { LocalDate } from '@/components/ui/local-date'
+import { ArticleStatsRow } from '@/components/news/article-stats'
 import type { MoreArticleItem } from '@/lib/data/news-articles'
 
 /**
@@ -46,6 +47,7 @@ export function MoreArticles({ items, basePath }: { items: MoreArticleItem[]; ba
                       </>
                     )}
                   </p>
+                  <ArticleStatsRow stats={a.stats} iconSize={11} className="mt-1 text-[11px] text-muted-foreground" />
                 </div>
               </Link>
             </li>

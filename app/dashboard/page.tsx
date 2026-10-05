@@ -6,6 +6,7 @@ import InventoryOverview, { QuickActions } from "./_components/InventoryOverview
 import { PopularResources, RecentlyAdded } from "./_components/MiddleSection";
 import { PublishingServices, ResearchServices } from "./_components/RightPanels";
 import WelcomeSection from "./_components/WelcomeSection";
+import { ArticleEngagementCard, BookEngagementCard } from "./_components/ReaderEngagement";
 import { requireStaffPage } from "@/lib/server/page-session";
 import { getAdminDashboardData } from "@/lib/data/admin-dashboard";
 import { toPlain } from "@/lib/server/to-plain";
@@ -18,7 +19,7 @@ import type { AdminDashboardData } from "@/lib/data/admin-dashboard";
  *
  * Layout (one 16px rhythm everywhere, columns bottom-aligned so no gaps):
  *   hero → KPI row → [loans + KCS + research (2/3) | quick actions + publishing (1/3)]
- *   → [inventory | popular | recently added] → [roadmap (2/3) | AI + community (1/3)]
+ *   → [inventory | popular | recently added] → [article readers | book readers] → [roadmap (2/3) | AI + community (1/3)]
  */
 export default async function DashboardPage() {
   await requireStaffPage();
@@ -46,6 +47,11 @@ export default async function DashboardPage() {
         <InventoryOverview inventory={data.inventory} />
         <PopularResources popular={data.popular} />
         <RecentlyAdded recent={data.inventory.newest} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ArticleEngagementCard articles={data.engagement.articles} />
+        <BookEngagementCard books={data.engagement.books} />
       </div>
 
       <FooterSection />

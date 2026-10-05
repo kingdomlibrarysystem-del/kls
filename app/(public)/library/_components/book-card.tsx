@@ -6,7 +6,8 @@ import Image from 'next/image'
 import { ChevronDown, ChevronUp, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
-import { mediaTypeLabels, isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { MediaTypeName } from '@/components/media-type-name'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
 
 /**
@@ -90,7 +91,7 @@ export function BookCard({ book }: { book: Resource }) {
         </p>
         <p className="font-lato text-xs text-w-600">{book.borrowPrice > 0 ? `${book.borrowPrice.toLocaleString('en-RW')} RWF` : 'Free'} to borrow · {book.borrowDurationDays}d</p>
         <div className="flex flex-wrap gap-1.5">
-          <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><Film size={10} /> {mediaTypeLabels[book.mediaType]}</span>
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-w-100 text-w-950 rounded text-xs font-lato"><Film size={10} /> <MediaTypeName code={book.mediaType} /></span>
         </div>
         <div className="flex gap-3 text-xs font-lato text-w-700 items-center">
           <span>{book.pages} pages</span><span>·</span>

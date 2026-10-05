@@ -1,7 +1,8 @@
 import Image from 'next/image'
 import { BookMarked, Film, Package, BookOpen } from 'lucide-react'
-import type { Resource, BindingType, MediaType } from '@/app/dashboard/library/_components/resources-data'
-import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import type { Resource, BindingType } from '@/app/dashboard/library/_components/resources-data'
+import { bindingTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import { MediaTypeName } from '@/components/media-type-name'
 
 interface RelatedResourceCardProps {
   resource: Resource
@@ -25,7 +26,7 @@ export function RelatedResourceCard({ resource, action, className, style }: Rela
   const isDialectB = !!style
   const outOfStock = resource.availableQty === 0
 
-  const chip = (label: string, icon: React.ReactNode) =>
+  const chip = (label: React.ReactNode, icon: React.ReactNode) =>
     isDialectB ? (
       <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: 'var(--text-muted)', background: 'var(--bg-section)', padding: '2px 6px', borderRadius: 3 }}>
         {icon} {label}
@@ -58,7 +59,7 @@ export function RelatedResourceCard({ resource, action, className, style }: Rela
       </p>
       <div className="flex flex-wrap gap-1.5">
         {chip(bindingTypeLabels[resource.bindingType as BindingType], <BookMarked size={10} />)}
-        {chip(mediaTypeLabels[resource.mediaType as MediaType], <Film size={10} />)}
+        {chip(<MediaTypeName code={resource.mediaType} />, <Film size={10} />)}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span className={isDialectB ? '' : 'font-cinzel text-sm font-bold text-w-600'} style={isDialectB ? { fontSize: 13, fontWeight: 700, color: 'var(--gold)' } : undefined}>

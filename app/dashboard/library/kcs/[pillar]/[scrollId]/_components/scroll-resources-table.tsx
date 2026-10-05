@@ -1,8 +1,9 @@
 'use client'
 
 import { DataTable, type Column } from '@/components/ui/data-table'
-import type { Resource, BindingType, MediaType } from '@/app/dashboard/library/_components/resources-data'
-import { bindingTypeLabels, mediaTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import type { Resource, BindingType } from '@/app/dashboard/library/_components/resources-data'
+import { bindingTypeLabels } from '@/app/dashboard/library/_components/resources-data'
+import { MediaTypeName } from '@/components/media-type-name'
 
 interface ScrollResourcesTableProps {
   resources: Resource[]
@@ -14,7 +15,7 @@ export function ScrollResourcesTable({ resources }: ScrollResourcesTableProps) {
     { key: 'title', label: 'Title', sortable: true, render: (r) => <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.title}</span> },
     { key: 'author', label: 'Author', sortable: true, render: (r) => r.author },
     { key: 'bindingType', label: 'Binding', render: (r) => bindingTypeLabels[r.bindingType as BindingType] },
-    { key: 'mediaType', label: 'Media', render: (r) => mediaTypeLabels[r.mediaType as MediaType] },
+    { key: 'mediaType', label: 'Media', render: (r) => <MediaTypeName code={r.mediaType} /> },
     { key: 'price', label: 'Price', sortable: true, render: (r) => `${r.price.toLocaleString()} RWF` },
     {
       key: 'availableQty',

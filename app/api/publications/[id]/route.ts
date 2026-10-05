@@ -6,6 +6,7 @@ import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { notifyUser } from '@/lib/notify'
 import { publicationApprovedEmailHtml, publicationRejectedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
+import { DEFAULT_MEDIA_TYPE_CODE } from '@/lib/data/media-types'
 
 function serializePublication(p: {
   id: string
@@ -144,7 +145,7 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
           status: 'AVAILABLE',
           coverImages: existing.coverImage ? [existing.coverImage] : [],
           bindingType: existing.bindingType ?? 'SOFT',
-          mediaType: existing.mediaType ?? 'TEXT',
+          mediaType: existing.mediaType ?? DEFAULT_MEDIA_TYPE_CODE,
           description: existing.description,
           tags: [],
         },

@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { serializeResource, getResourceDetail } from '@/lib/data/resources'
+import { isValidMediaTypeCode } from '@/lib/data/media-types'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -94,7 +95,10 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
   if (body.status !== undefined) data.status = body.status.toUpperCase()
   if (body.coverImages !== undefined) data.coverImages = body.coverImages
   if (body.bindingType !== undefined) data.bindingType = body.bindingType
-  if (body.mediaType !== undefined) data.mediaType = body.mediaType
+  if (body.mediaType !== undefined) {
+    if (!(await isValidMediaTypeCode(body.mediaType))) throw new ApiError('The specified media type does not exist', 400)
+    data.mediaType = body.mediaType
+  }
   if (body.description !== undefined) data.description = body.description
   if (body.tags !== undefined) data.tags = body.tags
   if (body.documentUrl !== undefined) data.documentUrl = body.documentUrl

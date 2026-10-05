@@ -8,6 +8,8 @@ import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { useMediaTypes } from '@/lib/client/use-media-types'
+import { mediaCapabilities } from '@/lib/media-types-shared'
 import { ResourceFormModal } from '../../_components/resource-form-modal'
 import { type Resource, isResourceReadable } from '../../_components/resources-data'
 import { updateResource, archiveResource } from '../../_components/use-resources'
@@ -36,6 +38,7 @@ export function ResourceDetailView({ initialResource }: ResourceDetailViewProps)
   // (useReadableContent -> GET /api/chapters, every chapter body in the
   // library) just to answer this one yes/no question.
   const isReadable = !!resource && isResourceReadable(resource)
+  const { mediaTypes } = useMediaTypes()
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
@@ -46,7 +49,7 @@ export function ResourceDetailView({ initialResource }: ResourceDetailViewProps)
       // not a Resource field, so it is split out of the PATCH body and
       // reconciled against the real Chapter rows below instead.
       const { coverImage, documentUrl, audioUrl, videoUrl, chapters, ...rest } = formData
-      const realChapters = realChaptersFrom({ mediaType: formData.mediaType, chapters })
+      const realChapters = realChaptersFrom({ chapters }, mediaCapabilities(formData.mediaType, mediaTypes).allowsChapters)
       const updated = await updateResource(editingId, {
         ...rest,
         coverImages: [coverImage],

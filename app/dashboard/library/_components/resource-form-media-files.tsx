@@ -7,6 +7,7 @@ import { FieldLabel } from '@/components/ui/field-label'
 import { CloudinaryUploadField, type UploadKind } from '@/components/ui/cloudinary-upload-field'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { FormInput } from '@/components/ui/form-input'
+import type { MediaCapabilities } from '@/lib/media-types-shared'
 import type { ResourceFormData } from './resource-form-schema'
 
 // react-pdf's Document/Page ultimately need pdfjs-dist's browser build
@@ -22,7 +23,8 @@ interface ResourceFormMediaFilesProps {
   control: Control<ResourceFormData>
   setValue: UseFormSetValue<ResourceFormData>
   watch: UseFormWatch<ResourceFormData>
-  mediaType: ResourceFormData['mediaType']
+  /** What the selected (admin-managed) media type contains — decides which authoring/upload fields show. */
+  capabilities: MediaCapabilities
   /** Only true for a brand-new resource — editing an existing one manages chapters through the real chapter-authoring flow, not this one-shot "first chapter" field. */
   isCreating: boolean
 }
@@ -73,22 +75,21 @@ function MediaField({ control, id, kind, urlName, nameName, accept, label, onUpl
 }
 
 /**
- * Document/audio/video/markdown field for a Resource — only the field
- * matching the selected `mediaType` is shown. A TEXT resource is
+ * Document/audio/video/markdown fields for a Resource — only the fields
+ * the selected media type allows are shown (its `allows*` flags, set by
+ * an admin at /dashboard/library/media-types — never a hardcoded check
+ * on the type's code). A chapter-based resource is
  * authored directly as real markdown (a whole book at once: the
  * `chapters` list becomes one real ordered Chapter row per entry via
  * POST /api/chapters after the Resource itself — see
  * resource-form-modal.tsx's onSubmit / library-view.tsx's handleSave)
  * rather than uploading a PDF, since a pure-text book's real readable
- * content lives in Chapter rows, not a document file. DOCUMENT/
- * COMBINATION keep the PDF picker (which also auto-fills Pages from the
+ * content lives in Chapter rows, not a document file. Types that allow
+ * a document keep the PDF picker (which also auto-fills Pages from the
  * file's real extracted page count).
  */
-export function ResourceFormMediaFiles({ control, setValue, watch, mediaType, isCreating }: ResourceFormMediaFilesProps) {
-  const showMarkdown = mediaType === 'TEXT'
-  const showDocument = mediaType === 'DOCUMENT' || mediaType === 'COMBINATION'
-  const showAudio    = mediaType === 'AUDIO'    || mediaType === 'COMBINATION'
-  const showVideo    = mediaType === 'VIDEO'    || mediaType === 'COMBINATION'
+export function ResourceFormMediaFiles({ control, setValue, watch, capabilities, isCreating }: ResourceFormMediaFilesProps) {
+  const { allowsChapters: showMarkdown, allowsDocument: showDocument, allowsAudio: showAudio, allowsVideo: showVideo } = capabilities
   const documentUrl = watch('documentUrl')
   const { fields, append, remove } = useFieldArray({ control, name: 'chapters' })
 

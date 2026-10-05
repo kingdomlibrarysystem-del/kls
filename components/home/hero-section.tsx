@@ -77,15 +77,7 @@ export function HeroSection({ bookCovers = [], courseImages = [] }: HeroSectionP
               <Link href="/library" className={cn(buttonVariants(), 'h-12 w-full gap-2 px-7 font-lato text-base font-bold shadow-md sm:w-auto')}>
                 <BookOpen className="size-5" /> {t('hero.cta_read')}
               </Link>
-              {isAuthenticated ? (
-                <Link href={accountHomeFor(user?.role)} className={cn(buttonVariants({ variant: 'outline' }), 'h-12 w-full gap-2 px-7 font-lato text-base font-semibold sm:w-auto')}>
-                  {t('common.my_account')} <ArrowRight className="size-4" />
-                </Link>
-              ) : (
-                <Link href="/auth/register" className={cn(buttonVariants({ variant: 'outline' }), 'h-12 w-full gap-2 px-7 font-lato text-base font-semibold sm:w-auto')}>
-                  {t('hero.cta_join')} <ArrowRight className="size-4" />
-                </Link>
-              )}
+           
             </div>
           </div>
 

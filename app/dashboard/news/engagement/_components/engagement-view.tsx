@@ -47,6 +47,7 @@ export function EngagementView({ initialComments, initialStats }: { initialComme
   const totals = useMemo(() => ({
     comments: comments.length,
     hidden: comments.filter((c) => c.status === 'HIDDEN').length,
+    views: stats.reduce((s, a) => s + a.views, 0),
     likes: stats.reduce((s, a) => s + a.likes, 0),
     dislikes: stats.reduce((s, a) => s + a.dislikes, 0),
   }), [comments, stats])
@@ -178,6 +179,7 @@ export function EngagementView({ initialComments, initialStats }: { initialComme
         </div>
       ),
     },
+    { key: 'views', label: 'Views', sortable: true, render: (a) => <span suppressHydrationWarning className="inline-flex items-center gap-1.5 font-semibold text-foreground"><Eye className="size-3.5 text-muted-foreground" /> {a.views.toLocaleString()}</span> },
     { key: 'likes', label: 'Likes', render: (a) => <span className="inline-flex items-center gap-1.5 font-semibold text-success"><ThumbsUp className="size-3.5" /> {a.likes}</span> },
     { key: 'dislikes', label: 'Dislikes', render: (a) => <span className="inline-flex items-center gap-1.5 font-semibold text-destructive"><ThumbsDown className="size-3.5" /> {a.dislikes}</span> },
     {
@@ -200,7 +202,8 @@ export function EngagementView({ initialComments, initialStats }: { initialComme
 
   return (
     <div className="flex flex-col gap-4">
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Engagement totals">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5" aria-label="Engagement totals">
+        <Kpi label="Article views" value={totals.views} icon={<Eye />} tone="bg-info/10 text-info" />
         <Kpi label="Comments" value={totals.comments} icon={<MessageSquare />} tone="bg-primary/10 text-primary" />
         <Kpi label="Hidden comments" value={totals.hidden} icon={<EyeOff />} tone="bg-muted text-muted-foreground" />
         <Kpi label="Likes" value={totals.likes} icon={<ThumbsUp />} tone="bg-success/10 text-success" />

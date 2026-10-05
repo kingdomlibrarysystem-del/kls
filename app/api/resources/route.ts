@@ -5,6 +5,7 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { generateUniqueIsbn } from '@/lib/generate-isbn'
 import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
+import { isValidMediaTypeCode, DEFAULT_MEDIA_TYPE_CODE } from '@/lib/data/media-types'
 
 /**
  * Real Resource API — the digital library catalog, replacing the old
@@ -46,7 +47,7 @@ function serializeResource(r: {
   videoUrl: string | null
   avgRating: number
   reviewCount: number
-}, chapterCount: number) {
+}, chapterCount: number, views = 0) {
   return {
     id: r.id,
     title: r.title,
@@ -88,6 +89,7 @@ function serializeResource(r: {
     // count comes from one grouped aggregate for the whole page instead of
     // per-row, and so it works against a not-yet-regenerated Prisma client.
     chapterCount,
+    views,
   }
 }
 
@@ -113,7 +115,7 @@ export async function GET(request: NextRequest) {
     }),
   }
 
-  const [totalItems, resources, chapterCounts] = await Promise.all([
+  const [totalItems, resources, chapterCounts, viewCounts] = await Promise.all([
     prisma.resource.count({ where }),
     prisma.resource.findMany({
       where,
@@ -122,14 +124,17 @@ export async function GET(request: NextRequest) {
       take: pageSize,
     }),
     prisma.chapter.groupBy({ by: ['resourceId'], _count: { _all: true } }),
+    // Unique viewers per book (ResourceView) — one groupBy for the whole list.
+    prisma.resourceView.groupBy({ by: ['resourceId'], _count: { _all: true } }).catch(() => [] as { resourceId: string; _count: { _all: number } }[]),
   ])
 
   const chapterCountByResource = new Map(chapterCounts.map((c) => [c.resourceId, c._count._all]))
+  const viewsByResource = new Map(viewCounts.map((v) => [v.resourceId, v._count._all]))
 
   const totalPages = Math.ceil(totalItems / pageSize)
 
   return NextResponse.json({
-    data: resources.map((r) => serializeResource(r, chapterCountByResource.get(r.id) ?? 0)),
+    data: resources.map((r) => serializeResource(r, chapterCountByResource.get(r.id) ?? 0, viewsByResource.get(r.id) ?? 0)),
     message: 'Resources fetched successfully',
     code: 'success',
     status: 200,
@@ -183,6 +188,10 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
   const category = await prisma.category.findUnique({ where: { id: body.categoryId } })
   if (!category) throw new ApiError('The specified category does not exist', 400)
 
+  // Media types are admin-managed data: only an existing type's code may be stored.
+  const mediaType = body.mediaType ?? DEFAULT_MEDIA_TYPE_CODE
+  if (!(await isValidMediaTypeCode(mediaType))) throw new ApiError('The specified media type does not exist', 400)
+
   const isbn = await generateUniqueIsbn()
 
   const resource = await prisma.resource.create({
@@ -206,7 +215,7 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       status: 'AVAILABLE',
       coverImages: body.coverImages ?? [],
       bindingType: (body.bindingType as 'SOFT' | 'HARD') ?? 'SOFT',
-      mediaType: (body.mediaType as 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION') ?? 'TEXT',
+      mediaType,
       description: body.description ?? '',
       tags: body.tags ?? [],
       documentUrl: body.documentUrl ?? null,

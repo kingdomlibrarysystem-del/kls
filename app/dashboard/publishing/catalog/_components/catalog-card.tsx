@@ -2,7 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Star, Eye, BookMarked, Film, Package } from 'lucide-react'
 import type { PublishedBook } from './catalog-data'
-import { languageBadgeLabels, bindingTypeLabels, mediaTypeLabels } from './catalog-data'
+import { languageBadgeLabels, bindingTypeLabels } from './catalog-data'
+import { MediaTypeName } from '@/components/media-type-name'
 import { toggleFeaturedPublication } from '../../_shared/use-publications'
 
 interface CatalogCardProps {
@@ -23,6 +24,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
             src={book.coverImages[0]}
             alt={book.title}
             fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
@@ -48,7 +50,7 @@ export function CatalogCard({ book }: CatalogCardProps) {
 
         <div className="flex flex-wrap gap-1 mb-1">
           <span className="flex items-center gap-1 px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato"><BookMarked size={10} /> {bindingTypeLabels[book.bindingType]}</span>
-          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato"><Film size={10} /> {mediaTypeLabels[book.mediaType]}</span>
+          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-w-100 text-w-700 rounded text-xs font-lato"><Film size={10} /> <MediaTypeName code={book.mediaType} /></span>
         </div>
 
         <div className="flex items-center justify-between mb-2">

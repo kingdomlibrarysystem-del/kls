@@ -4,6 +4,8 @@ import prisma from '@/prisma/client'
 import { PUT as putReaction, DELETE as resetReactions } from '../news/reactions/route'
 import { POST as postComment } from '../news/comments/route'
 import { GET as getEngagement } from '../news/engagement/route'
+import { POST as postView } from '../news/views/route'
+import { getArticleStatsMap } from '@/lib/data/news-engagement'
 import { PATCH as patchComment, DELETE as deleteComment } from '../news/comments/[id]/route'
 
 /**
@@ -49,6 +51,7 @@ afterAll(async () => {
   await Promise.all([
     prisma.newsArticleReaction.deleteMany({ where: { articleId: { in: ids } } }),
     prisma.newsArticleComment.deleteMany({ where: { articleId: { in: ids } } }),
+    prisma.newsArticleView.deleteMany({ where: { articleId: { in: ids } } }),
   ])
   await prisma.newsArticle.deleteMany({ where: { id: { in: ids } } })
   await prisma.user.deleteMany({ where: { id: { in: [memberId, adminId] } } })
@@ -143,5 +146,38 @@ describe('comments', () => {
   it('GET /api/news/engagement 404s for unpublished articles', async () => {
     session = null
     expect((await getEngagement(req(`/api/news/engagement?articleId=${draftId}`, 'GET'))).status).toBe(404)
+  })
+})
+
+describe('POST /api/news/views', () => {
+  it('needs an anonymous id when signed out, and only counts published articles', async () => {
+    session = null
+    expect((await postView(req('/api/news/views', 'POST', { articleId }))).status).toBe(400)
+    expect((await postView(req('/api/news/views', 'POST', { articleId: draftId, anonymousId: 'anon-12345678' }))).status).toBe(404)
+  })
+
+  it('counts each reader once — per device when signed out, per account when signed in', async () => {
+    session = null
+    let res = await postView(req('/api/news/views', 'POST', { articleId, anonymousId: 'anon-aaaaaaaa' }))
+    expect(res.status).toBe(200)
+    expect((await res.json()).data.views).toBe(1)
+    res = await postView(req('/api/news/views', 'POST', { articleId, anonymousId: 'anon-aaaaaaaa' }))
+    expect((await res.json()).data.views).toBe(1)
+
+    session = { id: memberId, roleName: 'Member' }
+    res = await postView(req('/api/news/views', 'POST', { articleId, anonymousId: 'anon-bbbbbbbb' }))
+    expect((await res.json()).data.views).toBe(2)
+    res = await postView(req('/api/news/views', 'POST', { articleId }))
+    expect((await res.json()).data.views).toBe(2)
+  })
+
+  it('the article page and every article list report the same numbers', async () => {
+    session = null
+    const eng = await (await getEngagement(req(`/api/news/engagement?articleId=${articleId}`, 'GET'))).json()
+    expect(eng.data.views).toBe(2)
+
+    const stats = await getArticleStatsMap([articleId, draftId])
+    expect(stats.get(articleId)).toEqual({ views: 2, likes: eng.data.likes, comments: eng.data.comments.length })
+    expect(stats.get(draftId)).toEqual({ views: 0, likes: 0, comments: 0 })
   })
 })

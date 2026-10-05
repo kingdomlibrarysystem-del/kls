@@ -8,7 +8,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
-import { bindingTypeLabels, mediaTypeLabels, isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { bindingTypeLabels, isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
+import { useMediaTypes } from '@/lib/client/use-media-types'
+import { mediaTypeName } from '@/lib/media-types-shared'
 import { ResourceReviews, type Review } from './resource-reviews'
 
 interface ResourceDetailViewProps {
@@ -38,6 +40,7 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
   const [addingType, setAddingType] = useState<CartItemType | null>(null)
   const [cartError, setCartError] = useState('')
   useCart(user?.id)
+  const { mediaTypes } = useMediaTypes()
 
   if (!resource) {
     return <EmptyState icon={BookX} title="Resource not found" description="This resource doesn't exist in the Kingdom Library." style={{ color: 'var(--text-secondary)' }} />
@@ -172,7 +175,7 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
               ['Language', resource.language],
               ['Pages', `${resource.pages}`],
               ['Binding', bindingTypeLabels[resource.bindingType]],
-              ['Media', mediaTypeLabels[resource.mediaType]],
+              ['Media', mediaTypeName(resource.mediaType, mediaTypes)],
               ['ISBN', resource.isbn],
               ['Publisher', resource.publisher],
               ['Year', `${resource.year}`],

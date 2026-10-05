@@ -47,6 +47,7 @@ import {
   TrendingUp,
   Target,
   Receipt,
+  Film,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -72,6 +73,7 @@ export const adminMainNav: NavItem[] = [
     subItems: [
       { icon: <BookCopy size={14} />,   label: "Book Inventory",     href: "/dashboard/library" },
       { icon: <Map size={14} />,        label: "KCS Map",            href: "/dashboard/library/kcs" },
+      { icon: <Film size={14} />,       label: "Media Types",        href: "/dashboard/library/media-types" },
       { icon: <RotateCcw size={14} />,  label: "Borrow & Return",    href: "/dashboard/library/borrowings" },
       { icon: <Bookmark size={14} />,   label: "Reservations",       href: "/dashboard/reservations" },
       { icon: <ShoppingCart size={14} />, label: "Sales & Rentals",  href: "/dashboard/library/sales" },

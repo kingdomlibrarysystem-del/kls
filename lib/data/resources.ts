@@ -30,7 +30,7 @@ export function serializeResource(r: {
   videoUrl: string | null
   avgRating: number
   reviewCount: number
-}, chapterCount: number) {
+}, chapterCount: number, views = 0) {
   return {
     id: r.id,
     title: r.title,
@@ -61,15 +61,17 @@ export function serializeResource(r: {
     avgRating: r.avgRating,
     reviewCount: r.reviewCount,
     chapterCount,
+    views,
   }
 }
 
 /** One resource in the GET /api/resources/[id] shape (incl. its real chapterCount). Resource + chapter count run in parallel. */
 export async function getResourceDetail(id: string) {
   if (!isObjectId(id)) return null
-  const [resource, chapterCount] = await Promise.all([
+  const [resource, chapterCount, views] = await Promise.all([
     prisma.resource.findUnique({ where: { id } }),
     prisma.chapter.count({ where: { resourceId: id } }),
+    prisma.resourceView.count({ where: { resourceId: id } }).catch(() => 0),
   ])
-  return resource ? serializeResource(resource, chapterCount) : null
+  return resource ? serializeResource(resource, chapterCount, views) : null
 }

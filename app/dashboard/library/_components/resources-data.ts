@@ -1,8 +1,13 @@
 /** Binding type per the canonical Book shape — physical books are soft or hard cover. */
 export type BindingType = 'SOFT' | 'HARD'
 
-/** Media type per the canonical Book shape — matches APP_DOC's resource-type concept (Prisma ResourceType/ResourceFormat). */
-export type MediaType = 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'TEXT' | 'COMBINATION'
+/**
+ * Code of an admin-managed media type (ResourceMediaType.code, managed at
+ * /dashboard/library/media-types). A plain string on purpose: the list is
+ * DATA, so there is no union and no label map here — read names and
+ * capabilities with useMediaTypes() / <MediaTypeName>.
+ */
+export type MediaType = string
 
 /** Digital library resource — a "scroll" categorized under a KCS section. Also the canonical Book shape read by the public library browse/detail pages. */
 export interface Resource {
@@ -47,6 +52,8 @@ export interface Resource {
   reviewCount: number
   /** How many real Chapter rows this resource has — the readable content of a TEXT book (see /api/chapters). A resource is readable online when this is > 0 OR documentUrl is set, which is what gates the Read button. */
   chapterCount: number
+  /** Unique viewers of this book (ResourceView rows) — server-derived, like chapterCount. */
+  views?: number
 }
 
 export const statusConfig: Record<Resource['status'], { label: string; cls: string }> = {
@@ -58,14 +65,6 @@ export const statusConfig: Record<Resource['status'], { label: string; cls: stri
 export const bindingTypeLabels: Record<BindingType, string> = {
   SOFT: 'Softcover',
   HARD: 'Hardcover',
-}
-
-export const mediaTypeLabels: Record<MediaType, string> = {
-  VIDEO: 'Video',
-  AUDIO: 'Audio',
-  DOCUMENT: 'Document',
-  TEXT: 'Text',
-  COMBINATION: 'Combination',
 }
 
 /**

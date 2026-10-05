@@ -5,6 +5,8 @@
  * (no contributor role in this module).
  */
 
+import type { ArticleStats } from '@/lib/news-engagement-shared'
+
 export type NewsArticleStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED'
 export type NewsLanguage = 'en' | 'fr' | 'rw'
 
@@ -24,6 +26,8 @@ export interface NewsArticle {
   featured: boolean
   align?: 'left' | 'center' | 'right' | 'justify'
   createdAt: string
+  /** Views / likes / visible comments — present on rows from the list API (GET /api/news/articles). */
+  stats?: ArticleStats
 }
 
 export const articleStatusConfig: Record<NewsArticleStatus, { label: string; cls: string }> = {

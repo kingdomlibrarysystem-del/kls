@@ -345,7 +345,10 @@ model Resource {
   status                  ResourceStatus    @default(AVAILABLE)
   coverImages             String[]
   bindingType             BindingType
-  mediaType               MediaType
+  /// Code of a ResourceMediaType row (admin-managed at
+  /// /dashboard/library/media-types). Was a fixed `MediaType` enum; the
+  /// stored values ("TEXT", "VIDEO"...) are unchanged, so no data migration.
+  mediaType               String
   description             String
   tags                    String[]
   documentUrl             String?
@@ -687,12 +690,30 @@ enum BindingType {
   HARD
 }
 
-enum MediaType {
-  VIDEO
-  AUDIO
-  DOCUMENT
-  TEXT
-  COMBINATION
+/// Admin-managed media types for library resources (RULES.md "Dynamic Data
+/// First") — replaces the fixed `MediaType` enum. `code` is what
+/// Resource.mediaType / Publication.mediaType store. The four `allows*`
+/// flags say what a resource of this type contains, and drive which
+/// authoring/upload fields the resource form shows (instead of
+/// hardcoded checks like `mediaType === 'TEXT'`).
+/// `isSystem` rows are the five original types: they can be renamed but
+/// not deleted or re-coded, because existing resources and reader
+/// behaviour depend on them.
+model ResourceMediaType {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  code           String   @unique
+  name           String
+  description    String?
+  /// Authored chapters (the in-app text reader).
+  allowsChapters Boolean  @default(false)
+  /// An uploaded document/PDF file.
+  allowsDocument Boolean  @default(false)
+  allowsAudio    Boolean  @default(false)
+  allowsVideo    Boolean  @default(false)
+  isSystem       Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 /// Real borrow record, replacing the two disconnected mock stores found
@@ -825,7 +846,8 @@ model Publication {
   price           Float?
   quantity        Int?
   bindingType     BindingType?
-  mediaType       MediaType?
+  /// Code of a ResourceMediaType row (see Resource.mediaType).
+  mediaType       String?
   featured        Boolean             @default(false)
   submittedAt     DateTime            @default(now())
   createdAt       DateTime            @default(now())
@@ -2003,10 +2025,26 @@ model NewsArticle {
 
   comments    NewsArticleComment[]
   reactions   NewsArticleReaction[]
+  views       NewsArticleView[]
 
   @@index([status])
   @@index([category])
   @@index([publishedAt])
+}
+
+/// One row per viewer per news article, written when the article page is
+/// opened — same idea as ResourceView for books. `viewerKey` is
+/// "u:<userId>" for signed-in readers and "a:<random browser id>" for
+/// anonymous ones, so each person/device counts once.
+model NewsArticleView {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  articleId String      @db.ObjectId
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  viewerKey String
+  createdAt DateTime    @default(now())
+
+  @@unique([articleId, viewerKey])
+  @@index([articleId])
 }
 
 enum NewsArticleStatus {
