@@ -16,15 +16,20 @@ describe('roleNameToUserRole', () => {
     expect(roleNameToUserRole('Staff')).toBe('staff')
   })
 
-  it('defaults anything unrecognized to "member"', () => {
+  it('keeps Member and a missing role name as "member"', () => {
     expect(roleNameToUserRole('Member')).toBe('member')
-    expect(roleNameToUserRole('Contributor')).toBe('member')
-    expect(roleNameToUserRole('Some Random Role')).toBe('member')
+    expect(roleNameToUserRole('  MEMBER ')).toBe('member')
     expect(roleNameToUserRole('')).toBe('member')
   })
 
   it('is case-insensitive and trims whitespace', () => {
     expect(roleNameToUserRole('  admin  ')).toBe('admin')
     expect(roleNameToUserRole('MANAGER')).toBe('manager')
+  })
+
+  it('sends every other (admin-created) role to the dashboard as staff, never as admin', () => {
+    expect(roleNameToUserRole('Graphic Design Manager')).toBe('staff')
+    expect(roleNameToUserRole('Contributor')).toBe('staff')
+    expect(roleNameToUserRole('Some Random Role')).toBe('staff')
   })
 })
