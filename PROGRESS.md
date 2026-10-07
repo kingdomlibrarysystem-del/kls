@@ -6646,3 +6646,35 @@ database (3 new tests for article views). Not checked in a browser.
 - Staff opening a published article through `/news/[id]` or
   `/member/news/[id]` are counted as viewers too; the admin article detail
   page does not record views.
+
+## 2026-10-07 - Custom roles were sent to the member portal instead of /dashboard
+
+**Report:** "Tuyizere Olivier" (role "Graphic Design Manager") is directed to
+the member dashboard, but the rule is: only the Member role uses `/member`;
+every other role uses `/dashboard`.
+
+**Cause:** `roleNameToUserRole()` in `lib/roles.ts` only recognised the exact
+names admin / administrator / manager / staff and returned `member` for
+everything else, so any role created at `/dashboard/roles` was treated as a
+member everywhere (login redirect, `middleware.ts`, page guards, API guards,
+sidebar, "My Account" link).
+
+**Fix (`lib/roles.ts`):** `member` (or a missing name) -> `member`; admin /
+administrator -> `admin`; manager -> `manager`; **every other name ->
+`staff`** (dashboard access, never the admin-only operations). One function,
+so the login redirect, middleware, `requireStaffPage`, `requireStaff`, the
+sidebar and the profile menu all follow. `lib/__tests__/roles.test.ts`
+updated (6/6). `tsc --noEmit` clean. Not checked in a browser.
+
+**Interactions to watch**
+- The user must sign out and in again only if their role was changed after
+  login (the role name is stored in the session token); otherwise the next
+  page load already uses the new mapping.
+- **Permissions are still not enforced anywhere.** A role's `permissions`
+  list is saved and shown at `/dashboard/roles`, but the sidebar, the pages
+  and the API guards never read it. Every non-member role therefore sees the
+  whole dashboard and can call every staff API (admin-only ones excepted) -
+  the same as "Manager" already could. Permission-based sidebar/pages is a
+  separate piece of work, pending the owner's decision on sections that have
+  no permission key yet (news, donations, health, beauty, counseling,
+  rehabilitation, research, settings...).
