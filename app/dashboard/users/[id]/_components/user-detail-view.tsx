@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Shield, CalendarDays, Activity, ArrowLeft, Pencil, Trash2, UserX } from 'lucide-react'
+import { Mail, Shield, CalendarDays, Activity, ArrowLeft, Pencil, Trash2, UserX, Archive } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { UserFormModal } from '../../_components/user-form-modal'
-import { DeleteUserModal } from '../../_components/delete-user-modal'
-import { updateUserRequest, removeUserRequest, type NewUserInput } from '../../_components/use-users'
+import { DeleteUserModal, type DeleteMode } from '../../_components/delete-user-modal'
+import { updateUserRequest, removeUserRequest, trashUserRequest, type NewUserInput, type DeleteProgress } from '../../_components/use-users'
 import { roleColor, statusColors, type PlatformUser } from '../../_components/users-data'
 
 interface UserDetailViewProps {
@@ -37,7 +37,10 @@ export function UserDetailView({ initialUser }: UserDetailViewProps) {
   const router = useRouter()
   const [user, setUser] = useState<PlatformUser | null>(initialUser)
   const [editing, setEditing] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [deleting, setDeleting] = useState<DeleteMode | null>(null)
+  const [actionError, setActionError] = useState('')
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteProgress, setDeleteProgress] = useState<DeleteProgress | null>(null)
 
   const handleSave = async (data: NewUserInput, editingId: string | null) => {
     if (!editingId) return
@@ -46,9 +49,21 @@ export function UserDetailView({ initialUser }: UserDetailViewProps) {
     setUser((prev) => (prev ? { ...prev, ...data, status: data.status } : prev))
   }
 
-  const handleDelete = async (target: PlatformUser) => {
-    await removeUserRequest(target.id)
-    router.push('/dashboard/users')
+  const handleDelete = async (target: PlatformUser, mode: DeleteMode) => {
+    setDeleteBusy(true)
+    setDeleteProgress(null)
+    try {
+      if (mode === 'trash') await trashUserRequest(target.id)
+      else await removeUserRequest(target.id, setDeleteProgress)
+      router.push('/dashboard/users')
+    } catch (error) {
+      // e.g. 409 "cannot be deleted because they still have a borrowed book…"
+      setActionError(error instanceof Error ? error.message : 'Could not delete this user — please try again.')
+      setDeleting(null)
+    } finally {
+      setDeleteBusy(false)
+      setDeleteProgress(null)
+    }
   }
 
   if (!user) {
@@ -75,16 +90,25 @@ export function UserDetailView({ initialUser }: UserDetailViewProps) {
           <UniversalButton variant="outline" size="sm" icon={<Pencil size={13} />} onClick={() => setEditing(true)}>
             Edit
           </UniversalButton>
+          <UniversalButton variant="outline" size="sm" icon={<Archive size={13} />} onClick={() => setDeleting('trash')}>
+            Move to Trash
+          </UniversalButton>
           <UniversalButton
             variant="destructive"
             size="sm"
             icon={<Trash2 size={13} />}
-            onClick={() => setDeleting(true)}
+            onClick={() => setDeleting('permanent')}
           >
-            Delete
+            Delete Permanently
           </UniversalButton>
         </div>
       </div>
+
+      {actionError && (
+        <div role="alert" className="mb-4 rounded border border-red-200 dark:border-destructive/30 bg-red-50 dark:bg-destructive/10 px-4 py-3 font-lato text-sm text-red-700 dark:text-destructive">
+          {actionError}
+        </div>
+      )}
 
       <div className="max-w-2xl space-y-4">
         <div className="flex items-center gap-3">
@@ -115,7 +139,7 @@ export function UserDetailView({ initialUser }: UserDetailViewProps) {
       </div>
 
       <UserFormModal open={editing} editing={user} onClose={() => setEditing(false)} onSave={handleSave} />
-      <DeleteUserModal user={deleting ? user : null} onClose={() => setDeleting(false)} onConfirm={handleDelete} />
+      <DeleteUserModal user={deleting ? user : null} mode={deleting ?? 'trash'} busy={deleteBusy} progress={deleteProgress} onClose={() => setDeleting(null)} onConfirm={handleDelete} />
     </div>
   )
 }

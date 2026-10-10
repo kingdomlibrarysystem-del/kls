@@ -49,7 +49,7 @@ export default function PublishingPage() {
         })}
       </div>
 
-      <div className="mt-8 bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5">
+      {/* <div className="mt-8 bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5">
         <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
         <ul className="font-lato text-xs text-w-700 space-y-1">
           <li>POST /api/publications — submit a new book (draft)</li>
@@ -59,7 +59,7 @@ export default function PublishingPage() {
           <li>GET /api/publications/my — contributor's own publications</li>
           <li>GET /api/publications/revenue — earnings dashboard</li>
         </ul>
-      </div>
+      </div> */}
     </div>
   )
 }

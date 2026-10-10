@@ -8,6 +8,8 @@ export interface PlatformUser {
   role: string
   status: UserStatus
   joinDate: string
+  /** ISO time the account was moved to Trash; null when it is not in Trash. */
+  deletedAt?: string | null
 }
 
 const ROLE_COLOR_FALLBACK = 'bg-blue-50 dark:bg-info/10 text-blue-700 dark:text-info border-blue-200 dark:border-info/30'
