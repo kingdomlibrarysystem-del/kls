@@ -128,9 +128,9 @@ export function DailyWisdom() {
         <button
           type="button"
           onClick={openFromHeader}
-          className="flex items-center gap-2 rounded-lg bg-white dark:bg-white shadow-sm border border-w-300 dark:border-w-300 px-3 py-1.5 hover:shadow-md hover:border-w-600 dark:hover:border-w-500 transition cursor-pointer whitespace-nowrap"
+          className="flex items-center gap-2 rounded-lg bg-white dark:bg-white shadow-sm border border-w-300 dark:border-w-300 px-2 sm:px-3 py-1.5 hover:shadow-md hover:border-w-600 dark:hover:border-w-500 transition cursor-pointer whitespace-nowrap"
         >
-          <span className="font-cinzel text-[11px] font-bold uppercase tracking-widest text-w-950">
+          <span className="font-cinzel text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-w-950">
             {t('daily_wisdom.label')}
           </span>
         </button>

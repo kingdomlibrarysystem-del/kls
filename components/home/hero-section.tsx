@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { BookOpen, GraduationCap, BookCopy, ArrowRight } from 'lucide-react'
@@ -9,6 +10,21 @@ import { useAuth } from '@/contexts/auth-context'
 import { useLanguage } from '@/contexts/language-context'
 import { cn } from '@/lib/utils'
 import { LibraryArt, ELearningArt, PublishingArt } from './hero-path-art'
+
+/** How long each hero picture stays before the next one fades in. */
+const HERO_SLIDE_MS = 7000
+
+/**
+ * The hero's pictures, shown one at a time. The first is the original
+ * transparent photo, which keeps turning slowly; the other two are upright
+ * (2:3) photos that simply fade in (no rotation), each in a rounded frame of
+ * its own shape. A replacement photo should also be 2:3 upright.
+ */
+const HERO_SLIDES = [
+  { src: '/hero-img1.png', alt: 'People praying together around a table with open Bibles', kind: 'spin' },
+  { src: '/hero-img2.jpg', alt: 'A reader with an open book by a window at sunset', kind: 'photo' },
+  { src: '/hero-img3.jpg', alt: 'A woman praying beside a Holy Bible', kind: 'photo' },
+] as const
 
 interface HeroSectionProps {
   /** Real book covers (trending books) for the Library card's fanned covers. */
@@ -30,6 +46,13 @@ interface HeroSectionProps {
 export function HeroSection({ bookCovers = [], courseImages = [] }: HeroSectionProps) {
   const { t } = useLanguage()
   const { user, isAuthenticated } = useAuth()
+  const [slide, setSlide] = useState(0)
+
+  // Advance the hero picture on a timer (browser-only, so an effect is the right tool).
+  useEffect(() => {
+    const id = setInterval(() => setSlide((i) => (i + 1) % HERO_SLIDES.length), HERO_SLIDE_MS)
+    return () => clearInterval(id)
+  }, [])
 
   // Per-card tint: card gradient + icon chip + CTA color (theme tokens, so light and dark both work).
   const paths = [
@@ -81,26 +104,67 @@ export function HeroSection({ bookCovers = [], courseImages = [] }: HeroSectionP
             </div>
           </div>
 
-          {/* Visual: the transparent-background photo (people praying around a table with
-              open Bibles), shown whole — no mask, ring or border — and turning slowly and
-              endlessly. The section's overflow-hidden contains the corners as it rotates; the
-              shadow follows the picture's own outline. Rotation is switched off for
-              visitors who ask their device for reduced motion. */}
+          {/* Visual: three pictures shown one after another. Each fades in with a slight
+              zoom and the previous one fades out. Only the first (the transparent photo of
+              people praying around a table) turns slowly; the other two just appear. The
+              box keeps the first picture's proportions so the row height never jumps.
+              Motion is switched off for visitors who ask their device for reduced motion. */}
           <div className="relative mx-auto aspect-[1503/1046] w-full max-w-[360px] sm:max-w-[500px] lg:max-w-[620px]">
             <div aria-hidden className="absolute inset-x-16 inset-y-2 rounded-full bg-primary/15 blur-3xl" />
-            {/* The box has the PNG's own proportions (not a square), so the row is only as tall
-                as the picture and the text beside it is not pushed down by empty space. A small
-                scale-up fills the transparent margins (on this wrapper, because the image
-                itself carries the rotation). */}
-            <div className="absolute inset-0 scale-[1.12] lg:scale-[1.18]">
-              <Image
-                src="/hero-img1.png"
-                alt="People praying together around a table with open Bibles"
-                fill
-                priority
-                sizes="(max-width: 640px) 420px, (max-width: 1024px) 580px, 740px"
-                className="animate-[spin_90s_linear_infinite] object-contain drop-shadow-2xl motion-reduce:animate-none"
-              />
+            {HERO_SLIDES.map((item, i) => {
+              const active = i === slide
+              return (
+                <div
+                  key={item.src}
+                  aria-hidden={!active}
+                  className={cn(
+                    'absolute inset-0 transition-all duration-1000 ease-out motion-reduce:transition-none',
+                    active ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
+                  )}
+                >
+                  {item.kind === 'spin' ? (
+                    // A small scale-up fills the PNG's transparent margins (on this wrapper,
+                    // because the image itself carries the rotation).
+                    <div className="absolute inset-0 scale-[1.12] lg:scale-[1.18]">
+                      <Image
+                        src={item.src}
+                        alt={item.alt}
+                        fill
+                        priority
+                        sizes="(max-width: 640px) 420px, (max-width: 1024px) 580px, 740px"
+                        className="animate-[spin_90s_linear_infinite] object-contain drop-shadow-2xl motion-reduce:animate-none"
+                      />
+                    </div>
+                  ) : (
+                    // Both photos are upright (2:3). The frame takes the PHOTO's own shape —
+                    // a little taller than the box, centered — so the whole picture is visible:
+                    // nothing is cropped and there are no empty bars beside it.
+                    <div className="absolute -inset-y-6 left-1/2 aspect-[2/3] -translate-x-1/2 lg:-inset-y-10 overflow-hidden rounded-3xl shadow-2xl ring-1 ring-border">
+                      <Image
+                        src={item.src}
+                        alt={item.alt}
+                        fill
+                        sizes="(max-width: 640px) 200px, (max-width: 1024px) 270px, 350px"
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Which picture is showing; tap a dot to jump to it. */}
+            <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2 lg:-bottom-16">
+              {HERO_SLIDES.map((item, i) => (
+                <button
+                  key={item.src}
+                  type="button"
+                  onClick={() => setSlide(i)}
+                  aria-label={`Show picture ${i + 1} of ${HERO_SLIDES.length}`}
+                  aria-current={i === slide}
+                  className={cn('h-1.5 rounded-full transition-all', i === slide ? 'w-6 bg-primary' : 'w-1.5 bg-primary/30 hover:bg-primary/60')}
+                />
+              ))}
             </div>
           </div>
         </div>
