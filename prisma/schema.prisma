@@ -78,6 +78,12 @@ model User {
   password                  String?
   notificationPreferences   Json? // e.g., { "email": true, "sms": false }
   status                    UserStatus          @default(ACTIVE)
+  /// Soft delete (RULES.md "Database Standards"): set when an admin moves the
+  /// account to Trash. A trashed user cannot sign in and is hidden from user
+  /// lists; it can be restored, or deleted permanently from the Trash.
+  deletedAt                 DateTime?
+  /// Id of the admin who moved the account to Trash.
+  deletedBy                 String?             @db.ObjectId
   roleId                    String?             @db.ObjectId
   role                      Role?               @relation(fields: [roleId], references: [id])
   accounts                  Account[]
@@ -2030,6 +2036,29 @@ model NewsArticle {
   @@index([status])
   @@index([category])
   @@index([publishedAt])
+}
+
+/// Daily Wisdom verses (the header's "Daily Wisdom" card), managed by staff
+/// at /dashboard/daily-wisdom. Two kinds of row:
+///  - scheduledDate set ("YYYY-MM-DD"): the verse a staff member SENT for
+///    that exact day; it wins over the automatic one for that day/language.
+///  - scheduledDate null: part of the AUTOMATIC rotation — on a day with no
+///    sent verse, one active automatic verse is picked by day number.
+/// `language` is the site language code (en / fr / rw). One sent verse per
+/// day per language (enforced by the API).
+model DailyVerse {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  text          String
+  reference     String
+  language      String
+  scheduledDate String?
+  active        Boolean  @default(true)
+  createdById   String?  @db.ObjectId
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([language, scheduledDate])
 }
 
 /// One row per viewer per news article, written when the article page is

@@ -48,6 +48,7 @@ import {
   Target,
   Receipt,
   Film,
+  BookHeart,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -182,6 +183,7 @@ export const adminMgmtNav: NavItem[] = [
       { icon: <Receipt size={14} />, label: "History",   href: "/dashboard/donations/history" },
     ],
   },
+  { icon: <BookHeart size={16} />, label: "Daily Wisdom",        href: "/dashboard/daily-wisdom" },
   { icon: <BarChart3 size={16} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={16} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={16} />,     label: "Notifications",       href: "/dashboard/notifications" },

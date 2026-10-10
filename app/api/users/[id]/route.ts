@@ -4,6 +4,8 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff, requireAdmin } from '@/lib/auth/require-role'
 import { getUserDetail, serializeUser, USER_DETAIL_SELECT } from '@/lib/data/users'
+import { deleteUserAndOwnData, getDeletionBlockers } from '@/lib/data/user-deletion'
+import { isObjectId } from '@/lib/server/object-id'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -86,14 +88,54 @@ export const PATCH = withErrorHandling('/api/users/[id]', 'PATCH', async (reques
   return NextResponse.json({ data: serializeUser(user), message: 'User updated successfully', code: 'success', status: 200 })
 })
 
-export const DELETE = withErrorHandling('/api/users/[id]', 'DELETE', async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+/**
+ * DELETE /api/users/[id] — admin only.
+ * Deletes the user and everything that is only theirs (see
+ * lib/data/user-deletion.ts). 409 with the reason when deleting would break
+ * data other people rely on (articles they wrote, books not returned...),
+ * and an admin cannot delete their own account. A plain user.delete used to
+ * 500 for any user with orders, borrows, reviews, enrollments, messages...
+ */
+export const DELETE = withErrorHandling('/api/users/[id]', 'DELETE', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const auth = await requireAdmin()
   if (auth.response) return auth.response
 
-  const existing = await prisma.user.findUnique({ where: { id } })
-  if (!existing) throw new ApiError('User not found', 404)
+  if (!isObjectId(id)) throw new ApiError('User not found', 404)
+  if (id === auth.session.userId) throw new ApiError('You cannot delete your own account', 409)
+  const existing = await prisma.user.findUnique({ where: { id }, select: { id: true } })
+  if (!existing) throw new ApiError('This user no longer exists — refresh the list', 404)
 
-  await prisma.user.delete({ where: { id } })
+  const blockers = await getDeletionBlockers(id)
+  if (blockers.length > 0) {
+    throw new ApiError(`This user cannot be deleted because they ${blockers.join(', ')}. Suspend the account instead.`, 409)
+  }
+
+  // With "Accept: application/x-ndjson" the response is a stream of one JSON
+  // object per line — {"type":"progress",done,total,label} after each step,
+  // then {"type":"done"} or {"type":"error",message} — so the admin screen can
+  // show real progress. Without it: one JSON response, as before. Checks above
+  // still answer with a normal 4xx JSON response before anything is deleted.
+  if (request.headers.get('accept')?.includes('application/x-ndjson')) {
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (obj: unknown) => controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`))
+        try {
+          await deleteUserAndOwnData(id, (p) => send({ type: 'progress', ...p }))
+          send({ type: 'done', message: 'User deleted successfully' })
+        } catch (err) {
+          console.error('[DELETE /api/users/[id]] permanent delete failed:', err)
+          // The transaction rolled back: nothing was deleted.
+          send({ type: 'error', message: 'Deleting failed and nothing was removed. Please try again.' })
+        } finally {
+          controller.close()
+        }
+      },
+    })
+    return new NextResponse(stream, { status: 200, headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" } })
+  }
+
+  await deleteUserAndOwnData(id)
   return NextResponse.json({ data: null, message: 'User deleted successfully', code: 'success', status: 200 })
 })

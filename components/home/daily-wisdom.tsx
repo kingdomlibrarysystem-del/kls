@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BookHeart, MousePointerClick, Pause, Play } from 'lucide-react'
 import { useLanguage } from '@/contexts/language-context'
+import { localDateKey, type TodayVerse } from '@/lib/daily-wisdom-shared'
 
 const SHOW_MS = 10_000
 const HIDE_MS = 60 * 60 * 1000
@@ -10,11 +11,6 @@ const FADE_MS = 400
 const TICK_MS = 100
 /** First-ever marker: the auto-show fires once per browser, not on every refresh. */
 const SEEN_KEY = 'kcs-daily-wisdom-seen'
-
-function dayOfYear(d: Date) {
-  const start = new Date(d.getFullYear(), 0, 0)
-  return Math.floor((d.getTime() - start.getTime()) / 86400000)
-}
 
 function nextMidnight() {
   const next = new Date()
@@ -41,15 +37,19 @@ function nextMidnight() {
  * once per hour while the page stays open (HIDE_MS), and the header button
  * opens it any time. One verse lasts 24 hours — it only changes at local
  * 12:00 AM.
+ *
+ * The verse itself is DATA, managed by staff at /dashboard/daily-wisdom: the
+ * verse someone sent for today, otherwise one from the automatic rotation
+ * (GET /api/daily-wisdom). It is fetched in the browser on purpose: "today"
+ * is the reader's own local date, which the server cannot know. When there is
+ * no verse at all, the header button is hidden.
  */
 export function DailyWisdom() {
-  const { t } = useLanguage()
-  const verses = [
-    { text: t('daily_wisdom.verse_1'), ref: t('daily_wisdom.ref_1') },
-    { text: t('daily_wisdom.verse_2'), ref: t('daily_wisdom.ref_2') },
-    { text: t('daily_wisdom.verse_3'), ref: t('daily_wisdom.ref_3') },
-  ]
+  const { t, lang } = useLanguage()
   const [today, setToday] = useState(() => new Date())
+  const dateKey = localDateKey(today)
+  /** undefined while loading, null when no verse exists for today. */
+  const [verse, setVerse] = useState<TodayVerse | null | undefined>(undefined)
   const [visible, setVisible] = useState(false)
   const [tour, setTour] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -60,6 +60,16 @@ export function DailyWisdom() {
     const id = setTimeout(() => setToday(new Date()), nextMidnight().getTime() - Date.now())
     return () => clearTimeout(id)
   }, [today])
+
+  // Today's verse for this language; refetched at local midnight (today changes) or when the language changes.
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/daily-wisdom?date=${dateKey}&lang=${lang}`)
+      .then((res) => res.json())
+      .then((json) => { if (!cancelled) setVerse(json?.code === 'success' ? (json.data as TodayVerse | null) : null) })
+      .catch(() => { if (!cancelled) setVerse(null) })
+    return () => { cancelled = true }
+  }, [dateKey, lang])
 
   // First-ever app open in this browser: show the verse once (per the design
   // this session) AND arm the blue "where to click" bubble next to the header
@@ -111,9 +121,12 @@ export function DailyWisdom() {
     prevVisible.current = visible
   }, [visible])
 
-  const index = ((dayOfYear(today) % verses.length) + verses.length) % verses.length
-  const { text, ref } = verses[index]
+  const text = verse?.text ?? ''
+  const ref = verse?.reference ? `— ${verse.reference}` : ''
   const progress = Math.min(100, (elapsed / SHOW_MS) * 100)
+
+  // No verse exists (staff removed or switched off every verse): no button, no pop-up.
+  if (verse === null) return null
 
   return (
     <>
@@ -168,7 +181,7 @@ export function DailyWisdom() {
           </h3>
           <div className="mx-auto mt-2 mb-4 h-px w-16 bg-w-600 dark:bg-amber-500/70" />
           <p className="font-cormorant italic text-lg leading-relaxed text-w-950 dark:text-gray-100">
-            « {text} »
+            {text ? <>« {text} »</> : <span className="inline-block h-5 w-3/4 animate-pulse rounded bg-w-100 dark:bg-gray-800" aria-label="Loading" />}
           </p>
           <span className="mt-3 block font-cinzel text-xs tracking-widest text-w-600 dark:text-amber-500/70">
             {ref}

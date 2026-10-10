@@ -37,7 +37,9 @@ export const POST = withErrorHandling('/api/news/views', 'POST', async (request:
   const key = { articleId_viewerKey: { articleId, viewerKey } }
   const already = await prisma.newsArticleView.findUnique({ where: key, select: { id: true } })
   if (!already) {
+    // Two opens at the same moment can both get here; the unique index then rejects the second (P2002) — already counted, so ignore it.
     await prisma.newsArticleView.upsert({ where: key, create: { articleId, viewerKey }, update: {} })
+      .catch((e: { code?: string }) => { if (e?.code !== 'P2002') throw e })
     // A new viewer changes the counts on the landing page's news strip: expire its data cache now.
     try { revalidateTag('home-page', { expire: 0 }) } catch { /* outside a Next request (tests) */ }
   }

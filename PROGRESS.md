@@ -30,6 +30,17 @@
 > fields on the row (e.g. `allowsChapters`), not from the row's code.
 > Lifecycle statuses stay enums. Full rule: **RULES.md → Dynamic Data First**.
 
+# Standing rule — delete = Trash first, permanent delete second (added 2026-10-14)
+
+> **Rule (per project owner):** deleting something in this app means moving
+> it to **Trash** (soft delete: set `deletedAt` + `deletedBy`, RULES.md
+> "Database Standards"), not erasing it. Trashed rows are hidden from normal
+> lists and can be restored. Admins get a separate **Delete permanently**
+> action (from the row or the Trash). Implemented so far for **users**
+> (`lib/data/user-trash.ts`, `NOT_TRASHED` filter - note MongoDB needs
+> `isSet: false` for rows created before the field existed). Other data still
+> hard-deletes until it is converted the same way.
+
 # Standing rule — shadcn + Tailwind, light AND dark (added 2026-09-29)
 
 > **Rule (per project owner):** admin (`/dashboard`) and member (`/member`)
@@ -6816,8 +6827,6 @@ photos. The dots moved down to clear the taller frame.
 
 **Interactions to watch:** a replacement photo should also be upright 2:3; a
 landscape one would be cropped at the sides.
-<<<<<<< Updated upstream
-=======
 
 ## 2026-10-14 - Daily Wisdom is admin-managed (sent verse of the day + automatic rotation)
 
@@ -7100,4 +7109,3 @@ created rows there; old runs left users and orders behind.
 `TEST_DATABASE_URL` set to a `kls_db_prod` URL the run is refused with the
 guard's message; production still has 0 `@vitest.local` users afterwards;
 `tsc --noEmit` clean.
->>>>>>> Stashed changes
