@@ -23,7 +23,10 @@ import 'react-pdf/dist/Page/TextLayer.css'
 // cross-origin import entirely.
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
-const PAGE_WIDTH = 900
+/** Widest a page is drawn; on narrower screens it shrinks to fit (see `pageWidth`). */
+const MAX_PAGE_WIDTH = 900
+/** The card around each page has 8px padding on each side. */
+const CARD_PADDING = 16
 
 interface PdfReaderViewProps {
   resourceId: string
@@ -60,6 +63,23 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null)
   const [buyAction, setBuyAction] = useState<BuyAction>(null)
   const previewQuery = forcePreview ? '?preview=1' : ''
+  // The reader's own width, measured in the browser. A PDF page is drawn at
+  // an exact pixel width, so it must be told how much room there is: a fixed
+  // 900px page ran off both edges of a phone screen.
+  const [shell, setShell] = useState<HTMLDivElement | null>(null)
+  const [shellWidth, setShellWidth] = useState(0)
+  useEffect(() => {
+    if (!shell) return
+    const measure = () => setShellWidth(shell.clientWidth)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(shell)
+    return () => observer.disconnect()
+  }, [shell])
+  const available = shellWidth > 0 ? shellWidth - CARD_PADDING : MAX_PAGE_WIDTH
+  const pageWidth = Math.max(200, Math.min(MAX_PAGE_WIDTH, available))
+  // Two facing pages only when both fit side by side; otherwise each takes the full width and they stack.
+  const spreadPageWidth = available >= 640 ? Math.min(MAX_PAGE_WIDTH / 2 - 8, Math.floor((shellWidth - 12) / 2) - CARD_PADDING) : pageWidth
 
   useEffect(() => {
     let cancelled = false
@@ -101,7 +121,7 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+    <div ref={setShell} style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400, margin: '0 auto', width: '100%', minWidth: 0 }}>
       {backLink}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -128,7 +148,7 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
             {Array.from({ length: numPages ?? 0 }, (_, i) => (
               <div key={i} className="card" style={{ padding: 8 }}>
-                <Page pageNumber={i + 1} width={PAGE_WIDTH} />
+                <Page pageNumber={i + 1} width={pageWidth} />
               </div>
             ))}
           </div>
@@ -136,18 +156,18 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
 
         {mode === 'single' && (
           <div className="card" style={{ padding: 8, display: 'flex', justifyContent: 'center' }}>
-            <Page pageNumber={pageIndex + 1} width={PAGE_WIDTH} />
+            <Page pageNumber={pageIndex + 1} width={pageWidth} />
           </div>
         )}
 
         {mode === 'spread' && (
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <div className="card" style={{ padding: 8 }}>
-              <Page pageNumber={pageIndex + 1} width={PAGE_WIDTH / 2 - 8} />
+              <Page pageNumber={pageIndex + 1} width={spreadPageWidth} />
             </div>
             {numPages && pageIndex + 2 <= numPages && (
               <div className="card" style={{ padding: 8 }}>
-                <Page pageNumber={pageIndex + 2} width={PAGE_WIDTH / 2 - 8} />
+                <Page pageNumber={pageIndex + 2} width={spreadPageWidth} />
               </div>
             )}
           </div>

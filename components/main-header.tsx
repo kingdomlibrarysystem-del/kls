@@ -27,7 +27,9 @@ import { useLanguage } from "@/contexts/language-context";
  * Public site header (sticky):
  *  1. verse bar — the Bible verse that used to float over the hero, now a
  *     full-width strip at the very top with its own background;
- *  2. main bar — logo, Browse Library, search, Daily Wisdom, language, profile;
+ *  2. main bar — logo, search, Daily Wisdom, language, profile. On phones
+ *     the search box moves to its own full-width second row, so it is never
+ *     squeezed under the Daily Wisdom button;
  *  3. navigation — hover/focus dropdowns on md+ screens, and a hamburger
  *     menu on phones listing the same sections (Library, E-Learning, News…),
  *     which were previously hidden on mobile.
@@ -94,7 +96,7 @@ export function MainHeader() {
       {/* 2. Main bar */}
       <div className="bg-white dark:bg-[#0a0d1a] shadow-md py-2 px-4 transition-colors">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 md:gap-6 md:mb-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-3 md:flex-nowrap md:gap-6 md:mb-4">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
@@ -124,7 +126,7 @@ export function MainHeader() {
             </Link>
 
 
-            <form onSubmit={handleSearch} role="search" className="relative flex-1 min-w-0">
+            <form onSubmit={handleSearch} role="search" className="relative order-last w-full min-w-0 basis-full md:order-none md:w-auto md:flex-1 md:basis-0">
               <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-w-600 dark:text-gray-400" />
               <input
                 type="text"
@@ -136,9 +138,12 @@ export function MainHeader() {
               />
             </form>
 
-            <DailyWisdom />
+            {/* ml-auto pushes the right-hand group to the edge on phones, where the search is on the row below. */}
+            <div className="ml-auto flex shrink-0 items-center md:ml-0">
+              <DailyWisdom />
+            </div>
 
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
               <LanguageSwitcher minimal />
               <ProfileDropdown />
             </div>

@@ -10,7 +10,7 @@ export function MainFooter() {
   return (
     <footer className="bg-white border-t border-w-200 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 text-center md:text-left">
           <div>
             <h3 className="font-cinzel text-lg font-semibold text-w-950 mb-4">
               {t("common.app_name")}
@@ -18,7 +18,7 @@ export function MainFooter() {
             <p className="font-lato text-sm text-w-700">{t("footer.tagline")}</p>
             <div className="mt-5">
               <h4 className="font-cinzel font-semibold text-w-950 mb-3">{t("social.follow_us")}</h4>
-              <SocialLinks />
+              <SocialLinks className="flex-wrap justify-center md:justify-start" />
             </div>
           </div>
 

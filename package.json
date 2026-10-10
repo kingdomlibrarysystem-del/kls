@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "eslint .",
     "seed": "npx ts-node prisma/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:db-setup": "node scripts/test-db-setup.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

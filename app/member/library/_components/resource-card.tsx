@@ -124,7 +124,7 @@ export function ResourceCard({ resource }: ResourceCardProps) {
           <StarRating avgRating={resource.avgRating} reviewCount={resource.reviewCount} />
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{getCategoryName(resource.categoryId)}</div>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {resource.description}
         </p>
 
@@ -200,7 +200,8 @@ export function ResourceListItem({ resource }: { resource: Resource }) {
           <StarRating avgRating={resource.avgRating} reviewCount={resource.reviewCount} />
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{getCategoryName(resource.categoryId)}</div>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, maxWidth: 560 }}>{resource.description}</p>
+        {/* Three lines at most — the full summary is on the book's own page. */}
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55, maxWidth: 640, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{resource.description}</p>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 'auto', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>

@@ -15,6 +15,8 @@ interface AppTopbarProps {
   profileHref: string
   /** Shows a real cart icon (with a live item-count badge) next to notifications — member portal only; the admin dashboard has its own separate topbar and never passes this. */
   showCart?: boolean
+  /** Rendered at the far left — the member portal passes its phone menu button (hidden from md up). */
+  menu?: React.ReactNode
 }
 
 /**
@@ -33,7 +35,7 @@ interface AppTopbarProps {
  * of the admin dashboard's role-broadcast-only store, which has no
  * concept of "this specific person's" notifications.
  */
-export function AppTopbar({ profileHref, showCart = false }: AppTopbarProps) {
+export function AppTopbar({ showCart = false, menu }: AppTopbarProps) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const { data: notifications } = useMemberNotifications(user?.id)
@@ -52,8 +54,10 @@ export function AppTopbar({ profileHref, showCart = false }: AppTopbarProps) {
         padding: '0 20px',
         height: 60,
         flexShrink: 0,
+        gap: 12,
       }}
     >
+      {menu}
       <span
         className="cinzel hidden sm:inline"
         style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1 }}

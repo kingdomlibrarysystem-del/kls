@@ -74,7 +74,7 @@ export default async function RootLayout({
   const initialLang = resolveInitialLang(cookieStore.get('kls_lang')?.value)
   return (
     <html lang={initialLang} suppressHydrationWarning className={`${cinzel.variable} ${cormorant.variable} ${lato.variable}`}>
-      <body suppressHydrationWarning className="bg-white text-w-950 antialiased font-lato font-light">
+      <body suppressHydrationWarning className="bg-white text-w-950 antialiased font-lato font-normal">
         <ThemeProvider>
           <SessionProvider>
             <AuthProvider>

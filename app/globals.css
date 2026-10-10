@@ -54,9 +54,12 @@
   --border:        rgba(0,0,0,0.08);
   --border-light:  rgba(0,0,0,0.05);
 
+  /* Readability (2026-10-10): secondary/muted text darkened so small text
+     passes WCAG AA (4.5:1) on white and on the cream dashboard background.
+     Was #5a5a6e / #9a9ab0 (muted was only ~2.7:1). */
   --text-primary:  #1a1a2e;
-  --text-secondary:#5a5a6e;
-  --text-muted:    #9a9ab0;
+  --text-secondary:#4a4a5c;
+  --text-muted:    #6b6b80;
 
   --welcome-gradient:  linear-gradient(135deg,#fdf8ef 0%,#f0e8d5 100%);
   --welcome-glow:     radial-gradient(ellipse at right,rgba(212,168,67,0.12) 0%,transparent 70%);
@@ -180,7 +183,7 @@
   --secondary: #f0ece4;
   --secondary-foreground: #1a1a2e;
   --muted: #f0ece4;
-  --muted-foreground: #5a5a6e;
+  --muted-foreground: #4a4a5c;
   --accent: #faf3e0;
   --accent-foreground: #1a1a2e;
   --destructive: #dc2626;
@@ -219,7 +222,7 @@
   --secondary: #161e30;
   --secondary-foreground: #f0f2f8;
   --muted: #161e30;
-  --muted-foreground: #9aa0b4;
+  --muted-foreground: #b6bccd;
   --accent: #1f2638;
   --accent-foreground: #f0f2f8;
   --destructive: #f87171;
@@ -253,9 +256,11 @@
   --border:        rgba(255,255,255,0.08);
   --border-light:  rgba(255,255,255,0.05);
 
+  /* Readability (2026-10-10): lightened for contrast on the dark surfaces.
+     Was #9aa0b4 / #5a6070 (muted was only ~3:1). */
   --text-primary:  #f0f2f8;
-  --text-secondary:#9aa0b4;
-  --text-muted:    #5a6070;
+  --text-secondary:#b6bccd;
+  --text-muted:    #8d94a8;
 
   --border-gold:   rgba(212,168,67,0.25);
   --gold-tint:        rgba(212,168,67,0.14);

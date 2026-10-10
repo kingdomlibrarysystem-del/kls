@@ -6678,3 +6678,426 @@ updated (6/6). `tsc --noEmit` clean. Not checked in a browser.
   separate piece of work, pending the owner's decision on sections that have
   no permission key yet (news, donations, health, beauty, counseling,
   rehabilitation, research, settings...).
+
+## 2026-10-10 - Mobile fixes: public header, PDF reader width, footer, WhatsApp button removed
+
+**Report (phone screenshots):** the search box in the public header is
+squeezed under the Daily Wisdom button; a book read on a phone runs off the
+left and right edges; the WhatsApp button is not needed; footer content should
+be centered on phones.
+
+- **Header (`components/main-header.tsx`, `components/home/daily-wisdom.tsx`):**
+  below `md` the main bar wraps - row 1 is menu, logo, Daily Wisdom, language,
+  profile; the search box takes its own full-width row 2 (`order-last
+  basis-full`). Desktop layout is unchanged. The Daily Wisdom label is
+  slightly tighter below `sm`.
+- **PDF reader (`app/member/library/read/[resourceId]/_components/pdf-reader-view.tsx`):**
+  cause was a fixed `PAGE_WIDTH = 900` - react-pdf draws a page at an exact
+  pixel width. The reader now measures its own width (ResizeObserver, a
+  browser-only measurement so an effect is the right tool) and draws pages at
+  `min(900, available)`. Spread mode shows two pages side by side only when
+  both fit, otherwise full-width and stacked. Used by `/member/library/read/[id]`
+  and `/dashboard/library/read/[id]`.
+- **Member layout (`app/member/layout.tsx`):** `<main>` gets `min-w-0` so wide
+  content can never push the page sideways; `WhatsAppSupportButton` removed
+  and `components/whatsapp-support.tsx` deleted (it was only used there).
+  The WhatsApp icon in the footer's social links is unrelated and stays.
+- **Footer (`components/main-footer.tsx`):** columns and social icons are
+  centered below `md`, left-aligned from `md` up.
+
+**Verified:** `tsc --noEmit` clean, eslint clean on the touched files (the two
+`set-state-in-effect` errors in `daily-wisdom.tsx` were already there). Not
+checked on a phone/browser.
+
+**Interactions to watch**
+- `/library/read/[id]` is not a route in this app - the public "Read" buttons
+  link to `/member/library/read/[id]` (after login), so that is the page fixed.
+- `components/ui/pdf-preview.tsx` (admin upload preview) keeps its own fixed
+  320px width - it sits in a form column and was not part of this report.
+
+## 2026-10-10 - Member portal: full menu on phones (hamburger, top-left)
+
+**Request:** on phones the member portal only has the bottom bar's five
+general links; add a menu button at the top-left of the header that holds
+every link of the member sidebar, like the admin dashboard has.
+
+- New `app/member/_components/mobile-menu.tsx` (`MemberMobileMenu`): a
+  hamburger button shown below `md` that opens a slide-in drawer (portal to
+  `document.body`, dimmed backdrop). The drawer renders the same
+  `MemberSidebar` component, so it always has exactly the sidebar's links,
+  the profile menu and Log Out - nothing is duplicated. Closes on backdrop
+  tap, the X button, Escape, or when any link is followed.
+- `app/member/_components/member-sidebar.tsx`: new optional prop
+  `collapsible` (default `true`); the drawer passes `false` so tapping the
+  logo does not shrink the menu to icons. Desktop behaviour unchanged.
+- `components/app-shell/app-topbar.tsx`: new optional `menu` slot rendered at
+  the far left; `app/member/layout.tsx` passes `<MemberMobileMenu />`.
+- The bottom nav stays as the quick shortcuts.
+
+**Verified:** `tsc --noEmit` and eslint clean on the touched files. Not
+checked on a phone/browser.
+
+**Interactions to watch:** two `MemberSidebar` instances exist on small
+screens only while the drawer is open (the desktop one is `display: none`
+below `md`); each keeps its own expanded-section state.
+
+## 2026-10-10 - Shorter book summaries in the library list; site-wide text readability
+
+**Request:** in `/member/library` (and `/library`) the summaries are much
+longer than the book; and text across the site is hard to read - make size
+and colour easy to read.
+
+- **Summaries (`app/member/library/_components/resource-card.tsx`):** the list
+  view printed the whole description; it is now limited to 3 lines (grid view
+  was already 2). Both go from 12px to 13px. The full summary stays on the
+  book's own page. The public `/library` card shows no summary, so nothing to
+  shorten there.
+- **Font weight (`app/layout.tsx`):** `<body>` had `font-light` (Lato 300),
+  which made every paragraph on the site thin. Now `font-normal` (Lato 400).
+  **Same font family** - only the weight changed. Text that sets its own
+  weight (headings, buttons, badges) is unaffected.
+- **Text colours (`app/globals.css`), light:** `--text-secondary` #5a5a6e ->
+  #4a4a5c, `--text-muted` #9a9ab0 -> #6b6b80 (was about 2.7:1 on white, now
+  above 4.5:1), `--muted-foreground` #5a5a6e -> #4a4a5c.
+  **Dark:** `--text-secondary` #9aa0b4 -> #b6bccd, `--text-muted` #5a6070 ->
+  #8d94a8, `--muted-foreground` #9aa0b4 -> #b6bccd.
+
+**Verified:** `tsc --noEmit` clean. Not checked in a browser.
+
+**Interactions to watch**
+- These are global: every page using the body font, `var(--text-secondary)`,
+  `var(--text-muted)` or `text-muted-foreground` gets slightly heavier/darker
+  text. Lines that fitted exactly may wrap one word earlier.
+- Not changed: the many fixed small sizes (10-12px) set inline on individual
+  components, and the brand gold (`w-600`, `--gold`) used for small labels,
+  which is still low-contrast on white. Raising those is a per-page pass.
+
+## 2026-10-10 - Hero: the rotating picture now alternates with two other pictures
+
+**Request:** where the hero image turns in a circle, add two other, different
+images that replace it, with a simple "just show" animation (not circling),
+and relevant to the website.
+
+- `components/home/hero-section.tsx`: the visual is now a three-picture
+  slideshow (`HERO_SLIDES`, 7s each, `HERO_SLIDE_MS`). Each picture fades in
+  with a slight zoom while the previous fades out. Picture 1 is the original
+  `/hero-img1.png` and still turns slowly; pictures 2 and 3 do not rotate and
+  sit in a rounded frame: `/images/community-feature.png` (readers studying
+  together in a library) and `/images/book-C.jpg` (a Holy Bible, on a white
+  card because the photo has a white background). Small dots under the
+  picture show which one is on and can be tapped to jump.
+- Both extra pictures were already in `public/images`; no new files added.
+  To change them, edit the `HERO_SLIDES` list.
+- Reduced-motion visitors get no rotation and no fade (pictures still change).
+
+**Verified:** `tsc --noEmit` clean, eslint no errors (three unused-variable
+warnings were already there). Not checked in a browser.
+
+**Interactions to watch:** the box keeps the first picture's proportions, so
+the library photo is cropped a little at top/bottom (`object-cover`).
+
+## 2026-10-10 - Hero: the two new photos are shown whole, in their own shape
+
+**Report:** after the owner replaced the two extra hero pictures
+(`/hero-img2.jpg`, `/hero-img3.jpg`), picture 2 had its top cut off and
+picture 3 sat in a wide white card with empty space on both sides.
+
+**Cause:** both new photos are upright (736x1104, 2:3) but were placed in the
+landscape box made for the first picture - one was cropped to fill it, the
+other shrunk inside a white card.
+
+**Fix (`components/home/hero-section.tsx`):** the frame for pictures 2 and 3
+now has the photo's own 2:3 shape (centered, slightly taller than the box,
+rounded corners, shadow), so the whole picture shows with no cropping and no
+white card. The `book` slide kind is gone; alt texts updated to match the new
+photos. The dots moved down to clear the taller frame.
+
+**Verified:** `tsc --noEmit` clean, eslint no errors. Not checked in a browser.
+
+**Interactions to watch:** a replacement photo should also be upright 2:3; a
+landscape one would be cropped at the sides.
+<<<<<<< Updated upstream
+=======
+
+## 2026-10-14 - Daily Wisdom is admin-managed (sent verse of the day + automatic rotation)
+
+**Request:** make Daily Wisdom dynamic: admins (and other authorised users)
+manage it, can send their own verse for the day, and can set verses that are
+chosen automatically. Backend and frontend.
+
+**Data model (`prisma/schema.prisma`):** new `DailyVerse` (`text`,
+`reference`, `language` en/fr/rw, `scheduledDate` "YYYY-MM-DD" or null,
+`active`, `createdById`, `createdByName`, `@@index([language, scheduledDate])`).
+A row with a date is a verse SENT for that day; a row without is part of the
+AUTOMATIC rotation.
+- **Needs:** stop the dev server, `npx prisma generate`, `npx prisma db push`,
+  restart (the running dev server still has the old Prisma client).
+
+**Rule (`lib/daily-wisdom-shared.ts`, `pickTodayVerse`)** - what a reader sees
+on a day, in their language: the verse sent for that day -> otherwise the
+automatic verse (active rotation verses of that language, oldest first, one per
+day, cycling) -> otherwise a verse sent that day in another language -> the
+automatic verse from any language -> nothing (the header button hides).
+The same function drives the header and the admin "Showing today" preview.
+
+**Bootstrap:** the three verses that were hardcoded in the locale files
+(`daily_wisdom.verse_1..3` / `ref_1..3`, en/fr/rw) are copied into the
+collection once, as 9 automatic verses, the first time it is read while empty
+(`lib/data/daily-wisdom.ts`). Note: running the test suite already did this on
+the configured database. The locale keys stay in the JSON files (only read for
+that seed); `daily_wisdom.label` and `tour` are still used by the header.
+
+**API**
+- `GET /api/daily-wisdom?date=YYYY-MM-DD&lang=en` - public; today's verse for
+  that local date/language (`data: null` when none); `Cache-Control` 60s.
+- `GET/POST /api/daily-wisdom/verses`, `PATCH/DELETE /api/daily-wisdom/verses/[id]`
+  - staff (`requireStaff`). zod validation (`verses/schema.ts`); one sent verse
+  per day per language (409); `createdByName` from the signed-in user.
+
+**Frontend**
+- Header (`components/home/daily-wisdom.tsx`): fetches today's verse from the
+  API using the reader's local date and current language (browser-only data,
+  so a client fetch is the right tool here - PERFORMANCE.md 15.3); refetches at
+  local midnight and on language change; loading placeholder in the pop-up;
+  returns nothing when no verse exists. Pop-up timing/tour behaviour unchanged.
+- Admin page `/dashboard/daily-wisdom` (server page: `requireStaffPage` +
+  `getAllVerses`): "Showing today" card per language (Sent / Automatic badge),
+  "Send a Verse" and "Add Automatic Verse" buttons, tabs "Sent for a day"
+  (Today / Upcoming badges) and "Automatic rotation", on/off switch, edit,
+  delete. Form modal switches between "Send for a day" (date picker) and
+  "Automatic rotation".
+- Sidebar: Platform Management -> "Daily Wisdom" (`nav-data.tsx`).
+
+**Verified:** `tsc --noEmit` clean; eslint clean on the new files (the two
+`set-state-in-effect` errors in `daily-wisdom.tsx` were already there);
+`npx next build` compiles; `app/api/__tests__/daily-wisdom.test.ts` 7/7
+against the real database. Not checked in a browser.
+
+**Interactions to watch**
+- "Authorised users" = every dashboard role (requireStaff), because role
+  permissions are not enforced yet (see 2026-10-07). When permission checks
+  are added, this page should get its own permission.
+- A verse changes at the READER's midnight (their local date), so readers in
+  different time zones can see different days' verses at the same moment.
+- Header pop-up shows the verse up to 60s stale after an edit (HTTP cache).
+
+## 2026-10-14 - Members page: "Digital Library" tab removed
+
+**Request:** remove the Digital Library tab from the Members page
+(`app/dashboard/users/page.tsx`).
+
+- The page had two tabs, "User Management" and "Digital Library"; the second
+  only showed a link to `/dashboard/library`. Both tabs are gone - the page
+  now shows the user list directly. Subtitle changed from "Manage platform
+  users and digital library resources" to "Manage platform users".
+- The page no longer holds tab state, so it is a server component again
+  (`'use client'` removed); `UsersView` is unchanged.
+
+**Verified:** `tsc --noEmit` clean. Not checked in a browser.
+
+## 2026-10-14 - Deleting a user returned 500
+
+**Report:** `DELETE /api/users/<id>` from the Members table returned 500
+"An unexpected error occurred".
+
+**Cause:** the route did a bare `prisma.user.delete`. On MongoDB Prisma
+enforces relations itself, and 20+ models point at User with a REQUIRED
+relation that does not cascade (orders, checkouts, course orders, cart,
+borrows, reservations, reviews, enrollments, attempts, certificates, session
+requests, project memberships, messages, comments, reactions, donations,
+articles, publications...). Any user with one of those rows could not be
+deleted. (The specific user in the report no longer exists in the database -
+it was removed separately; the list just had not refreshed.)
+
+**Fix**
+- New `lib/data/user-deletion.ts`:
+  - `getDeletionBlockers(userId)` - deletion is REFUSED (409, reason in the
+    message, "Suspend the account instead") when the user wrote news articles,
+    submitted publications, authored research papers, created donation
+    campaigns, wrote counseling notes / recorded rehab milestones about OTHER
+    members, still has a book borrowed (ACTIVE/OVERDUE), or made donations
+    (they count in `DonationCampaign.raisedRwf`).
+  - `deleteUserAndOwnData(userId)` - one transaction: clears optional
+    references (invitation inviter, course lecturer, session-request lecturer,
+    rehab reviewer/facilitator) so other people's records stay; deletes the
+    user's own orders, checkouts, course orders, cart (+items), reviews,
+    borrow history, reservations, enrollments, attempts, certificates, session
+    requests (+presence), project memberships, sent messages, notifications,
+    news comments/reactions, their own notes/milestones, and their `u:<id>`
+    book/article view rows; then the user (the remaining relations cascade).
+    Afterwards recomputes `avgRating`/`reviewCount` of every book they had
+    reviewed.
+- `app/api/users/[id]/route.ts` DELETE: ObjectId check, 409 for deleting your
+  own account, 404 "This user no longer exists - refresh the list", blockers,
+  then the delete above. Still admin-only.
+- `use-users.ts`: the list refreshes after a failed delete too (a 404 row
+  disappears). `delete-user-modal.tsx` says what is deleted and when deletion
+  is refused.
+- Test `app/api/__tests__/user-delete.test.ts` (4/4, real database).
+
+**Verified:** `tsc --noEmit` clean, eslint: no new errors (the one `set-state-in-effect` error in
+`use-users.ts` line 40 was already there); tests pass.
+Not checked in a browser.
+
+**Interactions to watch:** deleting a user permanently removes their order
+and payment history (orders/checkouts/course orders). If those must be kept
+for accounting, add orders to `getDeletionBlockers` and suspend such users.
+
+## 2026-10-14 - Users: Move to Trash (soft delete) + Delete permanently
+
+**Request:** the site's deletion rule is "move to Trash" (only a status
+change); give admins two deletes on the users table - Trash and permanent.
+RULES.md already recommends `deletedAt DateTime?` + `deletedBy String?`, but
+nothing implemented it. New standing rule added at the top of this file.
+
+**Data model:** `User.deletedAt DateTime?`, `User.deletedBy String? @db.ObjectId`.
+- **Needs:** stop the dev server, `npx prisma generate`, `npx prisma db push`,
+  restart.
+
+**Backend**
+- New `lib/data/user-trash.ts`: `NOT_TRASHED` / `IN_TRASH` where-fragments
+  (MongoDB: `deletedAt: null` does not match a field that was never set, so
+  `NOT_TRASHED` also accepts `isSet: false`), `moveUserToTrash` (sets
+  deletedAt/deletedBy and revokes all the user's UserSession rows, so they are
+  signed out at once), `restoreUser`.
+- New `POST /api/users/[id]/trash` (move to Trash) and
+  `DELETE /api/users/[id]/trash` (restore) - admin only; 409 for your own
+  account, already in / not in Trash; 404 when the user no longer exists.
+- `GET /api/users` hides trashed users; `?trash=1` lists only trashed ones;
+  each row now has `deletedAt`.
+- Sign-in blocked for trashed accounts: credentials `authorize` and the Google
+  `signIn` callback (`lib/auth-options.ts`).
+- Admin home "members" count excludes trashed users (`lib/data/admin-dashboard.ts`).
+- `DELETE /api/users/[id]` stays the PERMANENT delete (previous entry), from
+  either list.
+
+**Frontend**
+- Members table (`users-view.tsx`): tabs "Users (n)" / "Trash (n)". Users rows:
+  View, Edit, **Trash**, **Delete Permanently**. Trash rows: date moved,
+  **Restore**, **Delete Permanently**.
+- `delete-user-modal.tsx` takes `mode: 'trash' | 'permanent'` and explains
+  each. User detail page (`users/[id]`) has both buttons too and now shows the
+  server's reason when a delete is refused (it used to fail silently).
+- `use-users.ts`: loads both lists; `trashUser`, `restoreUser`,
+  `trashUserRequest`.
+
+**Verified:** `tsc --noEmit` clean; eslint no new errors (the
+`set-state-in-effect` errors in `use-users.ts` and `user-form-modal.tsx` were
+already there); `app/api/__tests__/user-delete.test.ts` 6/6 against the real
+database (2 new Trash tests). Not checked in a browser.
+
+**Interactions to watch**
+- A trashed user keeps their email address, so nobody can register a new
+  account with that email until the user is restored or deleted permanently.
+- Other pages that load users through `/api/users` (pickers, messages) no
+  longer show trashed users. Direct Prisma queries elsewhere (e.g. lists of
+  borrowers, enrollments) still include them - by design, their records stay.
+- Only users follow the Trash rule so far; other data still hard-deletes.
+
+## 2026-10-14 - `prisma db push` duplicate-key failure fixed; permanent user delete shows a loader and live progress
+
+### 1. `npx prisma db push` failed: E11000 duplicate key on `ResourceView_resourceId_viewerKey_key`
+
+**Cause:** the unique index on (resourceId, viewerKey) had never been
+created, so two "view" requests arriving at the same moment could both pass
+the "already counted?" check and insert the same viewer twice.
+
+**Fix**
+- Removed the exact duplicates, keeping the oldest row of each pair: 1 in
+  `ResourceView`, 2 in `NewsArticleView` (both collections checked first in a
+  dry run; 3 rows in total). Each was the same person counted twice for the
+  same item, so the affected counts drop by one.
+- `npx prisma db push` then succeeded: unique `ResourceView_resourceId_viewerKey_key`,
+  `ResourceMediaType_code_key`, `NewsArticleView_articleId_viewerKey_key`, and
+  indexes `DailyVerse_language_scheduledDate_idx`, `NewsArticleView_articleId_idx`.
+- `app/api/resource-views/route.ts`, `app/api/news/views/route.ts`: the upsert
+  now ignores Prisma P2002 (the unique index rejecting the second of two
+  simultaneous requests) - already counted, so no 500.
+
+**Warning:** the local `.env` points at the **production** database
+(`kls_db_prod` on cluster0.dg4yfw7.mongodb.net). The dev server and the
+integration tests (`app/api/__tests__`) read and write production data
+(tests create and remove their own `vitest-*` rows).
+
+### 2. Permanent delete: "loader + Deleting…" and real progress
+
+- `lib/data/user-deletion.ts`: `deleteUserAndOwnData(userId, onProgress?)`
+  now runs 12 named steps (keep other people's records, cart, orders and
+  payments, reviews, borrowing history, courses, research, messages, news
+  comments, counseling/rehab notes, viewing history, account) inside the same
+  single transaction, plus a final "book ratings" step, and reports
+  `{ done, total, label }` after each. Transaction timeout raised to 60s.
+- `DELETE /api/users/[id]`: with `Accept: application/x-ndjson` it streams one
+  JSON line per step and a final `{"type":"done"}` (or `{"type":"error"}` -
+  the transaction rolled back, nothing deleted). Refusals (404/409) still come
+  back as normal JSON before anything is deleted. Without that header it
+  answers with one JSON response as before.
+- `use-users.ts`: `removeUserRequest(id, onProgress)` reads the stream;
+  exported `DeleteProgress` type.
+- `delete-user-modal.tsx`: new `busy` / `progress` props. While running, the
+  confirm button shows a spinner and "Deleting…" ("Moving to Trash…" for
+  Trash), both buttons are disabled and the modal cannot be closed; for a
+  permanent delete a progress bar shows the percentage, the step just
+  finished and "Step n of N". Wired in `users-view.tsx` and the user detail
+  page.
+- Tests: `user-delete.test.ts` +2 (stream lines in order ending in "done";
+  refused delete is still JSON 409). With `resource-views` and
+  `news-engagement`: 25/25 against the real database.
+
+**Verified:** `tsc --noEmit` clean, eslint clean on the touched files, tests
+pass. Not checked in a browser.
+
+## 2026-10-14 - Permanent delete progress moved inside the button
+
+**Request:** show the delete progress inside the Delete button only, as
+"loader + Deleting… 30%".
+
+- `app/dashboard/users/_components/delete-user-modal.tsx`: removed the
+  progress bar, step label and "Step n of N" under the text. While a
+  permanent delete runs the button now reads `[spinner] Deleting… 30%`, the
+  percentage updating as each server step finishes (same streamed progress
+  as before). Trash still shows `[spinner] Moving to Trash…`. Buttons stay
+  disabled and the dialog cannot be closed until it finishes.
+
+**Verified:** `tsc --noEmit` and eslint clean. Not checked in a browser.
+
+## 2026-10-14 - Test users removed from production; tests can no longer write to production
+
+**Request:** delete every "Vitest" user (created by the test files) and never
+put test data in the production database again.
+
+**Cause:** the integration tests in `app/api/__tests__` used the app's own
+`DATABASE_URL`, and `.env` points that at **`kls_db_prod`**. Every test run
+created rows there; old runs left users and orders behind.
+
+**Clean-up (production, done 2026-10-14)**
+- Read-only scan first: 25 users with an `@vitest.local` email (no real user
+  matches), no shared content or open borrows, 22 orders.
+- Deleted all 25 with the same steps as the permanent delete
+  (`lib/data/user-deletion.ts`): 19 by the script, 6 were already being
+  deleted elsewhere at the same moment. 0 `@vitest.local` users remain.
+- Then deleted 12 orphaned test orders from older runs (buyer
+  `@vitest.local`, title "Test", PENDING 100 RWF) whose users were gone.
+- **Left in place (not clearly test data, owners no longer exist):** 1 cart
+  (2026-09-01) and 2 "Reservation placed" notifications (2026-09-25 and
+  2026-09-28). Nobody can see them; delete them if wanted.
+
+**Guard so it cannot happen again**
+- `prisma/client.tsx`: under Vitest the client connects ONLY to
+  `TEST_DATABASE_URL`, and throws a clear error if it is missing, equals
+  `DATABASE_URL`, or names a database containing "prod". The app itself is
+  unchanged (still `DATABASE_URL`).
+- `vitest.config.ts`: forwards `TEST_DATABASE_URL` from `.env` (via
+  `loadEnv`) to the tests.
+- `.env`: added `TEST_DATABASE_URL` = same cluster, database `kls_db_test`
+  (`.env` is git-ignored). `.env.example` documents it.
+- New `scripts/test-db-setup.mjs` / `npm run test:db-setup`: pushes the Prisma
+  schema to the test database (same refusal rule). Already run once:
+  `kls_db_test` has every collection and index.
+- **After any schema change, also run `npm run test:db-setup`.**
+
+**Verified:** `resource-views` + `roles` tests 10/10 on `kls_db_test`; with
+`TEST_DATABASE_URL` set to a `kls_db_prod` URL the run is refused with the
+guard's message; production still has 0 `@vitest.local` users afterwards;
+`tsc --noEmit` clean.
+>>>>>>> Stashed changes
