@@ -82,7 +82,8 @@ function buildSingleItems(t: (k: string) => string): NavItem[] {
   ]
 }
 
-export default function MemberSidebar() {
+/** `collapsible` is false inside the phone drawer (mobile-menu.tsx), where tapping the logo must not shrink the menu to icons. */
+export default function MemberSidebar({ collapsible = true }: { collapsible?: boolean } = {}) {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -144,9 +145,9 @@ export default function MemberSidebar() {
           display: "flex",
           alignItems: "center",
           gap: 10,
-          cursor: "pointer",
+          cursor: collapsible ? "pointer" : "default",
         }}
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => { if (collapsible) setCollapsed(!collapsed) }}
       >
         <div
           style={{

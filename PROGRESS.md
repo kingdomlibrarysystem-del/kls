@@ -6678,3 +6678,141 @@ updated (6/6). `tsc --noEmit` clean. Not checked in a browser.
   separate piece of work, pending the owner's decision on sections that have
   no permission key yet (news, donations, health, beauty, counseling,
   rehabilitation, research, settings...).
+
+## 2026-10-10 - Mobile fixes: public header, PDF reader width, footer, WhatsApp button removed
+
+**Report (phone screenshots):** the search box in the public header is
+squeezed under the Daily Wisdom button; a book read on a phone runs off the
+left and right edges; the WhatsApp button is not needed; footer content should
+be centered on phones.
+
+- **Header (`components/main-header.tsx`, `components/home/daily-wisdom.tsx`):**
+  below `md` the main bar wraps - row 1 is menu, logo, Daily Wisdom, language,
+  profile; the search box takes its own full-width row 2 (`order-last
+  basis-full`). Desktop layout is unchanged. The Daily Wisdom label is
+  slightly tighter below `sm`.
+- **PDF reader (`app/member/library/read/[resourceId]/_components/pdf-reader-view.tsx`):**
+  cause was a fixed `PAGE_WIDTH = 900` - react-pdf draws a page at an exact
+  pixel width. The reader now measures its own width (ResizeObserver, a
+  browser-only measurement so an effect is the right tool) and draws pages at
+  `min(900, available)`. Spread mode shows two pages side by side only when
+  both fit, otherwise full-width and stacked. Used by `/member/library/read/[id]`
+  and `/dashboard/library/read/[id]`.
+- **Member layout (`app/member/layout.tsx`):** `<main>` gets `min-w-0` so wide
+  content can never push the page sideways; `WhatsAppSupportButton` removed
+  and `components/whatsapp-support.tsx` deleted (it was only used there).
+  The WhatsApp icon in the footer's social links is unrelated and stays.
+- **Footer (`components/main-footer.tsx`):** columns and social icons are
+  centered below `md`, left-aligned from `md` up.
+
+**Verified:** `tsc --noEmit` clean, eslint clean on the touched files (the two
+`set-state-in-effect` errors in `daily-wisdom.tsx` were already there). Not
+checked on a phone/browser.
+
+**Interactions to watch**
+- `/library/read/[id]` is not a route in this app - the public "Read" buttons
+  link to `/member/library/read/[id]` (after login), so that is the page fixed.
+- `components/ui/pdf-preview.tsx` (admin upload preview) keeps its own fixed
+  320px width - it sits in a form column and was not part of this report.
+
+## 2026-10-10 - Member portal: full menu on phones (hamburger, top-left)
+
+**Request:** on phones the member portal only has the bottom bar's five
+general links; add a menu button at the top-left of the header that holds
+every link of the member sidebar, like the admin dashboard has.
+
+- New `app/member/_components/mobile-menu.tsx` (`MemberMobileMenu`): a
+  hamburger button shown below `md` that opens a slide-in drawer (portal to
+  `document.body`, dimmed backdrop). The drawer renders the same
+  `MemberSidebar` component, so it always has exactly the sidebar's links,
+  the profile menu and Log Out - nothing is duplicated. Closes on backdrop
+  tap, the X button, Escape, or when any link is followed.
+- `app/member/_components/member-sidebar.tsx`: new optional prop
+  `collapsible` (default `true`); the drawer passes `false` so tapping the
+  logo does not shrink the menu to icons. Desktop behaviour unchanged.
+- `components/app-shell/app-topbar.tsx`: new optional `menu` slot rendered at
+  the far left; `app/member/layout.tsx` passes `<MemberMobileMenu />`.
+- The bottom nav stays as the quick shortcuts.
+
+**Verified:** `tsc --noEmit` and eslint clean on the touched files. Not
+checked on a phone/browser.
+
+**Interactions to watch:** two `MemberSidebar` instances exist on small
+screens only while the drawer is open (the desktop one is `display: none`
+below `md`); each keeps its own expanded-section state.
+
+## 2026-10-10 - Shorter book summaries in the library list; site-wide text readability
+
+**Request:** in `/member/library` (and `/library`) the summaries are much
+longer than the book; and text across the site is hard to read - make size
+and colour easy to read.
+
+- **Summaries (`app/member/library/_components/resource-card.tsx`):** the list
+  view printed the whole description; it is now limited to 3 lines (grid view
+  was already 2). Both go from 12px to 13px. The full summary stays on the
+  book's own page. The public `/library` card shows no summary, so nothing to
+  shorten there.
+- **Font weight (`app/layout.tsx`):** `<body>` had `font-light` (Lato 300),
+  which made every paragraph on the site thin. Now `font-normal` (Lato 400).
+  **Same font family** - only the weight changed. Text that sets its own
+  weight (headings, buttons, badges) is unaffected.
+- **Text colours (`app/globals.css`), light:** `--text-secondary` #5a5a6e ->
+  #4a4a5c, `--text-muted` #9a9ab0 -> #6b6b80 (was about 2.7:1 on white, now
+  above 4.5:1), `--muted-foreground` #5a5a6e -> #4a4a5c.
+  **Dark:** `--text-secondary` #9aa0b4 -> #b6bccd, `--text-muted` #5a6070 ->
+  #8d94a8, `--muted-foreground` #9aa0b4 -> #b6bccd.
+
+**Verified:** `tsc --noEmit` clean. Not checked in a browser.
+
+**Interactions to watch**
+- These are global: every page using the body font, `var(--text-secondary)`,
+  `var(--text-muted)` or `text-muted-foreground` gets slightly heavier/darker
+  text. Lines that fitted exactly may wrap one word earlier.
+- Not changed: the many fixed small sizes (10-12px) set inline on individual
+  components, and the brand gold (`w-600`, `--gold`) used for small labels,
+  which is still low-contrast on white. Raising those is a per-page pass.
+
+## 2026-10-10 - Hero: the rotating picture now alternates with two other pictures
+
+**Request:** where the hero image turns in a circle, add two other, different
+images that replace it, with a simple "just show" animation (not circling),
+and relevant to the website.
+
+- `components/home/hero-section.tsx`: the visual is now a three-picture
+  slideshow (`HERO_SLIDES`, 7s each, `HERO_SLIDE_MS`). Each picture fades in
+  with a slight zoom while the previous fades out. Picture 1 is the original
+  `/hero-img1.png` and still turns slowly; pictures 2 and 3 do not rotate and
+  sit in a rounded frame: `/images/community-feature.png` (readers studying
+  together in a library) and `/images/book-C.jpg` (a Holy Bible, on a white
+  card because the photo has a white background). Small dots under the
+  picture show which one is on and can be tapped to jump.
+- Both extra pictures were already in `public/images`; no new files added.
+  To change them, edit the `HERO_SLIDES` list.
+- Reduced-motion visitors get no rotation and no fade (pictures still change).
+
+**Verified:** `tsc --noEmit` clean, eslint no errors (three unused-variable
+warnings were already there). Not checked in a browser.
+
+**Interactions to watch:** the box keeps the first picture's proportions, so
+the library photo is cropped a little at top/bottom (`object-cover`).
+
+## 2026-10-10 - Hero: the two new photos are shown whole, in their own shape
+
+**Report:** after the owner replaced the two extra hero pictures
+(`/hero-img2.jpg`, `/hero-img3.jpg`), picture 2 had its top cut off and
+picture 3 sat in a wide white card with empty space on both sides.
+
+**Cause:** both new photos are upright (736x1104, 2:3) but were placed in the
+landscape box made for the first picture - one was cropped to fill it, the
+other shrunk inside a white card.
+
+**Fix (`components/home/hero-section.tsx`):** the frame for pictures 2 and 3
+now has the photo's own 2:3 shape (centered, slightly taller than the box,
+rounded corners, shadow), so the whole picture shows with no cropping and no
+white card. The `book` slide kind is gone; alt texts updated to match the new
+photos. The dots moved down to clear the taller frame.
+
+**Verified:** `tsc --noEmit` clean, eslint no errors. Not checked in a browser.
+
+**Interactions to watch:** a replacement photo should also be upright 2:3; a
+landscape one would be cropped at the sides.
