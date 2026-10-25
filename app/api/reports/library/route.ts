@@ -19,15 +19,17 @@ export async function GET() {
 
   const [overdueBorrows, allBorrows, finedBorrows] = await Promise.all([
     prisma.borrow.findMany({
-      where: { status: 'OVERDUE' },
+      // Rows whose book was deleted are skipped (an included required relation that is missing makes Prisma throw).
+      where: { status: 'OVERDUE', resource: { is: {} } },
       include: { resource: { select: { title: true } } },
       orderBy: { dueDate: 'asc' },
     }),
     prisma.borrow.findMany({
+      where: { resource: { is: {} } },
       include: { resource: { select: { title: true, category: { select: { nameEn: true } } } } },
     }),
     prisma.borrow.findMany({
-      where: { fineAmount: { not: null } },
+      where: { fineAmount: { not: null }, resource: { is: {} } },
       include: { resource: { select: { title: true } } },
       orderBy: { fineAmount: 'desc' },
     }),

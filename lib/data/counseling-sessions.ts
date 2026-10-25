@@ -9,7 +9,10 @@ export function serializeSession(s: {
   mode: string
   reason: string
   status: string
-  counselor?: { name: string; specialty: string }
+  contactPhone?: string | null
+  meetingDetails?: string | null
+  staffNote?: string | null
+  counselor?: { name: string; specialty: string; userId?: string | null }
   user?: { name: string | null; firstName: string | null; lastName: string | null }
 }) {
   return {
@@ -23,10 +26,15 @@ export function serializeSession(s: {
     mode: s.mode,
     reason: s.reason,
     status: s.status,
+    contactPhone: s.contactPhone ?? null,
+    meetingDetails: s.meetingDetails ?? null,
+    staffNote: s.staffNote ?? null,
+    /** The counselor's staff account (to message them), when linked. */
+    counselorUserId: s.counselor?.userId ?? null,
   }
 }
 
-export const DETAIL_INCLUDE = { counselor: { select: { name: true, specialty: true } }, user: { select: { name: true, firstName: true, lastName: true } } } as const
+export const DETAIL_INCLUDE = { counselor: { select: { name: true, specialty: true, userId: true } }, user: { select: { name: true, firstName: true, lastName: true } } } as const
 
 /** One record in the GET /api/counseling/sessions/[id] shape, plus its owner id for the owner-or-staff check. */
 export async function getCounselingSessionDetail(id: string) {

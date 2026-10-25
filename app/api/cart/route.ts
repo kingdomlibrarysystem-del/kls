@@ -41,7 +41,8 @@ async function getOrCreateCart(userId: string) {
     where: { userId },
     update: {},
     create: { userId },
-    include: { items: { include: { resource: { select: { id: true, title: true, author: true, price: true, borrowPrice: true, coverImages: true } } }, orderBy: { addedAt: 'asc' } } },
+    // Items whose book was deleted are left out (an included required relation that is missing makes Prisma throw — the old /api/cart 500).
+    include: { items: { where: { resource: { is: {} } }, include: { resource: { select: { id: true, title: true, author: true, price: true, borrowPrice: true, coverImages: true } } }, orderBy: { addedAt: 'asc' } } },
   })
 }
 
@@ -80,7 +81,8 @@ export const POST = withErrorHandling('/api/cart', 'POST', async (request: NextR
   if (auth.response) return auth.response
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
-  if (!resource) throw new ApiError('Resource not found', 404)
+  // Drafts aren't published yet — treat them as missing for readers.
+  if (!resource || resource.status === 'DRAFT') throw new ApiError('Resource not found', 404)
   // SALE (Reserve) always requires a real price. RENTAL (Borrow) is
   // allowed to be free (borrowPrice defaults to 0) — its real product
   // constraint is the return period, not necessarily a charge.

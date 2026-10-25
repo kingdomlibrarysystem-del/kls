@@ -24,7 +24,7 @@ export const GET = withErrorHandling('/api/resources/[id]/entitlement', 'GET', a
   const forcePreview = new URL(request.url).searchParams.get('preview') === '1'
   const resource = await prisma.resource.findUnique({
     where: { id },
-    select: { id: true, price: true, freePreviewChapterCount: true },
+    select: { id: true, price: true, freePreviewChapterCount: true, status: true },
   })
   if (!resource) throw new ApiError('Resource not found', 404)
 
@@ -32,6 +32,7 @@ export const GET = withErrorHandling('/api/resources/[id]/entitlement', 'GET', a
   const userId = session?.user?.id
   const role = roleNameToUserRole(session?.user?.roleName ?? '')
   const isStaff = !forcePreview && (role === 'admin' || role === 'manager' || role === 'staff')
+  if (resource.status === 'DRAFT' && role === 'member') throw new ApiError('Resource not found', 404)
   const memberEntitled = !forcePreview && userId ? await isEntitled(userId, resource.id) : false
   const entitled = resource.price <= 0 || isStaff || memberEntitled
 

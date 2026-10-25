@@ -78,6 +78,12 @@ model User {
   password                  String?
   notificationPreferences   Json? // e.g., { "email": true, "sms": false }
   status                    UserStatus          @default(ACTIVE)
+  /// Soft delete (RULES.md "Database Standards"): set when an admin moves the
+  /// account to Trash. A trashed user cannot sign in and is hidden from user
+  /// lists; it can be restored, or deleted permanently from the Trash.
+  deletedAt                 DateTime?
+  /// Id of the admin who moved the account to Trash.
+  deletedBy                 String?             @db.ObjectId
   roleId                    String?             @db.ObjectId
   role                      Role?               @relation(fields: [roleId], references: [id])
   accounts                  Account[]
@@ -112,6 +118,8 @@ model User {
   cart                      Cart?
   reviews                   Review[]
   beautyAppointments        BeautyAppointment[]
+  productCartItems          ProductCartItem[]
+  productOrders             ProductOrder[]
   beautyReviews             BeautyReview[]
   counselingSessions        CounselingSession[]
   counselingNotes           CounselingNote[]    @relation("CounselingNoteSubject")
@@ -223,6 +231,12 @@ model Settings {
   maxRenewals                 Int      @default(2)
   reservationClaimWindowHours Int      @default(48)
   maxConcurrentBorrows        Int      @default(3)
+  /// Platform commission (%) on every sale/rental of a book submitted by a
+  /// publisher; the publisher earns the rest. Set by an admin from Publishing.
+  /// Copied onto each book's RevenueShare when it is approved.
+  publishingCommissionPercent Int      @default(30)
+  /// Shop: delivery fee (RWF) added to an order the member wants delivered (pickup is free).
+  shopDeliveryFeeRwf          Int      @default(0)
   updatedAt                   DateTime @updatedAt
 }
 
@@ -268,6 +282,8 @@ model Category {
   /// Availability status. Leaf/scroll rows only.
   status      CategoryStatus?
   resources   Resource[]
+  /// Books submitted by publishers under this KCS category (Publication.categoryId).
+  publications Publication[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 }
@@ -305,7 +321,28 @@ model Resource {
   language                String
   year                    Int
   pages                   Int
+  /// Internal unique record key (legacy name). New records store "KL-<id>"; older ones hold a self-generated
+  /// number. Never shown as an ISBN — the real one is officialIsbn.
   isbn                    String            @unique
+  /// Real ISBN assigned by the national ISBN agency; empty until then ("Pending"). Never self-generated.
+  officialIsbn            String?
+  /// Kingdom Library Publication Code, KLP-SS-YY-NNN-EE-F (lib/klp-code.ts). Assigned once, when the record is published.
+  klpCode                 String?
+  /// 13-digit Kingdom Library ID, KK SS YY NNN EE F C (check digit C). Internal — not an ISBN.
+  libraryId               String?
+  /// Parts the codes are built from. klpCollection = PublicationCollection.code ("09").
+  klpCollection           String?
+  klpYear                 Int?
+  klpSequence             Int?
+  klpEdition              Int?
+  /// Format letter P/E/A/D/R/J/V/M/G/C/S (lib/klp-code.ts KLP_FORMATS).
+  klpFormat               String?
+  /// Approval trail for the DRAFT -> published step.
+  createdById             String?           @db.ObjectId
+  approvedById            String?           @db.ObjectId
+  approvedAt              DateTime?
+  /// Why an approver sent the draft back (shown to staff on the draft).
+  reviewNote              String?
   /// Reserve (SALE/"Buy") price only, as of the Borrow/Reserve pricing
   /// split below — Borrow no longer charges this field.
   price                   Float
@@ -393,6 +430,8 @@ model Resource {
   // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
   @@index([categoryId])
   @@index([status])
+  @@index([klpCode])
+  @@index([libraryId])
 }
 
 /// One row per unique viewer of a resource ("Read" clicked on the landing
@@ -431,6 +470,8 @@ model Review {
 }
 
 enum ResourceStatus {
+  /// Newly added — hidden from readers until an approver publishes it (POST /api/resources/[id]/review).
+  DRAFT
   AVAILABLE
   OUT_OF_STOCK
   ARCHIVED
@@ -486,6 +527,10 @@ model Order {
   resourceCover   String?
   type            OrderType
   amountRwf       Float
+  /// Set once this paid order's amount was added to the publisher's
+  /// RevenueShare.totalRevenue — makes the credit happen exactly once even
+  /// if several payment callbacks settle the same order.
+  revenueCreditedAt DateTime?
   status          OrderStatus @default(PENDING)
   /// Set when this Order was created as one line of a combined
   /// multi-item Checkout (see Checkout's docstring) rather than the
@@ -699,6 +744,31 @@ enum BindingType {
 /// `isSystem` rows are the five original types: they can be renamed but
 /// not deleted or re-coded, because existing resources and reader
 /// behaviour depend on them.
+/// KLP collection codes (SS in KLP-SS-YY-NNN-EE-F) — admin-managed at /dashboard/library/collections.
+/// 01–30 are seeded once from the Kingdom Library Publication Code document; 31–99 are free for new collections.
+model PublicationCollection {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// Two digits, "01"–"99".
+  code        String   @unique
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Master register for the NNN publication sequence: one counter per collection per year, so a code is never reused.
+model PublicationSequence {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  collection String
+  /// Two-digit year (26 for 2026).
+  year       Int
+  last       Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([collection, year])
+}
+
 model ResourceMediaType {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   code           String   @unique
@@ -824,7 +894,15 @@ model Publication {
   contributorId   String              @db.ObjectId
   contributor     User                @relation(fields: [contributorId], references: [id])
   contributorName String
+  /// Display name of the KCS category (copied from Category.nameEn when the
+  /// book is submitted). Older rows hold free text from before categoryId.
   category        String
+  /// The KCS category (a scroll under a pillar) the publisher filed the book
+  /// under; copied to Resource.categoryId when the book is approved.
+  categoryId      String?             @db.ObjectId
+  kcsCategory     Category?           @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  /// The book's author as printed on it; defaults to the contributor's name.
+  author          String?
   language        PublicationLanguage @default(EN)
   coverImage      String?
   description     String
@@ -848,6 +926,20 @@ model Publication {
   bindingType     BindingType?
   /// Code of a ResourceMediaType row (see Resource.mediaType).
   mediaType       String?
+  /// Content the publisher uploaded (Cloudinary URLs), shown by the media
+  /// type's allows* flags; copied to the Resource on approval.
+  documentUrl     String?
+  audioUrl        String?
+  videoUrl        String?
+  pages           Int?
+  /// Borrow (rental) price; `price` is the reserve/buy price.
+  borrowPrice     Float?
+  /// Written chapters for a media type that allows chapters (e.g. Text);
+  /// become real Chapter rows of the Resource when the book is approved.
+  chapters        PublicationChapter[]
+  /// Reviewer's note: required when rejecting, shown to the publisher.
+  reviewNotes     String?
+  reviewedAt      DateTime?
   featured        Boolean             @default(false)
   submittedAt     DateTime            @default(now())
   createdAt       DateTime            @default(now())
@@ -856,6 +948,13 @@ model Publication {
 
   // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
   @@index([contributorId])
+  @@index([status, submittedAt])
+}
+
+/// One written chapter of a submitted book (embedded in Publication).
+type PublicationChapter {
+  title String
+  body  String
 }
 
 enum PublicationStatus {
@@ -1770,6 +1869,15 @@ model Counselor {
   specialty String
   bio       String?
   image     String
+  /// The staff account behind this counselor — lets members message them
+  /// (Messages) and lets that person see their own bookings.
+  userId    String?             @db.ObjectId
+  /// Languages they counsel in (shown to members), e.g. ["English", "Kinyarwanda"].
+  languages String[]
+  /// When they are usually available, shown on the booking form.
+  availability String?
+  /// Hidden from members when false (kept for past sessions).
+  active    Boolean             @default(true)
   sessions  CounselingSession[]
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
@@ -1788,6 +1896,12 @@ model CounselingSession {
   requestedAt  DateTime                @default(now())
   proposedTime DateTime
   mode         CounselingSessionMode   @default(IN_PERSON)
+  /// Number to call for a PHONE session (the member's, given when booking).
+  contactPhone String?
+  /// Video link (VIRTUAL) or place (IN_PERSON), sent by staff when confirming.
+  meetingDetails String?
+  /// Staff message to the member (e.g. why it was moved or cancelled).
+  staffNote    String?
   reason       String
   status       CounselingSessionStatus @default(PENDING)
   notes        CounselingNote[]
@@ -1801,6 +1915,7 @@ model CounselingSession {
 enum CounselingSessionMode {
   IN_PERSON
   VIRTUAL
+  PHONE
 }
 
 enum CounselingSessionStatus {
@@ -2032,6 +2147,29 @@ model NewsArticle {
   @@index([publishedAt])
 }
 
+/// Daily Wisdom verses (the header's "Daily Wisdom" card), managed by staff
+/// at /dashboard/daily-wisdom. Two kinds of row:
+///  - scheduledDate set ("YYYY-MM-DD"): the verse a staff member SENT for
+///    that exact day; it wins over the automatic one for that day/language.
+///  - scheduledDate null: part of the AUTOMATIC rotation — on a day with no
+///    sent verse, one active automatic verse is picked by day number.
+/// `language` is the site language code (en / fr / rw). One sent verse per
+/// day per language (enforced by the API).
+model DailyVerse {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  text          String
+  reference     String
+  language      String
+  scheduledDate String?
+  active        Boolean  @default(true)
+  createdById   String?  @db.ObjectId
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([language, scheduledDate])
+}
+
 /// One row per viewer per news article, written when the article page is
 /// opened — same idea as ResourceView for books. `viewerKey` is
 /// "u:<userId>" for signed-in readers and "a:<random browser id>" for
@@ -2221,4 +2359,181 @@ model Donation {
   @@index([userId])
   @@index([campaignId])
   @@index([resourceId])
+}
+
+// ── Shop (Beauty & Services) ────────────────────────────────────────────────
+// E-commerce for physical products. Staff with the role permission
+// "shop:manage" (Admin always) add products; members browse, add to a cart
+// and pay with mobile money (PayPack) or card (Stripe). See lib/shop/*.
+
+/// Admin-managed product category (e.g. Skin care, Hair, Fragrance).
+model ProductCategory {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  active      Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum ProductStatus {
+  /// Visible to staff only, not for sale yet.
+  DRAFT
+  /// For sale.
+  ACTIVE
+  /// No longer sold (kept for old orders' history).
+  ARCHIVED
+}
+
+model Product {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  description       String
+  priceRwf          Int
+  /// Optional "was" price shown crossed out when higher than priceRwf.
+  compareAtPriceRwf Int?
+  /// Cloudinary image URLs; the first is the main image.
+  images            String[]
+  categoryId        String          @db.ObjectId
+  category          ProductCategory @relation(fields: [categoryId], references: [id])
+  /// Units available. Reserved when an order is placed, given back when it fails or is cancelled.
+  stockQty          Int             @default(0)
+  status            ProductStatus   @default(ACTIVE)
+  /// Units in paid orders (shown as "sold" and used for "Best sellers").
+  soldCount         Int             @default(0)
+  createdById       String?         @db.ObjectId
+  createdByName     String
+  /// Soft delete (Trash) — RULES.md deletedAt/deletedBy.
+  deletedAt         DateTime?
+  deletedBy         String?         @db.ObjectId
+  cartItems         ProductCartItem[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([status, categoryId])
+  @@index([createdAt])
+}
+
+/// One product line in a member's shop cart (persists across devices).
+model ProductCartItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+/// Copy of a product as it was bought (title/price/image never change afterwards).
+type ProductOrderItem {
+  productId    String @db.ObjectId
+  title        String
+  image        String?
+  unitPriceRwf Int
+  quantity     Int
+}
+
+enum ProductOrderStatus {
+  /// Placed, waiting for the member to approve the payment.
+  PENDING_PAYMENT
+  /// Paid — staff should prepare it.
+  PAID
+  PROCESSING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+  /// Payment failed or expired (stock was given back).
+  FAILED
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DELIVERY
+}
+
+model ProductOrder {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  /// Human-friendly number, e.g. SHP-261020-4K7Q.
+  orderNumber     String             @unique
+  userId          String             @db.ObjectId
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buyerName       String
+  buyerEmail      String
+  buyerPhone      String
+  items           ProductOrderItem[]
+  subtotalRwf     Int
+  deliveryFeeRwf  Int                @default(0)
+  totalRwf        Int
+  deliveryMethod  DeliveryMethod     @default(PICKUP)
+  deliveryAddress String?
+  notes           String?
+  status          ProductOrderStatus @default(PENDING_PAYMENT)
+  /// PAYPACK (mobile money) or STRIPE (card).
+  method          String
+  paypackRef      String?
+  paypackStatus   String?
+  paypackProvider String?
+  stripeSessionId String?
+  paidAt          DateTime?
+  /// True while the order holds stock (placed and not failed/cancelled).
+  stockReserved   Boolean            @default(true)
+  /// Staff note shown to the member (e.g. pickup instructions).
+  staffNote       String?
+  cancelledAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+// ── Care resources (Counseling & Rehabilitation) ─────────────────────────────
+// Readings, audio and video that staff publish for members' wellbeing and
+// recovery — the "read and listen" part of the care services.
+
+enum CareProgram {
+  COUNSELING
+  REHABILITATION
+  GENERAL
+}
+
+enum CareResourceKind {
+  ARTICLE
+  AUDIO
+  VIDEO
+}
+
+model CareResource {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  program       CareProgram      @default(GENERAL)
+  kind          CareResourceKind @default(ARTICLE)
+  title         String
+  /// One or two sentences shown on the card.
+  summary       String
+  /// The article itself (Markdown) — also used as notes / transcript for audio and video.
+  body          String?
+  /// Cloudinary audio/video URL, or a YouTube link for video.
+  mediaUrl      String?
+  coverImage    String?
+  /// Free topic label, e.g. "Anxiety", "Grief", "Addiction recovery".
+  topic         String
+  durationMins  Int?
+  published     Boolean          @default(true)
+  views         Int              @default(0)
+  createdById   String?          @db.ObjectId
+  createdByName String
+  deletedAt     DateTime?
+  deletedBy     String?          @db.ObjectId
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([program, published])
 }

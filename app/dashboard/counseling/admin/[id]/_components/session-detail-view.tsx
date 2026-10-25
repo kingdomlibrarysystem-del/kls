@@ -74,6 +74,8 @@ export function SessionDetailView({ initialSession }: SessionDetailViewProps) {
           <DetailRow icon={<Users size={13} />} label="Counselor" value={`${session.counselorName ?? '—'} (${session.counselorSpecialty ?? '—'})`} />
           <DetailRow icon={<Calendar size={13} />} label="Date/Time" value={new Date(session.proposedTime).toLocaleString()} />
           <DetailRow icon={<MessageCircle size={13} />} label="Mode" value={counselingModeLabels[session.mode]} />
+          {session.contactPhone && <DetailRow icon={<MessageCircle size={13} />} label="Call on" value={session.contactPhone} />}
+          {session.meetingDetails && <DetailRow icon={<MessageCircle size={13} />} label={session.mode === 'VIRTUAL' ? 'Video link' : 'Place'} value={session.meetingDetails} />}
         </div>
 
         {session.userId && <AddNoteForm key={noteAdded} sessionId={id} userId={session.userId} onAdded={() => setNoteAdded((n) => n + 1)} />}

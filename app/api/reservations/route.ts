@@ -70,6 +70,8 @@ export async function GET(request: NextRequest) {
   if (auth.response) return auth.response
 
   const where = {
+    // Skip rows whose book was deleted: Prisma throws "Field resource is required to return data, got null" when an included required relation is missing.
+    resource: { is: {} },
     ...(userId && { userId }),
     ...(resourceId && { resourceId }),
     ...(status && status !== 'all' && VALID_STATUSES.includes(status) && {

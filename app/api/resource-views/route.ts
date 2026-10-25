@@ -33,13 +33,15 @@ export const POST = withErrorHandling('/api/resource-views', 'POST', async (requ
   const viewerKey = session?.user?.id ? `u:${session.user.id}` : anonymousId ? `a:${anonymousId}` : null
   if (!viewerKey) throw new ApiError('anonymousId is required when signed out', 400)
 
-  const resource = await prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true } })
-  if (!resource) throw new ApiError('Resource not found', 404)
+  const resource = await prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true, status: true } })
+  if (!resource || resource.status === 'DRAFT') throw new ApiError('Resource not found', 404)
 
   const key = { resourceId_viewerKey: { resourceId, viewerKey } }
   const already = await prisma.resourceView.findUnique({ where: key, select: { id: true } })
   if (!already) {
+    // Two clicks at the same moment can both get here; the unique index then rejects the second (P2002) — already counted, so ignore it.
     await prisma.resourceView.upsert({ where: key, create: { resourceId, viewerKey }, update: {} })
+      .catch((e: { code?: string }) => { if (e?.code !== 'P2002') throw e })
     // A new viewer changes the landing page's counts/ranking: expire its 60s data cache now.
     try { revalidateTag('home-page', { expire: 0 }) } catch { /* outside a Next request (tests) */ }
   }

@@ -6,6 +6,8 @@ interface ElegantButtonProps
   variant?: 'primary' | 'secondary' | 'outline'
   fullWidth?: boolean
   loading?: boolean
+  /** Text shown next to the spinner while loading (default "Loading..."), e.g. "Signing in…". */
+  loadingText?: React.ReactNode
 }
 
 export const ElegantButton = React.forwardRef<
@@ -17,6 +19,7 @@ export const ElegantButton = React.forwardRef<
       variant = 'primary',
       fullWidth = false,
       loading = false,
+      loadingText = 'Loading...',
       children,
       disabled,
       className = '',
@@ -38,6 +41,7 @@ export const ElegantButton = React.forwardRef<
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading}
+        aria-live="polite"
         className={`
           px-6 py-3 font-lato text-sm font-normal rounded
           transition-all duration-200 ease-in-out
@@ -52,7 +56,7 @@ export const ElegantButton = React.forwardRef<
         {...props}
       >
         {loading && <Loader2 size={16} className="animate-spin" />}
-        {loading ? 'Loading...' : children}
+        {loading ? loadingText : children}
       </button>
     )
   }

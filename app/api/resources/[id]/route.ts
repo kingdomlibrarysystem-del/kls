@@ -5,6 +5,11 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { serializeResource, getResourceDetail } from '@/lib/data/resources'
 import { isValidMediaTypeCode } from '@/lib/data/media-types'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { roleNameToUserRole } from '@/lib/roles'
+import { assignKlpCodes, isValidCollection } from '@/lib/data/klp-register'
+import { isKlpFormat, normalizeIsbn } from '@/lib/klp-code'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -13,7 +18,10 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
-  const resource = await getResourceDetail(id)
+  // A draft is only visible to staff (the approval preview); readers get a 404 as if it didn't exist.
+  const session = await getServerSession(authOptions)
+  const isStaff = !!session?.user?.id && roleNameToUserRole(session.user.roleName ?? '') !== 'member'
+  const resource = await getResourceDetail(id, { includeDraft: isStaff })
   if (!resource) {
     return NextResponse.json({ data: null, message: 'Resource not found', code: 'error', status: 404 }, { status: 404 })
   }
@@ -38,7 +46,11 @@ const updateResourceSchema = z.object({
   language: z.string().optional(),
   year: z.number().int().optional(),
   pages: z.number().int().nonnegative().optional(),
-  isbn: z.string().optional(),
+  /** Official ISBN from the agency ('' clears it back to pending). The internal `isbn` key is never editable. */
+  officialIsbn: z.string().optional(),
+  klpCollection: z.string().regex(/^\d{2}$/, 'Collection must be a 2-digit code').optional().or(z.literal('')),
+  klpEdition: z.number().int().min(1).max(99).optional(),
+  klpFormat: z.string().optional().or(z.literal('')),
   price: z.number().nonnegative().optional(),
   borrowPrice: z.number().nonnegative().optional(),
   borrowDurationDays: z.number().int().positive().optional(),
@@ -85,14 +97,38 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
   if (body.language !== undefined) data.language = body.language
   if (body.year !== undefined) data.year = body.year
   if (body.pages !== undefined) data.pages = body.pages
-  if (body.isbn !== undefined) data.isbn = body.isbn
+  if (body.officialIsbn !== undefined) {
+    const raw = body.officialIsbn.trim()
+    const isbn = raw ? normalizeIsbn(raw) : null
+    if (raw && !isbn) throw new ApiError('That ISBN is not valid — check the digits (ISBN-13 or ISBN-10), or leave it empty while it is pending.', 400)
+    data.officialIsbn = isbn
+  }
+  // The code parts are frozen once the KLP code is assigned — a new edition or format is a new record.
+  if (!existing.klpCode) {
+    if (body.klpCollection !== undefined) {
+      if (body.klpCollection && !(await isValidCollection(body.klpCollection))) throw new ApiError('The specified KLP collection does not exist', 400)
+      data.klpCollection = body.klpCollection || null
+    }
+    if (body.klpEdition !== undefined) data.klpEdition = body.klpEdition
+    if (body.klpFormat !== undefined) {
+      if (body.klpFormat && !isKlpFormat(body.klpFormat)) throw new ApiError('Unknown publication format', 400)
+      data.klpFormat = body.klpFormat || null
+    }
+  }
   if (body.price !== undefined) data.price = body.price
   if (body.borrowPrice !== undefined) data.borrowPrice = body.borrowPrice
   if (body.borrowDurationDays !== undefined) data.borrowDurationDays = body.borrowDurationDays
   if (body.freePreviewChapterCount !== undefined) data.freePreviewChapterCount = body.freePreviewChapterCount
   if (body.totalQty !== undefined) data.totalQty = body.totalQty
   if (body.availableQty !== undefined) data.availableQty = body.availableQty
-  if (body.status !== undefined) data.status = body.status.toUpperCase()
+  if (body.status !== undefined) {
+    const next = body.status.toUpperCase()
+    if (!['AVAILABLE', 'OUT_OF_STOCK', 'ARCHIVED', 'DRAFT'].includes(next)) throw new ApiError('Unknown status', 400)
+    // Publishing a draft is an approval (permission + codes + notifications) — only via /review.
+    if (existing.status === 'DRAFT' && next !== 'DRAFT') throw new ApiError('This resource is a draft. Approve it to publish it.', 409)
+    if (existing.status !== 'DRAFT' && next === 'DRAFT') throw new ApiError('A published resource cannot go back to draft — archive it instead.', 409)
+    data.status = next
+  }
   if (body.coverImages !== undefined) data.coverImages = body.coverImages
   if (body.bindingType !== undefined) data.bindingType = body.bindingType
   if (body.mediaType !== undefined) {
@@ -105,7 +141,12 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
   if (body.audioUrl !== undefined) data.audioUrl = body.audioUrl
   if (body.videoUrl !== undefined) data.videoUrl = body.videoUrl
 
-  const resource = await prisma.resource.update({ where: { id }, data })
+  let resource = await prisma.resource.update({ where: { id }, data })
+
+  // A published record that just got its collection (e.g. an older title) receives its codes now.
+  if (resource.status !== 'DRAFT' && !resource.klpCode && resource.klpCollection) {
+    if (await assignKlpCodes(id)) resource = await prisma.resource.findUniqueOrThrow({ where: { id } })
+  }
 
   const chapterCount = await prisma.chapter.count({ where: { resourceId: id } })
 

@@ -67,7 +67,10 @@
     "assessments": "Ibizamini",
     "certificates": "Impamyabumenyi",
     "news": "Amakuru",
-    "latest_news": "Amakuru ya vuba"
+    "latest_news": "Amakuru ya vuba",
+    "shop": "Iduka",
+    "browse_shop": "Reba ibicuruzwa",
+    "shop_orders": "Ibyo natumije"
   },
   "header": {
     "search_placeholder": "Shakisha ibitabo ukurikije umutwe cyangwa umwanditsi..."
@@ -285,7 +288,16 @@
     "library": "Isomero",
     "learning": "Ige",
     "profile": "Umwirondoro",
-    "home": "Ahabanza"
+    "home": "Ahabanza",
+    "section_shop": "Iduka",
+    "shop_browse": "Reba ibicuruzwa",
+    "shop_cart": "Igitebo cy'iduka",
+    "shop_orders": "Ibyo natumije",
+    "section_care": "Ubufasha & ihumure",
+    "care_home": "Incamake",
+    "care_resources": "Soma & umve",
+    "care_counseling": "Vugana n'umujyanama",
+    "care_rehab": "Gahunda yo gukira"
   },
   "m_welcome": {
     "welcome_back": "Murakaza neza,",

@@ -4,6 +4,7 @@ import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
 import { createBorrowRecord } from '@/app/api/borrowings/create-borrow'
 import { createReservationRecord } from '@/app/api/reservations/create-reservation'
+import { creditPaidOrdersToPublishers } from '@/lib/data/publishing-revenue'
 
 interface SettleInput {
   paypackStatus?: string
@@ -39,6 +40,9 @@ export async function settleOrder(orderId: string, input: SettleInput) {
   })
 
   const verb = order.type === 'RENTAL' ? 'borrow' : 'reservation'
+
+  // A paid sale/rental of a publisher's book adds to that book's revenue (once per order).
+  if (isSuccessful) await creditPaidOrdersToPublishers([orderId])
 
   if (isSuccessful && !order.createdRecordId) {
     const record = order.type === 'RENTAL'

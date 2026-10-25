@@ -28,6 +28,7 @@ export async function createReservationRecord(input: CreateReservationInput) {
   ])
   if (!user) throw new ApiError('The specified user does not exist', 400)
   if (!resource) throw new ApiError('The specified resource does not exist', 400)
+  if (resource.status === 'DRAFT') throw new ApiError('This resource is not published yet', 400)
 
   const existing = await prisma.reservation.findFirst({
     where: { userId: input.userId, resourceId: input.resourceId, status: { in: ['PENDING', 'NOTIFIED'] } },

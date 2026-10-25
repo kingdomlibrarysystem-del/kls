@@ -13,12 +13,14 @@ import { cn } from '@/lib/utils'
  * hover on the card (`group`).
  */
 
-const LOCAL_COVERS = ['/images/book-A.jpg', '/images/book-C.jpg', '/images/book-B.jpg']
-
-/** Fills `images` up to `count` with the bundled covers so the art never looks sparse. */
+/**
+ * Fills `images` up to `count` with empty slots, which render as the tile's
+ * icon placeholder (RemoteImage shows `fallback` for an empty src). It used to
+ * pad with bundled /images/book-*.jpg covers, which were removed from public/.
+ */
 function padded(images: string[], count: number): string[] {
   const out = images.filter(Boolean).slice(0, count)
-  for (let i = 0; out.length < count; i++) out.push(LOCAL_COVERS[i % LOCAL_COVERS.length])
+  while (out.length < count) out.push('')
   return out
 }
 

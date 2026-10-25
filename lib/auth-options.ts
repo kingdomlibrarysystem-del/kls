@@ -75,7 +75,8 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
           include: { role: { select: { name: true } }, twoFactorSecret: true },
         })
-        if (!user || !user.password) {
+        // Accounts in Trash (soft-deleted by an admin) cannot sign in.
+        if (!user || !user.password || user.deletedAt) {
           logLoginAttempt({ userId: null, email: credentials.email, ip, userAgent, success: false })
           return null
         }
@@ -150,6 +151,10 @@ export const authOptions: NextAuthOptions = {
 
       const googleName = profile?.name ?? user.name ?? ''
       const [firstName, ...rest] = googleName.split(/\s+/)
+
+      // An account in Trash cannot come back in through Google either.
+      const trashed = await prisma.user.findUnique({ where: { email: user.email }, select: { deletedAt: true } })
+      if (trashed?.deletedAt) return false
 
       const dbUser = await prisma.user.upsert({
         where: { email: user.email },

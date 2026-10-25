@@ -77,7 +77,7 @@ export function RequestSessionForm({ onRequested }: RequestSessionFormProps) {
             onChange={(e) => setMode(e.target.value as CounselingSessionMode)}
             className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
           >
-            {(Object.keys(counselingModeLabels) as CounselingSessionMode[]).map((m) => <option key={m} value={m}>{counselingModeLabels[m]}</option>)}
+            {(Object.keys(counselingModeLabels) as CounselingSessionMode[]).filter((m) => m !== 'PHONE').map((m) => <option key={m} value={m}>{counselingModeLabels[m]}</option>)}
           </select>
         </div>
       </div>

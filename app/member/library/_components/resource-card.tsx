@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Star, Heart, BookOpenCheck, ShoppingCart, Check, Package } from 'lucide-react'
+import { Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, Headphones, PlayCircle } from 'lucide-react'
+import { MediaCoverBadge } from '@/components/media/media-cover-badge'
+import { playableKind } from '@/lib/media-embed'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { useAuth } from '@/contexts/auth-context'
 import { useFavorites, toggleFavorite } from '@/app/member/_shared/use-favorites'
@@ -50,6 +52,7 @@ function ResourceCover({ resource, liked, height }: { resource: Resource; liked:
           )}
           <div style={{ position: 'absolute', top: 0, right: 0, height: '100%', width: 8, background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.3) 40%, rgba(0,0,0,0.1))' }} />
           <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 16, background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }} />
+          <MediaCoverBadge resource={resource} chip="bottom" />
         </div>
       </Link>
       {resource.status === 'available' && resource.availableQty > 0 && (
@@ -74,6 +77,8 @@ function useResourceCardState(resource: Resource) {
   const liked = useIsFavorited(resource.id)
   // chapterCount comes with the resource list — no need to download every chapter in the library to know this.
   const isReadable = isResourceReadable(resource)
+  // Audio / video titles are played on their detail page, not opened in the reader.
+  const mediaKind = playableKind(resource)
   const outOfStock = resource.availableQty === 0
   const inCartRental = isInCart(resource.id, 'RENTAL')
   const inCartSale = isInCart(resource.id, 'SALE')
@@ -92,7 +97,7 @@ function useResourceCardState(resource: Resource) {
     }
   }
 
-  return { isAuthenticated, addingType, cartError, liked, isReadable, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart }
+  return { isAuthenticated, addingType, cartError, liked, isReadable, mediaKind, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart }
 }
 
 /**
@@ -106,7 +111,7 @@ function useResourceCardState(resource: Resource) {
  * route.
  */
 export function ResourceCard({ resource }: ResourceCardProps) {
-  const { isAuthenticated, addingType, cartError, liked, isReadable, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
+  const { isAuthenticated, addingType, cartError, liked, isReadable, mediaKind, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
 
   return (
     <div
@@ -134,6 +139,11 @@ export function ResourceCard({ resource }: ResourceCardProps) {
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)' }}>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>to reserve</span></span>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{resource.borrowPrice > 0 ? `${resource.borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {resource.borrowDurationDays}d</span>
             </div>
+            {mediaKind && (
+              <Link href={`/member/library/resource/${resource.id}#player`} aria-label={`${mediaKind === 'video' ? 'Watch' : 'Listen to'} ${resource.title}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
+                {mediaKind === 'video' ? <PlayCircle size={13} /> : <Headphones size={13} />} {mediaKind === 'video' ? 'Watch' : 'Listen'}
+              </Link>
+            )}
             {isReadable && (
               <Link href={`/member/library/read/${resource.id}`} aria-label={`Preview ${resource.title}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
                 <BookOpenCheck size={13} /> Preview
@@ -185,7 +195,7 @@ export function ResourceCard({ resource }: ResourceCardProps) {
 
 /** List-view resource row — same actions as the card, arranged horizontally per the reference "list" mockup. */
 export function ResourceListItem({ resource }: { resource: Resource }) {
-  const { isAuthenticated, addingType, cartError, liked, isReadable, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
+  const { isAuthenticated, addingType, cartError, liked, isReadable, mediaKind, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
 
   return (
     <div style={{ display: 'flex', gap: 14, padding: 14, borderBottom: '1px solid var(--border-light)' }}>
@@ -208,6 +218,11 @@ export function ResourceListItem({ resource }: { resource: Resource }) {
             <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)' }}>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>to reserve</span></span>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{resource.borrowPrice > 0 ? `${resource.borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {resource.borrowDurationDays}d</span>
           </div>
+          {mediaKind && (
+            <Link href={`/member/library/resource/${resource.id}#player`} aria-label={`${mediaKind === 'video' ? 'Watch' : 'Listen to'} ${resource.title}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
+              {mediaKind === 'video' ? <PlayCircle size={13} /> : <Headphones size={13} />} {mediaKind === 'video' ? 'Watch' : 'Listen'}
+            </Link>
+          )}
           {isReadable && (
             <Link href={`/member/library/read/${resource.id}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
               <BookOpenCheck size={13} /> Preview

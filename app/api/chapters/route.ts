@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
 
   if (resourceId) {
     const [resource, chapters] = await Promise.all([
-      prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true, price: true, freePreviewChapterCount: true } }),
+      prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true, price: true, freePreviewChapterCount: true, status: true } }),
       prisma.chapter.findMany({ where: { resourceId }, orderBy: { order: 'asc' } }),
     ])
-    if (!resource) {
+    // A draft's chapters are for the staff approval preview only.
+    if (!resource || (resource.status === 'DRAFT' && !isStaff)) {
       return NextResponse.json({ data: null, message: 'Resource not found', code: 'error', status: 404 }, { status: 404 })
     }
     const gated = await gateChapters(resource, chapters, userId, isStaff)
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
   }
 
   const [resources, allChapters] = await Promise.all([
-    prisma.resource.findMany({ select: { id: true, price: true, freePreviewChapterCount: true } }),
+    prisma.resource.findMany({ where: isStaff ? {} : { status: { not: 'DRAFT' } }, select: { id: true, price: true, freePreviewChapterCount: true } }),
     prisma.chapter.findMany({ orderBy: { order: 'asc' } }),
   ])
   const resourceById = new Map(resources.map((r) => [r.id, r]))

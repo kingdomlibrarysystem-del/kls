@@ -71,3 +71,9 @@ export async function isValidMediaTypeCode(code: string): Promise<boolean> {
   const found = await prisma.resourceMediaType.findUnique({ where: { code }, select: { id: true } })
   return !!found
 }
+
+/** What a media type lets a resource contain (all false for an unknown code). */
+export async function getMediaCapabilities(code: string | null | undefined) {
+  const { mediaCapabilities } = await import('@/lib/media-types-shared')
+  return mediaCapabilities(code, await getMediaTypes())
+}

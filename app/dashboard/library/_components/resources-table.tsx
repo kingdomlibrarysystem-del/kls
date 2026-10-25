@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Pencil, Archive, BookOpenCheck, Package, MessageCircle } from "lucide-react";
+import { Eye, Pencil, Archive, BookOpenCheck, Package, MessageCircle, ShieldCheck } from "lucide-react";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { UniversalButton } from "@/components/ui/universal-button";
 import { getCategoryById } from "@/lib/kcs-taxonomy";
@@ -21,6 +21,9 @@ interface ResourcesTableProps {
   onTypeFilterChange: (value: string) => void;
   onEdit: (resource: Resource) => void;
   onArchive: (resource: Resource) => void;
+  /** Admin / library:approve — shows "Review" on drafts. */
+  canApprove?: boolean;
+  onReview?: (resource: Resource) => void;
 }
 
 /** DataTable of library resources with View/Edit/Archive row actions and status/type filters. */
@@ -32,6 +35,8 @@ export function ResourcesTable({
   onTypeFilterChange,
   onEdit,
   onArchive,
+  canApprove = false,
+  onReview,
 }: ResourcesTableProps) {
   const { mediaTypes } = useMediaTypes();
   const tableData = data.filter((r) => {
@@ -74,6 +79,7 @@ export function ResourcesTable({
               {r.title}
             </p>
             <p className="text-xs text-w-600">{r.author}</p>
+            {r.klpCode && <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">{r.klpCode}</p>}
           </div>
         </div>
       ),
@@ -178,6 +184,15 @@ export function ResourcesTable({
       className: "text-right",
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5">
+          {r.status === "draft" && canApprove && onReview && (
+            <button
+              onClick={() => onReview(r)}
+              aria-label={`Review ${r.title}`}
+              className="flex items-center gap-1 px-2.5 py-1 bg-primary text-primary-foreground border border-primary rounded text-xs font-lato font-semibold hover:bg-primary/90 transition-colors"
+            >
+              <ShieldCheck size={12} /> Review
+            </button>
+          )}
           {isResourceReadable(r) ? (
             <Link
               href={`/dashboard/library/read/${r.id}`}
@@ -220,7 +235,7 @@ export function ResourcesTable({
           >
             <Pencil size={12} /> Edit
           </button>
-          {r.status !== "archived" && (
+          {r.status !== "archived" && r.status !== "draft" && (
             <button
               onClick={() => onArchive(r)}
               aria-label={`Archive ${r.title}`}
@@ -239,11 +254,13 @@ export function ResourcesTable({
       data={tableData}
       columns={columns}
       rowKey={(r) => r.id}
-      searchPlaceholder="Search title, author, ISBN..."
+      searchPlaceholder="Search title, author, KLP code, ISBN..."
       searchFilter={(r, q) =>
         r.title.toLowerCase().includes(q) ||
         r.author.toLowerCase().includes(q) ||
-        r.isbn.includes(q) ||
+        (r.klpCode?.toLowerCase().includes(q) ?? false) ||
+        (r.libraryId?.includes(q.replace(/\s/g, "")) ?? false) ||
+        (r.officialIsbn?.includes(q.replace(/[\s-]/g, "")) ?? false) ||
         (getCategoryById(r.categoryId)?.name.en.toLowerCase().includes(q) ??
           false)
       }

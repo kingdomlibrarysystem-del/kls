@@ -30,6 +30,15 @@ export function serializeResource(r: {
   videoUrl: string | null
   avgRating: number
   reviewCount: number
+  officialIsbn?: string | null
+  klpCode?: string | null
+  libraryId?: string | null
+  klpCollection?: string | null
+  klpEdition?: number | null
+  klpFormat?: string | null
+  reviewNote?: string | null
+  approvedAt?: Date | null
+  createdAt?: Date
 }, chapterCount: number, views = 0) {
   return {
     id: r.id,
@@ -62,16 +71,33 @@ export function serializeResource(r: {
     reviewCount: r.reviewCount,
     chapterCount,
     views,
+    officialIsbn: r.officialIsbn ?? null,
+    klpCode: r.klpCode ?? null,
+    libraryId: r.libraryId ?? null,
+    klpCollection: r.klpCollection ?? null,
+    klpEdition: r.klpEdition ?? null,
+    klpFormat: r.klpFormat ?? null,
+    reviewNote: r.reviewNote ?? null,
+    approvedAt: r.approvedAt ? r.approvedAt.toISOString() : null,
   }
 }
 
+/** Statuses readers (guests and members) may see — everything except a not-yet-approved DRAFT. */
+export const READER_VISIBLE_STATUSES = ['AVAILABLE', 'OUT_OF_STOCK', 'ARCHIVED'] as const
+
+/** True when this stored status means the record has been approved and published. */
+export function isPublishedStatus(status: string): boolean {
+  return status.toUpperCase() !== 'DRAFT'
+}
+
 /** One resource in the GET /api/resources/[id] shape (incl. its real chapterCount). Resource + chapter count run in parallel. */
-export async function getResourceDetail(id: string) {
+export async function getResourceDetail(id: string, opts: { includeDraft?: boolean } = {}) {
   if (!isObjectId(id)) return null
   const [resource, chapterCount, views] = await Promise.all([
     prisma.resource.findUnique({ where: { id } }),
     prisma.chapter.count({ where: { resourceId: id } }),
     prisma.resourceView.count({ where: { resourceId: id } }).catch(() => 0),
   ])
-  return resource ? serializeResource(resource, chapterCount, views) : null
+  if (!resource || (!opts.includeDraft && !isPublishedStatus(resource.status))) return null
+  return serializeResource(resource, chapterCount, views)
 }

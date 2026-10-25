@@ -50,7 +50,7 @@ export const POST = withErrorHandling('/api/donations/sponsor', 'POST', async (r
   }
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
-  if (!resource) throw new ApiError('Resource not found', 404)
+  if (!resource || resource.status === 'DRAFT') throw new ApiError('Resource not found', 404)
 
   const donation = await prisma.donation.create({
     data: {

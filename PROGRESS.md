@@ -30,6 +30,17 @@
 > fields on the row (e.g. `allowsChapters`), not from the row's code.
 > Lifecycle statuses stay enums. Full rule: **RULES.md → Dynamic Data First**.
 
+# Standing rule — delete = Trash first, permanent delete second (added 2026-10-14)
+
+> **Rule (per project owner):** deleting something in this app means moving
+> it to **Trash** (soft delete: set `deletedAt` + `deletedBy`, RULES.md
+> "Database Standards"), not erasing it. Trashed rows are hidden from normal
+> lists and can be restored. Admins get a separate **Delete permanently**
+> action (from the row or the Trash). Implemented so far for **users**
+> (`lib/data/user-trash.ts`, `NOT_TRASHED` filter - note MongoDB needs
+> `isSet: false` for rows created before the field existed). Other data still
+> hard-deletes until it is converted the same way.
+
 # Standing rule — shadcn + Tailwind, light AND dark (added 2026-09-29)
 
 > **Rule (per project owner):** admin (`/dashboard`) and member (`/member`)
@@ -6816,8 +6827,6 @@ photos. The dots moved down to clear the taller frame.
 
 **Interactions to watch:** a replacement photo should also be upright 2:3; a
 landscape one would be cropped at the sides.
-<<<<<<< Updated upstream
-=======
 
 ## 2026-10-14 - Daily Wisdom is admin-managed (sent verse of the day + automatic rotation)
 
@@ -7100,4 +7109,482 @@ created rows there; old runs left users and orders behind.
 `TEST_DATABASE_URL` set to a `kls_db_prod` URL the run is refused with the
 guard's message; production still has 0 `@vitest.local` users afterwards;
 `tsc --noEmit` clean.
->>>>>>> Stashed changes
+
+## 2026-10-18 - "Field resource is required to return data, got null" on borrowings / dashboard; missing /images covers
+
+**Report (dev server on `kls_db_dev`):** `/api/borrowings` 500 and the admin
+dashboard crashing with `Inconsistent query result: Field resource is
+required to return data, got null`; repeated 404s for `/images/book-A.jpg`,
+`book-B.jpg`, `book-C.jpg`.
+
+**Cause 1:** records that still point at a deleted book. In `kls_db_dev`
+(read-only check): 1 borrow, 3 orders, 1 reading-progress row. When a query
+`include`s the required `resource` relation and that book is gone, Prisma
+throws instead of returning the row.
+**Fix:** the list queries now skip such rows with `resource: { is: {} }`
+(verified on kls_db_dev: matches 0 of the 1 broken borrow):
+`app/api/borrowings/route.ts` (list + count), `app/api/reservations/route.ts`
+(list + count), `app/api/reports/library/route.ts` (3 queries),
+`lib/data/admin-dashboard.ts` (recent borrows), `app/api/cart/route.ts`
+(cart items - the old `/api/cart` 500), `app/api/checkout/route.ts` (an item
+whose book is gone is "not found" instead of a crash). The broken rows are
+left in the database; single-record lookups (`/api/borrowings/[id]`) still
+fail for those specific rows.
+
+**Cause 2:** `public/images/` was removed in commit dc5f3a4, but the hero
+cards still padded their artwork with `/images/book-*.jpg`.
+**Fix:** `components/home/hero-path-art.tsx` pads with empty slots (rendered
+as the icon placeholder); `hero-section.tsx` no longer falls back to
+`/images/book-B.jpg`.
+
+**Branch note:** first made on `main` by mistake, then moved to `develop` (2026-10-18) with git stash.
+
+**Verified:** `tsc --noEmit` shows no errors in the touched files (only the
+pre-existing verse-form-modal errors on main). Not checked in a browser.
+
+## 2026-10-18 - Publishers submit books under KCS categories; reviewers approve them into the library; Download Center exports real reports
+
+**Request:** make the Download Center and the Publishing page work for real
+(no dummy data, plans turned into features), and let a publisher add a book
+from their own account, filed under the KCS categories, starting in a status
+an admin approves before members can see it.
+
+**Branch:** work is on `develop`. The fixes from earlier today (made on
+`main` by mistake) were moved here with git stash. The test-database guard
+(`prisma/client.tsx`, `vitest.config.ts`, `scripts/test-db-setup.mjs`,
+`npm run test:db-setup`, `.env.example`) existed only on `main`; it was
+brought to `develop` before any test ran.
+
+### Permissions (first real use of role permissions)
+- New `lib/auth/permissions.ts`: `getRolePermissions`, `hasPermission`,
+  `requirePermission(key)` - Admin always passes, other roles need the key
+  ticked at /dashboard/roles. `lib/server/page-session.ts`:
+  `getPagePermissions`, `pageHasPermission` for server pages.
+- Used by: submitting (`publications:submit`), approving / rejecting
+  (`publications:approve`, never on your own book unless Admin), report
+  downloads (`reports:view`). Featuring in the catalog and deleting a
+  publication: Admin only. Every other module still uses the coarse role
+  checks.
+
+### Publishing
+- **Schema (`Publication`):** `categoryId` (KCS scroll, relation `kcsCategory`;
+  back-relation `Category.publications`), `author`, `documentUrl`, `audioUrl`,
+  `videoUrl`, `pages`, `borrowPrice`, `reviewNotes`, `reviewedAt`, index
+  `[status, submittedAt]`. `category` keeps the category name for display.
+- **Needs:** `npx prisma generate` + `npx prisma db push` (whatever
+  `DATABASE_URL` is) - `kls_db_test` already pushed.
+- **API:** `POST /api/publications` - publisher only (permission), the book
+  belongs to the signed-in user, KCS scroll + media type validated, `submit:
+  true` -> SUBMITTED (needs category, media type, description >= 20 chars,
+  cover), otherwise DRAFT. `PATCH /api/publications/[id]` actions: `update`
+  and `submit` (owner, DRAFT/REJECTED only), `withdraw` (owner),
+  `approve` / `reject` (reviewer; reject requires a reason, stored in
+  `reviewNotes` and sent to the publisher), `toggleFeatured` (Admin). The
+  unvalidated "raw field" PATCH branch was removed. **Approve** creates the
+  library Resource with the KCS `categoryId`, author, generated ISBN, files,
+  pages, buy/borrow price, copies and `status AVAILABLE` (visible to members),
+  plus the RevenueShare row, in one transaction.
+- Shared serializer/loaders in `lib/data/publications.ts`
+  (`getMyPublications`, `getPublishingOverview`, `getKcsCategoryOptions`
+  - non-archived scrolls grouped by pillar); notifications in
+  `lib/data/publication-notify.ts`; validation in `app/api/publications/schema.ts`.
+- **New pages:** `/dashboard/publishing/submit` (and `?edit=<id>` for a
+  draft / sent-back book) - form with KCS category (pillar groups), media type
+  (admin-managed) deciding which uploads show (PDF auto-fills pages, audio,
+  video), cover, price, borrow price, copies; Save Draft / Submit for Review.
+  `/dashboard/publishing/my` - the publisher's books with status, the
+  reviewer's note, Edit / Submit / Withdraw / View in library.
+- **Review Queue fixed:** it fetched `/api/publications` with no status,
+  which the API treats as the public catalog (published only), so submitted
+  books **never appeared**. Now loaded on the server (SUBMITTED +
+  UNDER_REVIEW); approve / reject buttons only for reviewers, "Your book -
+  another reviewer decides" on your own; the review dialog shows author, KCS
+  category, media type, price, pages and links to open the uploaded files
+  (it also crashed on a missing cover - now a placeholder).
+- **Publishing overview** (`/dashboard/publishing`): server page, live counts
+  (your books by status, waiting for review, published, total revenue), every
+  card links to a working page, cards follow permissions; the "under active
+  development" banner and "Coming Soon" badges are gone.
+- Sidebar Publishing: Overview, Submit a Book, My Submissions, Review Queue,
+  Revenue & Royalties, Published Catalog.
+
+### Download Center
+- `GET /api/downloads/reports/[report]?from=&to=` (permission `reports:view`)
+  returns a CSV built from the live database: **Borrowing Activity Report**
+  (borrows in the period), **Publishing Revenue Statement** (books approved in
+  the period, revenue and split), **Learning Progress Summary** (enrollments in
+  the period, lessons done, progress, assessment). Excel-friendly
+  (`lib/server/csv.ts`: UTF-8 BOM, quoting, formula-injection guard), max 50k
+  rows, period up to 3 years. Definitions in `lib/data/download-reports.ts`.
+- `/dashboard/downloads`: server page; From/To dates (default: this month),
+  "Download CSV" per report with a spinner and the row count; a notice instead
+  for roles without `reports:view`. The three hardcoded dummy rows and the
+  disabled buttons are gone. Certificates list unchanged.
+
+**Verified:** `tsc --noEmit` clean; eslint: no new errors (two
+`set-state-in-effect` errors in `use-publications.ts` and `review-modal.tsx`
+were already there); `npx next build` compiles; new
+`app/api/__tests__/publishing-flow.test.ts` 7/7 on `kls_db_test` (no
+permission -> 403; missing category / pillar instead of scroll -> 400; submit;
+no self-approval; reject needs a reason; edit + resubmit; approve creates the
+Resource under the KCS scroll with the files and prices; CSV reports and their
+permission). Not checked in a browser.
+
+**Interactions to watch**
+- To let someone publish: Roles & Permissions -> tick **Submit Publications**
+  for their role. Reviewers need **Approve Publications**; report downloads
+  need **View Reports**. Admin needs nothing.
+- Books approved before this change have no KCS category on their Resource.
+- Withdrawing still removes the submission outright (not yet Trash).
+
+## 2026-10-18 - Submit a Book: clearer message when the KCS Map has pillars but no scrolls
+
+**Report:** "No KCS categories exist yet" showed although `/api/categories`
+returns two categories (Foundation, Genesis).
+
+**Cause:** both have `parentId: null`, i.e. both are **pillars**. Books (like
+library resources, see `resource-form-modal.tsx` `leafCategories`) are filed
+under a **scroll** - a category whose Parent Category is a pillar - and there
+were none, so the list was empty. The message wrongly said no categories
+existed.
+
+**Fix:** `getKcsPillarNames()` (`lib/data/publications.ts`) is passed to the
+form; with no scrolls it now says "Your KCS Map has the pillars Foundation,
+Genesis but no scrolls under them…" and links to Digital Library → KCS Map,
+telling the admin to add a category with a pillar as its Parent Category. The
+scroll-only rule is unchanged.
+
+**Verified:** `tsc --noEmit` and eslint clean. Not checked in a browser.
+
+## 2026-10-19 - Submit a Book: write chapters / upload by media type; admin commission rate; revenue credited on payment
+
+**Request:** the book form showed nowhere to upload the PDF or write the text
+(audio / video) - it should work like adding a library resource, with the
+differences (starting status, commission). The admin sets the commission the
+platform takes when a book is bought, from the Publishing overview.
+
+**Form (`app/dashboard/publishing/_components/book-submission-form.tsx`)**
+- Media types that allow chapters (e.g. Text) now show a **chapter editor**
+  (`chapters-editor.tsx`): title + the same rich Markdown editor the library
+  book form uses, add / remove / reorder. PDF / audio / video upload fields
+  still follow the media type (`allows*` flags). A line under Media type says
+  what content that type needs.
+- Before: a Text book showed only "written chapter by chapter in the library
+  after approval" - nothing to fill in.
+
+**Data / API**
+- `Publication.chapters` (embedded `type PublicationChapter { title, body }`).
+  `POST /api/publications` and the `update` action store them (empty rows
+  dropped, untitled ones named "Chapter N"; max 300).
+- Submitting now requires content that matches the media type: at least one
+  written chapter, or the PDF / audio / video the type allows
+  (`missingForSubmit(book, capabilities)`, `getMediaCapabilities()` in
+  `lib/data/media-types.ts`).
+- Approve creates the Resource's real `Chapter` rows (in order) in the same
+  transaction.
+
+**Commission**
+- `Settings.publishingCommissionPercent` (default 30): what the platform keeps;
+  the publisher earns the rest. `PUT /api/publishing/commission { percent,
+  applyToPublished }` (Admin) / `GET` (staff); also accepted by
+  `PATCH /api/settings`. Helpers in `lib/data/publishing-revenue.ts`.
+- Approval reads the rate on the server and stores it on the book's
+  RevenueShare. The client-side "default revenue share" (a module variable
+  sent with every approve, lost on reload) is removed.
+- `CommissionRateCard` on the Publishing overview and the Revenue page: shows
+  "Platform keeps X% · publisher earns Y%"; Admin gets "Set commission rate"
+  (modal with an example on 10,000 RWF and "Also apply to books already
+  published"). The Revenue page's old **Default Revenue Share** form was fake
+  (400ms timeout, value kept only in memory) and is deleted
+  (`revenue-config-form.tsx`, `revenue-config-schema.ts`).
+
+**Revenue now accrues (it never did)**
+- `RevenueShare.totalRevenue` was only ever set to 0. Now every PAID order
+  (sale or rental) of a published book adds its amount to that book's revenue:
+  `creditPaidOrdersToPublishers()` called from `app/api/orders/settle.ts` and
+  `app/api/checkout/settle.ts`. New `Order.revenueCreditedAt` makes it count
+  exactly once per order, whatever number of payment callbacks arrive.
+
+**Review dialog:** lists the written chapters with word counts.
+
+**Needs:** `npx prisma generate` + `npx prisma db push` (`kls_db_test`
+already pushed).
+
+**Verified:** `tsc --noEmit` clean; eslint no new errors; `npx next build`
+passes; `publishing-flow.test.ts` 9/9 on `kls_db_test` (+ commission is
+admin-only and is applied at approval; a paid order is credited once; a Text
+book needs chapters and they become the library chapters). Not checked in a
+browser.
+
+**Interactions to watch**
+- Orders paid before this change are not credited (no back-fill).
+- Changing the rate with "apply to published books" changes only the split;
+  revenue already earned is not recalculated.
+
+## 2026-10-20 - Sign in / Create account stay "loading" until the dashboard opens
+
+**Request:** on the login and create-account forms, don't finish loading
+before the redirect to the dashboard.
+
+- `app/(public)/auth/login/_components/login-form.tsx`: the form switched its
+  loading state OFF right after a successful sign-in, then started the
+  redirect - so the button looked idle while the dashboard was still loading
+  (and it also flickered off/on during the 2FA check). Now a `phase`
+  (`checking` -> `signing` -> `redirecting`) keeps the button busy, labelled
+  "Checking…", "Signing in…", "Opening your dashboard…", until the next page
+  replaces the form. Uses `router.replace` (Back doesn't return to the login
+  form) and prefetches `/member` / `/dashboard` (or `?redirect=`) on mount.
+- `app/(public)/auth/register/page.tsx`: after the account is created the new
+  member is signed in automatically (`signIn('credentials')` with the same
+  details) and taken to `/member` (or a same-site `?redirect=`), busy the
+  whole way ("Creating your account…" -> "Signing you in…" -> "Opening your
+  dashboard…"). If the automatic sign-in fails, the old "account created - go
+  to login" screen is shown.
+- `components/ui/elegant-button.tsx`: new optional `loadingText` (default
+  "Loading..." as before) and `aria-live="polite"`.
+
+**Verified:** `tsc --noEmit` and eslint clean. Not checked in a browser.
+**Watch:** sign-in still does not require a verified email (unchanged).
+
+## 2026-10-21 - Beauty & Services Shop (e-commerce): staff upload products, members buy them
+
+**Request:** Beauty & Services should work like e-commerce: an admin (or any
+permitted user) uploads products (images, title, price in RWF, description,
+category…), members see them and buy them, with a smooth process.
+
+The existing Beauty appointments (providers, services, bookings) are kept as
+they were; the shop is added beside them.
+
+**Data (`prisma/schema.prisma`):** `ProductCategory` (admin-managed, active
+flag, sort order), `Product` (title, description, `priceRwf`, optional
+`compareAtPriceRwf` "was" price, up to 8 `images`, category, `stockQty`,
+`status` DRAFT/ACTIVE/ARCHIVED, `soldCount`, Trash via `deletedAt/deletedBy`),
+`ProductCartItem` (persistent cart per member), `ProductOrder` (order number
+`SHP-YYMMDD-XXXX`, embedded `ProductOrderItem` copies of title/price/image,
+pickup or delivery + address, PayPack/Stripe payment fields, `stockReserved`,
+`staffNote`), `Settings.shopDeliveryFeeRwf`. User back-relations cascade on
+user deletion.
+- **Needs:** `npx prisma generate` + `npx prisma db push` (`kls_db_test` already pushed).
+
+**Permission:** new role permission **`shop:manage`** ("Manage Shop (products,
+categories, orders)") in Roles & Permissions; Admin always has it.
+
+**Logic (`lib/shop/*`):** `shared.ts` (client-safe types, status labels/steps,
+`formatRwf`), `data.ts` (loaders/serializers, overview numbers), `orders.ts`:
+- `placeOrder` re-reads prices and stock, **reserves stock atomically**
+  (conditional decrement — two buyers can't get the last unit), removes the
+  bought lines from the cart, then `startPayment` (PayPack prompt to the
+  phone, or a Stripe card page with one line per product + delivery).
+- `settleProductOrder` (PayPack webhook, Stripe webhook metadata
+  `productOrderId`, or the "check" action) - PAID once (soldCount++,
+  member + staff notified) or FAILED once (stock given back).
+- `cancelOrder` (member while unpaid; staff before completion) and
+  `advanceOrder` (PAID → PROCESSING → READY_FOR_PICKUP / OUT_FOR_DELIVERY →
+  COMPLETED, optional note to the member, member notified each step).
+- Notification categories `shop-order-paid`, `shop-order-update` (+ a "Shop"
+  group in the member's notification preferences).
+
+**API (`app/api/shop/*`):** `products` (GET public / `?all=1` staff, POST),
+`products/[id]` (GET, PATCH incl. `{restore}`, DELETE = Trash, `?permanent=1`),
+`categories` (+`[id]`, delete blocked while products use it), `cart`
+(GET/POST add|set capped at stock/DELETE), `orders` (GET mine / `?all=1`
+staff, POST checkout), `orders/[id]` (GET, PATCH check|retry|cancel|advance),
+`settings` (delivery fee). Webhooks: `app/api/webhooks/paypack` and `stripe`
+now also settle shop orders.
+
+**Member pages:** `/member/shop` (grid with instant search, category chips,
+sort, sold-out last), `/member/shop/[id]` (gallery, price/discount, stock,
+quantity, Add to cart / Buy now, pickup/delivery/payment info, related
+products), `/member/shop/cart` (cart + checkout on one page: quantities,
+pickup or delivery + address, name/phone prefilled, MoMo or card, live
+total; the button stays busy until the payment step opens),
+`/member/shop/orders` and `/member/shop/orders/[id]` (progress steps,
+automatic payment check every 5s for 3 min, "I've paid — check", "Send the
+request again", cancel while unpaid). Member sidebar: **Shop** section
+(Browse Products, Shop Cart, My Shop Orders) in en/fr/rw.
+**Public:** `/shop` and `/shop/[id]` for guests; Add to cart sends them to
+sign in and back to the member product page. Public header: **Shop** menu.
+
+**Admin pages (Beauty & Shop):** Shop Products (stats, delivery fee, list,
+Trash tab, add/edit with up to 8 photos, main photo/reorder), Shop
+Categories (add/rename/show-hide/delete when unused), Shop Orders (filters
+To fulfil / Awaiting payment / Completed / Cancelled, order detail, next-step
+buttons, cancel). Shared `components/app-shell/no-permission.tsx` (moved from
+publishing).
+
+**Verified:** `tsc --noEmit` clean, eslint clean on the new files;
+`app/api/__tests__/shop.test.ts` 8/8 on `kls_db_test` (PayPack mocked).
+Not checked in a browser.
+
+**Interactions to watch**
+- Cancelling a PAID order does not refund automatically — the confirm dialog
+  tells staff to refund the member.
+- An unpaid order holds its stock until the payment fails or someone
+  cancels; there is no automatic expiry of abandoned PENDING_PAYMENT orders yet.
+- The library cart (`/member/cart`) and the shop cart are separate.
+
+## 2026-10-23 - Care & Support for members (Counseling + Rehabilitation): read & listen, talk to someone, recovery programme
+
+**Request:** Consultation & Counseling and Rehabilitation should work as
+services given through reading, listening, conversation with the responsible
+person, and phone calls by appointment.
+
+**Biggest gap found:** every counseling / rehabilitation page lived under
+`/dashboard`, which members cannot open (middleware sends them to `/member`) —
+so members could not use these services at all. Also: no readings/audio,
+no phone appointments, counselors not linked to any account (no way to message
+them), and no way for staff to add or edit counselors (the API was GET-only).
+
+**Data (`prisma/schema.prisma`):**
+- `Counselor`: `userId` (linked staff account), `languages[]`, `availability`,
+  `active` (existing rows are back-filled to `active: true` once, by a raw
+  MongoDB update in `lib/care/data.ts`).
+- `CounselingSessionMode` + `PHONE`; `CounselingSession`: `contactPhone`,
+  `meetingDetails` (video link / place), `staffNote`.
+- New `CareResource` (program COUNSELING / REHABILITATION / GENERAL, kind
+  ARTICLE / AUDIO / VIDEO, title, summary, Markdown body, mediaUrl,
+  coverImage, topic, duration, published, views, Trash via deletedAt).
+- **Needs:** `npx prisma generate` + `npx prisma db push` (`kls_db_test` done).
+
+**API**
+- `app/api/counseling/sessions` (rewritten on the shared serializer):
+  PHONE needs a valid MTN/Airtel number, time must be 30+ min ahead, counselor
+  must be active; staff + the counselor's linked account are notified.
+  `[id]` PATCH: member cancels own; staff confirm (optional new time, video
+  link/place, note), complete (only after confirm) or cancel with a reason —
+  the member is notified with the details each time.
+- `app/api/counseling/counselors` POST + `[id]` PATCH/DELETE (staff; DELETE
+  hides a counselor who has past sessions). GET hides inactive ones
+  (`?all=1` staff sees all).
+- New `app/api/care/resources` (+`[id]`): members (signed in) list/open
+  published ones (opening counts a view); staff create/edit/publish/Trash/
+  restore/delete permanently. Validation in `lib/care/schemas.ts`.
+- `app/api/rehabilitation/groups` DELETE — leave a support group.
+
+**Member pages (`/member/care`, tabs):** Overview (next confirmed session,
+three ways to get help, how help is given, confidentiality + emergency 112
+note, newest resources); **Read & listen** (search, Read/Listen/Watch, topic;
+resource page plays uploaded audio/video or embedded YouTube, renders the
+Markdown, "Talk to a counselor"); **Talk to someone** (counselor cards with
+languages/availability, booking dialog: Phone / Video / In person, date &
+time, number to call, reason; your sessions with confirmed details, Message,
+Cancel; past sessions); **Recovery programme** (intake form + status +
+coordinator note, support groups join/leave, scheduled sessions, milestones
+timeline). Member sidebar: **Care & Support** section (en/fr/rw).
+**Messages:** `/member/messages?to=<userId>` opens or starts the conversation
+(`MessagesView.initialDmUserId`).
+
+**Staff pages:** Counselors (`/dashboard/counseling/counselors` - add/edit,
+photo, languages, availability, link staff account, taking-bookings switch,
+delete/hide), **Care Resources** (`/dashboard/counseling/resources`, new
+sidebar item), Admin sessions table: shows Phone call + number; Confirm/Cancel
+open `confirm-session-modal.tsx`. Session detail shows number / link / place.
+The older staff booking form no longer offers Phone (it can't collect a number).
+
+**Verified:** `tsc --noEmit` clean; eslint: no new errors (pre-existing
+`set-state-in-effect` ones in `counseling/_shared/use-counseling*.ts`);
+`app/api/__tests__/care.test.ts` 5/5 on `kls_db_test`. Not checked in a browser.
+
+**Watch:** the "New message" picker in Messages still lists users through the
+staff-only `/api/users`, so a member can only start a chat from a link
+(e.g. a counselor card). Rehabilitation staff screens are unchanged.
+
+### 2026-10-25 — Audio/video playback, draft-until-approved resources, Kingdom Library Publication Code
+
+**1. Audio / video titles play instead of "Read".**
+- New `lib/media-embed.ts` (`playableKind` = video when a video file exists, else
+  audio, else null; `youtubeId` moved here from the Care resource page).
+- New `components/media/resource-media-player.tsx`: in-page player (native
+  `<audio>`/`<video>` or embedded YouTube). Access = same rule as reading: free
+  titles play for signed-in members; paid titles once borrowed/reserved (uses the
+  existing `/api/resources/[id]/entitlement`); guests get "Sign in to listen/watch".
+- New `components/media/media-cover-badge.tsx`: "Audio"/"Video" chip + play disc
+  over the cover. Used on the public `book-card.tsx`, member `resource-card.tsx`,
+  `related-resource-card.tsx`, and both detail pages.
+- Member detail (`/member/library/resource/[id]`) and public detail
+  (`/library/[id]`): Listen/Watch button + player (`#player`). Cards link
+  Listen/Watch to the detail page's player. The reader page
+  `/member/library/read/[id]` redirects an audio/video-only title to its player.
+  Admin resource page also shows the player. While the session is still
+  loading the player shows a placeholder (no "Sign in" flash for members).
+
+**2. New resources start as DRAFT and wait for approval.**
+- Schema: `ResourceStatus.DRAFT`; Resource `createdById`, `approvedById`,
+  `approvedAt`, `reviewNote`. Permission key `library:approve` (Roles page);
+  Admin always has it.
+- `POST /api/resources` always saves `DRAFT` and notifies approvers (no
+  newsletter for drafts). New `POST /api/resources/[id]/review`
+  (`approve` with KLP collection / `reject` with a note) in
+  `lib/data/resource-review.ts` — approval publishes (AVAILABLE, or OUT_OF_STOCK
+  with 0 copies), assigns codes, notifies the creator, sends the newsletter.
+  PATCH can't publish a draft or turn a published record back into a draft (409).
+- Readers never get drafts: `GET /api/resources` returns them only to staff
+  passing `?includeDrafts=1`; `GET /api/resources/[id]`, `getResourceDetail`
+  (default), reader page, chapters, document, entitlement, cart, orders,
+  borrow, reservation, sponsor, reviews, resource-views and the home page all
+  treat a draft as missing for members/guests.
+- Client store `use-resources.ts`: fetches with `includeDrafts=1` but
+  `useResources()` filters drafts out unless `{ includeDrafts: true }` (only Book
+  Inventory and Manage Categories pass it), so staff browsing the public/member
+  library see what readers see. `reviewResource()` helper added.
+- Admin UI: "Awaiting Approval" stat, drafts banner + "Show drafts", status
+  "Draft · awaiting approval", **Review** button (approvers) →
+  `review-draft-modal.tsx`; resource page draft banner + Review; form shows a
+  draft notice / reviewer note and the button reads "Save as Draft".
+
+**3. Kingdom Library Publication Code (from the "Kingdom Library Publication Code" PDF).**
+- `lib/klp-code.ts` (pure): `KLP-SS-YY-NNN-EE-F`, 13-digit Kingdom Library ID
+  `KK SS YY NNN EE F C` (KK=10, EAN-13 style check digit — the document example
+  `1009260010117` is a unit test), format letters P/E/A/D/R/J/V/M/G/C/S → digits
+  1–9, ISBN-10/13 validation for the official ISBN, default format from files,
+  collection suggestion by pillar name.
+- `lib/data/klp-register.ts`: `PublicationCollection` table (01–30 seeded once
+  from the document; admins add 31–99 at **/dashboard/library/collections**,
+  new sidebar item "KLP Collections"; used collections can only be hidden, not
+  deleted or renumbered) and `PublicationSequence` master register (one atomic
+  counter per collection per year, 001–999, never reused). `assignKlpCodes` runs
+  once at approval; the same title + author in the same collection reuses its
+  YY-NNN so print/eBook/audio differ only in EE/F; codes never change afterwards.
+- Resource fields: `officialIsbn` (pending until the ISBN agency issues one —
+  never generated), `klpCode`, `libraryId`, `klpCollection`, `klpYear`,
+  `klpSequence`, `klpEdition`, `klpFormat`. The legacy unique `isbn` column is now
+  an internal key (`KL-<id>` for new records) and is no longer shown as an ISBN.
+  `lib/generate-isbn.ts` (self-made 978 ISBNs) deleted.
+- Form: new "Publication code" section (`resource-form-publication-code.tsx`:
+  collection — pre-selected from the KCS pillar name, edition, format or
+  automatic, official ISBN). Display: admin detail rows, member Details card and
+  public page show KLP Code / Kingdom Library ID / Official ISBN ("Pending") with
+  the note that the Library ID is not an ISBN; table shows the KLP code and
+  searches it. Publisher approvals (`/api/publications/[id]`) also get codes
+  (collection matched from the KCS pillar; otherwise staff pick one by editing,
+  and saving a published record with a collection assigns its codes — this is
+  also how older titles get codes).
+
+**Files:** prisma/schema.prisma, lib/{media-embed,klp-code}.ts,
+lib/data/{klp-register,resource-review,resources,home}.ts, lib/server/{object-id,reader-page}.ts,
+lib/notify.ts, components/media/*, components/ui/related-resource-card.tsx,
+app/api/resources/{route,[id]/route,[id]/review/route,[id]/document,[id]/entitlement}.ts,
+app/api/klp-collections/*, app/api/{cart,orders,chapters,reviews,resource-views,donations/sponsor,publications/[id]}/route.ts,
+app/api/{borrowings/create-borrow,reservations/create-reservation}.ts,
+app/dashboard/library/{page,[id]/page,collections/*}.tsx, app/dashboard/library/_components/*
+(library-view, resources-table, resources-stats, resource-form-modal/-schema/-publication-code,
+review-draft-modal, use-resources, resources-data), app/dashboard/library/[id]/_components/*,
+app/dashboard/roles/_components/roles-data.ts, app/dashboard/_components/nav-data.tsx,
+app/member/library/{read/[resourceId]/page,resource/[id]/_components/resource-detail-view,_components/resource-card}.tsx,
+app/(public)/library/{_components/book-card,[id]/_components/publication-detail-view}.tsx,
+app/member/care/resources/[id]/page.tsx.
+
+**Verified:** `tsc --noEmit` clean; `next build` passes; eslint clean on new files;
+`lib/__tests__/klp-code.test.ts` 7/7, `app/api/__tests__/library-approval.test.ts`
+6/6, publishing-flow 9/9 (assertion updated: no generated ISBN) — all on
+`kls_db_test`. `cart.test.ts` has 4 failures that are not from this change (it
+expects free borrows to be rejected; the cart route allows them by design).
+
+**Needs running on the dev DB:** `npx prisma generate` and `npx prisma db push`
+(new enum value, fields, two models, two indexes). Existing resources stay
+AVAILABLE and show "KLP Code —" until a KLP collection is chosen on them.
+
+**Watch:** anything that counts resources for readers must exclude `DRAFT`.
+A staff member with no `library:approve` permission can add drafts but not
+publish them. Media access for paid audio/video is a UI gate — the file URL is
+still in the catalog API response, like before.

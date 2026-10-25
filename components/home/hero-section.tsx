@@ -68,7 +68,7 @@ export function HeroSection({ bookCovers = [], courseImages = [] }: HeroSectionP
     },
     {
       icon: <BookCopy />, title: t('hero.publishing_tag'), body: t('hero.publishing_body'), cta: t('hero.publishing_cta'), href: '/auth/register',
-      art: <PublishingArt cover={bookCovers[0] ?? '/images/book-B.jpg'} />,
+      art: <PublishingArt cover={bookCovers[0] ?? ''} />,
       card: 'to-success/15 hover:border-success/50', chip: 'bg-success/15 text-success', link: 'text-success',
     },
   ]

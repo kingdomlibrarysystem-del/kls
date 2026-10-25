@@ -4,10 +4,11 @@ interface ResourcesStatsProps {
   data: Resource[]
 }
 
-/** Stat card row summarizing the current resource list — total, available, out-of-stock, archived, copy counts. */
+/** Stat card row summarizing the current resource list — total, drafts awaiting approval, available, out-of-stock, archived, copy counts. */
 export function ResourcesStats({ data }: ResourcesStatsProps) {
   const stats = [
     { label: 'Total Resources', value: data.length, color: 'text-w-950' },
+    { label: 'Awaiting Approval', value: data.filter((r) => r.status === 'draft').length, color: 'text-amber-700 dark:text-warning' },
     { label: 'Available', value: data.filter((r) => r.status === 'available').length, color: 'text-green-700 dark:text-success' },
     { label: 'Out of Stock', value: data.filter((r) => r.status === 'out_of_stock').length, color: 'text-red-700 dark:text-destructive' },
     { label: 'Archived', value: data.filter((r) => r.status === 'archived').length, color: 'text-w-600' },
@@ -16,7 +17,7 @@ export function ResourcesStats({ data }: ResourcesStatsProps) {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
       {stats.map((s) => (
         <div key={s.label} className="bg-form-highlight border border-w-300 rounded-lg p-4 text-center">
           <p className={`font-cinzel text-2xl font-bold ${s.color}`}>{s.value}</p>

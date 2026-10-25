@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
+import { IN_TRASH, NOT_TRASHED } from '@/lib/data/user-trash'
 
 const BCRYPT_ROUNDS = 10
 
@@ -39,6 +40,7 @@ function serializeUser(u: {
   role: { name: string } | null
   emailVerified: Date | null
   createdAt: Date
+  deletedAt?: Date | null
 }) {
   return {
     id: u.id,
@@ -50,6 +52,8 @@ function serializeUser(u: {
     status: u.status.toLowerCase(),
     emailVerified: !!u.emailVerified,
     createdAt: u.createdAt.toISOString().split('T')[0],
+    /** Set when the account is in Trash (soft delete). */
+    deletedAt: u.deletedAt ? u.deletedAt.toISOString() : null,
   }
 }
 
@@ -66,8 +70,11 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search')?.toLowerCase()
   const role = searchParams.get('role')
   const status = searchParams.get('status')
+  // ?trash=1 lists only accounts in Trash (soft-deleted); every other list hides them.
+  const trash = searchParams.get('trash') === '1'
 
   const where = {
+    AND: [trash ? IN_TRASH : NOT_TRASHED],
     ...(status && status !== 'all' && VALID_STATUSES.includes(status.toUpperCase()) && { status: status.toUpperCase() as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' }),
     ...(role && role !== 'all' && { role: { name: { equals: role, mode: 'insensitive' as const } } }),
     ...(search && {

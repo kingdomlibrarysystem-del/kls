@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { requireStaffPage } from '@/lib/server/page-session'
+import { requireStaffPage, pageHasPermission } from '@/lib/server/page-session'
+import { listCollections, type CollectionOption } from '@/lib/data/klp-register'
 import { getResourceDetail } from '@/lib/data/resources'
 import { toPlain } from '@/lib/server/to-plain'
 import { ResourceDetailView } from './_components/resource-detail-view'
@@ -11,7 +12,8 @@ interface ResourceDetailPageProps {
 
 export default async function ResourceDetailPage({ params }: ResourceDetailPageProps) {
   const [{ id }] = await Promise.all([params, requireStaffPage()])
-  const resource = await getResourceDetail(id)
+  // Staff page: drafts included (this is where they are reviewed).
+  const [resource, canApprove, collections] = await Promise.all([getResourceDetail(id, { includeDraft: true }), pageHasPermission('library:approve'), listCollections()])
   if (!resource) notFound()
-  return <ResourceDetailView initialResource={toPlain<Resource>(resource)} />
+  return <ResourceDetailView initialResource={toPlain<Resource>(resource)} canApprove={canApprove} collections={toPlain<CollectionOption[]>(collections)} />
 }

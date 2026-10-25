@@ -1,6 +1,7 @@
 import prisma from '@/prisma/client'
 import { serializeBorrow, RESOURCE_INCLUDE } from '@/lib/data/borrowings'
 import { getMediaTypes } from '@/lib/data/media-types'
+import { NOT_TRASHED } from '@/lib/data/user-trash'
 import { getArticleStatsMap } from '@/lib/data/news-engagement'
 import { mediaTypeName } from '@/lib/media-types-shared'
 
@@ -37,9 +38,10 @@ export async function getAdminDashboardData() {
     prisma.borrow.groupBy({ by: ['status'], _count: { _all: true } }),
     // Same rule as before: ACTIVE and due on today's (UTC) date.
     prisma.borrow.count({ where: { status: 'ACTIVE', dueDate: { gte: todayStart, lt: tomorrowStart } } }),
-    prisma.borrow.findMany({ orderBy: { borrowDate: 'desc' }, take: 6, include: RESOURCE_INCLUDE }),
+    // resource: { is: {} } skips borrows whose book was deleted (Prisma throws on a missing required relation).
+    prisma.borrow.findMany({ where: { resource: { is: {} } }, orderBy: { borrowDate: 'desc' }, take: 6, include: RESOURCE_INCLUDE }),
     prisma.reservation.count(),
-    prisma.user.count(),
+    prisma.user.count({ where: NOT_TRASHED }),
     prisma.resource.aggregate({ _sum: { totalQty: true } }),
     prisma.resource.groupBy({ by: ['mediaType'], _sum: { totalQty: true } }),
     prisma.resource.findMany({ orderBy: { createdAt: 'desc' }, take: 4, select: { id: true, title: true, type: true } }),

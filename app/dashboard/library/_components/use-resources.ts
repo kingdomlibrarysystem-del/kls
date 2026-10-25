@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Resource } from './resources-data'
 
 /**
@@ -33,7 +33,8 @@ function notify() {
 function fetchResources(): Promise<void> {
   if (inflight) return inflight
   inflight = (async () => {
-    const res = await fetch('/api/resources?pageSize=1000')
+    // includeDrafts is honoured for staff only (the API ignores it for everyone else); useResources filters drafts back out unless asked.
+    const res = await fetch('/api/resources?pageSize=1000&includeDrafts=1')
     if (!res.ok) throw new Error(`Failed to fetch resources (${res.status})`)
     const json = await res.json()
     if (json.code !== 'success') throw new Error(json.message ?? 'Failed to fetch resources')
@@ -44,26 +45,32 @@ function fetchResources(): Promise<void> {
   return inflight
 }
 
-/** Live-subscribes to the shared resources store, fetching once on first mount. */
-export function useResources() {
-  const [data, setData] = useState<Resource[]>(cache)
+const pick = (list: Resource[], includeDrafts: boolean) => (includeDrafts ? list : list.filter((r) => r.status !== 'draft'))
+
+/**
+ * Live-subscribes to the shared resources store, fetching once on first mount.
+ * Drafts (not yet approved) are left out unless `includeDrafts` — only the
+ * admin inventory passes it — so a staff member browsing the public or
+ * member library sees exactly what readers see.
+ */
+export function useResources(opts: { includeDrafts?: boolean } = {}) {
+  const includeDrafts = !!opts.includeDrafts
+  const [data, setData] = useState<Resource[]>(() => pick(cache, includeDrafts))
   const [loading, setLoading] = useState(!hasFetched)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const listener = () => setData(cache)
+    const listener = () => setData(pick(cache, includeDrafts))
     listeners.add(listener)
 
-    if (!hasFetched) {
-      fetchResources()
-        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load resources'))
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
+    // Settles in a callback (not synchronously in the effect), and also re-reads the cache in case another
+    // consumer's fetch finished between this render and the effect.
+    ;(hasFetched ? Promise.resolve() : fetchResources())
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load resources'))
+      .finally(() => { setData(pick(cache, includeDrafts)); setLoading(false) })
 
     return () => { listeners.delete(listener) }
-  }, [])
+  }, [includeDrafts])
 
   return { data, loading, error }
 }
@@ -92,8 +99,8 @@ export async function refetchResources(): Promise<void> {
   await fetchResources()
 }
 
-/** `isbn` is never sent by the client — it's generated server-side (see lib/generate-isbn.ts) and always ignored if present in the request body. `chapterCount` is likewise server-derived (counted from real Chapter rows), never client-supplied. */
-export async function addResource(resource: Omit<Resource, 'id' | 'isbn' | 'avgRating' | 'reviewCount' | 'chapterCount' | 'views'>): Promise<Resource> {
+/** `isbn` (internal record key) and `status` are never sent by the client — every new resource is saved as a DRAFT with a server-made key; KLP codes are assigned on approval. `chapterCount` is likewise server-derived (counted from real Chapter rows), never client-supplied. */
+export async function addResource(resource: Omit<Resource, 'id' | 'isbn' | 'avgRating' | 'reviewCount' | 'chapterCount' | 'views' | 'status'>): Promise<Resource> {
   const res = await fetch('/api/resources', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -115,6 +122,15 @@ export async function updateResource(id: string, updates: Partial<Omit<Resource,
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update resource')
   await refetchResources()
   return json.data
+}
+
+/** Approve (publish, assigning KLP codes) or send back a draft. Needs Admin or the library:approve permission. */
+export async function reviewResource(id: string, body: { action: 'approve'; klpCollection?: string } | { action: 'reject'; note: string }): Promise<{ resource: Resource; message: string }> {
+  const res = await fetch(`/api/resources/${id}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Could not save the review')
+  await refetchResources()
+  return { resource: json.data, message: json.message }
 }
 
 export async function archiveResource(id: string): Promise<Resource> {

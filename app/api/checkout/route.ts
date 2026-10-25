@@ -83,7 +83,8 @@ export const POST = withErrorHandling('/api/checkout', 'POST', async (request: N
   }
 
   const cartItems = await prisma.cartItem.findMany({
-    where: { id: { in: body.cartItemIds }, cart: { userId: body.userId } },
+    // An item whose book was deleted is treated as not found instead of crashing.
+    where: { id: { in: body.cartItemIds }, cart: { userId: body.userId }, resource: { is: {} } },
     include: { resource: true },
   })
   if (cartItems.length !== body.cartItemIds.length) throw new ApiError('One or more selected cart items were not found', 404)

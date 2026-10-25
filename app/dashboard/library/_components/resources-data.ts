@@ -34,7 +34,8 @@ export interface Resource {
   /** Renamed conceptually to "quantity" per the canonical shape; totalQty/availableQty split is kept since it's strictly more useful than one combined count. */
   totalQty: number
   availableQty: number
-  status: 'available' | 'out_of_stock' | 'archived'
+  /** 'draft' = added but not yet approved — never returned to readers. */
+  status: 'draft' | 'available' | 'out_of_stock' | 'archived'
   /** One or more cover images — a physical book may have front/back/spine shots. */
   coverImages: string[]
   bindingType: BindingType
@@ -54,9 +55,24 @@ export interface Resource {
   chapterCount: number
   /** Unique viewers of this book (ResourceView rows) — server-derived, like chapterCount. */
   views?: number
+  /** Official ISBN from the ISBN agency; null while pending. Never self-generated. */
+  officialIsbn?: string | null
+  /** KLP-SS-YY-NNN-EE-F, assigned when the record is published (lib/klp-code.ts). */
+  klpCode?: string | null
+  /** 13-digit Kingdom Library ID (internal, not an ISBN). */
+  libraryId?: string | null
+  /** PublicationCollection code, "01"–"99". */
+  klpCollection?: string | null
+  klpEdition?: number | null
+  /** KLP format letter. */
+  klpFormat?: string | null
+  /** Why an approver sent a draft back. */
+  reviewNote?: string | null
+  approvedAt?: string | null
 }
 
 export const statusConfig: Record<Resource['status'], { label: string; cls: string }> = {
+  draft: { label: 'Draft · awaiting approval', cls: 'bg-amber-50 dark:bg-warning/10 text-amber-800 dark:text-warning border-amber-200 dark:border-warning/30' },
   available: { label: 'Available', cls: 'bg-green-50 dark:bg-success/10 text-green-800 dark:text-success border-green-200 dark:border-success/30' },
   out_of_stock: { label: 'Out of Stock', cls: 'bg-red-50 dark:bg-destructive/10   text-red-800 dark:text-destructive   border-red-200 dark:border-destructive/30' },
   archived: { label: 'Archived', cls: 'bg-w-100    text-w-600     border-w-300' },

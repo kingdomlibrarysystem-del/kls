@@ -17,6 +17,17 @@ import type { BindingType, MediaType } from '@/app/dashboard/library/_components
  */
 export interface PublicationRecord extends PublicationSubmission {
   contributorId: string
+  categoryId?: string
+  author?: string
+  pages?: number
+  borrowPrice?: number
+  documentUrl?: string
+  audioUrl?: string
+  videoUrl?: string
+  chapters?: { title: string; body: string }[]
+  /** Reviewer's reason when the book was sent back (REJECTED). */
+  reviewNotes?: string
+  reviewedAt?: string
   resourceId?: string
   price?: number
   quantity?: number
@@ -115,18 +126,13 @@ async function patchPublication(id: string, body: Record<string, unknown>): Prom
   return json.data
 }
 
-/** Client-held default revenue share, set by the Revenue page's config form and applied to the next approval — mirrors how other app-wide defaults (e.g. defaultBorrowPeriodDays) work in this codebase, since there's no Settings collection to persist this server-side. */
-let defaultRevenueShare = { contributorShare: 70, platformShare: 30 }
-
-export function setDefaultRevenueShare(share: { contributorShare: number; platformShare: number }) {
-  defaultRevenueShare = share
+export function approvePublication(id: string, notes?: string) {
+  // The split is decided on the server from the admin's commission setting.
+  return patchPublication(id, { action: 'approve', ...(notes && { notes }) })
 }
-
-export function approvePublication(id: string) {
-  return patchPublication(id, { action: 'approve', ...defaultRevenueShare })
-}
-export function rejectPublication(id: string) {
-  return patchPublication(id, { action: 'reject' })
+/** Sends the book back to the publisher; `notes` (the reason) is required and shown to them. */
+export function rejectPublication(id: string, notes: string) {
+  return patchPublication(id, { action: 'reject', notes })
 }
 export function toggleFeaturedPublication(id: string) {
   return patchPublication(id, { action: 'toggleFeatured' })

@@ -22,7 +22,7 @@ import { CategoriesStats } from './manage-categories/categories-stats'
  */
 export function ManageCategoriesSection() {
   const { data: categories, loading: categoriesLoading } = useCategories()
-  const { data: resources, loading: resourcesLoading } = useResources()
+  const { data: resources, loading: resourcesLoading } = useResources({ includeDrafts: true })
   const [tab, setTab] = useState<ManageCategoriesTab>('root')
   const [form, setForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
   const [errors, setErrors] = useState<Partial<CategoryFormState>>({})

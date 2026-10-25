@@ -1,135 +1,129 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle, XCircle, ClipboardList, AlertTriangle } from 'lucide-react'
+import { CheckCircle, XCircle, ClipboardList, ShieldAlert } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
-import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import { logAuditEvent } from '@/app/dashboard/audit-log/_components/use-audit-log'
-import { publicationStatusConfig, type PublicationSubmission } from './review-data'
+import { publicationStatusConfig, type PublicationStatus } from './review-data'
 import { ReviewModal } from './review-modal'
-import { usePublications, approvePublication, rejectPublication, type PublicationRecord } from '../../_shared/use-publications'
-
-/** Statuses actionable from this queue — a submission still awaiting a manager's decision. Everything else (DRAFT/APPROVED/REJECTED/PUBLISHED) has already moved past this stage and lives on in the shared store for the contributor's own My Submissions view, not deleted. */
-const QUEUE_STATUSES: PublicationSubmission['status'][] = ['SUBMITTED', 'UNDER_REVIEW']
+import { approvePublication, rejectPublication, type PublicationRecord } from '../../_shared/use-publications'
 
 type ModalAction = 'approve' | 'reject' | null
 
+interface ReviewQueueViewProps {
+  /** Books in SUBMITTED / UNDER_REVIEW, loaded by the server page. */
+  initialQueue: PublicationRecord[]
+  /** The signed-in role has "publications:approve" (or is Admin). */
+  canApprove: boolean
+  currentUserId: string
+  isAdmin: boolean
+}
+
 /**
- * Review Queue: submissions with SUBMITTED/UNDER_REVIEW status, Approve/Reject
- * buttons that open a confirmation modal. Reads the shared `usePublications()`
- * store — the same real Publication collection the Catalog and Revenue
- * pages read — so a decision here is immediately visible there too, with
- * no separate sync step.
+ * Review Queue: Approve (publishes the book to the library) or Reject (with a
+ * reason the publisher sees and can act on). A decided book leaves the list.
+ * Without the approval permission the list is read-only; nobody but an Admin
+ * can decide on their own book.
  */
-export function ReviewQueueView() {
-  const [toast, setToast] = useState('')
+export function ReviewQueueView({ initialQueue, canApprove, currentUserId, isAdmin }: ReviewQueueViewProps) {
+  const [queue, setQueue] = useState(initialQueue)
+  const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null)
   const [modalTarget, setModalTarget] = useState<PublicationRecord | null>(null)
   const [modalAction, setModalAction] = useState<ModalAction>(null)
-
-  const { data: allSubmissions, loading, error } = usePublications()
-  const queue = allSubmissions.filter((s) => QUEUE_STATUSES.includes(s.status))
   const { user: currentUser } = useAuth()
-  const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Manager User'
+  const actorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Reviewer'
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
-
-  const openModal = (submission: PublicationRecord, action: 'approve' | 'reject') => {
-    setModalTarget(submission)
-    setModalAction(action)
-  }
-
+  const showToast = (ok: boolean, text: string) => { setToast({ ok, text }); setTimeout(() => setToast(null), 4000) }
+  const openModal = (submission: PublicationRecord, action: 'approve' | 'reject') => { setModalTarget(submission); setModalAction(action) }
   const closeModal = () => { setModalTarget(null); setModalAction(null) }
 
   const handleConfirm = async (notes: string) => {
+    if (!modalTarget || !modalAction) return
     try {
-      if (!modalTarget || !modalAction) throw new Error('No submission selected')
-      if (modalAction === 'approve') await approvePublication(modalTarget.id)
-      else await rejectPublication(modalTarget.id)
+      if (modalAction === 'approve') await approvePublication(modalTarget.id, notes || undefined)
+      else await rejectPublication(modalTarget.id, notes)
       logAuditEvent({
         actor: actorName,
         action: modalAction === 'approve' ? 'PUBLICATION_APPROVED' : 'PUBLICATION_REJECTED',
         target: modalTarget.title,
-        notes: notes || (modalAction === 'approve' ? 'Approved after review.' : 'Rejected after review.'),
+        notes: notes || 'Approved after review.',
       })
-      showToast(
-        `${modalAction === 'approve' ? 'Approved' : 'Rejected'} "${modalTarget.title}"${notes ? ` — notes: ${notes}` : ''}`
-      )
+      setQueue((q) => q.filter((p) => p.id !== modalTarget.id))
+      showToast(true, modalAction === 'approve' ? `“${modalTarget.title}” is published — members can now find it in the library.` : `“${modalTarget.title}” was sent back to the publisher.`)
       closeModal()
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not update this submission — please try again')
+      showToast(false, e instanceof Error ? e.message : 'Could not update this book — please try again')
+      closeModal()
     }
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-2" aria-label="Loading review queue">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
-        ))}
-      </div>
-    )
-  }
-
-  if (error) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load the review queue" description={error} />
-  }
-
   const columns: Column<PublicationRecord>[] = [
-    { key: 'title', label: 'Title', sortable: true, render: (s) => <span className="font-semibold text-w-950 max-w-55 truncate block">{s.title}</span> },
-    { key: 'contributor', label: 'Contributor', sortable: true, render: (s) => <span className="text-w-700">{s.contributor}</span> },
-    { key: 'category', label: 'Category', sortable: true, render: (s) => <span className="text-w-700">{s.category}</span> },
+    { key: 'title', label: 'Title', sortable: true, render: (s) => <span className="block max-w-55 truncate font-semibold text-w-950">{s.title}</span> },
+    { key: 'contributor', label: 'Publisher', sortable: true, render: (s) => <span className="text-w-700">{s.contributor}</span> },
+    { key: 'category', label: 'KCS category', sortable: true, render: (s) => <span className="text-w-700">{s.category || '—'}</span> },
     { key: 'submittedAt', label: 'Submitted', sortable: true, render: (s) => <span className="text-w-700">{s.submittedAt}</span> },
     {
       key: 'status', label: 'Status', sortable: true,
-      render: (s) => (
-        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${publicationStatusConfig[s.status].cls}`}>
-          {publicationStatusConfig[s.status].label}
-        </span>
-      ),
+      render: (s) => {
+        const cfg = publicationStatusConfig[s.status as PublicationStatus] ?? publicationStatusConfig.SUBMITTED
+        return <span className={`rounded border px-2.5 py-0.5 font-lato text-xs font-semibold ${cfg.cls}`}>{cfg.label}</span>
+      },
     },
     {
       key: 'actions', label: 'Actions', className: 'text-right',
-      render: (s) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <button
-            onClick={() => openModal(s, 'approve')}
-            aria-label={`Approve ${s.title}`}
-            className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors"
-          >
-            <CheckCircle size={12} /> Approve
-          </button>
-          <button
-            onClick={() => openModal(s, 'reject')}
-            aria-label={`Reject ${s.title}`}
-            className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors"
-          >
-            <XCircle size={12} /> Reject
-          </button>
-        </div>
-      ),
+      render: (s) => {
+        const own = s.contributorId === currentUserId && !isAdmin
+        if (!canApprove || own) {
+          return <span className="text-xs text-muted-foreground">{own ? 'Your book — another reviewer decides' : 'View only'}</span>
+        }
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => openModal(s, 'approve')}
+              aria-label={`Approve ${s.title}`}
+              className="flex items-center gap-1 rounded border border-green-200 bg-green-50 px-2.5 py-1 font-lato text-xs text-green-700 transition-colors hover:bg-green-100 dark:border-success/30 dark:bg-success/10 dark:text-success dark:hover:bg-success/20"
+            >
+              <CheckCircle size={12} /> Approve
+            </button>
+            <button
+              onClick={() => openModal(s, 'reject')}
+              aria-label={`Reject ${s.title}`}
+              className="flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2.5 py-1 font-lato text-xs text-red-700 transition-colors hover:bg-red-100 dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive dark:hover:bg-destructive/20"
+            >
+              <XCircle size={12} /> Reject
+            </button>
+          </div>
+        )
+      },
     },
   ]
 
   return (
-    <div>
+    <div className="space-y-4">
+      {!canApprove && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
+          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning" />
+          <span>You can see the queue, but your role can&apos;t approve or reject books. An admin can grant <b>Approve Publications</b> in Roles &amp; Permissions.</span>
+        </div>
+      )}
       {toast && (
-        <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">
-          {toast}
+        <div role="status" className={`rounded border px-4 py-3 font-lato text-sm ${toast.ok ? 'border-green-200 bg-green-50 text-green-800 dark:border-success/30 dark:bg-success/10 dark:text-success' : 'border-red-200 bg-red-50 text-red-700 dark:border-destructive/30 dark:bg-destructive/10 dark:text-destructive'}`}>
+          {toast.text}
         </div>
       )}
 
       {queue.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="Review queue is empty" description="All submissions have been reviewed." />
+        <EmptyState icon={ClipboardList} title="Review queue is empty" description="No books are waiting for review." />
       ) : (
         <DataTable<PublicationRecord>
           data={queue}
           columns={columns}
           rowKey={(s) => s.id}
-          searchPlaceholder="Search title or contributor..."
+          searchPlaceholder="Search title or publisher..."
           searchFilter={(s, q) => s.title.toLowerCase().includes(q) || s.contributor.toLowerCase().includes(q)}
-          emptyMessage="No submissions match your search."
+          emptyMessage="No books match your search."
         />
       )}
 

@@ -46,3 +46,16 @@ export const POST = withErrorHandling('/api/rehabilitation/groups', 'POST', asyn
 
   return NextResponse.json({ data: { id: membership.id, groupId: membership.groupId, userId: membership.userId }, message: 'Joined group successfully', code: 'success', status: 201 }, { status: 201 })
 })
+
+/** DELETE /api/rehabilitation/groups?groupId=&userId= — leave a support group (the member themselves, or staff). */
+export const DELETE = withErrorHandling('/api/rehabilitation/groups', 'DELETE', async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url)
+  const groupId = searchParams.get('groupId') ?? ''
+  const userId = searchParams.get('userId') ?? ''
+  if (!groupId || !userId) throw new ApiError('groupId and userId are required', 400)
+  const auth = await requireOwnerOrStaff(userId)
+  if (auth.response) return auth.response
+  const removed = await prisma.rehabGroupMember.deleteMany({ where: { groupId, userId } })
+  if (removed.count === 0) throw new ApiError('You are not in this group', 404)
+  return NextResponse.json({ data: { groupId, userId }, message: 'You left the group', code: 'success', status: 200 })
+})

@@ -11,6 +11,8 @@ import { useMediaTypes } from '@/lib/client/use-media-types'
 import { mediaCapabilities } from '@/lib/media-types-shared'
 import { type Resource } from './resources-data'
 import { useResources, addResource, updateResource, archiveResource } from './use-resources'
+import { ReviewDraftModal } from './review-draft-modal'
+import type { CollectionOption } from '@/lib/data/klp-register'
 import { ResourcesStats } from './resources-stats'
 import { ResourcesTable } from './resources-table'
 import { ResourceFormModal } from './resource-form-modal'
@@ -25,20 +27,30 @@ import type { ResourceFormData } from './resource-form-schema'
  * unchanged in spirit). The public library browse/detail pages read this
  * same store, so changes here are immediately visible there.
  */
-export function LibraryView() {
+interface LibraryViewProps {
+  /** Admin or a role with library:approve — resolved on the server. */
+  canApprove: boolean
+  /** KLP collections (admin-managed), loaded on the server. */
+  collections: CollectionOption[]
+}
+
+export function LibraryView({ canApprove, collections }: LibraryViewProps) {
   const [statusFilter, setStatusFilter] = useState<Resource['status'] | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [toast, setToast] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Resource | null>(null)
-  const { data, loading: resourcesLoading, error: resourcesError } = useResources()
+  const [reviewing, setReviewing] = useState<Resource | null>(null)
+  // Staff see drafts here (readers never do); everything else in the app gets the reader view.
+  const { data, loading: resourcesLoading, error: resourcesError } = useResources({ includeDrafts: true })
   const { loading: categoriesLoading, error: categoriesError } = useCategories()
   const { mediaTypes } = useMediaTypes()
 
   const loading = resourcesLoading || categoriesLoading
   const error = resourcesError ?? categoriesError
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 5000) }
+  const drafts = data.filter((r) => r.status === 'draft').length
 
   const handleArchive = async (r: Resource) => {
     try {
@@ -74,7 +86,6 @@ export function LibraryView() {
           format: 'Physical',
           year: new Date().getFullYear(),
           availableQty: formData.totalQty,
-          status: 'available',
           coverImages: [coverImage],
           ...fileFields,
         })
@@ -88,7 +99,7 @@ export function LibraryView() {
         // would otherwise leave an orphaned, unreadable book AND still report
         // success. The error is caught below and surfaced instead.
         await createResourceChapters(created.id, realChapters)
-        showToast(`Added "${formData.title}" with ${realChapters.length} chapter${realChapters.length === 1 ? '' : 's'}.`)
+        showToast(`Saved "${formData.title}" as a draft${realChapters.length ? ` with ${realChapters.length} chapter${realChapters.length === 1 ? '' : 's'}` : ''}. Readers will see it once an admin approves it.`)
       }
       setFormOpen(false)
       setEditing(null)
@@ -128,6 +139,15 @@ export function LibraryView() {
 
       <ResourcesStats data={data} />
 
+      {drafts > 0 && statusFilter !== 'draft' && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-warning/30 dark:bg-warning/10 dark:text-warning">
+          <span className="flex-1">
+            {drafts} resource{drafts === 1 ? ' is' : 's are'} waiting for approval and hidden from readers.{!canApprove && ' An admin will review them.'}
+          </span>
+          <button onClick={() => setStatusFilter('draft')} className="rounded-md border border-current px-3 py-1 text-xs font-semibold">Show drafts</button>
+        </div>
+      )}
+
       <ResourcesTable
         data={data}
         statusFilter={statusFilter}
@@ -136,9 +156,18 @@ export function LibraryView() {
         onTypeFilterChange={setTypeFilter}
         onEdit={openEdit}
         onArchive={handleArchive}
+        canApprove={canApprove}
+        onReview={setReviewing}
       />
 
-      <ResourceFormModal open={formOpen} editing={editing} onClose={() => { setFormOpen(false); setEditing(null) }} onSave={handleSave} />
+      <ReviewDraftModal
+        resource={reviewing}
+        collections={collections}
+        onClose={() => setReviewing(null)}
+        onDone={(msg) => { setReviewing(null); showToast(msg) }}
+      />
+
+      <ResourceFormModal open={formOpen} editing={editing} collections={collections} onClose={() => { setFormOpen(false); setEditing(null) }} onSave={handleSave} />
     </div>
   )
 }

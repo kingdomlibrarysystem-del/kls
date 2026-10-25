@@ -1,4 +1,5 @@
 import {
+  Hash,
   LayoutDashboard,
   Map,
   BookOpen,
@@ -48,6 +49,10 @@ import {
   Target,
   Receipt,
   Film,
+  BookHeart,
+  Upload,
+  ShoppingBag,
+  Package,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -74,6 +79,7 @@ export const adminMainNav: NavItem[] = [
       { icon: <BookCopy size={14} />,   label: "Book Inventory",     href: "/dashboard/library" },
       { icon: <Map size={14} />,        label: "KCS Map",            href: "/dashboard/library/kcs" },
       { icon: <Film size={14} />,       label: "Media Types",        href: "/dashboard/library/media-types" },
+      { icon: <Hash size={14} />,       label: "KLP Collections",    href: "/dashboard/library/collections" },
       { icon: <RotateCcw size={14} />,  label: "Borrow & Return",    href: "/dashboard/library/borrowings" },
       { icon: <Bookmark size={14} />,   label: "Reservations",       href: "/dashboard/reservations" },
       { icon: <ShoppingCart size={14} />, label: "Sales & Rentals",  href: "/dashboard/library/sales" },
@@ -98,7 +104,9 @@ export const adminMainNav: NavItem[] = [
   {
     icon: <BookCopy size={16} />, label: "Publishing",
     subItems: [
-      { icon: <ScrollText size={14} />, label: "Submissions",       href: "/dashboard/publishing" },
+      { icon: <ScrollText size={14} />, label: "Overview",          href: "/dashboard/publishing" },
+      { icon: <Upload size={14} />,     label: "Submit a Book",     href: "/dashboard/publishing/submit" },
+      { icon: <BookCopy size={14} />,   label: "My Submissions",    href: "/dashboard/publishing/my" },
       { icon: <ClipboardList size={14} />, label: "Review Queue",   href: "/dashboard/publishing/review" },
       { icon: <BarChart3 size={14} />,  label: "Revenue & Royalties", href: "/dashboard/publishing/revenue" },
       { icon: <BookOpen size={14} />,   label: "Published Catalog", href: "/dashboard/publishing/catalog" },
@@ -125,13 +133,16 @@ export const adminMainNav: NavItem[] = [
     ],
   },
   {
-    icon: <Sparkles size={16} />, label: "Beauty Services",
+    icon: <Sparkles size={16} />, label: "Beauty & Shop",
     subItems: [
       { icon: <Sparkles size={14} />,      label: "Overview",     href: "/dashboard/beauty" },
       { icon: <Palette size={14} />,       label: "Providers",    href: "/dashboard/beauty/providers" },
       { icon: <Scissors size={14} />,      label: "Services",     href: "/dashboard/beauty/services" },
       { icon: <CalendarCheck size={14} />, label: "Appointments", href: "/dashboard/beauty/appointments" },
       { icon: <Star size={14} />,          label: "Admin: Bookings", href: "/dashboard/beauty/admin" },
+      { icon: <ShoppingBag size={14} />,   label: "Shop Products",   href: "/dashboard/beauty/shop/products" },
+      { icon: <Tag size={14} />,           label: "Shop Categories", href: "/dashboard/beauty/shop/categories" },
+      { icon: <Package size={14} />,       label: "Shop Orders",     href: "/dashboard/beauty/shop/orders" },
     ],
   },
   {
@@ -139,6 +150,7 @@ export const adminMainNav: NavItem[] = [
     subItems: [
       { icon: <Brain size={14} />,         label: "Overview",        href: "/dashboard/counseling" },
       { icon: <Users size={14} />,         label: "Counselors",      href: "/dashboard/counseling/counselors" },
+      { icon: <BookHeart size={14} />,     label: "Care Resources",  href: "/dashboard/counseling/resources" },
       { icon: <CalendarCheck size={14} />, label: "Sessions",        href: "/dashboard/counseling/sessions" },
       { icon: <MessageCircle size={14} />, label: "Session History", href: "/dashboard/counseling/history" },
       { icon: <ShieldCheck size={14} />,   label: "Admin: Sessions", href: "/dashboard/counseling/admin" },
@@ -182,6 +194,7 @@ export const adminMgmtNav: NavItem[] = [
       { icon: <Receipt size={14} />, label: "History",   href: "/dashboard/donations/history" },
     ],
   },
+  { icon: <BookHeart size={16} />, label: "Daily Wisdom",        href: "/dashboard/daily-wisdom" },
   { icon: <BarChart3 size={16} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={16} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={16} />,     label: "Notifications",       href: "/dashboard/notifications" },

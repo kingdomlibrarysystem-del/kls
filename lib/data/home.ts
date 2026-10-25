@@ -61,9 +61,9 @@ export async function getTrendingBooks(limit = TRENDING_BOOKS_LIMIT): Promise<Tr
   const select = { id: true, title: true, coverImages: true } as const
   const [viewed, newest] = await Promise.all([
     viewsById.size
-      ? prisma.resource.findMany({ where: { id: { in: [...viewsById.keys()] }, status: { not: 'ARCHIVED' } }, select })
+      ? prisma.resource.findMany({ where: { id: { in: [...viewsById.keys()] }, status: { notIn: ['ARCHIVED', 'DRAFT'] } }, select })
       : Promise.resolve([]),
-    prisma.resource.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { createdAt: 'desc' }, take: limit, select }),
+    prisma.resource.findMany({ where: { status: { notIn: ['ARCHIVED', 'DRAFT'] } }, orderBy: { createdAt: 'desc' }, take: limit, select }),
   ])
 
   const ranked = [...viewed].sort((a, b) => (viewsById.get(b.id) ?? 0) - (viewsById.get(a.id) ?? 0))

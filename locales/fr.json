@@ -67,7 +67,10 @@
     "assessments": "Évaluations",
     "certificates": "Certificats",
     "news": "Actualités",
-    "latest_news": "Dernières nouvelles"
+    "latest_news": "Dernières nouvelles",
+    "shop": "Boutique",
+    "browse_shop": "Voir les produits",
+    "shop_orders": "Mes commandes"
   },
   "header": {
     "search_placeholder": "Rechercher des livres par titre ou auteur..."
@@ -285,7 +288,16 @@
     "library": "Bibliothèque",
     "learning": "Apprentissage",
     "profile": "Profil",
-    "home": "Accueil"
+    "home": "Accueil",
+    "section_shop": "Boutique",
+    "shop_browse": "Voir les produits",
+    "shop_cart": "Panier boutique",
+    "shop_orders": "Mes commandes",
+    "section_care": "Soutien & accompagnement",
+    "care_home": "Aperçu",
+    "care_resources": "Lire & écouter",
+    "care_counseling": "Parler à quelqu'un",
+    "care_rehab": "Programme de rétablissement"
   },
   "m_welcome": {
     "welcome_back": "Bon retour,",

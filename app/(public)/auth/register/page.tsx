@@ -1,7 +1,8 @@
 'use client'
 
-import { Suspense, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -41,7 +42,15 @@ function LoginLink(props: { className?: string; children: React.ReactNode }) {
 
 export default function RegisterPage() {
   const { t } = useLanguage()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
+  /**
+   * Creating the account, then signing in with the same details, then opening
+   * the member dashboard. The button stays busy through all three — it never
+   * shows "done" while the next page is still loading.
+   */
+  const [phase, setPhase] = useState<'idle' | 'creating' | 'signing' | 'redirecting'>('idle')
+  const isSubmitting = phase !== 'idle'
+  const busyText = phase === 'redirecting' ? 'Opening your dashboard…' : phase === 'signing' ? 'Signing you in…' : 'Creating your account…'
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
@@ -49,8 +58,10 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
   })
 
+  useEffect(() => { router.prefetch('/member') }, [router])
+
   const onSubmit = async (data: RegisterFormData) => {
-    setIsSubmitting(true)
+    setPhase('creating')
     setSubmitError('')
     try {
       const res = await fetch('/api/auth/register', {
@@ -60,12 +71,24 @@ export default function RegisterPage() {
       })
       const json = await res.json()
       if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Registration failed')
-      setSubmitSuccess(true)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Registration failed')
-    } finally {
-      setIsSubmitting(false)
+      setPhase('idle')
+      return
     }
+
+    // Sign the new member straight in and open their dashboard (or the page they came from).
+    setPhase('signing')
+    const result = await signIn('credentials', { redirect: false, email: data.email, password: data.password }).catch(() => null)
+    if (!result?.ok || result.error) {
+      // The account exists; only the automatic sign-in failed — show the "go to login" screen.
+      setPhase('idle')
+      setSubmitSuccess(true)
+      return
+    }
+    setPhase('redirecting')
+    const redirect = new URLSearchParams(window.location.search).get('redirect')
+    router.replace(redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/member')
   }
 
   if (submitSuccess) {
@@ -125,7 +148,7 @@ export default function RegisterPage() {
               </div>
             </FormSection>
 
-            <ElegantButton type="submit" fullWidth loading={isSubmitting} variant="primary">
+            <ElegantButton type="submit" fullWidth loading={isSubmitting} loadingText={busyText} variant="primary">
               {t('auth.sign_up')}
             </ElegantButton>
 

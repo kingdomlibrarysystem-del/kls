@@ -63,6 +63,12 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
       { id: 'order-payment-failed', label: 'Order Payment Failed', description: 'Alerts when a Reserve or Borrow payment fails' },
     ],
   },
+  {
+    section: 'Shop',
+    categories: [
+      { id: 'shop-order-update', label: 'Shop Order Updates', description: 'When your shop order is being prepared, ready for pickup, out for delivery or cancelled' },
+    ],
+  },
 ]
 
 export const notificationCategories: NotificationCategoryOption[] = notificationCategoryGroups.flatMap((g) => g.categories)

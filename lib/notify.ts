@@ -21,8 +21,10 @@ export type NotificationCategory =
   | 'session-approved' | 'session-rejected' | 'session-unavailable' | 'session-reminder'
   | 'certificate-issued'
   | 'order-payment-success' | 'order-payment-failed'
+  | 'shop-order-paid' | 'shop-order-update'
   | 'assessment-graded'
   | 'news-article-published'
+  | 'library-resource-review' | 'library-resource-decision'
 
 interface NotifyUserInput {
   userId: string

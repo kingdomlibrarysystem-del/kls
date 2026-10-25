@@ -17,6 +17,8 @@ const settingsSchema = z.object({
   maxRenewals: z.number().int().min(0).max(10),
   reservationClaimWindowHours: z.number().int().min(1).max(168),
   maxConcurrentBorrows: z.number().int().min(1).max(20),
+  /** Platform commission (%) on sales/rentals of publishers' books. Use PUT /api/publishing/commission to also update books already published. */
+  publishingCommissionPercent: z.number().int().min(0).max(100),
 })
 
 async function getOrCreateSettings() {
