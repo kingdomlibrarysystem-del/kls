@@ -5,6 +5,7 @@ import { findTransaction } from '@/lib/paypack'
 import { retrieveCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { settleOrder } from '../settle'
+import { syncTarget } from '@/lib/payments/attempts'
 import { serializeOrder } from '@/lib/data/orders'
 
 /**
@@ -29,7 +30,14 @@ export const GET = withErrorHandling('/api/orders/[id]', 'GET', async (_request:
     return NextResponse.json({ data: serializeOrder(order), message: 'Order fetched', code: 'success', status: 200 })
   }
 
-  if (order.paypackRef) {
+  if (!order.paypackRef && !order.stripeSessionId) {
+    // Paid through InTouch / MTN MoMo / PesaPal / UrubutoPay — re-check the latest PaymentAttempt.
+    const state = await syncTarget('ORDER', order.id)
+    if (state && state !== 'PENDING') {
+      const fresh = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+      return NextResponse.json({ data: serializeOrder(fresh), message: 'Order status refreshed', code: 'success', status: 200 })
+    }
+  } else if (order.paypackRef) {
     try {
       const remote = await findTransaction(order.paypackRef)
       if (remote.status !== order.paypackStatus) {

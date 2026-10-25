@@ -70,7 +70,9 @@
     "latest_news": "Latest News",
     "shop": "Shop",
     "browse_shop": "Browse products",
-    "shop_orders": "My orders"
+    "shop_orders": "My orders",
+    "services": "Services",
+    "all_services": "All services"
   },
   "header": {
     "search_placeholder": "Search books by title or author..."
@@ -296,7 +298,8 @@
     "care_home": "Overview",
     "care_resources": "Read & Listen",
     "care_counseling": "Talk to Someone",
-    "care_rehab": "Recovery Programme"
+    "care_rehab": "Recovery Programme",
+    "services": "Our Services"
   },
   "m_welcome": {
     "welcome_back": "Welcome back,",
@@ -746,5 +749,42 @@
     "english": "English",
     "french": "Français",
     "kinyarwanda": "Kinyarwanda"
+  },
+  "services": {
+    "eyebrow": "Kingdom Library & Global Rehab Center",
+    "title": "Our Services",
+    "subtitle": "The knowledge of life. The principles of restoration. Practical services for people, families and communities.",
+    "mission_title": "Our Mission",
+    "mission_text": "To provide knowledge, education and practical solutions that help people understand life, improve well-being, make responsible decisions, heal from destructive patterns, and contribute to stronger families, communities and nations.",
+    "vision_title": "Our Vision",
+    "vision_text": "To be the world's leading Kingdom Library and Global Rehab Center, empowering people globally through knowledge, practical services and restoration.",
+    "life_cycle_title": "The Life Cycle",
+    "life_cycle_sub": "How life functions, breaks, and can be restored.",
+    "programs_title": "Our Programs",
+    "programs_sub": "Practical services that bring knowledge to life.",
+    "key_services": "Key services",
+    "supports_areas": "Supports all {n} areas of life",
+    "learn_more": "Learn more",
+    "all_services": "See all services",
+    "connects_title": "How it all connects",
+    "connects_text": "The programs deliver practical services, while the areas of life guide what we teach and transform. Kingdom Library provides the knowledge, and Global Rehab Center applies it in real life.",
+    "kl_name": "Kingdom Library",
+    "kl_items": "Knowledge · Research · Education · Publishing",
+    "grc_name": "Global Rehab Center",
+    "grc_items": "Counseling · Support · Rehabilitation · Reintegration",
+    "working_together": "Working together for people, families and communities",
+    "why_title": "Why choose us?",
+    "why_1": "Integrated approach (knowledge + practical services)",
+    "why_2": "Faith, integrity & excellence",
+    "why_3": "Qualified professionals and trusted partners",
+    "why_4": "Holistic transformation (individuals, families, communities)",
+    "why_5": "Global impact",
+    "motto": "Learn · Heal · Grow · Restore",
+    "join": "Join Kingdom Library",
+    "join_sub": "Be part of the first Kingdom Library of the world.",
+    "other_programs": "Other programs",
+    "back": "All services",
+    "get_started": "Get started",
+    "empty": "Services will appear here soon."
   }
 }

@@ -9,6 +9,8 @@ import { TestimonialsSection } from '@/components/home/testimonials-section'
 import { MainHeader } from '@/components/main-header'
 import { MainFooter } from '@/components/main-footer'
 import { getCachedHomePageData } from '@/lib/server/home-page'
+import { getPublicServices } from '@/lib/services/data'
+import { ServicesSection } from '@/components/home/services-section'
 
 /**
  * Public landing page — a Server Component (PERFORMANCE.md Rule 15). All
@@ -19,15 +21,20 @@ import { getCachedHomePageData } from '@/lib/server/home-page'
  */
 export default async function Page() {
   // Cached for 60s (lib/server/home-page.ts) so a visit does not hit the database every time.
-  const data = await getCachedHomePageData()
+  const [data, services] = await Promise.all([
+    getCachedHomePageData(),
+    // Programmes + life areas for the header menu and the Services section (cached).
+    getPublicServices().catch(() => ({ programs: [], areas: [] })),
+  ])
 
   return (
     <main className="min-h-screen bg-white">
-      <MainHeader />
+      <MainHeader services={services.programs.map(({ slug, name, tagline, icon, color }) => ({ slug, name, tagline, icon, color }))} />
       <HeroSection
         bookCovers={data.trendingBooks.flatMap((b) => (b.cover ? [b.cover] : [])).slice(0, 4)}
         courseImages={data.courses.flatMap((c) => (c.image ? [c.image] : []))}
       />
+      <ServicesSection programs={services.programs} areas={services.areas} />
       <NewsPaperSection items={data.news} />
       <TrendingBooks books={data.trendingBooks} />
       <ELearningSection courses={data.courses} stats={data.courseStats} />

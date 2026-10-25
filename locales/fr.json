@@ -70,7 +70,9 @@
     "latest_news": "Dernières nouvelles",
     "shop": "Boutique",
     "browse_shop": "Voir les produits",
-    "shop_orders": "Mes commandes"
+    "shop_orders": "Mes commandes",
+    "services": "Services",
+    "all_services": "Tous les services"
   },
   "header": {
     "search_placeholder": "Rechercher des livres par titre ou auteur..."
@@ -297,7 +299,8 @@
     "care_home": "Aperçu",
     "care_resources": "Lire & écouter",
     "care_counseling": "Parler à quelqu'un",
-    "care_rehab": "Programme de rétablissement"
+    "care_rehab": "Programme de rétablissement",
+    "services": "Nos services"
   },
   "m_welcome": {
     "welcome_back": "Bon retour,",
@@ -747,5 +750,42 @@
     "english": "English",
     "french": "Français",
     "kinyarwanda": "Kinyarwanda"
+  },
+  "services": {
+    "eyebrow": "Kingdom Library & Global Rehab Center",
+    "title": "Nos services",
+    "subtitle": "La connaissance de la vie. Les principes de la restauration. Des services concrets pour les personnes, les familles et les communautés.",
+    "mission_title": "Notre mission",
+    "mission_text": "Offrir des connaissances, une éducation et des solutions pratiques qui aident chacun à comprendre la vie, améliorer son bien-être, prendre des décisions responsables, guérir des schémas destructeurs et contribuer à des familles, des communautés et des nations plus fortes.",
+    "vision_title": "Notre vision",
+    "vision_text": "Être la première Kingdom Library et le premier Global Rehab Center au monde, en donnant du pouvoir aux personnes par la connaissance, des services concrets et la restauration.",
+    "life_cycle_title": "Le cycle de la vie",
+    "life_cycle_sub": "Comment la vie fonctionne, se brise et peut être restaurée.",
+    "programs_title": "Nos programmes",
+    "programs_sub": "Des services concrets qui donnent vie à la connaissance.",
+    "key_services": "Services clés",
+    "supports_areas": "Couvre les {n} domaines de la vie",
+    "learn_more": "En savoir plus",
+    "all_services": "Voir tous les services",
+    "connects_title": "Comment tout est lié",
+    "connects_text": "Les programmes offrent des services concrets, tandis que les domaines de la vie guident ce que nous enseignons et transformons. La Kingdom Library apporte la connaissance, le Global Rehab Center l'applique dans la vie réelle.",
+    "kl_name": "Kingdom Library",
+    "kl_items": "Connaissance · Recherche · Éducation · Édition",
+    "grc_name": "Global Rehab Center",
+    "grc_items": "Conseil · Soutien · Réhabilitation · Réintégration",
+    "working_together": "Ensemble pour les personnes, les familles et les communautés",
+    "why_title": "Pourquoi nous choisir ?",
+    "why_1": "Une approche intégrée (connaissance + services concrets)",
+    "why_2": "Foi, intégrité et excellence",
+    "why_3": "Des professionnels qualifiés et des partenaires de confiance",
+    "why_4": "Une transformation globale (personnes, familles, communautés)",
+    "why_5": "Un impact mondial",
+    "motto": "Apprendre · Guérir · Grandir · Restaurer",
+    "join": "Rejoindre la Kingdom Library",
+    "join_sub": "Faites partie de la première Kingdom Library au monde.",
+    "other_programs": "Autres programmes",
+    "back": "Tous les services",
+    "get_started": "Commencer",
+    "empty": "Les services apparaîtront bientôt ici."
   }
 }

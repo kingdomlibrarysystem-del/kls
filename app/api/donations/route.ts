@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
-import { createCheckoutSession, isStripeConfigured } from '@/lib/stripe'
+import { paymentMethodField, prepareMethod, isProviderMethod } from '@/lib/payments/flow'
+import { startProviderPayment } from '@/lib/payments/attempts'
+import { siteUrl } from '@/lib/payments/http'
+import { requestCashin } from '@/lib/paypack'
+import { createCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { appBaseUrl } from '@/lib/mailer'
 
@@ -93,7 +96,7 @@ const createDonationSchema = z.object({
   amountRwf: z.number().positive('amountRwf must be greater than 0'),
   message: z.string().trim().optional(),
   isAnonymous: z.boolean().optional().default(false),
-  method: z.enum(['PAYPACK', 'STRIPE']),
+  method: paymentMethodField,
 })
 
 export const POST = withErrorHandling('/api/donations', 'POST', async (request: NextRequest) => {
@@ -104,11 +107,7 @@ export const POST = withErrorHandling('/api/donations', 'POST', async (request: 
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  if (body.method === 'PAYPACK') {
-    if (!isValidPaypackPhone(body.donorPhone)) throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
-  } else if (!isStripeConfigured()) {
-    throw new ApiError('Card payment is not configured for this environment yet.', 503)
-  }
+  await prepareMethod(body.method, body.donorPhone)
 
   const campaign = await prisma.donationCampaign.findUnique({ where: { id: body.campaignId } })
   if (!campaign) throw new ApiError('Campaign not found', 404)
@@ -128,6 +127,21 @@ export const POST = withErrorHandling('/api/donations', 'POST', async (request: 
       status: 'PENDING',
     },
   })
+
+  // InTouch / MTN MoMo / PesaPal / UrubutoPay (lib/payments) — settled later by webhook or poll through PaymentAttempt.
+  if (isProviderMethod(body.method)) {
+    try {
+      const started = await startProviderPayment({
+        method: body.method, targetKind: 'DONATION', targetId: donation.id, userId: body.userId, amountRwf: body.amountRwf,
+        phone: body.donorPhone, payer: { name: body.donorName, email: body.donorEmail }, description: `Donation — ${campaign.title}`, returnUrl: siteUrl('/dashboard/donations/history?checkout=pending'),
+      })
+      const data = serializeDonation(await prisma.donation.findUniqueOrThrow({ where: { id: donation.id } }))
+      return NextResponse.json({ data: { ...data, ...(started.redirectUrl && { checkoutUrl: started.redirectUrl }) }, message: started.message, code: 'success', status: 201 }, { status: 201 })
+    } catch (error) {
+      await prisma.donation.update({ where: { id: donation.id }, data: { status: 'FAILED' } })
+      throw error
+    }
+  }
 
   if (body.method === 'PAYPACK') {
     try {

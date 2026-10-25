@@ -1,5 +1,7 @@
 import {
   Hash,
+  LayoutGrid,
+  CreditCard,
   LayoutDashboard,
   Map,
   BookOpen,
@@ -194,13 +196,20 @@ export const adminMgmtNav: NavItem[] = [
       { icon: <Receipt size={14} />, label: "History",   href: "/dashboard/donations/history" },
     ],
   },
+  { icon: <LayoutGrid size={16} />, label: "Services & Programs", href: "/dashboard/services" },
   { icon: <BookHeart size={16} />, label: "Daily Wisdom",        href: "/dashboard/daily-wisdom" },
   { icon: <BarChart3 size={16} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={16} />,   label: "Roles & Permissions", href: "/dashboard/roles" },
   { icon: <Bell size={16} />,     label: "Notifications",       href: "/dashboard/notifications" },
   { icon: <MessageSquare size={16} />, label: "Messages",       href: "/dashboard/messages" },
   { icon: <Mail size={16} />,     label: "Invitations",         href: "/dashboard/invitations" },
-  { icon: <Settings size={16} />, label: "System Settings",     href: "/dashboard/settings" },
+  {
+    icon: <Settings size={16} />, label: "System Settings",
+    subItems: [
+      { icon: <Settings size={14} />,   label: "General",          href: "/dashboard/settings" },
+      { icon: <CreditCard size={14} />, label: "Payment Methods",  href: "/dashboard/settings/payments" },
+    ],
+  },
   { icon: <ScrollText size={16} />, label: "Audit Log",         href: "/dashboard/audit-log" },
 ];
 

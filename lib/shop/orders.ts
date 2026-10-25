@@ -1,12 +1,16 @@
 import prisma from '@/prisma/client'
 import { ApiError } from '@/lib/api-error-handler'
-import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
-import { createMultiItemCheckoutSession, isStripeConfigured } from '@/lib/stripe'
+import { requestCashin } from '@/lib/paypack'
+import { createMultiItemCheckoutSession } from '@/lib/stripe'
 import { appBaseUrl } from '@/lib/mailer'
 import { notifyUser, notifyAllStaff } from '@/lib/notify'
 import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
 import { getShopSettings } from '@/lib/shop/data'
 import { formatRwf, ORDER_STATUS, type OrderStatus } from '@/lib/shop/shared'
+import { prepareMethod, isProviderMethod } from '@/lib/payments/flow'
+import { startProviderPayment } from '@/lib/payments/attempts'
+import { siteUrl } from '@/lib/payments/http'
+import type { PaymentMethodCode } from '@/lib/payments/shared'
 
 /**
  * Shop order lifecycle:
@@ -33,7 +37,7 @@ export interface PlaceOrderInput {
   deliveryMethod: 'PICKUP' | 'DELIVERY'
   deliveryAddress?: string
   notes?: string
-  method: 'PAYPACK' | 'STRIPE'
+  method: PaymentMethodCode
   /** Buy only these products from the cart (default: every available line). */
   productIds?: string[]
 }
@@ -45,10 +49,8 @@ export interface PlaceOrderInput {
  * order id and, for card payments, the Stripe page to open.
  */
 export async function placeOrder(input: PlaceOrderInput): Promise<{ orderId: string; checkoutUrl?: string; message: string }> {
-  if (input.method === 'PAYPACK' && !isValidPaypackPhone(input.buyerPhone)) {
-    throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel), e.g. 078xxxxxxx.', 400)
-  }
-  if (input.method === 'STRIPE' && !isStripeConfigured()) throw new ApiError('Card payment is not available yet — please pay with mobile money.', 503)
+  // Method switched on + configured, phone suits it.
+  await prepareMethod(input.method, input.buyerPhone)
   if (input.deliveryMethod === 'DELIVERY' && !input.deliveryAddress?.trim()) throw new ApiError('Enter the delivery address', 400)
 
   const cart = await prisma.productCartItem.findMany({
@@ -108,6 +110,14 @@ export async function startPayment(orderId: string): Promise<{ orderId: string; 
   if (order.status !== 'PENDING_PAYMENT') throw new ApiError('This order is not waiting for payment', 409)
 
   try {
+    if (isProviderMethod(order.method)) {
+      const started = await startProviderPayment({
+        method: order.method, targetKind: 'PRODUCT_ORDER', targetId: order.id, userId: order.userId, amountRwf: order.totalRwf,
+        phone: order.buyerPhone, payer: { name: order.buyerName, email: order.buyerEmail },
+        description: `Kingdom Library shop order ${order.orderNumber}`, returnUrl: siteUrl(`/member/shop/orders/${order.id}`),
+      })
+      return { orderId: order.id, checkoutUrl: started.redirectUrl, message: started.redirectUrl ? started.message : `A payment request of ${formatRwf(order.totalRwf)} was sent to ${order.buyerPhone}. Approve it on your phone to complete the order.` }
+    }
     if (order.method === 'PAYPACK') {
       const cashin = await requestCashin({ amountRwf: order.totalRwf, phone: order.buyerPhone, idempotencyKey: `${order.id}-${Date.now()}` })
       await prisma.productOrder.update({ where: { id: order.id }, data: { paypackRef: cashin.ref, paypackStatus: cashin.status } })

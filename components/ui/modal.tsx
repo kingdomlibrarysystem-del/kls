@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,8 @@ interface ModalProps {
   children: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl" | "3xl" | "4xl" | "5xl";
 }
+
+const subscribeNoop = () => () => {};
 
 const sizeMap = {
   sm: "max-w-sm",
@@ -48,7 +50,11 @@ export function Modal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  if (!open) return null;
+  // Portals need `document`, which doesn't exist while the server renders — a modal that
+  // is open on first load (e.g. /dashboard/beauty/shop/products?new=1) appears once hydrated.
+  const inBrowser = useSyncExternalStore(subscribeNoop, () => true, () => false);
+
+  if (!open || !inBrowser) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">

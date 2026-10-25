@@ -19,7 +19,11 @@ import {
   X,
   ShoppingBag,
   Package,
+  LayoutGrid,
+  ArrowRight,
 } from "lucide-react";
+import { serviceColor, type ServiceNavItem } from "@/lib/services/shared";
+import { ServiceIcon } from "@/components/services/service-icon";
 import { ProfileDropdown } from "./profile-dropdown";
 import { LanguageSwitcher } from "./language-switcher";
 import { DailyWisdom } from "@/components/home/daily-wisdom";
@@ -35,8 +39,13 @@ import { useLanguage } from "@/contexts/language-context";
  *  3. navigation — hover/focus dropdowns on md+ screens, and a hamburger
  *     menu on phones listing the same sections (Library, E-Learning, News…),
  *     which were previously hidden on mobile.
+ *
+ * "Services" comes first: every service programme (admin-managed, passed in
+ * by the server page/layout as `services`) in a wide two-column menu with
+ * its icon and tagline, plus "All services" — on phones the same list sits
+ * at the top of the hamburger menu. More programmes simply add rows.
  */
-export function MainHeader() {
+export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
   const router = useRouter();
   const { t, lang } = useLanguage();
   const [query, setQuery] = useState("");
@@ -161,6 +170,34 @@ export function MainHeader() {
           {/* 3a. Desktop navigation */}
           <nav className="hidden md:flex flex-wrap gap-2 border-t border-w-200 dark:border-gray-700 pt-3">
             <div key={`${lang}-nav`} className="flex gap-2 items-center flex-1 animate-in fade-in duration-200">
+              <div className="relative group">
+                <Link
+                  href="/services"
+                  aria-haspopup="menu"
+                  className="px-4 py-2 text-w-950 dark:text-gray-200 hover:text-w-600 dark:hover:text-amber-400 transition font-lato text-sm font-semibold flex items-center gap-1"
+                >
+                  <LayoutGrid size={14} /> {t("nav.services")}
+                  <ChevronDown size={12} />
+                </Link>
+                <div className="absolute left-0 z-10 mt-0 w-[min(40rem,calc(100vw-2rem))] rounded-lg border border-w-200 bg-white p-3 shadow-xl opacity-0 invisible transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:border-gray-700 dark:bg-[#161e30]">
+                  <div className="grid max-h-[60vh] grid-cols-2 gap-1 overflow-y-auto">
+                    {services.map((s) => {
+                      return (
+                        <Link key={s.slug} href={`/services/${s.slug}`} className="flex items-start gap-3 rounded-md p-2.5 transition hover:bg-w-100 dark:hover:bg-gray-700/60">
+                          <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${serviceColor(s.color).solid}`}><ServiceIcon name={s.icon} size={16} /></span>
+                          <span className="min-w-0">
+                            <span className="block font-lato text-sm font-semibold text-w-950 dark:text-gray-100">{s.name}</span>
+                            <span className="block font-lato text-xs leading-snug text-w-600 dark:text-gray-400">{s.tagline}</span>
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <Link href="/services" className="mt-2 flex items-center justify-center gap-1 rounded-md border-t border-w-200 pt-2.5 font-lato text-sm font-semibold text-w-600 hover:text-w-950 dark:border-gray-700 dark:text-amber-400">
+                    {t("nav.all_services")} <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </div>
               {navSections.map((section) => (
                 <div key={section.title} className="relative group">
                   <button
@@ -203,6 +240,27 @@ export function MainHeader() {
                 <BookOpen size={16} />
                 {t("nav.browse_library")}
               </Link>
+
+              <div className="mb-2">
+                <p className="px-2 pb-1 font-cinzel text-xs font-bold uppercase tracking-widest text-w-600 dark:text-amber-400">{t("nav.services")}</p>
+                <ul className="grid grid-cols-1 gap-0.5 sm:grid-cols-2">
+                  {services.map((s) => {
+                    return (
+                      <li key={s.slug}>
+                        <Link href={`/services/${s.slug}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm text-w-950 transition hover:bg-w-100 dark:text-gray-200 dark:hover:bg-gray-800">
+                          <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${serviceColor(s.color).solid}`}><ServiceIcon name={s.icon} size={14} /></span>
+                          {s.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                  <li>
+                    <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm font-semibold text-w-600 transition hover:bg-w-100 dark:text-amber-400 dark:hover:bg-gray-800">
+                      <LayoutGrid size={14} /> {t("nav.all_services")}
+                    </Link>
+                  </li>
+                </ul>
+              </div>
 
               {navSections.map((section) => (
                 <div key={section.title} className="mb-2">

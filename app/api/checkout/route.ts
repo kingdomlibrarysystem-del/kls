@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
-import { createMultiItemCheckoutSession, isStripeConfigured } from '@/lib/stripe'
+import { paymentMethodField, prepareMethod, isProviderMethod } from '@/lib/payments/flow'
+import { startProviderPayment } from '@/lib/payments/attempts'
+import { siteUrl } from '@/lib/payments/http'
+import { requestCashin } from '@/lib/paypack'
+import { createMultiItemCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { appBaseUrl } from '@/lib/mailer'
 import { createBorrowRecord } from '@/app/api/borrowings/create-borrow'
@@ -63,7 +66,7 @@ const createCheckoutSchema = z.object({
   // enforcing it unconditionally here blocked every Card payment with
   // "buyerPhone is required" even though the client never collected one.
   buyerPhone: z.string().trim().optional().default(''),
-  method: z.enum(['PAYPACK', 'STRIPE']),
+  method: paymentMethodField,
 })
 
 export const POST = withErrorHandling('/api/checkout', 'POST', async (request: NextRequest) => {
@@ -74,13 +77,8 @@ export const POST = withErrorHandling('/api/checkout', 'POST', async (request: N
   const auth = await requireOwnerOrStaff(body.userId)
   if (auth.response) return auth.response
 
-  if (body.method === 'PAYPACK') {
-    if (!isValidPaypackPhone(body.buyerPhone)) {
-      throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
-    }
-  } else if (!isStripeConfigured()) {
-    throw new ApiError('Card payment is not configured for this environment yet.', 503)
-  }
+  // Method switched on + configured, and the phone suits it — checked before anything is created.
+  await prepareMethod(body.method, body.buyerPhone)
 
   const cartItems = await prisma.cartItem.findMany({
     // An item whose book was deleted is treated as not found instead of crashing.
@@ -149,6 +147,27 @@ export const POST = withErrorHandling('/api/checkout', 'POST', async (request: N
   }
 
   await prisma.cartItem.deleteMany({ where: { id: { in: body.cartItemIds } } })
+
+  // InTouch / MTN MoMo / PesaPal / UrubutoPay (lib/payments) — settled later by webhook or poll through PaymentAttempt.
+  if (isProviderMethod(body.method)) {
+    try {
+      const started = await startProviderPayment({
+        method: body.method, targetKind: 'CHECKOUT', targetId: checkout.id, userId: body.userId, amountRwf,
+        phone: body.buyerPhone, payer: { name: body.buyerName, email: body.buyerEmail },
+        description: `Kingdom Library order — ${cartItems.length} item${cartItems.length === 1 ? '' : 's'}`,
+        returnUrl: siteUrl('/member/orders?checkout=pending'),
+      })
+      const updated = await prisma.checkout.findUniqueOrThrow({ where: { id: checkout.id }, include: { orders: true } })
+      return NextResponse.json(
+        { data: { ...serializeCheckout(updated), ...(started.redirectUrl && { checkoutUrl: started.redirectUrl }) }, message: started.message, code: 'success', status: 201 },
+        { status: 201 }
+      )
+    } catch (error) {
+      await prisma.checkout.update({ where: { id: checkout.id }, data: { status: 'FAILED' } })
+      await prisma.order.updateMany({ where: { checkoutId: checkout.id }, data: { status: 'FAILED' } })
+      throw error
+    }
+  }
 
   if (body.method === 'PAYPACK') {
     try {

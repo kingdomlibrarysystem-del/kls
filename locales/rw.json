@@ -70,7 +70,9 @@
     "latest_news": "Amakuru ya vuba",
     "shop": "Iduka",
     "browse_shop": "Reba ibicuruzwa",
-    "shop_orders": "Ibyo natumije"
+    "shop_orders": "Ibyo natumije",
+    "services": "Serivisi",
+    "all_services": "Serivisi zose"
   },
   "header": {
     "search_placeholder": "Shakisha ibitabo ukurikije umutwe cyangwa umwanditsi..."
@@ -297,7 +299,8 @@
     "care_home": "Incamake",
     "care_resources": "Soma & umve",
     "care_counseling": "Vugana n'umujyanama",
-    "care_rehab": "Gahunda yo gukira"
+    "care_rehab": "Gahunda yo gukira",
+    "services": "Serivisi zacu"
   },
   "m_welcome": {
     "welcome_back": "Murakaza neza,",
@@ -747,5 +750,42 @@
     "youtube": "Iyandikishe kuri YouTube",
     "facebook": "Dukurikire kuri Facebook",
     "linkedin": "Duhuze kuri LinkedIn"
+  },
+  "services": {
+    "eyebrow": "Kingdom Library na Global Rehab Center",
+    "title": "Serivisi zacu",
+    "subtitle": "Ubumenyi bw'ubuzima. Amahame yo kugarura ibyangiritse. Serivisi zifatika ku bantu, imiryango n'imiryango migari.",
+    "mission_title": "Intego yacu",
+    "mission_text": "Gutanga ubumenyi, uburezi n'ibisubizo bifatika bifasha abantu gusobanukirwa ubuzima, kubaho neza, gufata ibyemezo bifite inshingano, gukira imico isenya, no kubaka imiryango, abaturage n'ibihugu bikomeye.",
+    "vision_title": "Icyerekezo cyacu",
+    "vision_text": "Kuba Kingdom Library na Global Rehab Center bya mbere ku isi, bifasha abantu hose binyuze mu bumenyi, serivisi zifatika no kugarura ibyangiritse.",
+    "life_cycle_title": "Uruziga rw'ubuzima",
+    "life_cycle_sub": "Uko ubuzima bukora, uko bwangirika, n’uko bushobora kugarurwa.",
+    "programs_title": "Gahunda zacu",
+    "programs_sub": "Serivisi zifatika zihindura ubumenyi ubuzima.",
+    "key_services": "Serivisi z'ingenzi",
+    "supports_areas": "Ifasha mu bice {n} byose by'ubuzima",
+    "learn_more": "Menya byinshi",
+    "all_services": "Reba serivisi zose",
+    "connects_title": "Uko byose bihuzwa",
+    "connects_text": "Gahunda zitanga serivisi zifatika, naho ibice by'ubuzima biyobora ibyo twigisha n'ibyo duhindura. Kingdom Library itanga ubumenyi, Global Rehab Center ikabushyira mu bikorwa mu buzima busanzwe.",
+    "kl_name": "Kingdom Library",
+    "kl_items": "Ubumenyi · Ubushakashatsi · Uburezi · Gutangaza",
+    "grc_name": "Global Rehab Center",
+    "grc_items": "Ubujyanama · Ubufasha · Gusubiza mu buzima busanzwe · Kwinjizwa mu muryango",
+    "working_together": "Dukorera hamwe abantu, imiryango n'abaturage",
+    "why_title": "Kuki watugana?",
+    "why_1": "Uburyo buhuriweho (ubumenyi + serivisi zifatika)",
+    "why_2": "Ukwizera, ubunyangamugayo n'ubuhanga",
+    "why_3": "Inzobere zibifitiye ubushobozi n'abafatanyabikorwa bizewe",
+    "why_4": "Impinduka zuzuye (umuntu, umuryango, abaturage)",
+    "why_5": "Ingaruka nziza ku isi hose",
+    "motto": "Kwiga · Gukira · Gukura · Kugarura",
+    "join": "Injira muri Kingdom Library",
+    "join_sub": "Ba umwe mu bagize Kingdom Library ya mbere ku isi.",
+    "other_programs": "Izindi gahunda",
+    "back": "Serivisi zose",
+    "get_started": "Tangira",
+    "empty": "Serivisi zizagaragara hano vuba."
   }
 }

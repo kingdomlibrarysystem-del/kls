@@ -8,17 +8,17 @@ import { ShopStats } from '../_components/shop-stats'
 import { ProductsView } from '../_components/products-view'
 
 /** Shop products (staff with "Manage Shop"). Everything is loaded on the server in parallel. */
-export default async function ShopProductsPage() {
+export default async function ShopProductsPage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
   await requireStaffPage()
   if (!(await pageHasPermission(SHOP_PERMISSION))) {
     return (<div><PageHeader title="Shop Products" /><NoPermission permissionLabel="Manage Shop" /></div>)
   }
-  const [products, categories, overview, settings] = await Promise.all([listAllProducts(), listCategories({ withCounts: true }), getShopOverview(), getShopSettings()])
+  const [products, categories, overview, settings, sp] = await Promise.all([listAllProducts(), listCategories({ withCounts: true }), getShopOverview(), getShopSettings(), searchParams])
   return (
     <div>
       <PageHeader title="Shop Products" subtitle="Products members can buy — photos, price, stock and status" />
       <ShopStats overview={overview} />
-      <ProductsView initialProducts={toPlain<ShopProduct[]>(products)} categories={toPlain<ShopCategory[]>(categories)} initialDeliveryFee={settings.deliveryFeeRwf} />
+      <ProductsView initialProducts={toPlain<ShopProduct[]>(products)} categories={toPlain<ShopCategory[]>(categories)} initialDeliveryFee={settings.deliveryFeeRwf} openNew={sp.new === "1"} />
     </div>
   )
 }

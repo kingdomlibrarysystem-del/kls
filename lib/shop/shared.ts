@@ -73,7 +73,7 @@ export interface ShopOrder {
   deliveryAddress: string | null
   notes: string | null
   status: OrderStatus
-  method: 'PAYPACK' | 'STRIPE'
+  method: import('@/lib/payments/shared').PaymentMethodCode
   staffNote: string | null
   paidAt: string | null
   createdAt: string

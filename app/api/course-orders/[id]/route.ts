@@ -5,6 +5,8 @@ import { findTransaction } from '@/lib/paypack'
 import { retrieveCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { settleCourseOrder } from '../settle'
+import { syncTarget } from '@/lib/payments/attempts'
+import { isProviderMethod } from '@/lib/payments/methods'
 
 /**
  * Status-refresh endpoint, parallel to /api/orders/[id] — a member polls
@@ -25,7 +27,13 @@ export const GET = withErrorHandling('/api/course-orders/[id]', 'GET', async (_r
     return NextResponse.json({ data: serialize(order), message: 'Course order fetched', code: 'success', status: 200 })
   }
 
-  if (order.method === 'PAYPACK' && order.paypackRef) {
+  if (isProviderMethod(order.method)) {
+    const state = await syncTarget('COURSE_ORDER', order.id)
+    if (state && state !== 'PENDING') {
+      const fresh = await prisma.courseOrder.findUniqueOrThrow({ where: { id: order.id } })
+      return NextResponse.json({ data: serialize(fresh), message: 'Course order status refreshed', code: 'success', status: 200 })
+    }
+  } else if (order.method === 'PAYPACK' && order.paypackRef) {
     try {
       const remote = await findTransaction(order.paypackRef)
       if (remote.status !== order.paypackStatus) {
