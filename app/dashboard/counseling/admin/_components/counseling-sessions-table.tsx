@@ -6,7 +6,8 @@ import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { counselingSessionStatusConfig, type CounselingSession, type CounselingSessionStatus } from '../../_shared/counseling-data'
+import { counselingModeLabels, counselingSessionStatusConfig, type CounselingSession, type CounselingSessionStatus } from '../../_shared/counseling-data'
+import { ConfirmSessionModal } from './confirm-session-modal'
 import { useCounselingSessionsAdmin, confirmSession, completeSession, cancelSessionAdmin } from '../../_shared/use-counseling-admin'
 
 function buildColumns(onConfirm: (s: CounselingSession) => void, onComplete: (s: CounselingSession) => void, onCancel: (s: CounselingSession) => void): Column<CounselingSession>[] {
@@ -14,7 +15,7 @@ function buildColumns(onConfirm: (s: CounselingSession) => void, onComplete: (s:
     { key: 'memberName', label: 'Member', sortable: true, render: (s) => <span className="font-semibold text-w-950">{s.memberName ?? '—'}</span> },
     { key: 'counselorName', label: 'Counselor', sortable: true, render: (s) => <span className="text-w-700">{s.counselorName ?? '—'}</span> },
     { key: 'proposedTime', label: 'Date/Time', sortable: true, render: (s) => <span>{new Date(s.proposedTime).toLocaleString()}</span> },
-    { key: 'mode', label: 'Mode', render: (s) => <span className="text-xs px-2 py-0.5 bg-w-100 rounded font-lato text-w-700">{s.mode === 'IN_PERSON' ? 'In Person' : 'Virtual'}</span> },
+    { key: 'mode', label: 'How', render: (s) => <div><span className="text-xs px-2 py-0.5 bg-w-100 rounded font-lato text-w-700">{counselingModeLabels[s.mode] ?? s.mode}</span>{s.mode === 'PHONE' && s.contactPhone && <a href={`tel:${s.contactPhone}`} className="mt-0.5 block text-xs text-w-700 underline">{s.contactPhone}</a>}</div> },
     {
       key: 'status', label: 'Status', sortable: true,
       render: (s) => <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${counselingSessionStatusConfig[s.status].cls}`}>{counselingSessionStatusConfig[s.status].label}</span>,
@@ -50,24 +51,20 @@ export function CounselingSessionsTable() {
   const { data, loading, error } = useCounselingSessionsAdmin()
   const [statusFilter, setStatusFilter] = useState<CounselingSessionStatus | 'all'>('all')
   const [toast, setToast] = useState('')
+  const [dialog, setDialog] = useState<{ session: CounselingSession; action: 'confirm' | 'cancel' } | null>(null)
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
   if (loading) return <Skeleton className="h-64 w-full rounded-lg" aria-label="Loading sessions" />
   if (error) return <EmptyState icon={AlertTriangle} title="Couldn't load sessions" description={error} />
 
-  const handleConfirm = async (s: CounselingSession) => {
-    try { await confirmSession(s.id); showToast(`Confirmed session for ${s.memberName}`) }
-    catch (e) { showToast(e instanceof Error ? e.message : 'Could not confirm this session') }
-  }
+  // Confirm / Cancel open a short form (details for the member, or the reason) — the member is notified either way.
+  const handleConfirm = (s: CounselingSession) => setDialog({ session: s, action: 'confirm' })
   const handleComplete = async (s: CounselingSession) => {
     try { await completeSession(s.id); showToast(`Marked session complete for ${s.memberName}`) }
     catch (e) { showToast(e instanceof Error ? e.message : 'Could not complete this session') }
   }
-  const handleCancel = async (s: CounselingSession) => {
-    try { await cancelSessionAdmin(s.id); showToast(`Cancelled session for ${s.memberName}`) }
-    catch (e) { showToast(e instanceof Error ? e.message : 'Could not cancel this session') }
-  }
+  const handleCancel = (s: CounselingSession) => setDialog({ session: s, action: 'cancel' })
 
   const tableData = statusFilter === 'all' ? data : data.filter((s) => s.status === statusFilter)
 
@@ -88,6 +85,20 @@ export function CounselingSessionsTable() {
         }
         emptyMessage="No sessions match your filters."
       />
+      {dialog && (
+        <ConfirmSessionModal
+          key={dialog.session.id + dialog.action}
+          session={dialog.session}
+          action={dialog.action}
+          onClose={() => setDialog(null)}
+          onSubmit={async (extra) => {
+            if (dialog.action === 'confirm') await confirmSession(dialog.session.id, extra)
+            else await cancelSessionAdmin(dialog.session.id, extra.note)
+            showToast(`${dialog.action === 'confirm' ? 'Confirmed' : 'Cancelled'} the session for ${dialog.session.memberName} — they were notified`)
+            setDialog(null)
+          }}
+        />
+      )}
     </div>
   )
 }

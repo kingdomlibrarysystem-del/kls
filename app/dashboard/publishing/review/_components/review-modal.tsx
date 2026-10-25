@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from 'react'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { ElegantButton } from '@/components/ui/elegant-button'
-import type { PublicationSubmission } from './review-data'
+import type { PublicationRecord } from '../../_shared/use-publications'
 import { SubmissionPreview } from './submission-preview'
 
 interface ReviewModalProps {
-  submission: PublicationSubmission | null
+  submission: PublicationRecord | null
   action: 'approve' | 'reject' | null
   onClose: () => void
   onConfirm: (notes: string) => void

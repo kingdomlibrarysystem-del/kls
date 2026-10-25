@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX, Eye } from 'lucide-react'
+import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX, Eye, FileClock, ShieldCheck } from 'lucide-react'
+import { ResourceMediaPlayer } from '@/components/media/resource-media-player'
+import { ReviewDraftModal } from '../../_components/review-draft-modal'
+import type { CollectionOption } from '@/lib/data/klp-register'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
@@ -21,6 +24,9 @@ import type { ResourceFormData } from '../../_components/resource-form-schema'
 interface ResourceDetailViewProps {
   /** GET /api/resources/[id] shape, loaded on the server by page.tsx (which 404s when missing). */
   initialResource: Resource
+  /** Admin or a role with library:approve. */
+  canApprove: boolean
+  collections: CollectionOption[]
 }
 
 /**
@@ -28,10 +34,11 @@ interface ResourceDetailViewProps {
  * that used to open from the Book Inventory table's "View" button.
  * The resource arrives from the server page (no fetch on mount).
  */
-export function ResourceDetailView({ initialResource }: ResourceDetailViewProps) {
+export function ResourceDetailView({ initialResource, canApprove, collections }: ResourceDetailViewProps) {
   const router = useRouter()
   const [resource, setResource] = useState<Resource | null>(initialResource)
   const [editing, setEditing] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
   const [toast, setToast] = useState('')
   // Readable = real authored chapters (the server-derived chapterCount) or an
   // uploaded PDF. Previously this pulled the whole chapter catalog
@@ -40,7 +47,7 @@ export function ResourceDetailView({ initialResource }: ResourceDetailViewProps)
   const isReadable = !!resource && isResourceReadable(resource)
   const { mediaTypes } = useMediaTypes()
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 5000) }
 
   const handleSave = async (formData: ResourceFormData, editingId: string | null) => {
     if (!editingId) return
@@ -105,6 +112,21 @@ export function ResourceDetailView({ initialResource }: ResourceDetailViewProps)
         </UniversalButton>
       </div>
 
+      {resource.status === 'draft' && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-warning/30 dark:bg-warning/10 dark:text-warning">
+          <FileClock size={16} className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <strong>Draft — hidden from readers.</strong> {canApprove ? 'Review it to publish it and assign its KLP code.' : 'Waiting for an admin to approve it.'}
+            {resource.reviewNote && <><br />Reviewer note: {resource.reviewNote}</>}
+          </span>
+          {canApprove && (
+            <ElegantButton variant="primary" className="flex items-center gap-1.5 text-xs py-2" onClick={() => setReviewing(true)}>
+              <ShieldCheck size={13} /> Review draft
+            </ElegantButton>
+          )}
+        </div>
+      )}
+
       {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
 
       <div className="flex flex-col md:flex-row gap-6">
@@ -132,11 +154,13 @@ export function ResourceDetailView({ initialResource }: ResourceDetailViewProps)
 
           <ResourceMediaLinks resource={resource} />
 
+          {(resource.audioUrl || resource.videoUrl) && <ResourceMediaPlayer resource={resource} isAuthenticated signInHref="/auth/login" />}
+
           <div className="flex gap-2 pt-2 border-t border-w-300">
             <ElegantButton variant="primary" className="flex items-center gap-1.5 text-xs py-2" onClick={() => setEditing(true)}>
               <Pencil size={13} /> Edit Resource
             </ElegantButton>
-            {resource.status !== 'archived' && (
+            {resource.status !== 'archived' && resource.status !== 'draft' && (
               <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2" onClick={handleArchive}>
                 <Archive size={13} /> Archive
               </ElegantButton>
@@ -159,7 +183,20 @@ export function ResourceDetailView({ initialResource }: ResourceDetailViewProps)
         </div>
       </div>
 
-      <ResourceFormModal open={editing} editing={resource} onClose={() => setEditing(false)} onSave={handleSave} />
+      <ResourceFormModal open={editing} editing={resource} collections={collections} onClose={() => setEditing(false)} onSave={handleSave} />
+
+      <ReviewDraftModal
+        resource={reviewing ? resource : null}
+        collections={collections}
+        onClose={() => setReviewing(false)}
+        onDone={async (msg) => {
+          setReviewing(false)
+          const fresh = await fetch(`/api/resources/${resource.id}`).then((r) => r.json()).catch(() => null)
+          if (fresh?.code === 'success' && fresh.data) setResource(fresh.data)
+          showToast(msg)
+          router.refresh()
+        }}
+      />
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { settleOrder } from '@/app/api/orders/settle'
 import { settleCheckout } from '@/app/api/checkout/settle'
 import { settleCourseOrder } from '@/app/api/course-orders/settle'
 import { settleDonation } from '@/app/api/donations/settle'
+import { settleProductOrder } from '@/lib/shop/orders'
 
 /**
  * Real PayPack webhook receiver — fires on the `transaction:processed`
@@ -60,6 +61,12 @@ export async function POST(request: NextRequest) {
   const donation = await prisma.donation.findFirst({ where: { paypackRef: ref } })
   if (donation) {
     await settleDonation(donation.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
+    return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
+  }
+
+  const productOrder = await prisma.productOrder.findFirst({ where: { paypackRef: ref } })
+  if (productOrder) {
+    await settleProductOrder(productOrder.id, { paypackStatus: status, paypackProvider: payload.data.provider, providerStatus: status })
     return NextResponse.json({ data: null, message: 'Webhook processed', code: 'success', status: 200 })
   }
 

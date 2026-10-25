@@ -1,105 +1,156 @@
 'use client'
 
-import { Download, FileText, BarChart3, Eye, Lock } from 'lucide-react'
+import { useState } from 'react'
+import { Download, FileText, BarChart3, Eye, Lock, Wallet, GraduationCap, Loader2, AlertCircle } from 'lucide-react'
 import { UniversalButton } from '@/components/ui/universal-button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useCertificatesAdmin } from '@/app/dashboard/e-learning/certificates/_components/use-certificates-admin'
 
-interface StaticDownloadItem {
-  id: string
+interface ReportDef {
+  key: string
   title: string
-  type: 'Report' | 'Statement'
-  date: string
+  description: string
+}
+
+const REPORT_ICON: Record<string, React.ReactNode> = {
+  'borrowing-activity': <BarChart3 size={16} />,
+  'publishing-revenue': <Wallet size={16} />,
+  'learning-progress': <GraduationCap size={16} />,
+}
+
+/** YYYY-MM-DD in the viewer's own calendar. */
+function dayKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 /**
- * Report/Statement rows have no real "download as file" affordance
- * anywhere in this app yet — the underlying data is real and viewable on
- * its own dashboard page (Reports & Analytics, Publishing Revenue), but no
- * page offers a file export today. Kept as an honest disabled row rather
- * than either fabricating a download or removing the row entirely, per
- * the same disclosed-limitation pattern as /dashboard/library/sales.
+ * Download Center: real issued certificates (View opens the certificate page
+ * with its print-to-PDF flow) and three live reports downloaded as CSV for a
+ * chosen period (GET /api/downloads/reports/[report]). Reports need the
+ * "View Reports" permission.
  */
-const staticItems: StaticDownloadItem[] = [
-  { id: 's-1', title: 'Q2 2026 Borrowing Activity Report', type: 'Report', date: 'Jun 01, 2026' },
-  { id: 's-2', title: 'Publishing Revenue Statement — May 2026', type: 'Statement', date: 'Jun 03, 2026' },
-  { id: 's-3', title: 'Annual Learning Progress Summary', type: 'Report', date: 'Jun 20, 2026' },
-]
-
-const staticTypeIcon: Record<StaticDownloadItem['type'], React.ReactNode> = {
-  Report: <BarChart3 size={16} />,
-  Statement: <FileText size={16} />,
-}
-
-/**
- * Download Center: real issued certificates (View links to the same
- * certificate detail page /member/certificates/:id, with its own
- * print-to-PDF flow) plus Report/Statement rows, which stay disabled
- * with an honest disclaimer since no download-as-file pattern exists
- * yet for tabular report data anywhere in this app.
- */
-export function DownloadsView() {
+export function DownloadsView({ reports, canDownloadReports }: { reports: ReportDef[]; canDownloadReports: boolean }) {
   const { data: certificates } = useCertificatesAdmin()
+  const [from, setFrom] = useState(() => { const d = new Date(); d.setDate(1); return dayKey(d) })
+  const [to, setTo] = useState(() => dayKey(new Date()))
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [lastResult, setLastResult] = useState<string | null>(null)
+
+  const download = async (report: ReportDef) => {
+    setError('')
+    setLastResult(null)
+    if (from > to) { setError('“From” must be on or before “To”.'); return }
+    setBusy(report.key)
+    try {
+      const res = await fetch(`/api/downloads/reports/${report.key}?from=${from}&to=${to}`)
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        throw new Error(json?.message ?? 'Could not build the report')
+      }
+      const blob = await res.blob()
+      const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? `${report.key}.csv`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = name
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      const count = Number(res.headers.get('x-row-count') ?? '0')
+      setLastResult(`${report.title}: ${count} row${count === 1 ? '' : 's'} downloaded.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not build the report')
+    } finally {
+      setBusy(null)
+    }
+  }
 
   return (
-    <div>
-      <div className="bg-form-highlight border border-w-300 rounded-lg divide-y divide-w-300 mb-6">
-        {certificates.map((cert) => (
-          <div key={cert.id} className="flex items-center gap-3 px-5 py-4">
-            <div className="text-w-600"><FileText size={16} /></div>
-            <div className="flex-1 min-w-0">
-              <p className="font-cinzel text-sm font-semibold text-w-950 truncate">{cert.course} — Completion Certificate</p>
-              <p className="font-lato text-xs text-w-700">
-                {cert.member} · Certificate · {cert.issuedAt}{cert.revoked && ' · Revoked'}
-              </p>
+    <div className="space-y-6">
+      <section>
+        <h2 className="mb-2 font-cinzel text-sm font-semibold text-w-950">Certificates</h2>
+        <div className="divide-y divide-w-300 rounded-lg border border-w-300 bg-form-highlight">
+          {certificates.map((cert) => (
+            <div key={cert.id} className="flex items-center gap-3 px-5 py-4">
+              <div className="text-w-600"><FileText size={16} /></div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-cinzel text-sm font-semibold text-w-950">{cert.course} — Completion Certificate</p>
+                <p className="font-lato text-xs text-w-700">
+                  {cert.member} · Certificate · {cert.issuedAt}{cert.revoked && ' · Revoked'}
+                </p>
+              </div>
+              <UniversalButton
+                href={`/member/certificates/${cert.id}`}
+                variant="primary"
+                size="sm"
+                icon={<Eye size={12} />}
+                aria-label={`View certificate for ${cert.member}, ${cert.course}`}
+              >
+                <Download size={12} />
+                View / Download
+              </UniversalButton>
             </div>
-            <UniversalButton
-              href={`/member/certificates/${cert.id}`}
-              variant="primary"
-              size="sm"
-              icon={<Eye size={12} />}
-              aria-label={`View certificate for ${cert.member}, ${cert.course}`}
-            >
-              <Download size={12} />
-              View / Download
-            </UniversalButton>
+          ))}
+          {certificates.length === 0 && (
+            <div className="px-5 py-4 font-lato text-xs text-w-600">No certificates have been issued yet.</div>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 font-cinzel text-sm font-semibold text-w-950">Reports &amp; statements</h2>
+        {!canDownloadReports ? (
+          <div className="flex items-center gap-2 rounded-lg border border-w-300 bg-w-100 px-5 py-4 font-lato text-xs text-w-700">
+            <Lock size={14} /> Your role can&apos;t download reports. An admin can grant <b>View Reports</b> in Roles &amp; Permissions.
           </div>
-        ))}
-        {certificates.length === 0 && (
-          <div className="px-5 py-4 font-lato text-xs text-w-600">No certificates have been issued yet.</div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3 rounded-lg border border-w-300 bg-form-highlight px-5 py-4">
+              <div className="space-y-1">
+                <Label htmlFor="report-from" className="text-xs">From</Label>
+                <Input id="report-from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-40" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="report-to" className="text-xs">To</Label>
+                <Input id="report-to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-40" />
+              </div>
+              <p className="pb-2 font-lato text-xs text-w-700">Files are CSV — they open in Excel or Google Sheets.</p>
+            </div>
+
+            {error && (
+              <div role="alert" className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <AlertCircle className="size-4 shrink-0" /> {error}
+              </div>
+            )}
+            {lastResult && <p role="status" className="font-lato text-xs text-success">{lastResult}</p>}
+
+            <div className="divide-y divide-w-300 rounded-lg border border-w-300 bg-form-highlight">
+              {reports.map((report) => (
+                <div key={report.key} className="flex flex-wrap items-center gap-3 px-5 py-4">
+                  <div className="text-w-600">{REPORT_ICON[report.key] ?? <FileText size={16} />}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-cinzel text-sm font-semibold text-w-950">{report.title}</p>
+                    <p className="font-lato text-xs text-w-700">{report.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => download(report)}
+                    disabled={!!busy}
+                    aria-busy={busy === report.key}
+                    className="flex items-center gap-1.5 rounded bg-w-600 px-3 py-1.5 font-lato text-xs font-semibold text-white transition-colors hover:bg-w-700 disabled:cursor-wait disabled:opacity-70 dark:text-primary-foreground"
+                  >
+                    {busy === report.key ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                    {busy === report.key ? 'Preparing…' : 'Download CSV'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-      </div>
-
-      <div className="bg-w-100 border border-w-300 rounded-lg px-5 py-4 mb-4 font-lato text-xs text-w-700">
-        Reports and statements below reflect real data (see Reports &amp; Analytics and Publishing Revenue), but no file-export pattern exists for tabular data yet — downloads are disabled.
-      </div>
-
-      <div className="bg-form-highlight border border-w-300 rounded-lg divide-y divide-w-300">
-        {staticItems.map((item) => (
-          <div key={item.id} className="flex items-center gap-3 px-5 py-4">
-            <div className="text-w-600">{staticTypeIcon[item.type]}</div>
-            <div className="flex-1 min-w-0">
-              <p className="font-cinzel text-sm font-semibold text-w-950 truncate">{item.title}</p>
-              <p className="font-lato text-xs text-w-700">{item.type} · {item.date}</p>
-            </div>
-            <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-w-200 dark:bg-white/10 text-w-500 rounded text-xs font-lato cursor-not-allowed opacity-70"
-            >
-              <Lock size={12} />
-              <Download size={12} />
-              Download
-            </button>
-          </div>
-        ))}
-      </div>
-{/* 
-      <div className="mt-8 bg-form-section dark:bg-secondary border border-w-400 rounded-lg p-5">
-        <h3 className="font-cinzel text-sm font-semibold text-w-950 mb-2">Planned API Endpoints</h3>
-        <ul className="font-lato text-xs text-w-700 space-y-1">
-          <li>GET /api/downloads/reports/:id/file — generate/stream a report as a downloadable file</li>
-          <li>GET /api/downloads/statements/:id/file — generate/stream a revenue statement as a downloadable file</li>
-        </ul>
-      </div> */}
+      </section>
     </div>
   )
 }

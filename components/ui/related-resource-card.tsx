@@ -3,6 +3,7 @@ import { BookMarked, Film, Package, BookOpen } from 'lucide-react'
 import type { Resource, BindingType } from '@/app/dashboard/library/_components/resources-data'
 import { bindingTypeLabels } from '@/app/dashboard/library/_components/resources-data'
 import { MediaTypeName } from '@/components/media-type-name'
+import { MediaCoverBadge } from '@/components/media/media-cover-badge'
 
 interface RelatedResourceCardProps {
   resource: Resource
@@ -50,6 +51,7 @@ export function RelatedResourceCard({ resource, action, className, style }: Rela
         ) : (
           <BookOpen size={28} color="var(--gold, #b8860b)" />
         )}
+        <MediaCoverBadge resource={resource} />
       </div>
       <p className={isDialectB ? '' : 'font-cinzel text-sm font-semibold text-w-950'} style={isDialectB ? { fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' } : undefined}>
         {resource.title}

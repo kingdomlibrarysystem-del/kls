@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, BookX } from 'lucide-react'
+import { ChevronLeft, Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, BookX, Headphones, PlayCircle } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
@@ -12,6 +12,10 @@ import { bindingTypeLabels, isResourceReadable, type Resource } from '@/app/dash
 import { useMediaTypes } from '@/lib/client/use-media-types'
 import { mediaTypeName } from '@/lib/media-types-shared'
 import { ResourceReviews, type Review } from './resource-reviews'
+import { MediaCoverBadge } from '@/components/media/media-cover-badge'
+import { ResourceMediaPlayer } from '@/components/media/resource-media-player'
+import { playableKind } from '@/lib/media-embed'
+import { formatLibraryId } from '@/lib/klp-code'
 
 interface ResourceDetailViewProps {
   /** Loaded on the server by page.tsx; null when it doesn't exist. */
@@ -48,6 +52,8 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
 
   const liked = favorites.some((f) => f.id === resource.id)
   const isReadable = isResourceReadable(resource)
+  // Audio / video titles are played on this page (ResourceMediaPlayer), not opened in the reader.
+  const mediaKind = playableKind(resource)
   const outOfStock = resource.availableQty === 0
   const inCartRental = isInCart(resource.id, 'RENTAL')
   const inCartSale = isInCart(resource.id, 'SALE')
@@ -82,6 +88,7 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
               <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Kingdom Library</span>
             </div>
           )}
+          <MediaCoverBadge resource={resource} size="lg" />
         </div>
 
         <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -118,6 +125,11 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
           )}
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+            {mediaKind && (
+              <a href="#player" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+                {mediaKind === 'video' ? <PlayCircle size={14} /> : <Headphones size={14} />} {mediaKind === 'video' ? 'Watch' : 'Listen'}
+              </a>
+            )}
             {isReadable && (
               <Link href={`/member/library/read/${resource.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
                 <BookOpenCheck size={14} /> {resource.price > 0 ? 'Preview' : 'Read'}
@@ -150,6 +162,8 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
 
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
         <div style={{ flex: 2, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {mediaKind && <ResourceMediaPlayer resource={resource} isAuthenticated={isAuthenticated} signInHref={loginHref} />}
+
           <div>
             <h2 className="cinzel" style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>Description</h2>
             <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{resource.description}</p>
@@ -176,16 +190,19 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
               ['Pages', `${resource.pages}`],
               ['Binding', bindingTypeLabels[resource.bindingType]],
               ['Media', mediaTypeName(resource.mediaType, mediaTypes)],
-              ['ISBN', resource.isbn],
+              ['KLP Code', resource.klpCode ?? '—'],
+              ['Kingdom Library ID', resource.libraryId ? formatLibraryId(resource.libraryId) : '—'],
+              ['Official ISBN', resource.officialIsbn ?? 'Pending'],
               ['Publisher', resource.publisher],
               ['Year', `${resource.year}`],
               ['Availability', `${resource.availableQty} / ${resource.totalQty} available`],
             ].map(([label, value]) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
                 <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600, textAlign: 'right' }}>{value}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, textAlign: 'right', overflowWrap: 'anywhere' }}>{value}</span>
               </div>
             ))}
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.5 }}>The Kingdom Library ID is the library&apos;s own number, not an ISBN.</p>
           </div>
         </div>
       </div>

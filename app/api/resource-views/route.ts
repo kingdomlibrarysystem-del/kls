@@ -33,8 +33,8 @@ export const POST = withErrorHandling('/api/resource-views', 'POST', async (requ
   const viewerKey = session?.user?.id ? `u:${session.user.id}` : anonymousId ? `a:${anonymousId}` : null
   if (!viewerKey) throw new ApiError('anonymousId is required when signed out', 400)
 
-  const resource = await prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true } })
-  if (!resource) throw new ApiError('Resource not found', 404)
+  const resource = await prisma.resource.findUnique({ where: { id: resourceId }, select: { id: true, status: true } })
+  if (!resource || resource.status === 'DRAFT') throw new ApiError('Resource not found', 404)
 
   const key = { resourceId_viewerKey: { resourceId, viewerKey } }
   const already = await prisma.resourceView.findUnique({ where: key, select: { id: true } })

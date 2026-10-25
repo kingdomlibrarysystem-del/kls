@@ -25,7 +25,7 @@ export const GET = withErrorHandling('/api/resources/[id]/document', 'GET', asyn
   const forcePreview = new URL(request.url).searchParams.get('preview') === '1'
   const resource = await prisma.resource.findUnique({
     where: { id },
-    select: { id: true, title: true, price: true, freePreviewChapterCount: true, documentUrl: true },
+    select: { id: true, title: true, price: true, freePreviewChapterCount: true, documentUrl: true, status: true },
   })
   if (!resource) throw new ApiError('Resource not found', 404)
   if (!resource.documentUrl) throw new ApiError('This resource has no uploaded document', 404)
@@ -34,6 +34,8 @@ export const GET = withErrorHandling('/api/resources/[id]/document', 'GET', asyn
   const userId = session?.user?.id
   const role = roleNameToUserRole(session?.user?.roleName ?? '')
   const isStaff = !forcePreview && (role === 'admin' || role === 'manager' || role === 'staff')
+  // Drafts are readable only for the staff approval preview.
+  if (resource.status === 'DRAFT' && role === 'member') throw new ApiError('Resource not found', 404)
   const memberEntitled = !forcePreview && userId ? await isEntitled(userId, resource.id) : false
   const entitled = resource.price <= 0 || isStaff || memberEntitled
 

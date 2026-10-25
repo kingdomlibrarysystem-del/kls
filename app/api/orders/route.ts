@@ -126,7 +126,7 @@ export const POST = withErrorHandling('/api/orders', 'POST', async (request: Nex
   }
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
-  if (!resource) throw new ApiError('Resource not found', 404)
+  if (!resource || resource.status === 'DRAFT') throw new ApiError('Resource not found', 404)
   // SALE (Reserve) always requires a real price; RENTAL (Borrow) may be
   // free (borrowPrice defaults to 0).
   const amountRwf = body.type === 'RENTAL' ? resource.borrowPrice : resource.price

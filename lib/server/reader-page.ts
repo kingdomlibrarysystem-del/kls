@@ -9,7 +9,7 @@ import type { Chapter } from '@/app/member/_shared/readable-content-data'
 export async function loadReaderData(resourceId: string) {
   const session = await getPageSession()
   const [resource, chapters] = await Promise.all([
-    getResourceDetail(resourceId),
+    getResourceDetail(resourceId, { includeDraft: !!session && isStaffRole(session.role) }),
     getGatedChapters(resourceId, session?.userId, !!session && isStaffRole(session.role)),
   ])
   return {

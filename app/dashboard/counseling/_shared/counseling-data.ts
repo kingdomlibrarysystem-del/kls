@@ -6,7 +6,7 @@
  * authored from counseling/page.tsx's own placeholder hints.
  */
 
-export type CounselingSessionMode = 'IN_PERSON' | 'VIRTUAL'
+export type CounselingSessionMode = 'IN_PERSON' | 'VIRTUAL' | 'PHONE'
 export type CounselingSessionStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
 
 export interface Counselor {
@@ -29,6 +29,12 @@ export interface CounselingSession {
   mode: CounselingSessionMode
   reason: string
   status: CounselingSessionStatus
+  /** PHONE: the number to call. */
+  contactPhone?: string | null
+  /** VIRTUAL: video link; IN_PERSON: place — sent with the confirmation. */
+  meetingDetails?: string | null
+  staffNote?: string | null
+  counselorUserId?: string | null
 }
 
 export interface CounselingNote {
@@ -59,5 +65,6 @@ export const counselingSessionStatusConfig: Record<CounselingSessionStatus, { la
 
 export const counselingModeLabels: Record<CounselingSessionMode, string> = {
   IN_PERSON: 'In Person',
-  VIRTUAL: 'Virtual',
+  VIRTUAL: 'Video call',
+  PHONE: 'Phone call',
 }

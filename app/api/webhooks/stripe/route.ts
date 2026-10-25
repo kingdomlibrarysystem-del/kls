@@ -3,8 +3,9 @@ import { constructStripeWebhookEvent } from '@/lib/stripe'
 import { settleOrder } from '@/app/api/orders/settle'
 import { settleCheckout } from '@/app/api/checkout/settle'
 import { settleCourseOrder } from '@/app/api/course-orders/settle'
+import { settleProductOrder } from '@/lib/shop/orders'
 
-type OrderMetadata = { orderId?: string; checkoutId?: string; courseOrderId?: string }
+type OrderMetadata = { orderId?: string; checkoutId?: string; courseOrderId?: string; productOrderId?: string }
 
 /**
  * Real Stripe webhook receiver, shared by plain Order (legacy single-item
@@ -35,6 +36,8 @@ export async function POST(request: NextRequest) {
       await settleOrder(metadata.orderId, { providerStatus })
     } else if (metadata?.courseOrderId) {
       await settleCourseOrder(metadata.courseOrderId, { providerStatus })
+    } else if (metadata?.productOrderId) {
+      await settleProductOrder(metadata.productOrderId, { providerStatus })
     }
   }
 

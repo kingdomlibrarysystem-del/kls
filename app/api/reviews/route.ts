@@ -55,7 +55,7 @@ export const POST = withErrorHandling('/api/reviews', 'POST', async (request: Ne
   if (auth.response) return auth.response
 
   const resource = await prisma.resource.findUnique({ where: { id: body.resourceId } })
-  if (!resource) throw new ApiError('Resource not found', 404)
+  if (!resource || resource.status === 'DRAFT') throw new ApiError('Resource not found', 404)
 
   const review = await prisma.review.upsert({
     where: { userId_resourceId: { userId: body.userId, resourceId: body.resourceId } },

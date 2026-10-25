@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -26,7 +26,14 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginForm() {
   const { t } = useLanguage()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  /**
+   * Where the sign-in is. It stays busy until the destination page has
+   * actually replaced this one (the component unmounts) — it never flips back
+   * to the idle button between a successful sign-in and the dashboard opening.
+   */
+  const [phase, setPhase] = useState<'idle' | 'checking' | 'signing' | 'redirecting'>('idle')
+  const isSubmitting = phase !== 'idle'
+  const busyText = phase === 'redirecting' ? 'Opening your dashboard…' : phase === 'signing' ? 'Signing in…' : 'Checking…'
   const [submitError, setSubmitError] = useState('')
   const [requiresTotp, setRequiresTotp] = useState(false)
   const [totpCode, setTotpCode] = useState('')
@@ -38,38 +45,45 @@ export function LoginForm() {
   const rawRedirect = searchParams.get('redirect')
   const explicitRedirect = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null
 
+  // Warm up the likely destinations so the redirect after signing in is quick.
+  useEffect(() => {
+    router.prefetch(explicitRedirect ?? '/member')
+    if (!explicitRedirect) router.prefetch('/dashboard')
+  }, [router, explicitRedirect])
+
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
 
   const attemptLogin = async (data: LoginFormData, totp?: string) => {
-    setIsSubmitting(true)
+    setPhase('signing')
     setSubmitError('')
     try {
       const { matched } = await login(data.email, data.password, totp)
-      setIsSubmitting(false)
       if (!matched) {
+        setPhase('idle')
         setSubmitError(requiresTotp
           ? 'That authenticator code is incorrect or has expired. Try the current code from your app.'
           : 'Incorrect email or password. Please try again.')
         return
       }
-      if (explicitRedirect) { router.push(explicitRedirect); return }
+      // Stay busy: the button keeps its spinner until the next page replaces this one.
+      setPhase('redirecting')
+      if (explicitRedirect) { router.replace(explicitRedirect); return }
       const freshSession = await getSession()
       const role = roleNameToUserRole(freshSession?.user?.roleName ?? '')
-      router.push(role === 'admin' || role === 'manager' || role === 'staff' ? '/dashboard' : '/member')
+      router.replace(role === 'admin' || role === 'manager' || role === 'staff' ? '/dashboard' : '/member')
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Login failed')
-      setIsSubmitting(false)
+      setPhase('idle')
     }
   }
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsSubmitting(true)
+    setPhase('checking')
     setSubmitError('')
-    const needsTotp = await checkRequiresTotp(data.email)
-    setIsSubmitting(false)
-    if (needsTotp) { setRequiresTotp(true); setPendingCredentials(data); return }
+    const needsTotp = await checkRequiresTotp(data.email).catch(() => false)
+    if (needsTotp) { setPhase('idle'); setRequiresTotp(true); setPendingCredentials(data); return }
     await attemptLogin(data)
   }
 
@@ -98,7 +112,7 @@ export function LoginForm() {
             />
             <p className="mt-2 text-sm text-w-600">{t('auth.totp_hint')}</p>
           </div>
-          <ElegantButton type="submit" fullWidth loading={isSubmitting} variant="primary" disabled={!totpCode.trim()}>
+          <ElegantButton type="submit" fullWidth loading={isSubmitting} loadingText={busyText} variant="primary" disabled={!totpCode.trim()}>
             {t('auth.verify_signin')}
           </ElegantButton>
           <button
@@ -143,7 +157,7 @@ export function LoginForm() {
             {...register('password')}
           />
         </div>
-        <ElegantButton type="submit" fullWidth loading={isSubmitting} variant="primary">
+        <ElegantButton type="submit" fullWidth loading={isSubmitting} loadingText={busyText} variant="primary">
           {t('auth.sign_in')}
         </ElegantButton>
         <div className="flex items-center gap-3 text-xs text-w-500">

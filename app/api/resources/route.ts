@@ -1,116 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { getServerSession } from 'next-auth'
 import prisma from '@/prisma/client'
+import { authOptions } from '@/lib/auth-options'
+import { roleNameToUserRole } from '@/lib/roles'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
-import { generateUniqueIsbn } from '@/lib/generate-isbn'
-import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 import { isValidMediaTypeCode, DEFAULT_MEDIA_TYPE_CODE } from '@/lib/data/media-types'
+import { serializeResource, READER_VISIBLE_STATUSES } from '@/lib/data/resources'
+import { isValidCollection } from '@/lib/data/klp-register'
+import { notifyDraftAwaitingApproval } from '@/lib/data/resource-review'
+import { isKlpFormat, normalizeIsbn } from '@/lib/klp-code'
+import { newObjectId } from '@/lib/server/object-id'
 
 /**
- * Real Resource API — the digital library catalog, replacing the old
- * fully-mocked 4-row placeholder that used a different vocabulary
- * (`totalQuantity`/`availableQuantity`/lowercase `type`/`format`) than
- * this app's real `Resource` shape
- * (app/dashboard/library/_components/resources-data.ts). Response shape
- * matches that real interface field-for-field, with `status` normalized
- * back to the mock's lowercase convention (`available`/`out_of_stock`/
- * `archived`) since the DB enum is uppercase for schema-wide consistency
- * with `CategoryStatus`.
+ * The digital library catalog. Response shape matches the client Resource
+ * interface (app/dashboard/library/_components/resources-data.ts), with
+ * `status` lower-cased (`draft`/`available`/`out_of_stock`/`archived`).
+ *
+ * Drafts (added but not yet approved) are only returned to staff who ask
+ * for them with ?includeDrafts=1 — guests and members never receive them,
+ * whatever they pass.
  */
-function serializeResource(r: {
-  id: string
-  title: string
-  author: string
-  publisher: string
-  categoryId: string | null
-  type: string
-  format: string
-  language: string
-  year: number
-  pages: number
-  isbn: string
-  price: number
-  borrowPrice: number
-  borrowDurationDays: number
-  freePreviewChapterCount: number
-  totalQty: number
-  availableQty: number
-  status: string
-  coverImages: string[]
-  bindingType: string
-  mediaType: string
-  description: string
-  tags: string[]
-  documentUrl: string | null
-  audioUrl: string | null
-  videoUrl: string | null
-  avgRating: number
-  reviewCount: number
-}, chapterCount: number, views = 0) {
-  return {
-    id: r.id,
-    title: r.title,
-    author: r.author,
-    publisher: r.publisher,
-    // Publishing-created resources (see Publication.status PUBLISHED
-    // auto-create) may have no KCS categoryId — the frontend Resource
-    // type still expects a string, so this falls back to '' rather than
-    // widening that type across ~19 existing consumers for one new case.
-    categoryId: r.categoryId ?? '',
-    type: r.type,
-    format: r.format,
-    language: r.language,
-    year: r.year,
-    pages: r.pages,
-    isbn: r.isbn,
-    price: r.price,
-    borrowPrice: r.borrowPrice,
-    borrowDurationDays: r.borrowDurationDays,
-    freePreviewChapterCount: r.freePreviewChapterCount,
-    totalQty: r.totalQty,
-    availableQty: r.availableQty,
-    status: r.status.toLowerCase(),
-    coverImages: r.coverImages,
-    bindingType: r.bindingType,
-    mediaType: r.mediaType,
-    description: r.description,
-    tags: r.tags,
-    documentUrl: r.documentUrl ?? undefined,
-    audioUrl: r.audioUrl ?? undefined,
-    videoUrl: r.videoUrl ?? undefined,
-    avgRating: r.avgRating,
-    reviewCount: r.reviewCount,
-    // How many real Chapter rows this resource has. A TEXT book's readable
-    // content lives entirely in these rows, so a resource with chapters but
-    // no documentUrl is just as readable as an uploaded PDF — the admin
-    // inventory table and the public book pages gate their Read button on
-    // this. Passed in rather than read off a Prisma `_count` include so the
-    // count comes from one grouped aggregate for the whole page instead of
-    // per-row, and so it works against a not-yet-regenerated Prisma client.
-    chapterCount,
-    views,
-  }
-}
-
-const VALID_STATUSES = ['available', 'out_of_stock', 'archived']
+const VALID_STATUSES = ['draft', 'available', 'out_of_stock', 'archived']
+type DbStatus = 'DRAFT' | 'AVAILABLE' | 'OUT_OF_STOCK' | 'ARCHIVED'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const page = parseInt(searchParams.get('page') || '1')
-  const pageSize = parseInt(searchParams.get('pageSize') || '50')
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1)
+  const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || '50') || 50))
   const search = searchParams.get('search')?.toLowerCase()
   const categoryId = searchParams.get('categoryId')
   const status = searchParams.get('status')
 
+  let canSeeDrafts = false
+  if (searchParams.get('includeDrafts') === '1') {
+    const session = await getServerSession(authOptions)
+    canSeeDrafts = !!session?.user?.id && roleNameToUserRole(session.user.roleName ?? '') !== 'member'
+  }
+  const visible: DbStatus[] = canSeeDrafts ? ['DRAFT', ...READER_VISIBLE_STATUSES] : [...READER_VISIBLE_STATUSES]
+  const wanted = status && status !== 'all' && VALID_STATUSES.includes(status) ? (status.toUpperCase() as DbStatus) : null
+
   const where = {
+    status: { in: wanted ? visible.filter((s) => s === wanted) : visible },
     ...(categoryId && { categoryId }),
-    ...(status && status !== 'all' && VALID_STATUSES.includes(status) && { status: status.toUpperCase() as 'AVAILABLE' | 'OUT_OF_STOCK' | 'ARCHIVED' }),
     ...(search && {
       OR: [
         { title: { contains: search, mode: 'insensitive' as const } },
         { author: { contains: search, mode: 'insensitive' as const } },
-        { isbn: { contains: search, mode: 'insensitive' as const } },
+        { klpCode: { contains: search, mode: 'insensitive' as const } },
+        { libraryId: { contains: search.replace(/\s/g, '') } },
+        { officialIsbn: { contains: search.replace(/[\s-]/g, '') } },
       ],
     }),
   }
@@ -173,8 +113,20 @@ const createResourceSchema = z.object({
   documentUrl: z.string().optional(),
   audioUrl: z.string().optional(),
   videoUrl: z.string().optional(),
+  /** KLP collection code ("01"–"99"); needed before approval, can be chosen later. */
+  klpCollection: z.string().regex(/^\d{2}$/, 'Collection must be a 2-digit code').optional().or(z.literal('')),
+  klpEdition: z.number().int().min(1, 'Edition starts at 1').max(99).optional(),
+  klpFormat: z.string().optional().or(z.literal('')),
+  /** Real ISBN from the ISBN agency, if one has been assigned. Leave empty while pending. */
+  officialIsbn: z.string().optional(),
 })
 
+/**
+ * Every new resource starts as a DRAFT: hidden from readers until an Admin
+ * (or a role with library:approve) publishes it via
+ * POST /api/resources/[id]/review. Codes (KLP / Kingdom Library ID) are
+ * assigned at that point, not here, so rejected drafts never use a number.
+ */
 export const POST = withErrorHandling('/api/resources', 'POST', async (request: NextRequest) => {
   const auth = await requireStaff()
   if (auth.response) return auth.response
@@ -192,10 +144,21 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
   const mediaType = body.mediaType ?? DEFAULT_MEDIA_TYPE_CODE
   if (!(await isValidMediaTypeCode(mediaType))) throw new ApiError('The specified media type does not exist', 400)
 
-  const isbn = await generateUniqueIsbn()
+  if (body.klpCollection && !(await isValidCollection(body.klpCollection))) throw new ApiError('The specified KLP collection does not exist', 400)
+  if (body.klpFormat && !isKlpFormat(body.klpFormat)) throw new ApiError('Unknown publication format', 400)
+  let officialIsbn: string | null = null
+  if (body.officialIsbn?.trim()) {
+    officialIsbn = normalizeIsbn(body.officialIsbn)
+    if (!officialIsbn) throw new ApiError('That ISBN is not valid — check the digits (ISBN-13 or ISBN-10), or leave it empty while it is pending.', 400)
+  }
+
+  // The legacy unique `isbn` column becomes an internal record key — never a self-made ISBN.
+  const id = newObjectId()
 
   const resource = await prisma.resource.create({
     data: {
+      id,
+      isbn: `KL-${id}`,
       title: body.title,
       author: body.author,
       publisher: body.publisher ?? '',
@@ -205,14 +168,13 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       language: body.language ?? 'EN',
       year: body.year ?? new Date().getFullYear(),
       pages: body.pages ?? 0,
-      isbn,
       price: body.price ?? 0,
       borrowPrice: body.borrowPrice ?? 0,
       borrowDurationDays: body.borrowDurationDays ?? 14,
       freePreviewChapterCount: body.freePreviewChapterCount ?? 0,
       totalQty: body.totalQty ?? 1,
       availableQty: body.availableQty ?? body.totalQty ?? 1,
-      status: 'AVAILABLE',
+      status: 'DRAFT',
       coverImages: body.coverImages ?? [],
       bindingType: (body.bindingType as 'SOFT' | 'HARD') ?? 'SOFT',
       mediaType,
@@ -221,11 +183,16 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
       documentUrl: body.documentUrl ?? null,
       audioUrl: body.audioUrl ?? null,
       videoUrl: body.videoUrl ?? null,
+      klpCollection: body.klpCollection || null,
+      klpEdition: body.klpEdition ?? 1,
+      klpFormat: body.klpFormat || null,
+      officialIsbn,
+      createdById: auth.session.userId,
     },
   })
 
-  broadcastToSubscribers({ type: 'new_resource', title: resource.title, author: resource.author, id: resource.id }).catch(() => {})
+  const creator = await prisma.user.findUnique({ where: { id: auth.session.userId }, select: { name: true } })
+  notifyDraftAwaitingApproval(resource, auth.session.userId, creator?.name ?? '').catch(() => {})
 
-  return NextResponse.json({ data: serializeResource(resource, 0), message: 'Resource created successfully', code: 'success', status: 201 }, { status: 201 })
+  return NextResponse.json({ data: serializeResource(resource, 0), message: 'Saved as a draft. It stays hidden from readers until an admin approves it.', code: 'success', status: 201 }, { status: 201 })
 })
-

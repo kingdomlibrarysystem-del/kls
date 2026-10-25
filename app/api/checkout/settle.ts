@@ -4,6 +4,7 @@ import { orderPaidEmailHtml, orderFailedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
 import { createBorrowRecord } from '@/app/api/borrowings/create-borrow'
 import { createReservationRecord } from '@/app/api/reservations/create-reservation'
+import { creditPaidOrdersToPublishers } from '@/lib/data/publishing-revenue'
 
 interface SettleInput {
   paypackStatus?: string
@@ -44,6 +45,8 @@ export async function settleCheckout(checkoutId: string, input: SettleInput) {
 
   if (isSuccessful) {
     await prisma.order.updateMany({ where: { checkoutId }, data: { status: 'PAID', paidAt: new Date() } })
+    // Paid sales/rentals of publishers' books add to those books' revenue (once per order).
+    await creditPaidOrdersToPublishers(checkout.orders.map((o) => o.id))
 
     for (const order of checkout.orders) {
       if (order.createdRecordId) continue

@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, Film, Package, BookOpenCheck, ShoppingCart, Check } from 'lucide-react'
+import { ChevronDown, ChevronUp, Film, Package, BookOpenCheck, ShoppingCart, Check, Headphones, PlayCircle } from 'lucide-react'
+import { MediaCoverBadge } from '@/components/media/media-cover-badge'
+import { playableKind } from '@/lib/media-embed'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { useAuth } from '@/contexts/auth-context'
 import { isResourceReadable, type Resource } from '@/app/dashboard/library/_components/resources-data'
@@ -29,6 +31,7 @@ export function BookCard({ book }: { book: Resource }) {
   const { user, isAuthenticated } = useAuth()
   useCart(user?.id)
   const isReadable = isResourceReadable(book)
+  const mediaKind = playableKind(book)
   const outOfStock = book.availableQty === 0
   const detailHref = `/library/${book.id}`
   const loginHref = `/auth/login?redirect=${encodeURIComponent(detailHref)}`
@@ -79,6 +82,7 @@ export function BookCard({ book }: { book: Resource }) {
             className="absolute top-0 left-0 h-full w-3"
             style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }}
           />
+          <MediaCoverBadge resource={book} />
         </div>
       </Link>
       <div className="p-4 flex flex-col gap-2 flex-1">
@@ -99,6 +103,11 @@ export function BookCard({ book }: { book: Resource }) {
           <span className={`flex items-center gap-1 ${outOfStock ? 'text-red-700 font-semibold' : ''}`}><Package size={11} /> {book.availableQty} available</span>
         </div>
         <div className="flex flex-col gap-2 mt-auto pt-3">
+          {mediaKind && (
+            <UniversalButton href={`${detailHref}#player`} variant="primary" size="sm" fullWidth icon={mediaKind === 'video' ? <PlayCircle size={13} /> : <Headphones size={13} />}>
+              {mediaKind === 'video' ? 'Watch' : 'Listen'}
+            </UniversalButton>
+          )}
           {isReadable && (
             isAuthenticated ? (
               <UniversalButton href={`/member/library/read/${book.id}`} variant="primary" size="sm" fullWidth icon={<BookOpenCheck size={13} />}>

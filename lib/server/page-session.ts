@@ -43,3 +43,21 @@ export async function requireStaffPage(): Promise<RouteSession> {
 export function canAccessOwned(session: RouteSession, ownerUserId: string): boolean {
   return session.userId === ownerUserId || isStaffRole(session.role)
 }
+
+/**
+ * The signed-in user's role permissions for server pages (cached per request).
+ * Admin is reported as having every permission (`all: true`).
+ */
+export const getPagePermissions = cache(async (): Promise<{ all: boolean; list: string[] }> => {
+  const session = await getPageSession()
+  if (!session) return { all: false, list: [] }
+  if (session.role === 'admin') return { all: true, list: [] }
+  const { getRolePermissions } = await import('@/lib/auth/permissions')
+  return { all: false, list: await getRolePermissions(session.roleName) }
+})
+
+/** True when the signed-in user's role has `permission` (Admin always). */
+export async function pageHasPermission(permission: string): Promise<boolean> {
+  const p = await getPagePermissions()
+  return p.all || p.list.includes(permission)
+}

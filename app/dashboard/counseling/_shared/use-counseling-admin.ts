@@ -57,11 +57,11 @@ export async function refetchCounselingSessionsAdmin(): Promise<void> {
   await loadSessions()
 }
 
-async function patchSession(id: string, status: string): Promise<CounselingSession> {
+async function patchSession(id: string, status: string, extra: { meetingDetails?: string; note?: string; proposedTime?: string } = {}): Promise<CounselingSession> {
   const res = await fetch(`/api/counseling/sessions/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, ...extra }),
   })
   const json = await res.json()
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update session')
@@ -69,14 +69,15 @@ async function patchSession(id: string, status: string): Promise<CounselingSessi
   return json.data
 }
 
-export function confirmSession(id: string) {
-  return patchSession(id, 'CONFIRMED')
+/** Confirms the session; `extra` carries the video link / place, a note to the member and an optional new time. The member is notified. */
+export function confirmSession(id: string, extra: { meetingDetails?: string; note?: string; proposedTime?: string } = {}) {
+  return patchSession(id, 'CONFIRMED', extra)
 }
 export function completeSession(id: string) {
   return patchSession(id, 'COMPLETED')
 }
-export function cancelSessionAdmin(id: string) {
-  return patchSession(id, 'CANCELLED')
+export function cancelSessionAdmin(id: string, note?: string) {
+  return patchSession(id, 'CANCELLED', note ? { note } : {})
 }
 
 export async function addCounselingNote(sessionId: string, userId: string, authorId: string, summary: string, followUp?: string) {

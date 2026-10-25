@@ -67,7 +67,10 @@
     "assessments": "Assessments",
     "certificates": "Certificates",
     "news": "News",
-    "latest_news": "Latest News"
+    "latest_news": "Latest News",
+    "shop": "Shop",
+    "browse_shop": "Browse products",
+    "shop_orders": "My orders"
   },
   "header": {
     "search_placeholder": "Search books by title or author..."
@@ -284,7 +287,16 @@
     "library": "Library",
     "learning": "Learning",
     "profile": "Profile",
-    "home": "Home"
+    "home": "Home",
+    "section_shop": "Shop",
+    "shop_browse": "Browse Products",
+    "shop_cart": "Shop Cart",
+    "shop_orders": "My Shop Orders",
+    "section_care": "Care & Support",
+    "care_home": "Overview",
+    "care_resources": "Read & Listen",
+    "care_counseling": "Talk to Someone",
+    "care_rehab": "Recovery Programme"
   },
   "m_welcome": {
     "welcome_back": "Welcome back,",

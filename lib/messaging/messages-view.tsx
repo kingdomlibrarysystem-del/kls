@@ -9,12 +9,19 @@ import type { Channel } from './types'
 
 interface MessagesViewProps {
   userId: string
+  /** Open (or start) a direct conversation with this person on load — e.g. /member/messages?to=<id> from "Message your counselor". */
+  initialDmUserId?: string | null
 }
 
 /** Shared two-pane chat UI, reachable from /member/messages — backed by the real session user's id, real Channel/Message API. */
-export function MessagesView({ userId }: MessagesViewProps) {
+export function MessagesView({ userId, initialDmUserId }: MessagesViewProps) {
   const { data: channels, loading, refetch } = useChannelsFor(userId)
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+  const [chosenChannelId, setActiveChannelId] = useState<string | null>(null)
+  // Until the member picks a conversation, a ?to= link selects the DM with that person (or a new one).
+  const linkedChannelId = initialDmUserId && initialDmUserId !== userId
+    ? (channels.find((c) => c.kind === 'dm' && c.participantIds.includes(initialDmUserId))?.id ?? `pending-dm-${initialDmUserId}`)
+    : null
+  const activeChannelId = chosenChannelId ?? linkedChannelId
   const [newDmOpen, setNewDmOpen] = useState(false)
 
   const activeChannel = channels.find((c) => c.id === activeChannelId) ?? null

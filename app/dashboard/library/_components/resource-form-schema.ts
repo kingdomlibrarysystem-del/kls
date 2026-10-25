@@ -1,10 +1,12 @@
 import { z } from 'zod'
+import { normalizeIsbn } from '@/lib/klp-code'
 
 /**
  * Full canonical Resource shape, per use-resources.ts/resources-data.ts.
- * `isbn` is deliberately absent — it's generated server-side (a real
- * unique ISBN-13, see lib/generate-isbn.ts) on create, never entered by
- * an admin. Cover/document/audio/video fields hold real Cloudinary
+ * The KLP Code and Kingdom Library ID are never typed: they are assigned
+ * automatically when the draft is approved (lib/klp-code.ts). Staff only
+ * choose the parts that need judgement — collection, edition, format — and
+ * may record an official ISBN once the ISBN agency has issued one. Cover/document/audio/video fields hold real Cloudinary
  * secure_url values from CloudinaryUploadField, not client-only blob:
  * URLs — this form used to accept blob: URLs that never left the
  * browser and were useless once sent to the API.
@@ -52,6 +54,14 @@ export const resourceSchema = z.object({
    * reconciles them (patch in place / create extras / delete removed).
    */
   chapters: z.array(z.object({ title: z.string(), content: z.string() })),
+  /** KLP collection code ("09"); '' = not chosen yet (required before approval). */
+  klpCollection: z.string(),
+  /** Edition number, EE in the code. */
+  klpEdition: z.number().int().min(1, 'Edition starts at 1').max(99, 'Edition is at most 99'),
+  /** KLP format letter; '' = choose automatically from the uploaded files. */
+  klpFormat: z.string(),
+  /** Official ISBN from the ISBN agency — leave empty while pending. Never self-generated. */
+  officialIsbn: z.string().refine((v) => !v.trim() || normalizeIsbn(v) !== null, 'Not a valid ISBN-13 / ISBN-10 — check the digits, or leave it empty while pending'),
 })
 
 export type ResourceFormData = z.infer<typeof resourceSchema>
@@ -81,6 +91,10 @@ export const defaultResourceFormValues: ResourceFormData = {
   videoUrl: '',
   videoName: '',
   chapters: [],
+  klpCollection: '',
+  klpEdition: 1,
+  klpFormat: '',
+  officialIsbn: '',
 }
 
 /** Common language codes a library resource is realistically authored/translated in — replaces a free-text field prone to inconsistent values (e.g. "english" vs "EN" vs "en-US"). */

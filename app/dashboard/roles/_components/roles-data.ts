@@ -8,7 +8,7 @@ export interface Role {
 }
 
 export const defaultPermissions = [
-  'library:view', 'library:create', 'library:edit', 'library:delete',
+  'library:view', 'library:create', 'library:edit', 'library:delete', 'library:approve',
   'borrow:request', 'borrow:approve', 'borrow:return',
   'users:view', 'users:create', 'users:edit',
   'courses:view', 'courses:create', 'courses:enroll',
@@ -16,6 +16,7 @@ export const defaultPermissions = [
   'reports:view',
   'roles:manage',
   'sessions:approve',
+  'shop:manage',
 ]
 
 export const permissionLabels: Record<string, string> = {
@@ -23,6 +24,7 @@ export const permissionLabels: Record<string, string> = {
   'library:create': 'Create Resources',
   'library:edit': 'Edit Resources',
   'library:delete': 'Delete Resources',
+  'library:approve': 'Approve & Publish Resources',
   'borrow:request': 'Request Borrow',
   'borrow:approve': 'Approve Borrow',
   'borrow:return': 'Process Return',
@@ -37,5 +39,6 @@ export const permissionLabels: Record<string, string> = {
   'reports:view': 'View Reports',
   'roles:manage': 'Manage Roles',
   'sessions:approve': 'Approve Session Requests',
+  'shop:manage': 'Manage Shop (products, categories, orders)',
 }
 

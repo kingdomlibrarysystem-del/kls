@@ -1,66 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-import { notifyUser, notifyAllStaff } from '@/lib/notify'
-import { publicationSubmittedEmailHtml } from '@/lib/email-templates'
-import { appBaseUrl } from '@/lib/mailer'
+import { requirePermission } from '@/lib/auth/permissions'
+import { getMediaCapabilities, isValidMediaTypeCode } from '@/lib/data/media-types'
+import { REVENUE_INCLUDE, findKcsCategory, serializePublication } from '@/lib/data/publications'
+import { notifySubmitted } from '@/lib/data/publication-notify'
+import { cleanChapters, createPublicationSchema, missingForSubmit } from './schema'
 
 /**
- * Real Publication API, replacing the already-unified mock store at
- * app/dashboard/publishing/review/_components/review-data.ts +
- * use-review-queue.ts (submission lifecycle: DRAFT/SUBMITTED/
- * UNDER_REVIEW/APPROVED/REJECTED/PUBLISHED) AND
- * app/dashboard/publishing/catalog/_components/catalog-data.ts's
- * separate PublishedBook mock — a PUBLISHED Publication row IS the
- * catalog entry now, read via ?status=published, so there's no second
- * parallel model.
+ * Publications API. A PUBLISHED row is the public catalog entry (read with
+ * ?status=published or no filter); every other status needs auth. See
+ * lib/data/publications.ts for the lifecycle.
  */
-function serializePublication(p: {
-  id: string
-  title: string
-  contributorId: string
-  contributorName: string
-  category: string
-  language: string
-  coverImage: string | null
-  description: string
-  status: string
-  resourceId: string | null
-  price: number | null
-  quantity: number | null
-  bindingType: string | null
-  mediaType: string | null
-  featured: boolean
-  submittedAt: Date
-  revenueShare?: { contributorShare: number; platformShare: number; totalRevenue: number } | null
-}) {
-  return {
-    id: p.id,
-    title: p.title,
-    contributorId: p.contributorId,
-    contributor: p.contributorName,
-    category: p.category,
-    language: p.language.toLowerCase(),
-    coverImage: p.coverImage ?? '',
-    description: p.description,
-    status: p.status,
-    resourceId: p.resourceId ?? undefined,
-    price: p.price ?? undefined,
-    quantity: p.quantity ?? undefined,
-    bindingType: p.bindingType ?? undefined,
-    mediaType: p.mediaType ?? undefined,
-    featured: p.featured,
-    submittedAt: p.submittedAt.toISOString().split('T')[0],
-    revenueShare: p.revenueShare
-      ? { contributorShare: p.revenueShare.contributorShare, platformShare: p.revenueShare.platformShare, totalRevenue: p.revenueShare.totalRevenue }
-      : undefined,
-  }
-}
-
 const VALID_STATUSES = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'PUBLISHED']
-const REVENUE_INCLUDE = { revenueShare: { select: { contributorShare: true, platformShare: true, totalRevenue: true } } } as const
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -109,75 +62,66 @@ export async function GET(request: NextRequest) {
     message: 'Publications fetched successfully',
     code: 'success',
     status: 200,
-    pagination: {
-      page,
-      pageSize,
-      totalItems,
-      totalPages,
-      hasNext: page < totalPages,
-      hasPrevious: page > 1,
-    },
+    pagination: { page, pageSize, totalItems, totalPages, hasNext: page < totalPages, hasPrevious: page > 1 },
   })
 }
 
-const createPublicationSchema = z.object({
-  title: z.string().trim().min(1, 'title is required'),
-  contributorId: z.string().min(1, 'contributorId is required'),
-  category: z.string().trim().min(1, 'category is required'),
-  language: z.string().optional(),
-  coverImage: z.string().optional(),
-  description: z.string().optional(),
-  status: z.string().optional(),
-})
-
+/**
+ * POST /api/publications — a publisher adds a book (role permission
+ * "publications:submit"; Admin always). The book belongs to the signed-in
+ * user. `submit: true` sends it for review (status SUBMITTED) — it is NOT
+ * visible to members until a reviewer approves it; otherwise it is saved as
+ * a DRAFT the publisher can finish later.
+ */
 export const POST = withErrorHandling('/api/publications', 'POST', async (request: NextRequest) => {
-  const parsed = createPublicationSchema.safeParse(await request.json())
-  if (!parsed.success) {
-    throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
-  }
-  const body = parsed.data
-
-  const auth = await requireOwnerOrStaff(body.contributorId)
+  const auth = await requirePermission('publications:submit', 'Your role cannot submit books. Ask an admin to grant "Submit Publications" in Roles & Permissions.')
   if (auth.response) return auth.response
 
-  const contributor = await prisma.user.findUnique({ where: { id: body.contributorId } })
-  if (!contributor) throw new ApiError('The specified contributor does not exist', 400)
+  const parsed = createPublicationSchema.safeParse(await request.json().catch(() => null))
+  if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
+  const body = parsed.data
+
+  const category = body.categoryId ? await findKcsCategory(body.categoryId) : null
+  if (body.categoryId && !category) throw new ApiError('Choose a KCS category (a scroll under one of the pillars)', 400)
+  if (body.mediaType && !(await isValidMediaTypeCode(body.mediaType))) throw new ApiError('The selected media type does not exist', 400)
+  if (body.submit) {
+    const missing = missingForSubmit({ ...body, chapters: cleanChapters(body.chapters) }, await getMediaCapabilities(body.mediaType))
+    if (missing) throw new ApiError(missing, 400)
+  }
+
+  const contributor = await prisma.user.findUnique({ where: { id: auth.session.userId }, select: { name: true, firstName: true, lastName: true } })
+  const contributorName = (contributor?.name || `${contributor?.firstName ?? ''} ${contributor?.lastName ?? ''}`.trim()) || 'Publisher'
 
   const publication = await prisma.publication.create({
     data: {
       title: body.title,
-      contributorId: body.contributorId,
-      contributorName: contributor.name ?? `${contributor.firstName ?? ''} ${contributor.lastName ?? ''}`.trim(),
-      category: body.category,
+      contributorId: auth.session.userId,
+      contributorName,
+      author: body.author || contributorName,
+      category: category?.name ?? '',
+      categoryId: category?.id ?? null,
       language: (body.language ?? 'en').toUpperCase() as 'EN' | 'FR' | 'RW',
-      coverImage: body.coverImage ?? null,
+      coverImage: body.coverImage || null,
       description: body.description ?? '',
-      status: body.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT',
+      mediaType: body.mediaType || null,
+      documentUrl: body.documentUrl || null,
+      chapters: cleanChapters(body.chapters),
+      audioUrl: body.audioUrl || null,
+      videoUrl: body.videoUrl || null,
+      pages: body.pages ?? null,
+      price: body.price ?? 0,
+      borrowPrice: body.borrowPrice ?? 0,
+      quantity: body.quantity ?? 1,
+      status: body.submit ? 'SUBMITTED' : 'DRAFT',
+      submittedAt: new Date(),
     },
     include: REVENUE_INCLUDE,
   })
 
-  if (publication.status === 'SUBMITTED') {
-    const contributorName = publication.contributorName
-    const publicationUrl = `${appBaseUrl()}/dashboard/publishing/review`
-    await notifyUser({
-      userId: body.contributorId,
-      type: 'PUBLICATION',
-      category: 'publication-submitted',
-      title: 'Submission received',
-      message: `Your submission "${publication.title}" has been received and is now awaiting review.`,
-      href: '/dashboard/publishing',
-      email: { subject: 'Your submission is under review', html: publicationSubmittedEmailHtml(contributorName, publication.title, publicationUrl) },
-    })
+  if (publication.status === 'SUBMITTED') await notifySubmitted(publication.contributorId, publication.contributorName, publication.title)
 
-    await notifyAllStaff({
-      type: 'PUBLICATION',
-      category: 'publication-submitted',
-      title: 'New submission for review',
-      message: `${contributorName} submitted "${publication.title}" for review.`,
-      href: '/dashboard/publishing/review',
-    })
-  }
-
-  return NextResponse.json({ data: serializePublication(publication), message: 'Publication created successfully', code: 'success', status: 201 }, { status: 201 })
+  return NextResponse.json(
+    { data: serializePublication(publication), message: body.submit ? 'Book submitted for review' : 'Draft saved', code: 'success', status: 201 },
+    { status: 201 },
+  )
 })

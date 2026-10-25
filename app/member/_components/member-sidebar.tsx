@@ -27,6 +27,11 @@ import {
   ExternalLink,
   Newspaper,
   ArrowLeftRight,
+  Store,
+  Package,
+  HeartHandshake,
+  BookHeart,
+  Sprout,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
@@ -69,6 +74,25 @@ function buildNavSections(t: (k: string) => string): NavSection[] {
         { icon: <CalendarClock size={14} />, key: "my_sessions", href: "/member/sessions" },
       ],
     },
+    {
+      key: "care",
+      icon: <HeartHandshake size={16} />,
+      items: [
+        { icon: <Home size={14} />, key: "care_home", href: "/member/care" },
+        { icon: <BookHeart size={14} />, key: "care_resources", href: "/member/care/resources" },
+        { icon: <HeartHandshake size={14} />, key: "care_counseling", href: "/member/care/counseling" },
+        { icon: <Sprout size={14} />, key: "care_rehab", href: "/member/care/rehabilitation" },
+      ],
+    },
+    {
+      key: "shop",
+      icon: <ShoppingBag size={16} />,
+      items: [
+        { icon: <Store size={14} />, key: "shop_browse", href: "/member/shop" },
+        { icon: <ShoppingCart size={14} />, key: "shop_cart", href: "/member/shop/cart" },
+        { icon: <Package size={14} />, key: "shop_orders", href: "/member/shop/orders" },
+      ],
+    },
   ]
 }
 
@@ -93,6 +117,8 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     library: true,
     elearning: false,
+    shop: false,
+    care: false,
   });
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -120,6 +146,9 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
 
   const isActive = (href: string) => {
     if (href === "/member") return currentRoute === "/member";
+    // Section overviews only light up on their own page, not on their sub-pages (e.g. Care → Read & Listen).
+    // (A product page /member/shop/<id> still counts as "Browse Products".)
+    if (href === "/member/care" || href === "/member/shop") return currentRoute === href || (href === "/member/shop" && /^\/member\/shop\/(?!cart|orders)[^/]+$/.test(currentRoute));
     return currentRoute.startsWith(href);
   };
 

@@ -3,6 +3,7 @@ import { BookOpen, Hash, Globe, Layers, Calendar, Copy, BookMarked, Film, FileTe
 import { getCategoryName } from '@/lib/kcs-taxonomy'
 import { MediaTypeName } from '@/components/media-type-name'
 import { statusConfig, bindingTypeLabels, type Resource } from '../../_components/resources-data'
+import { formatLibraryId, klpFormatLabel } from '@/lib/klp-code'
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
@@ -14,7 +15,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   )
 }
 
-/** Type/category/language/year/pages/isbn/publisher/status/binding/media grid, extracted from the original detail modal. */
+/** Type/category/language/year/pages/publication codes/publisher/status/binding/media grid, extracted from the original detail modal. */
 export function ResourceDetailRows({ resource }: { resource: Resource }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -23,7 +24,10 @@ export function ResourceDetailRows({ resource }: { resource: Resource }) {
       <DetailRow icon={<Globe size={13} />} label="Language" value={resource.language} />
       <DetailRow icon={<Calendar size={13} />} label="Year" value={String(resource.year)} />
       <DetailRow icon={<BookOpen size={13} />} label="Pages" value={`${resource.pages} pages`} />
-      <DetailRow icon={<Hash size={13} />} label="ISBN" value={resource.isbn} />
+      <DetailRow icon={<Hash size={13} />} label="KLP Code" value={resource.klpCode ? <span className="font-mono">{resource.klpCode}</span> : (resource.status === 'draft' ? 'Assigned on approval' : resource.klpCollection ? 'Being assigned…' : 'Choose a KLP collection (Edit) to assign')} />
+      <DetailRow icon={<Hash size={13} />} label="Library ID" value={resource.libraryId ? <span className="font-mono">{formatLibraryId(resource.libraryId)}</span> : '—'} />
+      <DetailRow icon={<Hash size={13} />} label="Official ISBN" value={resource.officialIsbn ?? 'Pending'} />
+      <DetailRow icon={<Film size={13} />} label="KLP format" value={resource.klpFormat ? `${resource.klpFormat} · ${klpFormatLabel(resource.klpFormat)}` : 'Automatic'} />
       <DetailRow icon={<Copy size={13} />} label="Publisher" value={resource.publisher} />
       <DetailRow icon={<Layers size={13} />} label="Status" value={statusConfig[resource.status].label} />
       <DetailRow icon={<BookMarked size={13} />} label="Binding" value={bindingTypeLabels[resource.bindingType]} />

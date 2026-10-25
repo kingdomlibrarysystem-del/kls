@@ -15,6 +15,10 @@ import { languageBadgeLabels } from '@/app/dashboard/publishing/catalog/_compone
 import { usePublicPublication } from '@/app/dashboard/publishing/_shared/use-publications'
 import { usePublicResource } from '@/app/dashboard/library/_components/use-resources'
 import { useCart, addToCart, isInCart, type CartItemType } from '@/app/member/_shared/use-cart'
+import { MediaCoverBadge } from '@/components/media/media-cover-badge'
+import { ResourceMediaPlayer } from '@/components/media/resource-media-player'
+import { playableKind } from '@/lib/media-embed'
+import { formatLibraryId } from '@/lib/klp-code'
 
 interface PublicationDetailViewProps {
   id: string
@@ -67,6 +71,8 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
   // documentUrl hid it on every TEXT book. ReaderView routes to the right
   // reader for whichever one is present.
   const isReadable = !!resource && isResourceReadable(resource)
+  // Audio / video titles play right here (ResourceMediaPlayer) instead of opening the reader.
+  const mediaKind = resource ? playableKind(resource) : null
 
   if (loading) {
     return (
@@ -150,6 +156,7 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             )}
             <div className="absolute top-0 right-0 h-full w-2" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.35) 40%, rgba(0,0,0,0.1))' }} />
             <div className="absolute top-0 left-0 h-full w-4" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35), transparent)' }} />
+            {resource && <MediaCoverBadge resource={resource} size="lg" />}
           </div>
         </div>
 
@@ -186,7 +193,19 @@ export function PublicationDetailView({ id }: PublicationDetailViewProps) {
             <p className="font-lato text-sm text-w-700 leading-relaxed mb-6">{description}</p>
           )}
 
+          {resource && (
+            <dl className="mb-6 grid grid-cols-1 gap-x-6 gap-y-2 rounded-lg border border-w-300 dark:border-white/10 p-4 text-sm sm:grid-cols-3">
+              <div><dt className="text-xs text-w-600">KLP Code</dt><dd className="font-mono font-semibold text-w-950 break-all">{resource.klpCode ?? '—'}</dd></div>
+              <div><dt className="text-xs text-w-600">Kingdom Library ID</dt><dd className="font-mono font-semibold text-w-950">{resource.libraryId ? formatLibraryId(resource.libraryId) : '—'}</dd></div>
+              <div><dt className="text-xs text-w-600">Official ISBN</dt><dd className="font-mono font-semibold text-w-950">{resource.officialIsbn ?? 'Pending'}</dd></div>
+              <p className="text-xs text-w-600 sm:col-span-3">The Kingdom Library ID is the library&apos;s own number — it is not an ISBN.</p>
+            </dl>
+          )}
+
           <div className="flex flex-col gap-3">
+            {resource && mediaKind && (
+              <ResourceMediaPlayer resource={resource} isAuthenticated={isAuthenticated} signInHref={`/auth/login?redirect=${encodeURIComponent(`/library/${id}`)}`} />
+            )}
             {isReadable && (
               <UniversalButton
                 href={isAuthenticated ? `/member/library/read/${id}` : `/auth/login?redirect=${encodeURIComponent(`/member/library/read/${id}`)}`}

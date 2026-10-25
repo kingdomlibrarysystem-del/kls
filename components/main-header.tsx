@@ -17,6 +17,8 @@ import {
   Newspaper,
   Search,
   X,
+  ShoppingBag,
+  Package,
 } from "lucide-react";
 import { ProfileDropdown } from "./profile-dropdown";
 import { LanguageSwitcher } from "./language-switcher";
@@ -66,6 +68,13 @@ export function MainHeader() {
         { label: t("nav.my_courses"), href: "/member/courses", icon: <CheckSquare size={14} /> },
         { label: t("nav.assessments"), href: "/member/assessments", icon: <ClipboardList size={14} /> },
         { label: t("nav.certificates"), href: "/member/certificates", icon: <Award size={14} /> },
+      ],
+    },
+    {
+      title: t("nav.shop"),
+      items: [
+        { label: t("nav.browse_shop"), href: "/shop", icon: <ShoppingBag size={14} /> },
+        { label: t("nav.shop_orders"), href: "/member/shop/orders", icon: <Package size={14} /> },
       ],
     },
     {
