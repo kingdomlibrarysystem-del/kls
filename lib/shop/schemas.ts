@@ -34,7 +34,7 @@ export const placeOrderSchema = z.object({
   deliveryMethod: z.enum(['PICKUP', 'DELIVERY']),
   deliveryAddress: z.string().trim().max(500).optional(),
   notes: z.string().trim().max(1000).optional(),
-  method: z.enum(['PAYPACK', 'STRIPE']),
+  method: z.enum(['PAYPACK', 'STRIPE', 'INTOUCH', 'MTN_MOMO', 'PESAPAL', 'URUBUTOPAY']),
   productIds: z.array(z.string()).max(200).optional(),
 })
 

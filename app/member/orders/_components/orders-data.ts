@@ -34,7 +34,7 @@ export interface MemberCheckout {
   buyerName: string
   buyerEmail: string
   buyerPhone: string
-  method: 'PAYPACK' | 'STRIPE'
+  method: import('@/lib/payments/shared').PaymentMethodCode
   amount: number
   status: OrderStatus
   paypackRef: string | null

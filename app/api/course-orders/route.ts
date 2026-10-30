@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
-import { createCheckoutSession, isStripeConfigured } from '@/lib/stripe'
+import { paymentMethodField, prepareMethod, isProviderMethod } from '@/lib/payments/flow'
+import { startProviderPayment } from '@/lib/payments/attempts'
+import { siteUrl } from '@/lib/payments/http'
+import { requestCashin } from '@/lib/paypack'
+import { createCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { appBaseUrl } from '@/lib/mailer'
 
@@ -59,7 +62,7 @@ const createCourseOrderSchema = z.object({
   buyerName: z.string().trim().min(1, 'buyerName is required'),
   buyerEmail: z.string().trim().email('buyerEmail must be a valid email'),
   buyerPhone: z.string().trim().min(1, 'buyerPhone is required'),
-  method: z.enum(['PAYPACK', 'STRIPE']),
+  method: paymentMethodField,
 })
 
 export async function GET(request: NextRequest) {
@@ -105,11 +108,7 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
   if (!course) throw new ApiError('Course not found', 404)
   if (!course.price || course.price <= 0) throw new ApiError('This course has no price set', 400)
 
-  if (body.method === 'PAYPACK') {
-    if (!isValidPaypackPhone(body.buyerPhone)) throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
-  } else if (!isStripeConfigured()) {
-    throw new ApiError('Card payment is not configured for this environment yet.', 503)
-  }
+  await prepareMethod(body.method, body.buyerPhone)
 
   const order = await prisma.courseOrder.create({
     data: {
@@ -124,6 +123,21 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
       status: 'PENDING',
     },
   })
+
+  // InTouch / MTN MoMo / PesaPal / UrubutoPay (lib/payments) — settled later by webhook or poll through PaymentAttempt.
+  if (isProviderMethod(body.method)) {
+    try {
+      const started = await startProviderPayment({
+        method: body.method, targetKind: 'COURSE_ORDER', targetId: order.id, userId: body.userId, amountRwf: course.price,
+        phone: body.buyerPhone, payer: { name: body.buyerName, email: body.buyerEmail }, description: `Course — ${course.title}`, returnUrl: siteUrl('/member/courses?checkout=pending'),
+      })
+      const data = serializeCourseOrder(await prisma.courseOrder.findUniqueOrThrow({ where: { id: order.id } }))
+      return NextResponse.json({ data: { ...data, ...(started.redirectUrl && { checkoutUrl: started.redirectUrl }) }, message: started.message, code: 'success', status: 201 }, { status: 201 })
+    } catch (error) {
+      await prisma.courseOrder.update({ where: { id: order.id }, data: { status: 'FAILED' } })
+      throw error
+    }
+  }
 
   if (body.method === 'PAYPACK') {
     try {

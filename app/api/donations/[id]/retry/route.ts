@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
-import { createCheckoutSession, isStripeConfigured } from '@/lib/stripe'
+import { paymentMethodField, prepareMethod, isProviderMethod } from '@/lib/payments/flow'
+import { startProviderPayment } from '@/lib/payments/attempts'
+import { siteUrl } from '@/lib/payments/http'
+import { requestCashin } from '@/lib/paypack'
+import { createCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { appBaseUrl } from '@/lib/mailer'
 
@@ -14,7 +17,7 @@ function serializeDonation(d: { id: string; status: string; paypackRef: string |
 
 const retrySchema = z.object({
   donorPhone: z.string().trim().optional(),
-  method: z.enum(['PAYPACK', 'STRIPE']),
+  method: paymentMethodField,
 })
 
 export const POST = withErrorHandling('/api/donations/[id]/retry', 'POST', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -31,16 +34,27 @@ export const POST = withErrorHandling('/api/donations/[id]/retry', 'POST', async
   if (auth.response) return auth.response
 
   const donorPhone = body.donorPhone?.trim() || donation.donorPhone
-  if (body.method === 'PAYPACK') {
-    if (!isValidPaypackPhone(donorPhone)) throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
-  } else if (!isStripeConfigured()) {
-    throw new ApiError('Card payment is not configured for this environment yet.', 503)
-  }
+  await prepareMethod(body.method, donorPhone)
 
   await prisma.donation.update({
     where: { id },
     data: { status: 'PENDING', method: body.method, donorPhone, paypackRef: null, paypackStatus: null, stripeSessionId: null },
   })
+
+  // InTouch / MTN MoMo / PesaPal / UrubutoPay (lib/payments) — settled later by webhook or poll through PaymentAttempt.
+  if (isProviderMethod(body.method)) {
+    try {
+      const started = await startProviderPayment({
+        method: body.method, targetKind: 'DONATION', targetId: donation.id, userId: donation.userId, amountRwf: donation.amountRwf,
+        phone: donorPhone, payer: { name: donation.donorName, email: donation.donorEmail }, description: 'Donation', returnUrl: siteUrl('/dashboard/donations/history?checkout=pending'),
+      })
+      const data = serializeDonation(await prisma.donation.findUniqueOrThrow({ where: { id } }))
+      return NextResponse.json({ data: { ...data, ...(started.redirectUrl && { checkoutUrl: started.redirectUrl }) }, message: started.message, code: 'success', status: 200 }, { status: 200 })
+    } catch (error) {
+      await prisma.donation.update({ where: { id }, data: { status: 'FAILED' } })
+      throw error
+    }
+  }
 
   if (body.method === 'PAYPACK') {
     try {

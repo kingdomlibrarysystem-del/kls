@@ -37,11 +37,12 @@ const STEP_LABEL: Partial<Record<OrderStatus, string>> = {
 }
 
 /** Shop orders for staff: filter by stage, open an order, move it along (the member is notified each time) or cancel it. */
-export function OrdersView({ initialOrders }: { initialOrders: ShopOrder[] }) {
+/** initialOpenId (?order=<id>, from the Beauty overview) opens that order straight away. */
+export function OrdersView({ initialOrders, initialOpenId }: { initialOrders: ShopOrder[]; initialOpenId?: string }) {
   const [orders, setOrders] = useState(initialOrders)
   const [filter, setFilter] = useState<Filter>('todo')
-  const [open, setOpen] = useState<ShopOrder | null>(null)
-  const [note, setNote] = useState('')
+  const [open, setOpen] = useState<ShopOrder | null>(() => initialOrders.find((o) => o.id === initialOpenId) ?? null)
+  const [note, setNote] = useState(() => initialOrders.find((o) => o.id === initialOpenId)?.staffNote ?? '')
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')

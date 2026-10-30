@@ -10,6 +10,7 @@ import { LocalDate } from '@/components/ui/local-date'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { ORDER_STATUS, formatRwf, orderSteps, type ShopOrder } from '@/lib/shop/shared'
 import { cn } from '@/lib/utils'
+import { isMobileMethodCode, paymentKindLabel } from '@/lib/payments/shared'
 
 const POLL_MS = 5000
 const POLL_FOR_MS = 3 * 60 * 1000
@@ -23,7 +24,7 @@ export function OrderDetailView({ initialOrder, justPlaced, returnedFromCard }: 
   const [order, setOrder] = useState(initialOrder)
   const [busy, setBusy] = useState<'check' | 'retry' | 'cancel' | null>(null)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
-    justPlaced && initialOrder.status === 'PENDING_PAYMENT' && initialOrder.method === 'PAYPACK'
+    justPlaced && initialOrder.status === 'PENDING_PAYMENT' && isMobileMethodCode(initialOrder.method)
       ? { ok: true, text: `Payment request sent to ${initialOrder.buyerPhone}. Approve it on your phone — this page updates by itself.` }
       : null,
   )
@@ -107,14 +108,14 @@ export function OrderDetailView({ initialOrder, justPlaced, returnedFromCard }: 
           <div className="mt-5 flex flex-col gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4 sm:flex-row sm:items-center">
             <Smartphone className="size-6 shrink-0 text-warning" />
             <div className="flex-1 text-sm">
-              {order.method === 'PAYPACK'
+              {isMobileMethodCode(order.method)
                 ? <>Approve the payment of <b>{formatRwf(order.totalRwf)}</b> on <b>{order.buyerPhone}</b> (dial *182*7*1# on MTN if no prompt appears).</>
                 : <>Finish paying on the card page.</>}
               {polling && <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="size-3 animate-spin" /> Waiting for the payment…</span>}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" disabled={!!busy} onClick={() => act('check')}>{busy === 'check' ? <Loader2 className="animate-spin" /> : <RefreshCw />} I&apos;ve paid — check</Button>
-              <Button size="sm" disabled={!!busy} onClick={() => act('retry')}>{busy === 'retry' ? <Loader2 className="animate-spin" /> : <Smartphone />} {order.method === 'PAYPACK' ? 'Send the request again' : 'Open card page'}</Button>
+              <Button size="sm" disabled={!!busy} onClick={() => act('retry')}>{busy === 'retry' ? <Loader2 className="animate-spin" /> : <Smartphone />} {isMobileMethodCode(order.method) ? 'Send the request again' : 'Open the payment page'}</Button>
             </div>
           </div>
         )}
@@ -151,7 +152,7 @@ export function OrderDetailView({ initialOrder, justPlaced, returnedFromCard }: 
         <div>
           <h3 className="mb-1 font-semibold text-foreground">Contact &amp; payment</h3>
           <p className="text-muted-foreground">{order.buyerName} · {order.buyerPhone || order.buyerEmail}</p>
-          <p className="text-muted-foreground">{order.method === 'PAYPACK' ? 'Mobile money' : 'Card'}{order.paidAt && <> · paid <LocalDate value={order.paidAt} options={{ dateStyle: 'medium' }} /></>}</p>
+          <p className="text-muted-foreground">{paymentKindLabel(order.method)}{order.paidAt && <> · paid <LocalDate value={order.paidAt} options={{ dateStyle: 'medium' }} /></>}</p>
           {order.notes && <p className="mt-1 text-muted-foreground">Your note: {order.notes}</p>}
         </div>
       </section>

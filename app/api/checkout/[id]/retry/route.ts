@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
-import { requestCashin, isValidPaypackPhone } from '@/lib/paypack'
-import { createMultiItemCheckoutSession, isStripeConfigured } from '@/lib/stripe'
+import { paymentMethodField, prepareMethod, isProviderMethod } from '@/lib/payments/flow'
+import { startProviderPayment } from '@/lib/payments/attempts'
+import { siteUrl } from '@/lib/payments/http'
+import { requestCashin } from '@/lib/paypack'
+import { createMultiItemCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { appBaseUrl } from '@/lib/mailer'
 import { serializeCheckout } from '../../serialize'
@@ -17,7 +20,7 @@ import { serializeCheckout } from '../../serialize'
  */
 const retrySchema = z.object({
   buyerPhone: z.string().trim().optional(),
-  method: z.enum(['PAYPACK', 'STRIPE']),
+  method: paymentMethodField,
 })
 
 export const POST = withErrorHandling('/api/checkout/[id]/retry', 'POST', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -35,19 +38,30 @@ export const POST = withErrorHandling('/api/checkout/[id]/retry', 'POST', async 
   if (auth.response) return auth.response
 
   const buyerPhone = body.buyerPhone?.trim() || checkout.buyerPhone
-  if (body.method === 'PAYPACK') {
-    if (!isValidPaypackPhone(buyerPhone)) {
-      throw new ApiError('Enter a valid Rwandan mobile money number (MTN or Airtel).', 400)
-    }
-  } else if (!isStripeConfigured()) {
-    throw new ApiError('Card payment is not configured for this environment yet.', 503)
-  }
+  await prepareMethod(body.method, buyerPhone)
 
   await prisma.order.updateMany({ where: { checkoutId: checkout.id }, data: { status: 'PENDING' } })
   await prisma.checkout.update({
     where: { id: checkout.id },
     data: { status: 'PENDING', method: body.method, buyerPhone, retryCount: { increment: 1 }, paypackRef: null, paypackStatus: null, stripeSessionId: null },
   })
+
+  if (isProviderMethod(body.method)) {
+    try {
+      const started = await startProviderPayment({
+        method: body.method, targetKind: 'CHECKOUT', targetId: checkout.id, userId: checkout.userId, amountRwf: checkout.amountRwf,
+        phone: buyerPhone, payer: { name: checkout.buyerName, email: checkout.buyerEmail },
+        description: `Kingdom Library order — ${checkout.orders.length} item${checkout.orders.length === 1 ? '' : 's'}`,
+        returnUrl: siteUrl('/member/orders?checkout=pending'),
+      })
+      const updated = await prisma.checkout.findUniqueOrThrow({ where: { id: checkout.id }, include: { orders: true } })
+      return NextResponse.json({ data: { ...serializeCheckout(updated), ...(started.redirectUrl && { checkoutUrl: started.redirectUrl }) }, message: started.message, code: 'success', status: 200 })
+    } catch (error) {
+      await prisma.checkout.update({ where: { id: checkout.id }, data: { status: 'FAILED' } })
+      await prisma.order.updateMany({ where: { checkoutId: checkout.id }, data: { status: 'FAILED' } })
+      throw error
+    }
+  }
 
   if (body.method === 'PAYPACK') {
     try {

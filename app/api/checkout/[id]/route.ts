@@ -5,6 +5,8 @@ import { findTransaction } from '@/lib/paypack'
 import { retrieveCheckoutSession } from '@/lib/stripe'
 import { requireOwnerOrStaff } from '@/lib/auth/require-role'
 import { settleCheckout } from '../settle'
+import { syncTarget } from '@/lib/payments/attempts'
+import { isProviderMethod } from '@/lib/payments/methods'
 import { serializeCheckout } from '../serialize'
 
 /**
@@ -26,7 +28,14 @@ export const GET = withErrorHandling('/api/checkout/[id]', 'GET', async (_reques
     return NextResponse.json({ data: serializeCheckout(checkout), message: 'Checkout fetched', code: 'success', status: 200 })
   }
 
-  if (checkout.paypackRef) {
+  if (isProviderMethod(checkout.method)) {
+    // New providers: re-check the latest PaymentAttempt with the provider (settles once when final).
+    const state = await syncTarget('CHECKOUT', checkout.id)
+    if (state && state !== 'PENDING') {
+      const fresh = await prisma.checkout.findUniqueOrThrow({ where: { id: checkout.id }, include: { orders: true } })
+      return NextResponse.json({ data: serializeCheckout(fresh), message: 'Checkout status refreshed', code: 'success', status: 200 })
+    }
+  } else if (checkout.paypackRef) {
     try {
       const remote = await findTransaction(checkout.paypackRef)
       if (remote.status !== checkout.paypackStatus) {

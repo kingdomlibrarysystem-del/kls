@@ -9,6 +9,7 @@ import { getOrder } from '@/lib/shop/data'
 import { advanceOrder, cancelOrder, settleProductOrder, startPayment } from '@/lib/shop/orders'
 import { orderActionSchema } from '@/lib/shop/schemas'
 import { SHOP_PERMISSION } from '@/lib/shop/shared'
+import { syncTarget } from '@/lib/payments/attempts'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -45,8 +46,10 @@ export const PATCH = withErrorHandling('/api/shop/orders/[id]', 'PATCH', async (
 
   if (body.action === 'check') {
     if (a.order.status === 'PENDING_PAYMENT') {
-      const row = await prisma.productOrder.findUnique({ where: { id }, select: { paypackRef: true, stripeSessionId: true } })
-      if (row?.paypackRef) {
+      const row = await prisma.productOrder.findUnique({ where: { id }, select: { paypackRef: true, stripeSessionId: true, method: true } })
+      if (row && row.method !== 'PAYPACK' && row.method !== 'STRIPE') {
+        await syncTarget('PRODUCT_ORDER', id)
+      } else if (row?.paypackRef) {
         const t = await findTransaction(row.paypackRef).catch(() => null)
         if (t) await settleProductOrder(id, { providerStatus: t.status, paypackStatus: t.status })
       } else if (row?.stripeSessionId) {

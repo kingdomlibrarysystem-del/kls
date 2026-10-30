@@ -26,10 +26,10 @@ interface Props {
 }
 
 /** Shop products for staff: list, add/edit, Trash (restorable) and permanent delete, plus the delivery fee. */
-export function ProductsView({ initialProducts, categories, initialDeliveryFee }: Props) {
+export function ProductsView({ initialProducts, categories, initialDeliveryFee, openNew = false }: Props & { /** ?new=1 — open the add-product form straight away (link from the Beauty overview). */ openNew?: boolean }) {
   const [products, setProducts] = useState(initialProducts)
   const [tab, setTab] = useState<'products' | 'trash'>('products')
-  const [form, setForm] = useState<{ editing: ShopProduct | null } | null>(null)
+  const [form, setForm] = useState<{ editing: ShopProduct | null } | null>(openNew ? { editing: null } : null)
   const [confirm, setConfirm] = useState<{ product: ShopProduct; kind: 'trash' | 'permanent' } | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null)

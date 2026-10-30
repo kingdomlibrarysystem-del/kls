@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { statusConfig, type MemberCheckout } from '../../../_components/orders-data'
 import { CheckoutDetailItems } from './checkout-detail-items'
+import { isMobileMethodCode, paymentKindLabel } from '@/lib/payments/shared'
 
 interface CheckoutDetailViewProps {
   /** Loaded on the server by page.tsx (which 404s when missing or not the viewer's). */
@@ -110,7 +111,7 @@ export function CheckoutDetailView({ initialCheckout }: CheckoutDetailViewProps)
 
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <DetailRow icon={<Coins size={15} />} label="Total" value={`${checkout.amount.toLocaleString()} RWF`} />
-        <DetailRow icon={checkout.method === 'PAYPACK' ? <Smartphone size={15} /> : <CreditCard size={15} />} label="Payment method" value={checkout.method === 'PAYPACK' ? `Mobile Money (${checkout.buyerPhone || 'n/a'})` : 'Card'} />
+        <DetailRow icon={isMobileMethodCode(checkout.method) ? <Smartphone size={15} /> : <CreditCard size={15} />} label="Payment method" value={isMobileMethodCode(checkout.method) ? `Mobile Money (${checkout.buyerPhone || 'n/a'})` : paymentKindLabel(checkout.method)} />
         <DetailRow icon={<Calendar size={15} />} label="Ordered" value={new Date(checkout.createdAt).toLocaleString()} />
         {checkout.paidAt && <DetailRow icon={<CheckCircle2 size={15} />} label="Paid" value={new Date(checkout.paidAt).toLocaleString()} />}
         {checkout.retryCount > 0 && <DetailRow icon={<RotateCw size={15} />} label="Retries" value={String(checkout.retryCount)} />}

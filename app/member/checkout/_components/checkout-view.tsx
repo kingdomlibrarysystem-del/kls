@@ -10,7 +10,9 @@ import { ShoppingCart } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useCart } from '@/app/member/_shared/use-cart'
 import { CheckoutItemList } from './checkout-item-list'
-import { PaymentMethodSelector, type PaymentRail, type MobileMoneyProvider } from './payment-method-card'
+import { PaymentMethodSelector, phonePlaceholder } from '@/components/payments/payment-method-selector'
+import { usePaymentOptions } from '@/lib/client/use-payment-options'
+import type { PaymentMethodCode } from '@/lib/payments/shared'
 import { parseSelectedItemIds } from './use-checkout-selection'
 
 type Stage = 'review' | 'pending' | 'paid' | 'failed'
@@ -36,8 +38,10 @@ export function CheckoutView() {
   const items = useMemo(() => cart.items.filter((i) => selectedIds.includes(i.id)), [cart.items, selectedIds])
   const totalRwf = items.reduce((sum, i) => sum + i.unitPriceRwf * i.quantity, 0)
 
-  const [rail, setRail] = useState<PaymentRail>('PAYPACK')
-  const [provider, setProvider] = useState<MobileMoneyProvider>('MTN')
+  // Methods come from the admin-managed list (PayPack, Stripe, InTouch, MTN MoMo, PesaPal, UrubutoPay).
+  const { options, loading: optionsLoading } = usePaymentOptions()
+  const [method, setMethod] = useState<PaymentMethodCode | null>(null)
+  const needsPhone = options.find((o) => o.method === method)?.kind === 'mobile'
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -86,13 +90,14 @@ export function CheckoutView() {
           buyerName: `${user.firstName} ${user.lastName}`.trim(),
           buyerEmail: user.email,
           buyerPhone: phone,
-          method: rail,
+          method,
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.message ?? 'Could not start the payment request.')
 
-      if (rail === 'STRIPE' && json.data.checkoutUrl) {
+      // Hosted payment pages (Stripe, PesaPal) — continue there; mobile money waits for the phone prompt.
+      if (json.data.checkoutUrl) {
         window.location.assign(json.data.checkoutUrl)
         return
       }
@@ -129,17 +134,17 @@ export function CheckoutView() {
 
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Payment method</div>
-            <PaymentMethodSelector rail={rail} onRailChange={setRail} provider={provider} onProviderChange={setProvider} />
+            <PaymentMethodSelector options={options} loading={optionsLoading} value={method} onChange={setMethod} />
 
-            {rail === 'PAYPACK' && (
+            {needsPhone && (
               <div>
                 <label htmlFor="checkout-phone" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                  {provider === 'MTN' ? 'MTN' : 'Airtel'} Mobile Money Number
+                  Mobile Money Number
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Smartphone size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
-                    id="checkout-phone" type="tel" inputMode="numeric" placeholder="078xxxxxxx" value={phone}
+                    id="checkout-phone" type="tel" inputMode="numeric" placeholder={phonePlaceholder(method)} value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     style={{ width: '100%', padding: '10px 12px 10px 32px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: 13 }}
                   />
@@ -155,7 +160,7 @@ export function CheckoutView() {
 
             <button
               onClick={startCheckout}
-              disabled={submitting || (rail === 'PAYPACK' && !phone.trim())}
+              disabled={submitting || !method || (needsPhone && !phone.trim())}
               style={{ padding: '11px 16px', borderRadius: 8, border: 'none', background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: submitting ? 0.7 : 1 }}
             >
               {submitting && <Loader2 size={15} className="animate-spin" />}

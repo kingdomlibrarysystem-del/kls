@@ -5094,7 +5094,7 @@ therefore develop-side in all five, then tsc + build confirmed:
   first-chapter-only block referencing undone `chapterTitle`/`chapterContent`.
 - `resource-form-modal.tsx`: four hunks � kept the `chapters.map(...)`
   prefill and `chapters: []` defaults (main's `chapterTitle`/`chapterContent`
-  reset keys do not exist in the schema). Fixed an uncovered `>>>>>>>` tail
+  reset keys do not exist in the schema). Fixed an uncovered  tail
   and de-indented fetch from the first manual hunk.
 - `resource-form-media-files.tsx`: kept the chapter-card `useFieldArray` UI
   ("Add Chapter", per-chapter title + MarkdownEditor). Dropped main's single
@@ -7588,3 +7588,69 @@ AVAILABLE and show "KLP Code —" until a KLP collection is chosen on them.
 A staff member with no `library:approve` permission can add drafts but not
 publish them. Media access for paid audio/video is a UI gate — the file URL is
 still in the catalog API response, like before.
+
+### 2026-10-27 — Payment providers from Food Bundles, Services showcase + header menu, Beauty & Shop dashboard
+
+**1. Payments: IntouchPay, MTN MoMo, PesaPal, UrubutoPay (ported from Food Bundles).**
+Source: `food-bundles-bn` branch `origin/feat/new-payment-integration`, commit `3613176`
+(`src/services/payment/*`, `src/controllers/webhooks/*`). Vouchers and post management were not ported.
+- `lib/payments/providers/{intouch,mtn-momo,pesapal,urubutopay}.ts` — same API calls as Food Bundles, rewritten
+  with `fetch` + timeouts. Each provider has its own sandbox/production switch (`INTOUCH_ENV`, `PESAPAL_ENV`,
+  `URUBUTOPAY_ENV`) instead of following NODE_ENV. UrubutoPay invoices / recurring / wallet / bulk-disbursement
+  helpers, InTouch deposit and PesaPal refund are ported too but not used by any flow yet.
+- New models `PaymentAttempt` (one provider request → target CHECKOUT / ORDER / COURSE_ORDER / DONATION /
+  PRODUCT_ORDER) and `PaymentMethodConfig` (admin on/off, label, order; PesaPal IPN id). `PaymentMethod` enum
+  gained INTOUCH, MTN_MOMO, PESAPAL, URUBUTOPAY.
+- `lib/payments/attempts.ts`: `startProviderPayment`, `syncAttempt` (asks the provider's status API, then settles
+  once through the flow's existing settle function), `syncTarget` (for polls). **Callbacks are never trusted on
+  their own** (Food Bundles' InTouch/MTN handlers trusted the body) — tested.
+- Webhooks `/api/webhooks/{intouch,mtn-momo,pesapal,urubutopay}`; UrubutoPay requires
+  `Authorization: Bearer URUBUTOPAY_WEBHOOK_TOKEN` (timing-safe compare).
+- `lib/payments/methods.ts`: a method is offered only when an admin switches it on AND its env vars are set.
+  PayPack + Stripe are seeded ON (no change for payers today); the four new ones start OFF.
+- Wired into every payment flow: library checkout (+retry, poll), single Reserve/Borrow order (+poll), course
+  enrolment (+poll), donation, sponsorship, donation retry, staff donation "check status", shop place/retry/check.
+  `lib/payments/flow.ts` `prepareMethod` replaces each route's PayPack/Stripe-only checks.
+- UI: one shared `components/payments/payment-method-selector.tsx` (admin-managed list, MTN/Airtel/card logos)
+  in library checkout, Reserve/Borrow modal, course modal and shop cart (shop loads the list on the server);
+  order screens say "Mobile money" vs "Card / online payment" for any method. Old two-card selector deleted.
+- Admin **System Settings → Payment Methods** (`/dashboard/settings/payments`, Admin only): switches, labels,
+  missing env var names, sandbox/production, callback URLs to copy, merchant balances on demand, last 25
+  provider transactions. APIs: `/api/payments/methods` (+`[method]` PATCH), `/api/payments/balances`.
+- `.env.example` lists every new variable. `FB-app/` (the Food Bundles checkout) is now in `.gitignore`,
+  tsconfig `exclude` and the eslint ignores — it was being type-checked as part of KLS.
+
+**2. Services (like the Kingdom Library overview sheet).**
+- New models `ServiceProgram` and `LifeArea`; the 4 programmes (Health System, Beauty, Consultation & Counseling,
+  Rehabilitation, with their key services) and 6 life areas are seeded once (`lib/services/data.ts`), then
+  managed at **/dashboard/services** (new sidebar item; permission `services:manage`, Admin always): add / edit /
+  show-hide / delete, icon + colour pickers, photo upload, key services one per line, button text + target.
+- Pages: `/services` (mission & vision, life cycle, programme cards, how Kingdom Library and Global Rehab Center
+  connect, why choose us, join), `/services/[slug]`, `/member/services` (+`[slug]`, member sidebar "Our
+  Services"), and a Services section on the home page under the hero.
+- **Header:** "Services" is the first menu — a two-column panel of every visible programme (icon, name, tagline)
+  + "All services"; at the top of the phone menu too. Loaded on the server (public layout + home page), cached 5
+  min, refreshed immediately when an admin saves (tag `services`). New programmes appear there by themselves.
+- Programme buttons that lead into `/member/*` send guests to sign in and back. Health's button goes to
+  Care → Read & listen (there is no separate member health page yet).
+- Translations: `services.*`, `nav.services`, `nav.all_services`, `member.services` in en/fr/rw (fr/rw should be
+  checked by a native speaker). `components/services/service-icon.tsx` renders the chosen icon.
+
+**3. Beauty & Shop dashboard.** `/dashboard/beauty` is no longer a static link list: live shop numbers, "Orders to
+handle" (oldest first, opens the order), "Running low" stock, "Add product", "View shop", and all beauty pages.
+`?new=1` opens the add-product form; `?order=<id>` opens that order.
+
+**Also:** `components/ui/modal.tsx` renders only in the browser (`useSyncExternalStore`), so a modal that is open
+on first load no longer throws `document is not defined` while the server renders.
+
+**Verified:** `tsc --noEmit` clean; eslint: no errors in changed files; `next build` passes (227 pages);
+`payments-providers.test.ts` 7/7, shop 8/8, publishing, care, library-approval pass on `kls_db_test`; live check
+on a production build against the test DB 16/16 pages (guest, member, admin), 0 server errors.
+`borrow-reserve-concurrency.test.ts` times out at 20 s (SMTP login fails for every reservation email) — not
+changed here. One page request once stalled for minutes and then answered in 33 ms on rerun; watch for slow
+connections to the remote database.
+
+**Not done:** there is no donation form for members (the API exists, nothing in the UI calls it). The new
+providers were tested with faked provider responses only — no real sandbox credentials were used.
+
+**Needs running on the dev DB:** `npx prisma generate` and `npx prisma db push`.

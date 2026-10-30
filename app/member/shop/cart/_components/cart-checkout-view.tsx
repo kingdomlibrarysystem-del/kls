@@ -12,6 +12,8 @@ import { RemoteImage } from '@/components/ui/remote-image'
 import { useShopCart } from '@/lib/client/use-shop-cart'
 import { formatRwf, MAX_QTY_PER_LINE, type ShopCart } from '@/lib/shop/shared'
 import { cn } from '@/lib/utils'
+import { PaymentMethodSelector } from '@/components/payments/payment-method-selector'
+import type { PaymentMethodCode, PaymentOption } from '@/lib/payments/shared'
 
 interface Props {
   initialCart: ShopCart
@@ -19,6 +21,8 @@ interface Props {
   defaultName: string
   defaultPhone: string
   cardAvailable: boolean
+  /** Admin-enabled, configured payment methods (server-loaded). */
+  paymentOptions: PaymentOption[]
 }
 
 /**
@@ -27,7 +31,7 @@ interface Props {
  * out of the total. "Place order" stays busy until the payment step opens:
  * the order page (mobile money prompt sent) or the card page.
  */
-export function CartCheckoutView({ initialCart, deliveryFeeRwf, defaultName, defaultPhone, cardAvailable }: Props) {
+export function CartCheckoutView({ initialCart, deliveryFeeRwf, defaultName, defaultPhone, paymentOptions }: Props) {
   const router = useRouter()
   const { cart: liveCart, loading, setQuantity, remove, replace } = useShopCart(true)
   // The server-rendered cart shows immediately; the shared store takes over once loaded.
@@ -41,7 +45,8 @@ export function CartCheckoutView({ initialCart, deliveryFeeRwf, defaultName, def
   const [delivery, setDelivery] = useState<'PICKUP' | 'DELIVERY'>('PICKUP')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
-  const [method, setMethod] = useState<'PAYPACK' | 'STRIPE'>('PAYPACK')
+  const [method, setMethod] = useState<PaymentMethodCode | null>(paymentOptions[0]?.method ?? null)
+  const isMobile = paymentOptions.find((o) => o.method === method)?.kind === 'mobile'
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
 
@@ -62,7 +67,8 @@ export function CartCheckoutView({ initialCart, deliveryFeeRwf, defaultName, def
     e.preventDefault()
     setError('')
     if (name.trim().length < 2) { setError('Enter your name'); return }
-    if (method === 'PAYPACK' && !/^(\+?25)?(078|079|075|073|072)\d{7}$/.test(phone.replace(/\s/g, ''))) { setError('Enter your MTN or Airtel number, e.g. 078 123 4567'); return }
+    if (!method) { setError('Choose a payment method'); return }
+    if (isMobile && !/^(\+?25)?(078|079|075|073|072)\d{7}$/.test(phone.replace(/\s/g, ''))) { setError(method === 'MTN_MOMO' ? 'Enter your MTN number, e.g. 078 123 4567' : 'Enter your MTN or Airtel number, e.g. 078 123 4567'); return }
     if (delivery === 'DELIVERY' && address.trim().length < 5) { setError('Enter the delivery address'); return }
     setPlacing(true)
     try {
@@ -165,25 +171,14 @@ export function CartCheckoutView({ initialCart, deliveryFeeRwf, defaultName, def
             <Input id="buyer-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoComplete="name" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="buyer-phone">Phone {method === 'PAYPACK' && <span className="font-normal text-muted-foreground">(pays the order)</span>}</Label>
+            <Label htmlFor="buyer-phone">Phone {isMobile && <span className="font-normal text-muted-foreground">(pays the order)</span>}</Label>
             <Input id="buyer-phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} placeholder="078 123 4567" autoComplete="tel" />
           </div>
         </div>
 
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-foreground">Payment</legend>
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-            <label className={option(method === 'PAYPACK')}>
-              <input type="radio" name="method" className="sr-only" checked={method === 'PAYPACK'} onChange={() => setMethod('PAYPACK')} />
-              <Smartphone className="mt-0.5 size-4 shrink-0 text-primary" /><span><span className="block font-medium">Mobile money</span><span className="text-xs text-muted-foreground">MTN MoMo / Airtel Money</span></span>
-            </label>
-            {cardAvailable && (
-              <label className={option(method === 'STRIPE')}>
-                <input type="radio" name="method" className="sr-only" checked={method === 'STRIPE'} onChange={() => setMethod('STRIPE')} />
-                <CreditCard className="mt-0.5 size-4 shrink-0 text-primary" /><span><span className="block font-medium">Card</span><span className="text-xs text-muted-foreground">Visa / Mastercard</span></span>
-              </label>
-            )}
-          </div>
+          <PaymentMethodSelector options={paymentOptions} value={method} onChange={setMethod} />
         </fieldset>
 
         <div className="space-y-1.5">
@@ -202,12 +197,12 @@ export function CartCheckoutView({ initialCart, deliveryFeeRwf, defaultName, def
         )}
         {unavailable.length > 0 && <p className="text-xs text-warning">Items that are no longer available are not included.</p>}
 
-        <Button type="submit" size="lg" className="w-full" disabled={placing || buyable.length === 0} aria-busy={placing}>
+        <Button type="submit" size="lg" className="w-full" disabled={placing || buyable.length === 0 || !method} aria-busy={placing}>
           {placing ? <Loader2 className="animate-spin" /> : <Lock />}
-          {placing ? (method === 'PAYPACK' ? 'Sending payment request…' : 'Opening card payment…') : `Place order · ${formatRwf(total)}`}
+          {placing ? (isMobile ? 'Sending payment request…' : 'Opening the payment page…') : `Place order · ${formatRwf(total)}`}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
-          {method === 'PAYPACK' ? 'You will get a prompt on your phone to approve the payment.' : 'You will pay on a secure card page.'}
+          {isMobile ? 'You will get a prompt on your phone to approve the payment.' : 'You will pay on a secure payment page.'}
         </p>
       </form>
     </div>

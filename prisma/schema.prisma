@@ -677,6 +677,75 @@ model CourseOrder {
 enum PaymentMethod {
   PAYPACK
   STRIPE
+  /// IntouchPay — MTN MoMo & Airtel Money through one API (lib/payments/providers/intouch.ts).
+  INTOUCH
+  /// MTN Mobile Money direct collection API (lib/payments/providers/mtn-momo.ts).
+  MTN_MOMO
+  /// PesaPal API 3.0 hosted checkout — card, mobile money and more (lib/payments/providers/pesapal.ts).
+  PESAPAL
+  /// UrubutoPay — MTN MoMo / Airtel Money initiation (lib/payments/providers/urubutopay.ts).
+  URUBUTOPAY
+}
+
+/// What a PaymentAttempt pays for — each maps to that flow's existing settle function (lib/payments/attempts.ts).
+enum PaymentTargetKind {
+  CHECKOUT
+  ORDER
+  COURSE_ORDER
+  DONATION
+  PRODUCT_ORDER
+}
+
+enum PaymentAttemptStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+}
+
+/// One request to a payment provider (InTouch, MTN MoMo, PesaPal, UrubutoPay). Webhooks and status polls find
+/// the attempt by `reference` (the id we send the provider), re-check the status with the provider, then settle
+/// the target through its own settle function. PayPack/Stripe keep their existing fields on each model.
+model PaymentAttempt {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  provider    PaymentMethod
+  targetKind  PaymentTargetKind
+  targetId    String               @db.ObjectId
+  userId      String?              @db.ObjectId
+  /// Our transaction id sent to the provider (unique, idempotent).
+  reference   String               @unique
+  /// The provider's own id (InTouch transactionid, MTN X-Reference-Id, PesaPal order_tracking_id, UrubutoPay internal ref).
+  providerRef String?
+  amountRwf   Float
+  phone       String?
+  status      PaymentAttemptStatus @default(PENDING)
+  /// Last raw status text from the provider, for support.
+  providerStatus String?
+  /// Hosted payment page (PesaPal) the payer is sent to.
+  redirectUrl String?
+  failureReason String?
+  settledAt   DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([targetKind, targetId])
+  @@index([providerRef])
+  @@index([status, createdAt])
+}
+
+/// Admin switches for each payment method shown to payers (/dashboard/settings/payments). One row per
+/// PaymentMethod, created on first read. A method is offered only when enabled here AND its credentials are set.
+model PaymentMethodConfig {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  method      PaymentMethod @unique
+  enabled     Boolean       @default(false)
+  /// Name payers see, e.g. "MTN MoMo / Airtel Money".
+  label       String
+  description String?
+  sortOrder   Int           @default(0)
+  /// PesaPal: the registered IPN id (saved after registering our webhook URL once).
+  externalId  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 /// Real shopping cart — one per member, replacing the previous
@@ -2536,4 +2605,49 @@ model CareResource {
   updatedAt     DateTime         @updatedAt
 
   @@index([program, published])
+}
+
+
+/// A service programme shown on /services, the home page and the header "Services" menu (Health System,
+/// Beauty, Consultation & Counseling, Rehabilitation, ...). Admin-managed at /dashboard/services; the four
+/// from the Kingdom Library overview are seeded once (lib/services/data.ts).
+model ServiceProgram {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String   @unique
+  name        String
+  /// One line under the name, e.g. "Understand health. Protect life."
+  tagline     String
+  description String
+  /// Photo for the card / detail page (Cloudinary URL). Optional — the icon + colour stand in without it.
+  image       String?
+  /// Key of the icon set in lib/services/shared.ts (presentation only).
+  icon        String   @default("sparkles")
+  /// Key of the colour set in lib/services/shared.ts (presentation only).
+  color       String   @default("gold")
+  /// "Key services" bullet list.
+  keyServices String[]
+  /// Where the main button goes (an existing feature page, e.g. /shop) and its text.
+  ctaLabel    String?
+  ctaHref     String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+/// The "life cycle" areas every programme supports (Life, Health, Management, Corruption, Restoration,
+/// Reintegration). Admin-managed at /dashboard/services; seeded once from the overview.
+model LifeArea {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// Unique so the one-time seed (or a double-click) can never create the same area twice.
+  name        String   @unique
+  description String
+  icon        String   @default("sparkles")
+  color       String   @default("gold")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

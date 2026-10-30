@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  LayoutGrid,
   Home,
   BookOpen,
   Bookmark,
@@ -98,6 +99,7 @@ function buildNavSections(t: (k: string) => string): NavSection[] {
 
 function buildSingleItems(t: (k: string) => string): NavItem[] {
   return [
+    { icon: <LayoutGrid size={16} />, key: "services", href: "/member/services" },
     { icon: <Bell size={16} />, key: "notifications", href: "/member/notifications" },
     { icon: <MessageSquare size={16} />, key: "messages", href: "/member/messages" },
     { icon: <Heart size={16} />, key: "favorites", href: "/member/favorites" },

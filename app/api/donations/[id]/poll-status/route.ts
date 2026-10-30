@@ -4,6 +4,8 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { findTransaction } from '@/lib/paypack'
 import { settleDonation } from '../../settle'
+import { syncTarget } from '@/lib/payments/attempts'
+import { isProviderMethod } from '@/lib/payments/methods'
 
 /**
  * Manual reconciliation for a PENDING donation's real PayPack status —
@@ -19,6 +21,11 @@ export const POST = withErrorHandling('/api/donations/[id]/poll-status', 'POST',
   const { id } = await params
   const donation = await prisma.donation.findUnique({ where: { id } })
   if (!donation) throw new ApiError('Donation not found', 404)
+  if (isProviderMethod(donation.method)) {
+    await syncTarget('DONATION', id)
+    const fresh = await prisma.donation.findUniqueOrThrow({ where: { id } })
+    return NextResponse.json({ data: { id: fresh.id, status: fresh.status.toLowerCase() }, message: 'Status refreshed', code: 'success', status: 200 })
+  }
   if (!donation.paypackRef) throw new ApiError('This donation has no PayPack transaction to check', 400)
 
   const transaction = await findTransaction(donation.paypackRef)
