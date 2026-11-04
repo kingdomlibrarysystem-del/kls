@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { AlertCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
+import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
 import {
   courseSchema,
   courseLanguages,
@@ -28,12 +30,19 @@ interface EditCourseModalProps {
 export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
   const { users } = useUsers()
   const { data: courseCategories } = useCourseCategories()
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CourseFormData>({ resolver: zodResolver(courseSchema) })
+
+  const coverImage = watch('image') ?? ''
 
   useEffect(() => {
     if (course) {
@@ -44,23 +53,34 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
         language: course.language,
         status: course.status,
         lecturerId: course.lecturerId ?? '',
+        image: course.image ?? '',
       })
+      setSubmitError('')
     }
   }, [course, reset])
 
   const onSubmit = async (data: CourseFormData) => {
     if (!course) return
+    setSubmitting(true)
+    setSubmitError('')
     try {
-      await updateCourseInCatalog(course.id, { ...data, lecturerId: data.lecturerId || undefined })
+      await updateCourseInCatalog(course.id, { ...data, lecturerId: data.lecturerId || undefined, image: data.image || undefined })
       onClose()
-    } catch {
-      // Real error surfaced via the catalog hook's own error state on next load.
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'Failed to save changes')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <Modal open={!!course} onClose={onClose} title="Edit Course" size="md">
+    <Modal open={!!course} onClose={onClose} title="Edit Course" size="3xl">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {submitError && (
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-destructive/10 border border-red-200 dark:border-destructive/30 text-red-700 dark:text-destructive px-4 py-3 rounded font-lato text-sm">
+            <AlertCircle size={15} /> {submitError}
+          </div>
+        )}
         <div>
           <FieldLabel htmlFor="edit-title" required>Course Title</FieldLabel>
           <FormInput id="edit-title" type="text" error={errors.title?.message} {...register('title')} />
@@ -103,15 +123,29 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
           </div>
         </div>
 
-        <div>
-          <FieldLabel htmlFor="edit-status" required>Status</FieldLabel>
-          <select
-            id="edit-status"
-            className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
-            {...register('status')}
-          >
-            {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <FieldLabel htmlFor="edit-coverImage">Cover Image</FieldLabel>
+            <CloudinaryUploadField
+              id="edit-coverImage"
+              accept="image/*"
+              label="Upload cover image"
+              kind="image"
+              value={coverImage}
+              onUploaded={(result) => setValue('image', result.url)}
+              onClear={() => setValue('image', '')}
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="edit-status" required>Status</FieldLabel>
+            <select
+              id="edit-status"
+              className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
+              {...register('status')}
+            >
+              {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
         </div>
 
         <div>
@@ -128,7 +162,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
 
         <div className="flex justify-end gap-2 pt-2">
           <ElegantButton type="button" variant="outline" onClick={onClose}>Cancel</ElegantButton>
-          <ElegantButton type="submit" variant="primary">Save Changes</ElegantButton>
+          <ElegantButton type="submit" loading={submitting} variant="primary">Save Changes</ElegantButton>
         </div>
       </form>
     </Modal>

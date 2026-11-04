@@ -21,27 +21,33 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react'
 interface Entry {
   data: unknown[] | undefined
   inflight: Promise<void> | null
+  fetchedAt: number
   listeners: Set<() => void>
 }
+
+/** Revalidate at most once every 30 seconds per URL — navigating between lessons won't re-fire all 3 hooks. */
+const STALE_MS = 30_000
 
 const entries = new Map<string, Entry>()
 
 function entryFor(url: string): Entry {
   let e = entries.get(url)
   if (!e) {
-    e = { data: undefined, inflight: null, listeners: new Set() }
+    e = { data: undefined, inflight: null, fetchedAt: 0, listeners: new Set() }
     entries.set(url, e)
   }
   return e
 }
 
-function load(url: string): Promise<void> {
+function load(url: string, force = false): Promise<void> {
   const e = entryFor(url)
   if (e.inflight) return e.inflight
+  if (!force && e.data !== undefined && Date.now() - e.fetchedAt < STALE_MS) return Promise.resolve()
   e.inflight = fetch(url)
     .then((res) => res.json())
     .then((json) => {
       e.data = Array.isArray(json?.data) ? json.data : []
+      e.fetchedAt = Date.now()
     })
     .catch(() => {
       // Keep the last known data on a failed refresh; first load resolves to empty.
@@ -79,7 +85,7 @@ export function useSharedList<T>(url: string | null): { data: T[]; loading: bool
   }, [url])
 
   const refetch = useCallback(async () => {
-    if (url) await load(url)
+    if (url) await load(url, true)
   }, [url])
 
   return { data: data ?? (EMPTY as T[]), loading: !!url && data === undefined, refetch }
