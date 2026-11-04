@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Lesson, LessonContentType } from './lesson-data'
+import type { Lesson, LessonContentType, LessonStatus } from './lesson-data'
 
 export interface CourseLessons {
   courseId: string
@@ -57,15 +57,14 @@ function loadLessons(): Promise<void> {
         durationMinutes: l.durationMinutes,
         content: l.content,
         contentMarkdown: l.contentMarkdown,
+        status: (l.status ?? 'PUBLISHED') as LessonStatus,
         completed: false,
       })
     }
-    for (const course of Object.values(grouped)) {
-      // Sorted by the API's own `order` field (already ascending from the
-      // /api/lessons query), not re-sorted by id — a prior id-based sort
-      // here would silently scramble lesson sequence whenever MongoDB
-      // ObjectIds weren't created in the same order as `order` values.
-    }
+    // Kept in the API's own `order` sequence (already ascending from the
+    // /api/lessons query), not re-sorted by id; an id-based sort here
+    // would silently scramble lesson sequence whenever MongoDB ObjectIds
+    // weren't created in the same order as `order` values.
     cache = grouped
     hasFetched = true
     notify()
@@ -73,6 +72,16 @@ function loadLessons(): Promise<void> {
     fetchPromise = null
   })
   return fetchPromise
+}
+
+/** Lessons are visible to members only when explicitly published; a missing status (pre-status lessons) means published. */
+export function isLessonPublished(lesson: Pick<Lesson, 'status'>): boolean {
+  return (lesson.status ?? 'PUBLISHED') === 'PUBLISHED'
+}
+
+/** Member-facing lesson list — admin pages intentionally use the unfiltered store instead. */
+export function getPublishedLessons(lessons: Lesson[] | undefined): Lesson[] {
+  return (lessons ?? []).filter(isLessonPublished)
 }
 
 /** Non-hook accessor for use outside React components/render (e.g. other store modules like use-enrollments.ts). */
@@ -115,6 +124,8 @@ export interface AddLessonInput {
   content: string
   /** Real markdown-authored lesson body. */
   contentMarkdown?: string
+  /** Visibility to members; omitted means the API's PUBLISHED default. */
+  status?: LessonStatus
 }
 
 export async function addLesson(courseId: string, _courseTitle: string, input: AddLessonInput): Promise<Lesson> {
@@ -126,7 +137,7 @@ export async function addLesson(courseId: string, _courseTitle: string, input: A
   const json = await res.json()
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to create lesson')
   await refetchLessons()
-  return { id: json.data.id, title: json.data.title, contentType: json.data.contentType, durationMinutes: json.data.durationMinutes, content: json.data.content, contentMarkdown: json.data.contentMarkdown, completed: false }
+  return { id: json.data.id, title: json.data.title, contentType: json.data.contentType, durationMinutes: json.data.durationMinutes, content: json.data.content, contentMarkdown: json.data.contentMarkdown, status: json.data.status, completed: false }
 }
 
 export async function updateLesson(_courseId: string, lessonId: string, updates: Partial<AddLessonInput>): Promise<void> {
@@ -137,6 +148,18 @@ export async function updateLesson(_courseId: string, lessonId: string, updates:
   })
   const json = await res.json()
   if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update lesson')
+  await refetchLessons()
+}
+
+/** Publishes/unpublishes a lesson via a real PATCH, then refreshes the shared store. */
+export async function setLessonStatus(lessonId: string, status: LessonStatus): Promise<void> {
+  const res = await fetch(`/api/lessons/${lessonId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.code !== 'success') throw new Error(json.message ?? 'Failed to update lesson status')
   await refetchLessons()
 }
 

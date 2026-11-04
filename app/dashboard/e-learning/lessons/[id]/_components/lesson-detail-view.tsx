@@ -2,14 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2, Video } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, EyeOff, Globe, Pencil, Trash2, Video } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { MarkdownContent } from '@/components/ui/markdown-content'
+import { setLessonStatus } from '@/app/member/_shared/use-lessons'
 import { EditLessonModal } from '../../_components/edit-lesson-modal'
 import { DeleteLessonModal } from '../../_components/delete-lesson-modal'
-import { contentTypeConfig, type LessonRow } from '../../_components/lessons-config'
+import { contentTypeConfig, lessonStatusConfig, type LessonRow, type LessonStatus } from '../../_components/lessons-config'
 
 /** A neighbouring lesson in the same course, for the prev/next buttons and "Lesson N of M". */
 export interface SiblingLesson {
@@ -35,6 +36,7 @@ export interface LessonApiResponse {
   content: string
   contentMarkdown?: string
   order: number
+  status?: LessonStatus
 }
 
 /**
@@ -50,6 +52,7 @@ export function LessonDetailView({ initialLesson, courseTitle, siblings }: Lesso
   const [lesson, setLesson] = useState<LessonApiResponse | null>(initialLesson)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [togglingStatus, setTogglingStatus] = useState(false)
 
   if (!lesson) {
     return (
@@ -76,6 +79,21 @@ export function LessonDetailView({ initialLesson, courseTitle, siblings }: Lesso
     }
   }
 
+  const status: LessonStatus = lesson.status ?? 'PUBLISHED'
+
+  const toggleStatus = async () => {
+    setTogglingStatus(true)
+    try {
+      const next: LessonStatus = status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
+      await setLessonStatus(lesson.id, next)
+      setLesson((prev) => (prev ? { ...prev, status: next } : prev))
+    } catch {
+      /* real error surfaced via the lessons hook's own error state on next load */
+    } finally {
+      setTogglingStatus(false)
+    }
+  }
+
   const row: LessonRow = {
     courseId: lesson.courseId,
     courseTitle,
@@ -86,6 +104,7 @@ export function LessonDetailView({ initialLesson, courseTitle, siblings }: Lesso
     durationMinutes: lesson.durationMinutes,
     content: lesson.content,
     contentMarkdown: lesson.contentMarkdown,
+    status,
   }
 
   const position = siblings.findIndex((l) => l.id === lesson.id)
@@ -99,6 +118,15 @@ export function LessonDetailView({ initialLesson, courseTitle, siblings }: Lesso
           Back to Lessons
         </UniversalButton>
         <div className="flex gap-2">
+          <UniversalButton
+            variant="outline"
+            size="sm"
+            loading={togglingStatus}
+            icon={status === 'PUBLISHED' ? <EyeOff size={13} /> : <Globe size={13} />}
+            onClick={toggleStatus}
+          >
+            {status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+          </UniversalButton>
           <UniversalButton variant="outline" size="sm" icon={<Pencil size={13} />} onClick={() => setEditing(true)}>
             Edit
           </UniversalButton>
@@ -122,6 +150,9 @@ export function LessonDetailView({ initialLesson, courseTitle, siblings }: Lesso
         <div className="flex items-center gap-2">
           <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${contentTypeConfig[lesson.contentType].cls}`}>
             {contentTypeConfig[lesson.contentType].label}
+          </span>
+          <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${lessonStatusConfig[status].cls}`}>
+            {lessonStatusConfig[status].label}
           </span>
           <span className="font-lato text-xs text-w-600">Order #{lesson.order} &bull; {lesson.durationMinutes} min</span>
           {siblings.length > 0 && position >= 0 && (

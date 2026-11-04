@@ -1,15 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Video, Eye, Pencil, Trash2, PlusCircle, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react'
+import { Video, Eye, EyeOff, Globe, Pencil, Trash2, PlusCircle, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { useLessonsByCourse, reorderLesson } from '@/app/member/_shared/use-lessons'
+import { useLessonsByCourse, reorderLesson, setLessonStatus } from '@/app/member/_shared/use-lessons'
 import { useCourseCatalog } from '../../_shared/use-course-catalog'
-import { contentTypeConfig, type LessonRow } from './lessons-config'
+import { contentTypeConfig, lessonStatusConfig, type LessonRow } from './lessons-config'
 import { AddLessonModal } from './add-lesson-modal'
 import { EditLessonModal } from './edit-lesson-modal'
 import { DeleteLessonModal } from './delete-lesson-modal'
@@ -35,6 +35,7 @@ export function LessonsView() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<LessonRow | null>(null)
   const [deleting, setDeleting] = useState<LessonRow | null>(null)
+  const [statusUpdating, setStatusUpdating] = useState<string | null>(null)
 
   const { data: lessonsByCourse, loading, error } = useLessonsByCourse()
   const { data: courseCatalog } = useCourseCatalog()
@@ -56,6 +57,7 @@ export function LessonsView() {
       durationMinutes: lesson.durationMinutes,
       content: lesson.content,
       contentMarkdown: lesson.contentMarkdown,
+      status: lesson.status ?? 'PUBLISHED',
     }))
   )
 
@@ -80,6 +82,17 @@ export function LessonsView() {
   const tableData = courseFilter === 'all' ? allRows : allRows.filter((r) => r.courseId === courseFilter)
   const courseLessonCount = (courseId: string) => lessonsByCourse[courseId]?.lessons.length ?? 0
 
+  const toggleStatus = async (r: LessonRow) => {
+    setStatusUpdating(r.lessonId)
+    try {
+      await setLessonStatus(r.lessonId, r.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED')
+    } catch {
+      /* real error surfaced via the lessons hook's own error state on next load */
+    } finally {
+      setStatusUpdating(null)
+    }
+  }
+
   const columns: Column<LessonRow>[] = [
     {
       key: 'title', label: 'Lesson', sortable: true,
@@ -101,6 +114,14 @@ export function LessonsView() {
     },
     { key: 'durationMinutes', label: 'Duration', sortable: true, render: (r) => <span className="text-w-700">{r.durationMinutes} min</span> },
     {
+      key: 'status', label: 'Status', sortable: true,
+      render: (r) => (
+        <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${lessonStatusConfig[r.status].cls}`}>
+          {lessonStatusConfig[r.status].label}
+        </span>
+      ),
+    },
+    {
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (r) => (
         <div className="flex items-center justify-end gap-1">
@@ -109,6 +130,15 @@ export function LessonsView() {
           </button>
           <button onClick={() => reorderLesson(r.courseId, r.lessonId, 'down')} disabled={r.order === courseLessonCount(r.courseId)} aria-label={`Move ${r.title} down`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none">
             <ArrowDown size={13} />
+          </button>
+          <button
+            onClick={() => toggleStatus(r)}
+            disabled={statusUpdating === r.lessonId}
+            aria-label={`${r.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'} ${r.title}`}
+            title={r.status === 'PUBLISHED' ? 'Unpublish (hide from members)' : 'Publish (show to members)'}
+            className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          >
+            {r.status === 'PUBLISHED' ? <EyeOff size={14} /> : <Globe size={14} />}
           </button>
           <UniversalButton
             href={`/dashboard/e-learning/lessons/${r.lessonId}`}

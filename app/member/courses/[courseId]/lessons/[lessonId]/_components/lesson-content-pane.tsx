@@ -11,8 +11,11 @@ interface LessonContentPaneProps {
   completed: boolean
   markError: string
   onMarkComplete: () => void
-  /** Set once every lesson in the course is complete and a linked assessment exists — nudges the member to take it. */
+  /** Set once every lesson in the course is complete and a linked exam exists — nudges the member to take it. */
   courseCompleteAssessmentTitle?: string
+  /** Per-lesson test title — shown after lesson content when a TEST assessment is linked to this specific lesson. */
+  lessonTestTitle?: string
+  lessonTestId?: string
   /** The next lesson in the course, if one exists — renders a real "Next Lesson" link. */
   nextLesson?: { id: string; title: string }
   courseId: string
@@ -35,7 +38,7 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
  * paragraphs) only for a lesson created before the markdown editor
  * existed and never migrated.
  */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, nextLesson, courseId }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, lessonTestTitle, lessonTestId, nextLesson, courseId }: LessonContentPaneProps) {
   const { t } = useLanguage()
   return (
     <div className="card">
@@ -131,6 +134,18 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
           </Link>
         )}
       </div>
+
+      {lessonTestTitle && lessonTestId && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(45,212,191,0.08)', border: '1px solid var(--teal-light)', borderRadius: 8, padding: 12, marginTop: 14 }}>
+          <ClipboardList size={18} color="var(--teal-light)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 14, color: 'var(--text-primary)', flex: 1 }}>
+            Lesson test: <strong>{lessonTestTitle}</strong>
+          </span>
+          <Link href={`/member/assessments/${lessonTestId}/take`} className="btn btn-sm" style={{ flexShrink: 0, background: 'var(--teal-light)', color: '#fff', textDecoration: 'none' }}>
+            Take Test
+          </Link>
+        </div>
+      )}
 
       {courseCompleteAssessmentTitle && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>

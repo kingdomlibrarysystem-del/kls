@@ -120,13 +120,30 @@ export const POST = withErrorHandling('/api/assessment-attempts', 'POST', async 
 
   for (const q of assessment.questions) {
     totalMarks += q.marks
-    if (q.type === 'SINGLE_SELECT') {
+    if (q.type === 'SINGLE_SELECT' || q.type === 'YES_NO' || q.type === 'TRUE_FALSE') {
       if (answers[q.id] === q.correctOptionIndex) autoScore += q.marks
     } else if (q.type === 'MULTI_SELECT') {
       const given = new Set((answers[q.id] as number[]) ?? [])
       const correct = new Set(q.correctOptionIndices)
       const matches = given.size === correct.size && [...given].every((v) => correct.has(v))
       if (matches) autoScore += q.marks
+    } else if (q.type === 'MATCHING') {
+      // The member's matching answer is submitted as a JSON object of
+      // leftIndex -> selected rightIndex in openAnswers. The correct pairing
+      // is identity (pair i matches pair i), matching how the admin authored
+      // the pairs and how QuestionNavigator lists the right-hand choices.
+      const textAnswers: Record<string, string> = body.openAnswers ?? {}
+      const raw = textAnswers[q.id]
+      const pairs = q.matchingPairs ?? []
+      if (raw && pairs.length > 0) {
+        try {
+          const given = JSON.parse(raw) as Record<string, number>
+          const allCorrect = pairs.every((_, i) => given[String(i)] === i)
+          if (allCorrect) autoScore += q.marks
+        } catch {
+          // Malformed matching payload — count as incorrect rather than throw.
+        }
+      }
     } else if (q.type === 'OPEN') {
       hasOpen = true
       const textAnswers: Record<string, string> = body.openAnswers ?? {}
@@ -150,13 +167,15 @@ export const POST = withErrorHandling('/api/assessment-attempts', 'POST', async 
   })
 
   /**
-   * Ports use-enrollments.ts's applyAttemptOutcome: an AUTO_GRADED PASSED
-   * attempt (no OPEN questions) immediately flips the linked enrollment's
-   * assessmentPassed, then re-checks certificate eligibility — mirroring
-   * the mock's "pass/fail is only applied to the enrollment once it's
-   * final" rule (a PENDING_REVIEW attempt never reaches this branch).
+   * Ports use-enrollments.ts's applyAttemptOutcome: an end-of-course EXAM
+   * that is AUTO_GRADED and PASSED (no OPEN questions) immediately flips
+   * the linked enrollment's assessmentPassed, then re-checks certificate
+   * eligibility — mirroring the mock's "pass/fail is only applied to the
+   * enrollment once it's final" rule (a PENDING_REVIEW attempt never
+   * reaches this branch). A per-lesson TEST or mid-course QUIZ deliberately
+   * does NOT complete the course.
    */
-  if (reviewStatus === 'AUTO_GRADED' && status === 'PASSED') {
+  if (assessment.kind === 'EXAM' && reviewStatus === 'AUTO_GRADED' && status === 'PASSED') {
     const enrollment = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: assessment.courseId } } })
     if (enrollment) {
       await prisma.enrollment.update({ where: { id: enrollment.id }, data: { assessmentPassed: true } })

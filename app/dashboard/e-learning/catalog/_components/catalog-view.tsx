@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, Eye, Pencil, Archive, PlusCircle, AlertTriangle } from 'lucide-react'
+import { BookOpen, Eye, Globe, Pencil, Archive, PlusCircle, AlertTriangle } from 'lucide-react'
 import { DataTable, type Column } from '@/components/ui/data-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { UniversalButton } from '@/components/ui/universal-button'
-import { useCourseCatalog, archiveCourseInCatalog } from '../../_shared/use-course-catalog'
+import { useCourseCatalog, archiveCourseInCatalog, publishCourseInCatalog } from '../../_shared/use-course-catalog'
 import { languageLabels } from '../../add/_components/course-form-schema'
 import { AddCourseModal } from './add-course-modal'
 import { EditCourseModal } from './edit-course-modal'
@@ -36,6 +36,7 @@ export function CatalogView() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<CourseCatalogEntry | null>(null)
   const [archiving, setArchiving] = useState<CourseCatalogEntry | null>(null)
+  const [publishing, setPublishing] = useState<string | null>(null)
 
   const { data: catalog, loading, error } = useCourseCatalog()
 
@@ -67,6 +68,17 @@ export function CatalogView() {
   const tableData = catalog
     .filter((c) => statusFilter === 'all' || c.status === statusFilter)
     .filter((c) => authorFilter === 'all' || c.author === authorFilter)
+
+  const publish = async (c: CourseCatalogEntry) => {
+    setPublishing(c.id)
+    try {
+      await publishCourseInCatalog(c.id)
+    } catch {
+      /* real error surfaced via the catalog hook's own error state on next load */
+    } finally {
+      setPublishing(null)
+    }
+  }
 
   const columns: Column<CourseCatalogEntry>[] = [
     {
@@ -105,9 +117,15 @@ export function CatalogView() {
           <button onClick={() => setEditing(c)} aria-label={`Edit ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-w-100 dark:hover:bg-white/10 hover:text-w-950 transition-colors">
             <Pencil size={14} />
           </button>
-          <button onClick={() => setArchiving(c)} aria-label={`Archive ${c.title}`} className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
-            <Archive size={14} />
-          </button>
+          {c.status === 'PUBLISHED' ? (
+            <button onClick={() => setArchiving(c)} aria-label={`Archive ${c.title}`} title="Archive (hide from members)" className="p-1.5 rounded text-w-700 hover:bg-red-50 dark:hover:bg-destructive/10 hover:text-red-700 dark:hover:text-destructive transition-colors">
+              <Archive size={14} />
+            </button>
+          ) : (
+            <button onClick={() => publish(c)} disabled={publishing === c.id} aria-label={`Publish ${c.title}`} title="Publish (show to members)" className="p-1.5 rounded text-w-700 hover:bg-green-50 dark:hover:bg-success/10 hover:text-green-700 dark:hover:text-success transition-colors disabled:opacity-30 disabled:pointer-events-none">
+              <Globe size={14} />
+            </button>
+          )}
         </div>
       ),
     },

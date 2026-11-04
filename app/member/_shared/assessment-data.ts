@@ -7,7 +7,13 @@
  * against, unlike SINGLE_SELECT/MULTI_SELECT, or even OPEN which still
  * grades against a per-question mark).
  */
-export type AssessmentKind = 'QUIZ' | 'EXAM' | 'PROJECT'
+/**
+ * TEST = per-lesson check (short, ungraded or lightly graded).
+ * QUIZ = mid-course assessment.
+ * EXAM = end-of-course, timed, comprehensive.
+ * PROJECT = hackathon-style, question-less, manually reviewed.
+ */
+export type AssessmentKind = 'TEST' | 'QUIZ' | 'EXAM' | 'PROJECT'
 
 /** Shape the member's PROJECT submission must take — determines which input the submission view renders. */
 export type ProjectSubmissionFormat = 'TEXT' | 'LINK' | 'FILE_REF'
@@ -26,7 +32,12 @@ export const projectSubmissionFormatLabels: Record<ProjectSubmissionFormat, stri
  * named MCQ prior to differentiated-assessment-types Phase A — renamed to
  * sit honestly alongside MULTI_SELECT rather than implying "the" MCQ type.
  */
-export type QuestionType = 'SINGLE_SELECT' | 'MULTI_SELECT' | 'OPEN'
+export type QuestionType = 'SINGLE_SELECT' | 'MULTI_SELECT' | 'OPEN' | 'YES_NO' | 'TRUE_FALSE' | 'MATCHING'
+
+export interface MatchingPair {
+  left: string
+  right: string
+}
 
 export interface Question {
   id: string
@@ -35,10 +46,12 @@ export interface Question {
   /** Optional longer prompt/context block rendered above the question text — the scenario-based case. Usable by any type. */
   context?: string
   options?: string[]
-  /** SINGLE_SELECT only. */
+  /** SINGLE_SELECT / YES_NO / TRUE_FALSE only. */
   correctOptionIndex?: number
   /** MULTI_SELECT only — scored as exact set match, no partial credit. */
   correctOptionIndices?: number[]
+  /** MATCHING only — ordered pairs; member must match left items to right items. */
+  matchingPairs?: MatchingPair[]
   marks: number
 }
 
@@ -48,6 +61,8 @@ export interface TakeableAssessment {
   kind: AssessmentKind
   /** Course ID from course-catalog-data.ts — links a pass back to that course's enrollment. */
   courseId: string
+  /** The lesson a per-lesson TEST belongs to — only set when `kind === 'TEST'`. */
+  lessonId?: string
   /** Countdown duration in seconds — only meaningful when `kind === 'EXAM'`. */
   durationSeconds?: number
   /** Empty for PROJECT — a project assessment has no per-question structure at all. */

@@ -7654,3 +7654,151 @@ connections to the remote database.
 providers were tested with faked provider responses only — no real sandbox credentials were used.
 
 **Needs running on the dev DB:** `npx prisma generate` and `npx prisma db push`.
+
+## 2026-11-03 - Per-lesson tests, end-of-course exam, configurable question count, new question types
+
+**What changed.**
+- **Per-lesson tests + exam.** `AssessmentKind` gained `TEST`; `Assessment` gained `lessonId` (only set for
+  `TEST`). A course can now hold any number of `TEST` assessments, one per lesson, plus one `EXAM` at the end.
+  Admins pick the lesson in the Add / Edit modal when the type is `TEST`; the server rejects a `TEST` without a
+  lesson and clears `lessonId` when the kind changes away from `TEST`. The admin list/detail pages show the
+  lesson title and a teal `TEST` badge.
+- **Configurable question count.** The question builder has a "Number of questions" input (bounds 1–50) that
+  resizes the list in place instead of making the author click "Add Question" N times. Existing questions are
+  kept; removal trims from the end.
+- **New question types.** `QuestionType` gained `YES_NO`, `TRUE_FALSE`, `MATCHING`. Yes/No and True/False use
+  `correctOptionIndex` (0 = Yes/True, 1 = No/False) and render as fixed radios, so no options are stored for
+  them. Matching stores an ordered `matchingPairs: { left, right }[]` on `Question`; the member matches left
+  item i to right item i. Matching answers are submitted through the existing `openAnswers` slot as JSON
+  (`{ "<leftIndex>": <rightIndex> }`) so the attempt payload shape did not need a new field.
+- **Grading + completion.** `app/api/assessment-attempts/route.ts` auto-grades Yes/No, True/False and Matching
+  on the server. Only an `EXAM` pass now flips the enrollment's `assessmentPassed` and issues a certificate —
+  `TEST` and `QUIZ` passes no longer complete the course. Open/project grading is unchanged.
+- **Member lesson view.** Each lesson shows its own test nudge (title + "Take test") when a `TEST` is linked to
+  that lesson; the end-of-course nudge appears only after all lessons are complete and only for an `EXAM`.
+  Previously any assessment for the course was linked once lessons were complete.
+
+**Files touched.**
+- `prisma/schema.prisma` — `TEST` kind; `YES_NO` / `TRUE_FALSE` / `MATCHING`; `MatchingPair`; `Question.matchingPairs`;
+  `Assessment.lessonId`.
+- `lib/data/assessments.ts`, `app/api/assessments/route.ts`, `app/api/assessments/[id]/route.ts` — serializers,
+  `lessonId` filter, create/update validation and casts.
+- `app/api/assessment-attempts/route.ts` — grading for the new types; EXAM-only completion/certificate.
+- `app/member/_shared/assessment-data.ts`, `use-assessments.ts` — shared types (`MatchingPair`, new kinds/types,
+  `lessonId`, `AddAssessmentInput.lessonId`).
+- `app/dashboard/e-learning/quizzes/_components/` — `quiz-form-schema.ts` (enums, `matchingPairs` validation,
+  `createEmptyQuestion()`), `question-answer-fields.tsx` (new inputs), `question-builder.tsx` (count input, six
+  types), `add-quiz-modal.tsx` / `edit-quiz-modal.tsx` (TEST + lesson selector), `quizzes-config.ts`,
+  `quizzes-view.tsx`.
+- `app/dashboard/e-learning/quizzes/[id]/_components/quiz-detail-view.tsx` — lesson name and new answer types.
+- `app/member/assessments/[assessmentId]/take/_components/take-assessment-view.tsx` + `question-navigator.tsx` —
+  matching state derived from the answer JSON; fixed-option Yes/No and True/False; matching selects.
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-viewer-view.tsx` +
+  `lesson-content-pane.tsx` — per-lesson test nudge, EXAM-only course-complete nudge.
+
+**Interactions to watch.**
+- `assessment-attempts` is shared by every take-flow *and* the admin review/grade modal; the new grading paths
+  must stay aligned with how `take-assessment-view` / `question-navigator` serialize answers. Matching is
+  positional — changing the admin pair order changes the correct answer.
+- Existing assessments have no `matchingPairs`/`lessonId`; serializers use optional chaining and the detail view
+  guards on `q.matchingPairs`, so legacy documents render unchanged.
+- `CourseQuizzesPanel`, the admin quiz list and the member catalog all read the same `TakeableAssessment`
+  shape; adding `TEST` to the union means any new `kind` switch must handle it.
+- Only `EXAM` completes the course now — existing `QUIZ` passes that used to complete a course no longer do.
+  If a course relies on a quiz for completion, convert that assessment to `EXAM`.
+
+**Verified:** `npx prisma generate` succeeded; `npx tsc --noEmit` clean; `npm run build` passes (227 pages);
+ESLint on changed files has no errors (2 pre-existing `react-hooks/incompatible-library` warnings in the
+add/edit modals).
+
+**Needs running on the dev DB:** `npx prisma generate` (already run locally) and `npx prisma db push` if the
+Mongo deployment needs the new optional fields/indexes.
+
+### 2026-11-03 - Fix: "Add Assessment" button appeared to do nothing
+
+The Add modal is mounted with the quizzes page, before `useCourseCatalog()` has finished its client-side
+fetch, so `defaultValues.courseId` was `''`. The course `<select>` then rendered the first course visually
+while react-hook-form still held `''`; submit failed `courseId` validation, and that error had no message
+rendered next to the select, so the button looked inert. Fixed in `add-quiz-modal.tsx`: seed `courseId` from
+the catalog once it loads (`setValue`, only when still empty), show the `courseId` error under the select, clear
+`lessonId` when the course changes, and surface `addAssessment`/`updateAssessment` server errors in the modal
+instead of swallowing them (same error display added to `edit-quiz-modal.tsx`). No API or data-shape change.
+
+### 2026-11-03 - Root cause: the add form rendered no option inputs, so it could never validate
+
+The silent submit had a second, bigger cause in `question-answer-fields.tsx`. It used
+`useFieldArray({ name: 'questions.N.options' })`, and react-hook-form's `_getFieldArray` runs
+`array.filter(Boolean)` — the default primitive option list `['', '']` therefore became `[]`, so **no
+option text boxes were rendered at all** for SINGLE_SELECT / MULTI_SELECT. An author could type the
+question but not its answers, so `quiz-form-schema` always failed on "Option text is required" with no
+visible message. Fixed by rendering option rows from the watched `options` array and adding/removing
+options with `setValue` (removal also shifts `correctOptionIndex` / `correctOptionIndices`).
+
+While testing that, a second schema bug surfaced: the permissive base schema still enforced
+`min(1)` on every `options` string and every `matchingPairs.left/right`, including the unused blank
+placeholders carried by other question types. A perfectly valid SINGLE_SELECT failed because its
+unused matching pairs were empty (and MATCHING would fail on its unused options). The base schema now
+accepts blank strings; `.superRefine` enforces non-empty options only for SINGLE_SELECT / MULTI_SELECT
+and non-empty pairs only for MATCHING. Per-option and per-pair errors are now rendered inline, and
+`onInvalid` scrolls to `[aria-invalid="true"]` (the old selector looked for `border-red-500` /
+`text-red-600`, which the theme-token form components never emit).
+
+Regression-checked with a temporary jsdom test (removed afterwards): submitting a SINGLE_SELECT quiz
+and a per-lesson TEST with MATCHING pairs both call `addAssessment` with the expected payload.
+
+**Verified:** `npx tsc --noEmit` clean; ESLint 0 errors on the touched files (same 2 pre-existing
+`watch()` warnings).
+
+## 2026-11-03 - Lesson and course publishing controls
+
+**What changed.**
+- **Lesson status.** `Lesson` gained `status LessonStatus @default(PUBLISHED)`, with
+  `enum LessonStatus { DRAFT, PUBLISHED }`. MongoDB does not backfill defaults, so `lib/data/lessons.ts`
+  serializes a missing `status` as `PUBLISHED` and `app/member/_shared/lesson-data.ts` types it as optional.
+  Existing lessons therefore stay visible without a data migration.
+- **Admin lesson UI.** The lessons table has a Status column and a Publish/Unpublish icon action
+  (`Globe` / `EyeOff`); the lesson detail page has the same action plus a status badge; the course detail
+  lessons panel shows each lesson's badge.
+- **Admin course UI.** A DRAFT course now shows a `Globe` Publish action (immediate, no confirm) on both the
+  catalog list and the course detail header. A PUBLISHED course keeps the existing `Archive` action, which
+  sets it back to DRAFT through the confirmation modal. No duplicate toggle was added.
+- **API.** `POST /api/lessons` accepts an optional `status` (defaults to `PUBLISHED`);
+  `PATCH /api/lessons/[id]` accepts `status`. `GET /api/lessons` intentionally does **not** filter by status:
+  legacy documents without the field would disappear from the admin store. Members filter client-side with
+  `getPublishedLessons()` / `isLessonPublished()`.
+- **Member visibility.** The lesson viewer (current lesson lookup, sidebar list, next lesson, all-lessons
+  complete check), the course redirect and the in-progress courses next-lesson link all use only published
+  lessons. Enrollment `totalLessons` was deliberately left unfiltered so legacy lessons are not undercounted
+  and existing progress/certificate calculations do not regress.
+
+**Files touched.**
+- `prisma/schema.prisma` - `LessonStatus` enum and `Lesson.status`.
+- `lib/data/lessons.ts` - serializer status fallback; status included in course lesson rows.
+- `app/api/lessons/route.ts`, `app/api/lessons/[id]/route.ts` - optional status on create/update; shared
+  serializer reuse.
+- `app/member/_shared/lesson-data.ts`, `app/member/_shared/use-lessons.ts` - `LessonStatus`,
+  `isLessonPublished`, `getPublishedLessons`, `setLessonStatus`, `AddLessonInput.status`.
+- `app/dashboard/e-learning/lessons/_components/lessons-config.ts`,
+  `lessons/_components/lessons-view.tsx`, `lessons/[id]/_components/lesson-detail-view.tsx`,
+  `catalog/[id]/_components/course-lessons-panel.tsx` - badges and publish/unpublish actions.
+- `app/dashboard/e-learning/_shared/use-course-catalog.ts`, `catalog/_components/catalog-view.tsx`,
+  `catalog/[id]/_components/course-detail-view.tsx` - `publishCourseInCatalog` and the Publish/Archive split.
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-viewer-view.tsx`,
+  `courses/[courseId]/_components/course-redirect-view.tsx`,
+  `courses/_components/in-progress-courses-section.tsx` - published-only lesson selection.
+
+**Interactions to watch.**
+- New lessons created through the admin flow default to PUBLISHED, matching the schema default. Unpublishing
+  hides a lesson from members but does not remove it from enrollment lesson counts.
+- Because `GET /api/lessons` is unfiltered by design, any new member-facing consumer must filter with
+  `getPublishedLessons()` rather than assuming the store is already member-safe.
+- Existing documents created before this change have no `status` field; do not "fix" them by filtering on
+  `status === 'PUBLISHED'` without the fallback, or all legacy lessons will vanish.
+
+**Verified:** `npx tsc --noEmit` clean. ESLint on the changed files reports only the two pre-existing
+`react-hooks/set-state-in-effect` errors (`use-course-catalog.ts:68`, `use-lessons.ts:105`); this change
+added no new lint errors. `npx prisma generate` could not rename `query_engine-windows.dll.node` (EPERM)
+because the running `next dev` holds it, but the generated client JS/d.ts already include `LessonStatus`;
+restart the dev server and re-run `npx prisma generate` if the runtime rejects the field.
+
+**Needs running on the dev DB:** none for MongoDB; `npx prisma generate` after stopping the dev server.

@@ -6,8 +6,9 @@ export function serializeAssessment(a: {
   title: string
   kind: string
   courseId: string
+  lessonId: string | null
   durationSeconds: number | null
-  questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; marks: number }[]
+  questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; matchingPairs: { left: string; right: string }[]; marks: number }[]
   brief: string | null
   submissionFormat: string | null
   projectMarks: number | null
@@ -17,6 +18,7 @@ export function serializeAssessment(a: {
     title: a.title,
     kind: a.kind,
     courseId: a.courseId,
+    lessonId: a.lessonId ?? undefined,
     durationSeconds: a.durationSeconds ?? undefined,
     questions: a.questions.map((q) => ({
       id: q.id,
@@ -26,6 +28,7 @@ export function serializeAssessment(a: {
       options: q.options.length ? q.options : undefined,
       correctOptionIndex: q.correctOptionIndex ?? undefined,
       correctOptionIndices: q.correctOptionIndices.length ? q.correctOptionIndices : undefined,
+      matchingPairs: q.matchingPairs?.length ? q.matchingPairs : undefined,
       marks: q.marks,
     })),
     brief: a.brief ?? undefined,

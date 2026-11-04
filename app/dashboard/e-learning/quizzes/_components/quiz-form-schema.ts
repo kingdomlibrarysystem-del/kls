@@ -1,40 +1,61 @@
 import { z } from 'zod'
 
-const optionSchema = z.string().min(1, 'Option text is required')
-
-export const questionTypeSchema = z.enum(['SINGLE_SELECT', 'MULTI_SELECT', 'OPEN'])
+export const questionTypeSchema = z.enum(['SINGLE_SELECT', 'MULTI_SELECT', 'OPEN', 'YES_NO', 'TRUE_FALSE', 'MATCHING'])
 
 /**
- * Base shape is permissive (options/correctOptionIndex/correctOptionIndices
- * all optional) because their requirement depends on `type` — enforced below
- * via `.superRefine` rather than making the base schema lie about a shape
- * that's only valid for two of the three types.
+ * Base shape is deliberately permissive: every question carries placeholders
+ * for the sub-fields of every type (an author can switch type without losing
+ * data), so type-specific rules live in `.superRefine` below. Validating the
+ * placeholders here would fail a valid SINGLE_SELECT because its unused
+ * `matchingPairs` are still blank (and vice versa).
  */
 export const questionSchema = z
   .object({
     type: questionTypeSchema,
     text: z.string().min(3, 'Question text must be at least 3 characters'),
     context: z.string().optional(),
-    options: z.array(optionSchema).optional(),
+    options: z.array(z.string()).optional(),
     correctOptionIndex: z.number().optional(),
     correctOptionIndices: z.array(z.number()).optional(),
+    matchingPairs: z.array(z.object({ left: z.string(), right: z.string() })).optional(),
     marks: z.number().min(1, 'Marks must be at least 1'),
   })
   .superRefine((question, ctx) => {
-    if (question.type === 'SINGLE_SELECT') {
-      if (!question.options || question.options.length < 2) {
+    if (question.type === 'SINGLE_SELECT' || question.type === 'MULTI_SELECT') {
+      const options = question.options ?? []
+      if (options.length < 2) {
         ctx.addIssue({ code: 'custom', path: ['options'], message: 'At least 2 options are required' })
+      } else {
+        const emptyIndex = options.findIndex((option) => option.trim().length === 0)
+        if (emptyIndex !== -1) {
+          ctx.addIssue({ code: 'custom', path: ['options', emptyIndex], message: 'Option text is required' })
+        }
       }
+      if (question.type === 'SINGLE_SELECT' && question.correctOptionIndex === undefined) {
+        ctx.addIssue({ code: 'custom', path: ['correctOptionIndex'], message: 'Select the correct answer' })
+      }
+      if (question.type === 'MULTI_SELECT' && (!question.correctOptionIndices || question.correctOptionIndices.length === 0)) {
+        ctx.addIssue({ code: 'custom', path: ['correctOptionIndices'], message: 'Select at least one correct answer' })
+      }
+    }
+    if (question.type === 'YES_NO' || question.type === 'TRUE_FALSE') {
       if (question.correctOptionIndex === undefined) {
         ctx.addIssue({ code: 'custom', path: ['correctOptionIndex'], message: 'Select the correct answer' })
       }
     }
-    if (question.type === 'MULTI_SELECT') {
-      if (!question.options || question.options.length < 2) {
-        ctx.addIssue({ code: 'custom', path: ['options'], message: 'At least 2 options are required' })
-      }
-      if (!question.correctOptionIndices || question.correctOptionIndices.length === 0) {
-        ctx.addIssue({ code: 'custom', path: ['correctOptionIndices'], message: 'Select at least one correct answer' })
+    if (question.type === 'MATCHING') {
+      const pairs = question.matchingPairs ?? []
+      if (pairs.length < 2) {
+        ctx.addIssue({ code: 'custom', path: ['matchingPairs'], message: 'At least 2 matching pairs are required' })
+      } else {
+        pairs.forEach((pair, index) => {
+          if (pair.left.trim().length === 0) {
+            ctx.addIssue({ code: 'custom', path: ['matchingPairs', index, 'left'], message: 'Left item is required' })
+          }
+          if (pair.right.trim().length === 0) {
+            ctx.addIssue({ code: 'custom', path: ['matchingPairs', index, 'right'], message: 'Right item is required' })
+          }
+        })
       }
     }
   })
@@ -51,7 +72,9 @@ export const quizFormSchema = z
   .object({
     title: z.string().min(3, 'Title must be at least 3 characters'),
     courseId: z.string().min(1, 'Select a course'),
-    kind: z.enum(['QUIZ', 'EXAM', 'PROJECT']),
+    kind: z.enum(['TEST', 'QUIZ', 'EXAM', 'PROJECT']),
+    /** Lesson ID — only relevant when kind === 'TEST'. */
+    lessonId: z.string().optional(),
     durationMinutes: z.number().min(1, 'Duration must be at least 1 minute').optional(),
     questions: z.array(questionSchema),
     brief: z.string().optional(),
@@ -59,6 +82,9 @@ export const quizFormSchema = z
     projectMarks: z.number().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.kind === 'TEST' && !data.lessonId) {
+      ctx.addIssue({ code: 'custom', path: ['lessonId'], message: 'Select the lesson this test belongs to' })
+    }
     if (data.kind === 'PROJECT') {
       if (!data.brief || data.brief.trim().length < 10) {
         ctx.addIssue({ code: 'custom', path: ['brief'], message: 'Brief must be at least 10 characters' })
@@ -76,12 +102,23 @@ export const quizFormSchema = z
 
 export type QuizFormData = z.infer<typeof quizFormSchema>
 
-export const emptyQuestion = {
-  type: 'SINGLE_SELECT' as const,
-  text: '',
-  context: '',
-  options: ['', ''],
-  correctOptionIndex: 0,
-  correctOptionIndices: [],
-  marks: 10,
+/**
+ * Builds a fresh empty question. A function (rather than one shared object)
+ * is important once the form supports adding several questions at once —
+ * reusing the same object reference for multiple field-array rows makes
+ * react-hook-form treat their nested arrays as the same input.
+ */
+export function createEmptyQuestion() {
+  return {
+    type: 'SINGLE_SELECT' as const,
+    text: '',
+    context: '',
+    options: ['', ''],
+    correctOptionIndex: 0,
+    correctOptionIndices: [] as number[],
+    matchingPairs: [{ left: '', right: '' }, { left: '', right: '' }],
+    marks: 10,
+  }
 }
+
+export const emptyQuestion = createEmptyQuestion()

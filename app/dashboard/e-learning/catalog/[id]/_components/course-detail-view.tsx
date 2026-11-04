@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Pencil, Archive, BookX } from 'lucide-react'
+import { ArrowLeft, Pencil, Archive, Globe, BookX } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { EditCourseModal } from '../../_components/edit-course-modal'
 import { ArchiveCourseModal } from '../../_components/archive-course-modal'
-import { archiveCourseInCatalog, refetchCourseCatalog } from '../../../_shared/use-course-catalog'
+import { archiveCourseInCatalog, publishCourseInCatalog, refetchCourseCatalog } from '../../../_shared/use-course-catalog'
 import { statusConfig, type CourseCatalogEntry } from '../../_components/catalog-config'
 import { CourseInfoCard } from './course-info-card'
 import { CourseRelatedPanels } from './course-related-panels'
@@ -72,6 +72,20 @@ export function CourseDetailView({ initialCourse, lessons, enrollments }: Course
   const [instructor, setInstructor] = useState(initialCourse.instructor)
   const [editing, setEditing] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+
+  const handlePublish = async () => {
+    if (!course) return
+    setPublishing(true)
+    try {
+      await publishCourseInCatalog(course.id)
+      setCourse((prev) => (prev ? { ...prev, status: 'PUBLISHED' } : prev))
+    } catch {
+      /* real error surfaced via the catalog hook's own error state on next load */
+    } finally {
+      setPublishing(false)
+    }
+  }
 
   const handleArchiveConfirm = async () => {
     if (course) {
@@ -109,9 +123,15 @@ export function CourseDetailView({ initialCourse, lessons, enrollments }: Course
           <UniversalButton variant="outline" size="sm" icon={<Pencil size={13} />} onClick={() => setEditing(true)}>
             Edit
           </UniversalButton>
-          <UniversalButton variant="destructive" size="sm" icon={<Archive size={13} />} onClick={() => setArchiving(true)}>
-            Archive
-          </UniversalButton>
+          {course.status === 'PUBLISHED' ? (
+            <UniversalButton variant="destructive" size="sm" icon={<Archive size={13} />} onClick={() => setArchiving(true)}>
+              Archive
+            </UniversalButton>
+          ) : (
+            <UniversalButton variant="outline" size="sm" loading={publishing} icon={<Globe size={13} />} onClick={handlePublish}>
+              Publish
+            </UniversalButton>
+          )}
         </div>
       </div>
 

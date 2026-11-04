@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { LessonListSidebar } from './lesson-list-sidebar'
 import { LessonContentPane } from './lesson-content-pane'
 import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
-import { useLessonsByCourse } from '../../../../../_shared/use-lessons'
+import { getPublishedLessons, useLessonsByCourse } from '../../../../../_shared/use-lessons'
 import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
 import { useLanguage } from '@/contexts/language-context'
 
@@ -31,14 +31,19 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const loading = enrollmentsLoading || lessonsLoading || assessmentsLoading
 
   const course = lessonsByCourse[courseId]
-  const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? -1
-  const lesson = lessonIndex >= 0 ? course.lessons[lessonIndex] : undefined
+  // Members only see published lessons; drafts stay visible in the admin store.
+  const courseLessons = getPublishedLessons(course?.lessons)
+  const lessonIndex = courseLessons.findIndex((l) => l.id === lessonId)
+  const lesson = lessonIndex >= 0 ? courseLessons[lessonIndex] : undefined
   const enrollment = enrollments.find((e) => e.courseId === courseId)
   const completedIds = new Set(enrollment?.completedLessonIds ?? [])
 
-  const allLessonsComplete = !!course && course.lessons.length > 0 && course.lessons.every((l) => completedIds.has(l.id))
-  const linkedAssessment = allLessonsComplete
-    ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId)
+  const allLessonsComplete = courseLessons.length > 0 && courseLessons.every((l) => completedIds.has(l.id))
+  const courseExam = allLessonsComplete
+    ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId && a.kind === 'EXAM')
+    : undefined
+  const lessonAssessment = lesson
+    ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId && (a.kind === 'TEST' || a.kind === 'QUIZ') && a.lessonId === lesson.id)
     : undefined
 
   const handleMarkComplete = async () => {
@@ -73,8 +78,8 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
     )
   }
 
-  const displayLessons = course.lessons.map((l) => ({ ...l, completed: completedIds.has(l.id) }))
-  const nextLesson = lessonIndex >= 0 && lessonIndex < course.lessons.length - 1 ? course.lessons[lessonIndex + 1] : undefined
+  const displayLessons = courseLessons.map((l) => ({ ...l, completed: completedIds.has(l.id) }))
+  const nextLesson = lessonIndex >= 0 && lessonIndex < courseLessons.length - 1 ? courseLessons[lessonIndex + 1] : undefined
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 items-start">
@@ -84,7 +89,9 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         completed={completedIds.has(lesson.id)}
         markError={markError}
         onMarkComplete={handleMarkComplete}
-        courseCompleteAssessmentTitle={linkedAssessment?.title}
+        courseCompleteAssessmentTitle={linkedExam?.title}
+        lessonTestTitle={linkedTest?.title}
+        lessonTestId={linkedTest?.id}
         nextLesson={nextLesson}
         courseId={courseId}
       />

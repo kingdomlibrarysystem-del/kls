@@ -1,7 +1,7 @@
 import prisma from '@/prisma/client'
 import { isObjectId } from '@/lib/server/object-id'
 
-export function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
+export function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number; status?: string | null }) {
   return {
     id: l.id,
     courseId: l.courseId,
@@ -11,6 +11,9 @@ export function serializeLesson(l: { id: string; courseId: string; title: string
     content: l.content,
     contentMarkdown: l.contentMarkdown ?? undefined,
     order: l.order,
+    // Missing on lessons created before the field existed - Mongo doesn't
+    // retroactively apply defaults, so treat absent as published.
+    status: l.status ?? 'PUBLISHED',
   }
 }
 
@@ -27,6 +30,6 @@ export async function getCourseLessonRows(courseId: string) {
   return prisma.lesson.findMany({
     where: { courseId },
     orderBy: { order: 'asc' },
-    select: { id: true, title: true, contentType: true, durationMinutes: true },
+    select: { id: true, title: true, contentType: true, durationMinutes: true, status: true },
   })
 }

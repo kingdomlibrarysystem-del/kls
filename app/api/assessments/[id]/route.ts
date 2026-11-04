@@ -17,6 +17,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ data: serializeAssessment(assessment), message: 'Assessment fetched successfully', code: 'success', status: 200 })
 }
 
+const matchingPairSchema = z.object({
+  left: z.string().trim().min(1),
+  right: z.string().trim().min(1),
+})
+
 const questionSchema = z.object({
   id: z.string().optional(),
   text: z.string().trim().min(1),
@@ -25,12 +30,14 @@ const questionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctOptionIndex: z.number().int().optional(),
   correctOptionIndices: z.array(z.number().int()).optional(),
+  matchingPairs: z.array(matchingPairSchema).optional(),
   marks: z.number(),
 })
 
 const updateAssessmentSchema = z.object({
   title: z.string().trim().min(1).optional(),
   kind: z.string().optional(),
+  lessonId: z.string().nullable().optional(),
   durationSeconds: z.number().int().nonnegative().nullable().optional(),
   questions: z.array(questionSchema).optional(),
   brief: z.string().nullable().optional(),
@@ -50,22 +57,30 @@ export const PATCH = withErrorHandling('/api/assessments/[id]', 'PATCH', async (
   const existing = await prisma.assessment.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Assessment not found', 404)
 
-  const { questions, kind, submissionFormat, ...rest } = parsed.data
+  const { questions, kind, submissionFormat, lessonId, ...rest } = parsed.data
+  const nextKind = kind ?? existing.kind
+  const nextLessonId = lessonId !== undefined ? lessonId : existing.lessonId
+  if (nextKind === 'TEST' && !nextLessonId) {
+    throw new ApiError('A test must be linked to a lesson', 400)
+  }
+
   const updated = await prisma.assessment.update({
     where: { id },
     data: {
       ...rest,
-      ...(kind !== undefined && { kind: kind as 'QUIZ' | 'EXAM' | 'PROJECT' }),
+      ...(kind !== undefined && { kind: kind as 'TEST' | 'QUIZ' | 'EXAM' | 'PROJECT' }),
+      ...(nextKind !== 'TEST' ? { lessonId: null } : lessonId !== undefined ? { lessonId } : {}),
       ...(submissionFormat !== undefined && { submissionFormat: submissionFormat as 'TEXT' | 'LINK' | 'FILE_REF' | null }),
       ...(questions !== undefined && {
         questions: questions.map((q, i) => ({
           id: q.id ?? `q${i + 1}`,
           text: q.text,
-          type: q.type as 'SINGLE_SELECT' | 'MULTI_SELECT' | 'OPEN',
+          type: q.type as 'SINGLE_SELECT' | 'MULTI_SELECT' | 'OPEN' | 'YES_NO' | 'TRUE_FALSE' | 'MATCHING',
           context: q.context ?? null,
           options: q.options ?? [],
           correctOptionIndex: q.correctOptionIndex ?? null,
           correctOptionIndices: q.correctOptionIndices ?? [],
+          matchingPairs: q.matchingPairs ?? [],
           marks: q.marks,
         })),
       }),

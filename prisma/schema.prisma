@@ -1159,6 +1159,11 @@ model Lesson {
   /// has been migrated to populate this field for real, though.
   contentMarkdown String?
   order           Int               @default(0)
+  /// Visibility of the lesson to members. Defaults to PUBLISHED so every
+  /// lesson that existed before this field was added keeps showing up
+  /// (MongoDB does not backfill defaults on existing documents); admins can
+  /// flip a lesson to DRAFT to hide it without deleting its content.
+  status          LessonStatus      @default(PUBLISHED)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -1170,6 +1175,11 @@ enum LessonContentType {
   TEXT
   VIDEO
   FILE
+}
+
+enum LessonStatus {
+  DRAFT
+  PUBLISHED
 }
 
 /// Real enrollment, replacing app/member/_shared/enrollment-data.ts's
@@ -1223,6 +1233,8 @@ model Assessment {
   kind             AssessmentKind
   courseId         String                   @db.ObjectId
   course           Course                   @relation(fields: [courseId], references: [id])
+  /// For kind TEST: the specific lesson this per-lesson test belongs to.
+  lessonId         String?                  @db.ObjectId
   durationSeconds  Int?
   questions        Question[]
   brief            String?
@@ -1244,17 +1256,32 @@ type Question {
   options              String[]
   correctOptionIndex   Int?
   correctOptionIndices Int[]
+  /// MATCHING only — ordered left/right pairs; the correct answer is that
+  /// left item i matches right item i.
+  matchingPairs        MatchingPair[]
   marks                Int
+}
+
+type MatchingPair {
+  left  String
+  right String
 }
 
 enum QuestionType {
   SINGLE_SELECT
   MULTI_SELECT
   OPEN
+  YES_NO
+  TRUE_FALSE
+  MATCHING
 }
 
 enum AssessmentKind {
+  /// Per-lesson check (short).
+  TEST
+  /// Mid-course assessment.
   QUIZ
+  /// End-of-course, comprehensive.
   EXAM
   PROJECT
 }

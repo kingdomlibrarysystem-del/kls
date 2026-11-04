@@ -108,6 +108,11 @@ export function archiveCourseInCatalog(id: string) {
   return updateCourseInCatalog(id, { status: 'DRAFT' })
 }
 
+/** Publishes a course so members can see/enroll in it; the inverse of archiveCourseInCatalog. */
+export function publishCourseInCatalog(id: string) {
+  return updateCourseInCatalog(id, { status: 'PUBLISHED' })
+}
+
 export async function removeCourseFromCatalog(id: string): Promise<void> {
   const res = await fetch(`/api/courses/${id}`, { method: 'DELETE' })
   const json = await res.json()
