@@ -4,21 +4,9 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
+import { serializeLesson } from '@/lib/data/lessons'
 
-/** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> — already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
-function serializeLesson(l: { id: string; courseId: string; title: string; contentType: string; durationMinutes: number; content: string; contentMarkdown: string | null; order: number }) {
-  return {
-    id: l.id,
-    courseId: l.courseId,
-    title: l.title,
-    contentType: l.contentType,
-    durationMinutes: l.durationMinutes,
-    content: l.content,
-    contentMarkdown: l.contentMarkdown ?? undefined,
-    order: l.order,
-  }
-}
-
+/** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> �?" already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const courseId = searchParams.get('courseId')
@@ -49,8 +37,9 @@ const createLessonSchema = z.object({
   contentType: z.enum(['TEXT', 'VIDEO', 'FILE']),
   durationMinutes: z.number().int().nonnegative().optional(),
   content: z.string().optional(),
-  /** Real markdown-authored lesson body — see Lesson.contentMarkdown's schema comment. */
+  /** Real markdown-authored lesson body �?" see Lesson.contentMarkdown's schema comment. */
   contentMarkdown: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
 })
 
 export const POST = withErrorHandling('/api/lessons', 'POST', async (request: NextRequest) => {
@@ -75,6 +64,7 @@ export const POST = withErrorHandling('/api/lessons', 'POST', async (request: Ne
       durationMinutes: body.durationMinutes ?? 0,
       content: body.content ?? '',
       contentMarkdown: body.contentMarkdown ?? null,
+      status: body.status ?? 'PUBLISHED',
       order: (maxOrder._max.order ?? 0) + 1,
     },
   })

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Video, ChevronRight } from 'lucide-react'
-import type { LessonContentType } from '@/app/member/_shared/lesson-data'
-import { contentTypeConfig } from '../../../lessons/_components/lessons-config'
+import type { LessonContentType, LessonStatus } from '@/app/member/_shared/lesson-data'
+import { contentTypeConfig, lessonStatusConfig } from '../../../lessons/_components/lessons-config'
 import { EmptyState } from '@/components/ui/empty-state'
 
 export interface CourseLessonRow {
@@ -9,6 +9,7 @@ export interface CourseLessonRow {
   title: string
   contentType: LessonContentType
   durationMinutes: number
+  status?: LessonStatus
 }
 
 interface CourseLessonsPanelProps {
@@ -38,6 +39,9 @@ export function CourseLessonsPanel({ lessons }: CourseLessonsPanelProps) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <span className={`px-2 py-0.5 rounded border text-[11px] font-lato font-semibold ${lessonStatusConfig[lesson.status ?? 'PUBLISHED'].cls}`}>
+              {lessonStatusConfig[lesson.status ?? 'PUBLISHED'].label}
+            </span>
             <span className={`px-2 py-0.5 rounded border text-[11px] font-lato font-semibold ${contentTypeConfig[lesson.contentType].cls}`}>
               {contentTypeConfig[lesson.contentType].label}
             </span>

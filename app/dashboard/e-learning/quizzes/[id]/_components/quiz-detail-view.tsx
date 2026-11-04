@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { projectSubmissionFormatLabels } from '@/app/member/_shared/assessment-data'
+import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { kindConfig, type TakeableAssessment } from '../../_components/quizzes-config'
 import { EditQuizModal } from '../../_components/edit-quiz-modal'
 import { DeleteQuizModal } from '../../_components/delete-quiz-modal'
@@ -27,8 +28,12 @@ export function QuizDetailView({ initialAssessment, courseTitle }: QuizDetailVie
   const id = initialAssessment.id
   const router = useRouter()
   const assessment: TakeableAssessment | null = initialAssessment
+  const { data: lessonsByCourse } = useLessonsByCourse()
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const lessonTitle = assessment?.lessonId
+    ? lessonsByCourse[assessment.courseId]?.lessons.find((l) => l.id === assessment.lessonId)?.title
+    : undefined
 
   const handleDeleteModalClose = async () => {
     setDeleting(false)
@@ -71,7 +76,10 @@ export function QuizDetailView({ initialAssessment, courseTitle }: QuizDetailVie
       <div className="max-w-2xl space-y-3">
         <div>
           <h1 className="font-cinzel text-xl font-semibold text-w-950">{assessment.title}</h1>
-          <p className="font-lato text-sm text-w-600 mt-0.5">{courseTitle}</p>
+          <p className="font-lato text-sm text-w-600 mt-0.5">
+            {courseTitle}
+            {lessonTitle && <> · Lesson: {lessonTitle}</>}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -102,7 +110,19 @@ export function QuizDetailView({ initialAssessment, courseTitle }: QuizDetailVie
               <div key={q.id} className="bg-w-100 border border-w-300 rounded p-3">
                 {q.context && <p className="text-xs text-w-600 italic mb-1.5">{q.context}</p>}
                 <p className="text-xs font-semibold text-w-950 mb-1.5">Q{i + 1}. {q.text} <span className="text-w-600 font-normal">({q.marks} marks)</span></p>
-                {(q.type === 'SINGLE_SELECT' || q.type === 'MULTI_SELECT') && q.options ? (
+                {q.type === 'MATCHING' && q.matchingPairs ? (
+                  <ul className="space-y-1">
+                    {q.matchingPairs.map((pair, pIndex) => (
+                      <li key={pIndex} className="flex items-center gap-1.5 text-xs font-semibold text-green-700 dark:text-success">
+                        <CheckCircle2 size={12} /> {pair.left} → {pair.right}
+                      </li>
+                    ))}
+                  </ul>
+                ) : q.type === 'YES_NO' || q.type === 'TRUE_FALSE' ? (
+                  <p className="text-xs font-semibold text-green-700 dark:text-success">
+                    Correct answer: {(q.type === 'YES_NO' ? ['Yes', 'No'] : ['True', 'False'])[q.correctOptionIndex ?? -1] ?? '—'}
+                  </p>
+                ) : (q.type === 'SINGLE_SELECT' || q.type === 'MULTI_SELECT') && q.options ? (
                   <ul className="space-y-1">
                     {q.options.map((opt, oIndex) => {
                       const isCorrect = q.type === 'SINGLE_SELECT' ? oIndex === q.correctOptionIndex : (q.correctOptionIndices ?? []).includes(oIndex)

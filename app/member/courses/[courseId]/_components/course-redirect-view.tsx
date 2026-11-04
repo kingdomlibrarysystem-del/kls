@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
 import { useCourses } from '@/app/member/_shared/use-courses'
 import { enrollInCourse, getNextLessonId, useEnrollments } from '@/app/member/_shared/use-enrollments'
-import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
+import { getPublishedLessons, useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { useLanguage } from '@/contexts/language-context'
 
 interface CourseRedirectViewProps {
@@ -46,7 +46,7 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
           enrollment = await enrollInCourse(user!.id, courseId)
           await refetch()
         }
-        const lessons = lessonsByCourse[courseId]?.lessons
+        const lessons = getPublishedLessons(lessonsByCourse[courseId]?.lessons)
         const nextLessonId = getNextLessonId(enrollment, lessons)
         router.replace(nextLessonId ? `/member/courses/${courseId}/lessons/${nextLessonId}` : '/member/courses')
       } catch (err) {

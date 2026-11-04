@@ -83,6 +83,16 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
 
   const question = assessment.questions[questionIndex]
 
+  /** MATCHING answers live as a JSON object (leftIndex -> rightIndex) in the same openText slot OPEN answers use. */
+  const matchingAnswersFor = (openText?: string): Record<number, number> => {
+    if (!openText) return {}
+    try {
+      return JSON.parse(openText) as Record<number, number>
+    } catch {
+      return {}
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -109,6 +119,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
         selectedOptionIndex={answers[question.id]?.optionIndex}
         selectedOptionIndices={answers[question.id]?.optionIndices}
         openAnswer={answers[question.id]?.openText}
+        matchingAnswers={matchingAnswersFor(answers[question.id]?.openText)}
         onSelectOption={(optionIndex) => setAnswers((prev) => ({ ...prev, [question.id]: { ...prev[question.id], optionIndex } }))}
         onToggleMultiOption={(optionIndex) => setAnswers((prev) => {
           const current = prev[question.id]?.optionIndices ?? []
@@ -116,6 +127,16 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
           return { ...prev, [question.id]: { ...prev[question.id], optionIndices: next } }
         })}
         onOpenAnswerChange={(value) => setAnswers((prev) => ({ ...prev, [question.id]: { ...prev[question.id], openText: value } }))}
+        onMatchingAnswer={(leftIndex, rightIndex) => {
+          // Store matching as openText JSON so the existing answer serialization
+          // path handles it. Derive from the previous answers value (not a
+          // separate state) so the already-selected pairs are never dropped.
+          setAnswers((prev) => {
+            const current = matchingAnswersFor(prev[question.id]?.openText)
+            const updated = { ...current, [leftIndex]: rightIndex }
+            return { ...prev, [question.id]: { ...prev[question.id], openText: JSON.stringify(updated) } }
+          })
+        }}
         onPrev={() => setQuestionIndex((i) => Math.max(0, i - 1))}
         onNext={() => setQuestionIndex((i) => Math.min(assessment.questions.length - 1, i + 1))}
         onSubmit={() => handleSubmit(false)}

@@ -1,6 +1,9 @@
 /** Lesson content type, per kls-product-spec Task 6.2 / Prisma `Lesson.content_type`. */
 export type LessonContentType = 'TEXT' | 'VIDEO' | 'FILE'
 
+/** Lesson visibility to members, per Prisma `Lesson.status`. */
+export type LessonStatus = 'DRAFT' | 'PUBLISHED'
+
 export interface Lesson {
   id: string
   title: string
@@ -9,6 +12,8 @@ export interface Lesson {
   content: string
   /** Real markdown-authored lesson body — every lesson in the catalog has this populated; falls back to the contentType-based `content` field when absent (e.g. a lesson created before the markdown editor existed). */
   contentMarkdown?: string
+  /** Missing on lessons created before this field existed — treated as PUBLISHED. */
+  status?: LessonStatus
   completed: boolean
 }
 

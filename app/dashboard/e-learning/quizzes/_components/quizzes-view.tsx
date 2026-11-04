@@ -61,11 +61,11 @@ export function QuizzesView() {
       <div>
         <EmptyState
           icon={ClipboardList}
-          title="No quizzes or exams yet"
-          description="Add a quiz or exam to a course to see it appear here."
+          title="No assessments yet"
+          description="Add a per-lesson test, a quiz, or an end-of-course exam to see it appear here."
           action={
             <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
-              <PlusCircle size={15} /> Add Quiz / Exam
+              <PlusCircle size={15} /> Add Test / Quiz / Exam
             </ElegantButton>
           }
         />
@@ -149,7 +149,7 @@ export function QuizzesView() {
           )}
         </Link>
         <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
-          <PlusCircle size={15} /> Add Quiz / Exam
+          <PlusCircle size={15} /> Add Test / Quiz / Exam
         </ElegantButton>
       </div>
 
@@ -160,7 +160,7 @@ export function QuizzesView() {
         searchPlaceholder="Search title or course..."
         searchFilter={(a, q) => a.title.toLowerCase().includes(q) || courseTitleFor(a.courseId).toLowerCase().includes(q)}
         filters={kindSelect}
-        emptyMessage="No quizzes or exams match your filters."
+        emptyMessage="No assessments match your filters."
       />
 
       <AddQuizModal open={adding} onClose={() => setAdding(false)} />

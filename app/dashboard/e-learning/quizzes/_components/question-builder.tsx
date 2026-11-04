@@ -4,8 +4,11 @@ import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFo
 import { Plus, Trash2 } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FormInput } from '@/components/ui/form-input'
-import { emptyQuestion, type QuizFormData } from './quiz-form-schema'
+import { createEmptyQuestion, type QuizFormData } from './quiz-form-schema'
 import { QuestionAnswerFields } from './question-answer-fields'
+
+/** Upper bound only to keep the form from rendering an unbounded number of rows. */
+const MAX_QUESTIONS = 50
 
 interface QuestionBuilderProps {
   control: Control<QuizFormData>
@@ -25,9 +28,39 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
   const { fields, append, remove } = useFieldArray({ control, name: 'questions' })
   const watchedQuestions = useWatch({ control, name: 'questions' })
 
+  /**
+   * Resizes the question list to an exact number, so an author can set
+   * "8 questions" up front instead of clicking "Add Question" eight times.
+   * Removing always trims from the end so already-typed questions are kept.
+   */
+  const handleCountChange = (nextCount: number) => {
+    if (!Number.isFinite(nextCount)) return
+    const bounded = Math.max(1, Math.min(MAX_QUESTIONS, Math.floor(nextCount)))
+    if (bounded > fields.length) {
+      append(Array.from({ length: bounded - fields.length }, () => createEmptyQuestion()))
+    } else if (bounded < fields.length) {
+      remove(Array.from({ length: fields.length - bounded }, (_, i) => fields.length - 1 - i))
+    }
+  }
+
   return (
     <div className="space-y-3">
-      <FieldLabel htmlFor="questions-list">Questions</FieldLabel>
+      <div className="flex items-end justify-between gap-3">
+        <FieldLabel htmlFor="questions-list">Questions</FieldLabel>
+        <div className="w-36">
+          <FieldLabel htmlFor="question-count">Number of questions</FieldLabel>
+          <FormInput
+            id="question-count"
+            type="number"
+            min={1}
+            max={MAX_QUESTIONS}
+            value={fields.length}
+            onChange={(e) => handleCountChange(Number(e.target.value))}
+            onFocus={(e) => e.currentTarget.select()}
+            aria-label="Number of questions"
+          />
+        </div>
+      </div>
       {fields.map((field, qIndex) => (
         <div key={field.id} className="border border-w-300 rounded p-3 space-y-2 bg-w-50">
           <div className="flex items-center justify-between">
@@ -46,8 +79,11 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
               className="w-full px-3 py-2 font-lato text-xs border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none"
               {...register(`questions.${qIndex}.type`)}
             >
-              <option value="SINGLE_SELECT">Single-select</option>
+              <option value="SINGLE_SELECT">Single-select (MCQ)</option>
               <option value="MULTI_SELECT">Multi-select</option>
+              <option value="YES_NO">Yes / No</option>
+              <option value="TRUE_FALSE">True / False</option>
+              <option value="MATCHING">Matching</option>
               <option value="OPEN">Open-ended</option>
             </select>
           </div>
@@ -74,11 +110,13 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
           <QuestionAnswerFields
             qIndex={qIndex}
             type={watchedQuestions?.[qIndex]?.type ?? 'SINGLE_SELECT'}
+            options={watchedQuestions?.[qIndex]?.options}
             correctOptionIndex={watchedQuestions?.[qIndex]?.correctOptionIndex}
             correctOptionIndices={watchedQuestions?.[qIndex]?.correctOptionIndices}
             register={register}
             setValue={setValue}
             errors={errors}
+            control={control}
           />
 
           <div className="w-32">
@@ -96,7 +134,7 @@ export function QuestionBuilder({ control, register, setValue, errors }: Questio
 
       <button
         type="button"
-        onClick={() => append(emptyQuestion)}
+        onClick={() => append(createEmptyQuestion())}
         aria-label="Add another question"
         className="flex items-center gap-1.5 text-xs font-lato font-semibold text-w-700 hover:text-w-950 transition-colors"
       >

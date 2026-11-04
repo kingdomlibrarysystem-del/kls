@@ -21,6 +21,7 @@ const updateLessonSchema = z.object({
   content: z.string().optional(),
   contentMarkdown: z.string().nullable().optional(),
   order: z.number().int().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
 })
 
 export const PATCH = withErrorHandling('/api/lessons/[id]', 'PATCH', async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {

@@ -16,8 +16,9 @@ function serializeAssessment(a: {
   title: string
   kind: string
   courseId: string
+  lessonId: string | null
   durationSeconds: number | null
-  questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; marks: number }[]
+  questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; matchingPairs: { left: string; right: string }[]; marks: number }[]
   brief: string | null
   submissionFormat: string | null
   projectMarks: number | null
@@ -27,6 +28,7 @@ function serializeAssessment(a: {
     title: a.title,
     kind: a.kind,
     courseId: a.courseId,
+    lessonId: a.lessonId ?? undefined,
     durationSeconds: a.durationSeconds ?? undefined,
     questions: a.questions.map((q) => ({
       id: q.id,
@@ -36,6 +38,7 @@ function serializeAssessment(a: {
       options: q.options.length ? q.options : undefined,
       correctOptionIndex: q.correctOptionIndex ?? undefined,
       correctOptionIndices: q.correctOptionIndices.length ? q.correctOptionIndices : undefined,
+      matchingPairs: q.matchingPairs?.length ? q.matchingPairs : undefined,
       marks: q.marks,
     })),
     brief: a.brief ?? undefined,
@@ -52,8 +55,9 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '100')
   const courseId = searchParams.get('courseId')
+  const lessonId = searchParams.get('lessonId')
 
-  const where = { ...(courseId && { courseId }) }
+  const where = { ...(courseId && { courseId }), ...(lessonId && { lessonId }) }
 
   const [totalItems, assessments] = await Promise.all([
     prisma.assessment.count({ where }),
@@ -71,6 +75,11 @@ export async function GET(request: NextRequest) {
   })
 }
 
+const matchingPairSchema = z.object({
+  left: z.string().trim().min(1),
+  right: z.string().trim().min(1),
+})
+
 const questionSchema = z.object({
   id: z.string().optional(),
   text: z.string().trim().min(1, 'question text is required'),
@@ -79,6 +88,7 @@ const questionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctOptionIndex: z.number().int().optional(),
   correctOptionIndices: z.array(z.number().int()).optional(),
+  matchingPairs: z.array(matchingPairSchema).optional(),
   marks: z.number(),
 })
 
@@ -86,6 +96,7 @@ const createAssessmentSchema = z.object({
   title: z.string().trim().min(1, 'title is required'),
   kind: z.string().min(1, 'kind is required'),
   courseId: z.string().min(1, 'courseId is required'),
+  lessonId: z.string().optional(),
   durationSeconds: z.number().int().nonnegative().optional(),
   questions: z.array(questionSchema).optional(),
   brief: z.string().optional(),
@@ -105,21 +116,26 @@ export const POST = withErrorHandling('/api/assessments', 'POST', async (request
 
   const course = await prisma.course.findUnique({ where: { id: body.courseId } })
   if (!course) throw new ApiError('The specified course does not exist', 400)
+  if (body.kind === 'TEST' && !body.lessonId) {
+    throw new ApiError('A test must be linked to a lesson', 400)
+  }
 
   const assessment = await prisma.assessment.create({
     data: {
       title: body.title,
-      kind: body.kind as 'QUIZ' | 'EXAM' | 'PROJECT',
+      kind: body.kind as 'TEST' | 'QUIZ' | 'EXAM' | 'PROJECT',
       courseId: body.courseId,
+      lessonId: body.kind === 'TEST' ? body.lessonId ?? null : null,
       durationSeconds: body.durationSeconds ?? null,
       questions: (body.questions ?? []).map((q, i) => ({
         id: q.id ?? `q${i + 1}`,
         text: q.text,
-        type: q.type as 'SINGLE_SELECT' | 'MULTI_SELECT' | 'OPEN',
+        type: q.type as 'SINGLE_SELECT' | 'MULTI_SELECT' | 'OPEN' | 'YES_NO' | 'TRUE_FALSE' | 'MATCHING',
         context: q.context ?? null,
         options: q.options ?? [],
         correctOptionIndex: q.correctOptionIndex ?? null,
         correctOptionIndices: q.correctOptionIndices ?? [],
+        matchingPairs: q.matchingPairs ?? [],
         marks: q.marks,
       })),
       brief: body.brief ?? null,

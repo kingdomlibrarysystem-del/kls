@@ -73,6 +73,8 @@ export interface AddAssessmentInput {
   title: string
   kind: TakeableAssessment['kind']
   courseId: string
+  /** Required when kind === 'TEST' — the lesson this test belongs to. */
+  lessonId?: string
   durationSeconds?: number
   questions: Question[]
   brief?: string

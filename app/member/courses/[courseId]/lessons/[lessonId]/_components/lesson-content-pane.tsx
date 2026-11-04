@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronRight } from 'lucide-react'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import type { Lesson } from '../../../../../_shared/lesson-data'
+import type { TakeableAssessment } from '../../../../../_shared/assessment-data'
+import { LessonQuizInline } from './lesson-quiz-inline'
 import { useLanguage } from '@/contexts/language-context'
 
 interface LessonContentPaneProps {
@@ -11,8 +13,11 @@ interface LessonContentPaneProps {
   completed: boolean
   markError: string
   onMarkComplete: () => void
-  /** Set once every lesson in the course is complete and a linked assessment exists — nudges the member to take it. */
+  /** Set on the last lesson when a linked exam exists — nudges the member to take it. */
   courseCompleteAssessmentTitle?: string
+  courseCompleteAssessmentId?: string
+  /** Per-lesson TEST or QUIZ — rendered inline under the lesson content when present. */
+  lessonAssessment?: TakeableAssessment
   /** The next lesson in the course, if one exists — renders a real "Next Lesson" link. */
   nextLesson?: { id: string; title: string }
   courseId: string
@@ -35,7 +40,7 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
  * paragraphs) only for a lesson created before the markdown editor
  * existed and never migrated.
  */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, nextLesson, courseId }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId }: LessonContentPaneProps) {
   const { t } = useLanguage()
   return (
     <div className="card">
@@ -104,6 +109,8 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         </>
       )}
 
+      {lessonAssessment && <LessonQuizInline assessment={lessonAssessment} />}
+
       {markError && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>
           <AlertCircle size={15} /> {markError}
@@ -138,7 +145,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
           <span style={{ fontSize: 14, color: '#3a2e00', flex: 1 }}>
             {t("m_courses.all_lessons_complete_take")} <strong>{courseCompleteAssessmentTitle}</strong> {t("m_courses.to_finish_course")}
           </span>
-          <Link href="/member/assessments" className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
+          <Link href={`/member/assessments/${courseCompleteAssessmentId}/take`} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
             {t("m_courses.take_assessment")}
           </Link>
         </div>
