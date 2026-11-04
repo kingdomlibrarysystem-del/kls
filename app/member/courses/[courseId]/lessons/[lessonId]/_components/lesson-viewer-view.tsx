@@ -38,12 +38,15 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const enrollment = enrollments.find((e) => e.courseId === courseId)
   const completedIds = new Set(enrollment?.completedLessonIds ?? [])
 
-  const allLessonsComplete = courseLessons.length > 0 && courseLessons.every((l) => completedIds.has(l.id))
-  const courseExam = allLessonsComplete
+  const isLastLesson = lessonIndex === courseLessons.length - 1
+  const courseExam = isLastLesson
     ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId && a.kind === 'EXAM')
     : undefined
   const lessonAssessment = lesson
-    ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId && (a.kind === 'TEST' || a.kind === 'QUIZ') && a.lessonId === lesson.id)
+    ? Object.values(assessmentCatalog).find(
+        (a) => a.courseId === courseId && (a.kind === 'TEST' || a.kind === 'QUIZ') &&
+        (a.lessonId === lesson.id || (!a.lessonId && a.kind === 'QUIZ'))
+      )
     : undefined
 
   const handleMarkComplete = async () => {
@@ -89,9 +92,9 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         completed={completedIds.has(lesson.id)}
         markError={markError}
         onMarkComplete={handleMarkComplete}
-        courseCompleteAssessmentTitle={linkedExam?.title}
-        lessonTestTitle={linkedTest?.title}
-        lessonTestId={linkedTest?.id}
+        courseCompleteAssessmentTitle={courseExam?.title}
+        courseCompleteAssessmentId={courseExam?.id}
+        lessonAssessment={lessonAssessment}
         nextLesson={nextLesson}
         courseId={courseId}
       />

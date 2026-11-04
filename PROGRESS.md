@@ -7802,3 +7802,79 @@ because the running `next dev` holds it, but the generated client JS/d.ts alread
 restart the dev server and re-run `npx prisma generate` if the runtime rejects the field.
 
 **Needs running on the dev DB:** none for MongoDB; `npx prisma generate` after stopping the dev server.
+
+## 2026-11-03 - Fix: lesson-viewer-view referenced undefined variables + exam nudge on last lesson
+
+**What changed.**
+- **Bug fix: undefined `linkedExam`/`linkedTest` variables.** `lesson-viewer-view.tsx` was passing
+  `linkedExam?.title`, `linkedTest?.title`, and `linkedTest?.id` to `LessonContentPane`, but those
+  variables were never declared — the file computed `courseExam` and `lessonAssessment` instead.
+  This caused a runtime crash on any lesson page. Fixed by passing the correctly-named variables.
+- **Exam nudge now appears on the last lesson, not after all lessons are complete.** The previous
+  logic gated `courseExam` on `allLessonsComplete` — meaning the exam nudge only appeared after
+  the member had already marked every lesson done, which required navigating away from the last
+  lesson and back. Changed to `isLastLesson` (i.e. `lessonIndex === courseLessons.length - 1`),
+  so the exam nudge appears inline on the last lesson's content pane alongside any per-lesson
+  TEST/QUIZ nudge — matching the requirement that the last lesson shows both at the same time.
+- **Exam nudge links directly to the exam take page.** `LessonContentPane`'s exam nudge previously
+  linked to the generic `/member/assessments` list. Now accepts a `courseCompleteAssessmentId` prop
+  and links directly to `/member/assessments/${courseCompleteAssessmentId}/take`, consistent with
+  how the per-lesson test nudge already links directly to its own take page.
+- **Both nudges remain optional.** The per-lesson TEST/QUIZ nudge and the end-of-course EXAM nudge
+  are both informational cards with a direct link — the member can ignore them and continue to the
+  next lesson or leave the course at any time. No gate was added.
+
+**Files touched.**
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-viewer-view.tsx` —
+  replaced `allLessonsComplete`/`courseExam` gate with `isLastLesson`; fixed prop names passed to
+  `LessonContentPane` (`courseExam`/`lessonAssessment` instead of the undefined `linkedExam`/`linkedTest`);
+  added `courseCompleteAssessmentId` prop.
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-content-pane.tsx` —
+  added `courseCompleteAssessmentId` to the props interface and the function signature; updated the
+  exam nudge's `<Link>` to use the direct take-page URL instead of the generic assessments list;
+  updated JSDoc comments on both assessment-related props.
+
+**Interactions to watch.**
+- `isLastLesson` is derived from `lessonIndex === courseLessons.length - 1` against the
+  **published** lesson list (`getPublishedLessons()`). If an admin unpublishes the last lesson,
+  the new last published lesson will show the exam nudge — this is correct behavior, not a bug.
+- The per-lesson TEST/QUIZ nudge and the EXAM nudge can both appear simultaneously on the last
+  lesson if the admin has created both. The EXAM nudge renders below the TEST nudge (both are
+  `marginTop: 14` cards stacked in the card's flow).
+- No change to grading, completion, or certificate logic — only the nudge visibility condition
+  and the link destination changed.
+
+## 2026-11-03 - Inline quiz/test embedded directly in the lesson content pane
+
+**What changed.**
+- **New `lesson-quiz-inline.tsx` component.** A self-contained, collapsible quiz/test panel that
+  renders directly under the lesson content — no navigation away from the lesson page required.
+  The member clicks the teal header to expand it; if not interested, they leave it collapsed and
+  continue to the next lesson with no friction. Supports all question types: SINGLE_SELECT,
+  MULTI_SELECT, YES_NO, TRUE_FALSE, MATCHING, and OPEN. On submit, calls the real
+  `recordAssessmentAttempt()` API and shows the score inline (earned / total marks + a short
+  feedback message). The quiz is always optional — no gate on "Mark Complete" or "Next Lesson".
+- **`lesson-content-pane.tsx` updated.** Replaced the old teal nudge banner (title + "Take Test"
+  link) with `<LessonQuizInline assessment={lessonAssessment} />`. The prop changed from
+  `lessonTestTitle?: string` + `lessonTestId?: string` to `lessonAssessment?: TakeableAssessment`
+  so the full question data is available to the inline component without an extra fetch.
+- **`lesson-viewer-view.tsx` updated.** Now passes `lessonAssessment={lessonAssessment}` (the full
+  object) instead of the former `lessonTestTitle`/`lessonTestId` pair.
+
+**Files touched.**
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-quiz-inline.tsx` — new file.
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-content-pane.tsx` — replaced
+  nudge banner with inline component; updated props interface and imports.
+- `app/member/courses/[courseId]/lessons/[lessonId]/_components/lesson-viewer-view.tsx` — passes
+  full `lessonAssessment` object instead of title/id pair.
+
+**Interactions to watch.**
+- The inline quiz only appears when the admin has created a TEST or QUIZ assessment with
+  `lessonId` set to the current lesson's real MongoDB ObjectId. If no such assessment exists,
+  nothing renders — no empty state, no nudge.
+- `recordAssessmentAttempt()` is the same function the standalone take-assessment page uses, so
+  the attempt is recorded in the real DB and appears in the admin review queue exactly as before.
+- The exam nudge (last lesson, gold banner) is unaffected — it still renders below the inline quiz
+  if both are present on the last lesson.
+- The collapsible state is local (`useState`) — it resets if the member navigates away and back,
+  which is correct (they start fresh each visit).
