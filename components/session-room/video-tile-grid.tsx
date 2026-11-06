@@ -88,7 +88,8 @@ export function VideoTileGrid({
       solo={isSolo}
     />
   );
-  const otherTile = (
+  // Someone appears only once they have actually joined — no placeholder tile for people who are not here.
+  const otherTile = otherNotJoined ? null : (
     <ParticipantTile
       key={otherName}
       name={otherName}
@@ -123,7 +124,7 @@ export function VideoTileGrid({
   if (youPresenting || otherPresenting) {
     const primaryTile = youPresenting ? youTile : otherTile;
     const stripTiles = youPresenting
-      ? [{ key: otherName, tile: otherTile }, ...extraParticipants.map((p, i) => ({ key: p.name, tile: extraTiles[i] }))]
+      ? [...(otherTile ? [{ key: otherName, tile: otherTile }] : []), ...extraParticipants.map((p, i) => ({ key: p.name, tile: extraTiles[i] }))]
       : [{ key: 'you', tile: youTile }, ...extraParticipants.map((p, i) => ({ key: p.name, tile: extraTiles[i] }))];
     return (
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 h-full p-3">

@@ -26,7 +26,9 @@ export function StartSessionMenu() {
   const { user } = useAuth()
   const { data: enrollments } = useEnrollments()
   const { data: courseCatalog } = useCourses()
+  // Open classes are for finished courses only (the API refuses the others for members).
   const myCourses = enrollments
+    .filter((e) => e.status === 'COMPLETED')
     .map((e) => courseCatalog.find((c) => c.id === e.courseId))
     .filter((c): c is CatalogCourse => !!c)
   const [menuOpen, setMenuOpen] = useState(false)

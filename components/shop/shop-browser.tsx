@@ -20,9 +20,10 @@ const SORTS: { value: Sort; label: string }[] = [
  * searching, choosing a category and sorting happen instantly in the browser
  * with no loading between clicks.
  */
-export function ShopBrowser({ products, categories, basePath }: { products: ShopProduct[]; categories: ShopCategory[]; basePath: string }) {
+/** initialCategory: ?category=<id> (e.g. "see all" from a service page) opens the shop on that category. */
+export function ShopBrowser({ products, categories, basePath, initialCategory }: { products: ShopProduct[]; categories: ShopCategory[]; basePath: string; initialCategory?: string }) {
   const [q, setQ] = useState('')
-  const [category, setCategory] = useState<string>('all')
+  const [category, setCategory] = useState<string>(() => (initialCategory && categories.some((c) => c.id === initialCategory) ? initialCategory : 'all'))
   const [sort, setSort] = useState<Sort>('newest')
 
   const visible = useMemo(() => {

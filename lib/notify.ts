@@ -25,6 +25,7 @@ export type NotificationCategory =
   | 'assessment-graded'
   | 'news-article-published'
   | 'library-resource-review' | 'library-resource-decision'
+  | 'service-request' | 'service-request-update'
 
 interface NotifyUserInput {
   userId: string

@@ -19,7 +19,7 @@ interface RoomAccessGuardProps {
  * room.
  */
 export function RoomAccessGuard({ loading, request, waitingForHost }: RoomAccessGuardProps) {
-  if (!loading && !request) return <EmptyState icon={CalendarClock} title="Session not found" description="This session request doesn't exist." style={{ color: 'var(--text-secondary)' }} />
+  if (!loading && !request) return <EmptyState icon={CalendarClock} title="Class not found" description="This open class does not exist." style={{ color: 'var(--text-secondary)' }} />
   if (!request) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -33,14 +33,14 @@ export function RoomAccessGuard({ loading, request, waitingForHost }: RoomAccess
   if (!joinWindow.canJoin) {
     return <EmptyState
       icon={CalendarClock}
-      title={joinWindow.reason === 'too-early' ? 'This session hasn\'t opened yet' : 'This session\'s window has passed'}
-      description={joinWindow.reason === 'too-early' ? `The room opens at ${joinWindow.opensAt.toLocaleString()}.` : 'This scheduled session is no longer joinable — ask to reschedule if you still need it.'}
+      title={joinWindow.reason === 'too-early' ? 'The class room is not open yet' : 'This open class has ended'}
+      description={joinWindow.reason === 'too-early' ? `The class room opens at ${joinWindow.opensAt.toLocaleString()}.` : 'You can no longer join this class. Ask for a new open class if you still need one.'}
       style={{ color: 'var(--text-secondary)' }}
     />
   }
 
   if (waitingForHost) {
-    return <EmptyState icon={CalendarClock} title="Waiting for the host to join" description="This room opens once the lecturer or an admin joins — it'll connect automatically the moment they arrive." style={{ color: 'var(--text-secondary)' }} />
+    return <EmptyState icon={CalendarClock} title="Waiting for the teacher" description="The class starts when your teacher joins. You will be connected automatically." style={{ color: 'var(--text-secondary)' }} />
   }
 
   return null

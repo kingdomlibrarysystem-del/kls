@@ -85,9 +85,15 @@ afterAll(async () => {
 }, 60_000)
 
 describe('publisher submits, reviewer approves', () => {
-  it('a role without "publications:submit" cannot add a book', async () => {
-    as('nobody')
-    expect((await post(book())).status).toBe(403)
+  it('anyone signed in can add a book (any role); signed out cannot', async () => {
+    session = null
+    expect((await post(book())).status).toBe(401)
+    as('nobody') // a role with no permissions at all
+    const res = await post(book())
+    expect(res.status).toBe(201)
+    const draft = (await res.json()).data
+    expect(draft).toMatchObject({ status: 'DRAFT', contributorId: ids.nobody })
+    expect((await patch(draft.id, { action: 'withdraw' })).status).toBe(200)
   })
 
   it('submitting needs a KCS category, a description and a cover', async () => {

@@ -9,6 +9,8 @@ import { LessonContentPane } from './lesson-content-pane'
 import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
 import { getPublishedLessons, useLessonsByCourse } from '../../../../../_shared/use-lessons'
 import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
+import { useAssessmentAttempts } from '../../../../../_shared/use-assessment-attempts'
+import { useCourses } from '../../../../../_shared/use-courses'
 import { useLanguage } from '@/contexts/language-context'
 
 interface LessonViewerViewProps {
@@ -28,6 +30,8 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments()
   const { data: lessonsByCourse, loading: lessonsLoading } = useLessonsByCourse()
   const { data: assessmentCatalog, loading: assessmentsLoading } = useAssessmentCatalog()
+  const { data: attempts } = useAssessmentAttempts()
+  const { data: catalogCourses } = useCourses()
   const loading = enrollmentsLoading || lessonsLoading || assessmentsLoading
 
   const course = lessonsByCourse[courseId]
@@ -35,7 +39,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const courseLessons = getPublishedLessons(course?.lessons)
   const lessonIndex = courseLessons.findIndex((l) => l.id === lessonId)
   const lesson = lessonIndex >= 0 ? courseLessons[lessonIndex] : undefined
-  const enrollment = enrollments.find((e) => e.courseId === courseId)
+  const enrollment = enrollments.find((e) => e.courseId === courseId && e.status !== 'DROPPED')
   const completedIds = new Set(enrollment?.completedLessonIds ?? [])
 
   const isLastLesson = lessonIndex === courseLessons.length - 1
@@ -44,8 +48,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
     : undefined
   const lessonAssessment = lesson
     ? Object.values(assessmentCatalog).find(
-        (a) => a.courseId === courseId && (a.kind === 'TEST' || a.kind === 'QUIZ') &&
-        (a.lessonId === lesson.id || (!a.lessonId && a.kind === 'QUIZ'))
+        (a) => a.courseId === courseId && (a.kind === 'TEST' || a.kind === 'QUIZ') && a.lessonId === lesson.id
       )
     : undefined
 
@@ -97,6 +100,9 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         lessonAssessment={lessonAssessment}
         nextLesson={nextLesson}
         courseId={courseId}
+        quizAttempt={lessonAssessment ? (attempts ?? []).find((a) => a.assessmentId === lessonAssessment.id) : undefined}
+        examAttempt={courseExam ? (attempts ?? []).find((a) => a.assessmentId === courseExam.id) : undefined}
+        completedCourse={enrollment?.status === 'COMPLETED' ? { id: courseId, title: course.courseTitle, lecturerId: catalogCourses.find((c) => c.id === courseId)?.lecturerId } : undefined}
       />
     </div>
   )

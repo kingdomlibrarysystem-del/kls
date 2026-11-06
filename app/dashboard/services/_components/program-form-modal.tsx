@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
-import { slugify, type ServiceProgramItem } from '@/lib/services/shared'
+import { normalizeColorKey, slugify, type ServiceProgramItem } from '@/lib/services/shared'
 import { ColorPicker, IconPicker } from './pickers'
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   onSaved: (p: ServiceProgramItem, message: string) => void
 }
 
-/** Add / edit a programme. Key services are typed one per line. */
+/** Add / edit a programme (its sub-services are managed separately). */
 export function ProgramFormModal({ editing, onClose, onSaved }: Props) {
   const [d, setD] = useState({
     name: editing?.name ?? '',
@@ -26,8 +26,7 @@ export function ProgramFormModal({ editing, onClose, onSaved }: Props) {
     description: editing?.description ?? '',
     image: editing?.image ?? '',
     icon: editing?.icon ?? 'sparkles',
-    color: editing?.color ?? 'gold',
-    keyServices: (editing?.keyServices ?? []).join('\n'),
+    color: normalizeColorKey(editing?.color ?? 'gold'),
     ctaLabel: editing?.ctaLabel ?? '',
     ctaHref: editing?.ctaHref ?? '',
   })
@@ -41,7 +40,6 @@ export function ProgramFormModal({ editing, onClose, onSaved }: Props) {
     try {
       const body = {
         name: d.name, slug, tagline: d.tagline, description: d.description, image: d.image || null, icon: d.icon, color: d.color,
-        keyServices: d.keyServices.split('\n').map((s) => s.trim()).filter(Boolean),
         ctaLabel: d.ctaLabel.trim() || null, ctaHref: d.ctaHref.trim() || null,
       }
       const res = await fetch(editing ? `/api/services/programs/${editing.id}` : '/api/services/programs', { method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -64,10 +62,7 @@ export function ProgramFormModal({ editing, onClose, onSaved }: Props) {
         </div>
         <div className="space-y-1.5"><Label htmlFor="pg-tag">Tagline</Label><Input id="pg-tag" value={d.tagline} onChange={(e) => set({ tagline: e.target.value })} maxLength={120} placeholder="Understand health. Protect life." /></div>
         <div className="space-y-1.5"><Label htmlFor="pg-desc">Description</Label><Textarea id="pg-desc" rows={3} value={d.description} onChange={(e) => set({ description: e.target.value })} maxLength={2000} /></div>
-        <div className="space-y-1.5">
-          <Label htmlFor="pg-keys">Key services <span className="font-normal text-muted-foreground">(one per line, up to 12)</span></Label>
-          <Textarea id="pg-keys" rows={5} value={d.keyServices} onChange={(e) => set({ keyServices: e.target.value })} placeholder={'Health education & disease prevention\nNutrition & healthy lifestyle'} />
-        </div>
+        <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">Sub-services (what members request, with call / messages / meeting and linked products) are added under the programme on the Services & Programs page.</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5"><Label>Icon</Label><IconPicker value={d.icon} onChange={(icon) => set({ icon })} color={d.color} /></div>
           <div className="space-y-1.5"><Label>Colour</Label><ColorPicker value={d.color} onChange={(color) => set({ color })} /></div>

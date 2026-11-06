@@ -12,6 +12,8 @@ export interface ShopCategory {
   id: string
   name: string
   description: string | null
+  /** Optional service programme (ServiceProgram) whose pages show these products. */
+  serviceProgramId: string | null
   sortOrder: number
   active: boolean
   productCount?: number

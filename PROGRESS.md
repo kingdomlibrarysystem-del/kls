@@ -7878,3 +7878,224 @@ restart the dev server and re-run `npx prisma generate` if the runtime rejects t
   if both are present on the last lesson.
 - The collapsible state is local (`useState`) — it resets if the member navigates away and back,
   which is correct (they start fresh each visit).
+
+### 2026-11-06 — Services: sub-services members can request (call / messages / online meeting), linked products, brand colours
+
+**Request:** each service has sub-services that should be links; a member may need one or more; help is given
+by phone call, messages or an online meeting; send people to the products that go with a service; everything
+manageable (add / remove) in the dashboard; use the website's own colours instead of the mixed palette.
+
+**Data.** New `ServiceOffering` (sub-service: name, summary, description, photo, `channels` CALL / MESSAGE /
+MEETING, linked shop `productIds`, price note, order, visible) and `ServiceRequest` (number `SRV-YYMMDD-XXXX`,
+member, programme + chosen sub-services as snapshots, channel, preferred time, phone, note, status PENDING →
+SCHEDULED → COMPLETED / CANCELLED, scheduled time, meeting link, staff note, cancel reason, handler).
+Each programme's old `keyServices` text list is turned into sub-services once (`migrateKeyServices` in
+`lib/services/data.ts`) and then emptied, so a sub-service an admin deletes never comes back.
+
+**Member / guest pages.**
+- `/services/<programme>` (+ `/member/services/...`): sub-services as cards (`components/services/offering-picker.tsx`)
+  — each links to its own page, shows how we can help and how many products go with it; "Select" several and a
+  bar at the bottom sends them as one request, or "Get this service" on one card.
+- New `/services/<programme>/<sub-service>` (+ member version, `offering-detail.tsx`): description, the ways to
+  help, "Get this service", the linked shop products (`ProductCard` → `/shop/<id>` or `/member/shop/<id>`),
+  and the programme's other sub-services.
+- `request-service-dialog.tsx`: only the ways every chosen sub-service offers; preferred date/time; phone (for a
+  call); note. Guests are asked to sign in and come back.
+- New `/member/services/requests` ("My service requests", member sidebar): status, scheduled time, "Join the
+  meeting", "Message us" (opens Messages with the staff member handling it), cancel with a reason.
+
+**Admin.**
+- `/dashboard/services`: each programme lists its sub-services — add / edit / show-hide / delete
+  (`offering-form-modal.tsx`: ways to help, searchable product picker, price note, photo). The programme form no
+  longer has the key-services textarea.
+- New `/dashboard/services/requests` (sidebar: Services & Programs → Service Requests; permission
+  `services:requests`, Admin always): tabs To handle / New / Scheduled / Completed / Cancelled / All; a request
+  opens with Message member (`/dashboard/messages?to=<id>`, new), Call (tel: link), Open meeting, Schedule /
+  update (time, meeting link required for online meetings, note), Mark completed, Cancel with reason.
+  `?open=<id>` opens one (used by the staff notification).
+- APIs: `POST /api/services/programs/[id]/offerings`, `PATCH|DELETE /api/services/offerings/[id]`,
+  `GET|POST /api/services/requests` (`?all=1` for staff), `PATCH /api/services/requests/[id]`.
+  Logic in `lib/services/requests.ts` (status changes are conditional, so two people can't both win).
+- Notifications: staff who handle requests on a new request; the member on received / scheduled / completed /
+  cancelled; the handler when the member cancels. New categories `service-request`, `service-request-update`.
+
+**Colours.** `SERVICE_COLORS` is now only the site palette: gold (primary), deep gold (#a07830), espresso
+(w-950) and ink navy (#1a1a2e) — light and dark mode. Old keys (blue, green, purple, red, teal, orange, navy)
+render as the nearest brand colour (`LEGACY_COLORS`), so existing records need no change; new saves must use a
+brand key. Seeds updated (Health = ink, Beauty = gold, Counseling = espresso, Rehabilitation = deep gold).
+
+**Translations:** `services.*` (sub-services, channels, request dialog, my requests) and
+`member.service_requests` in en/fr/rw — fr/rw to be checked by a native speaker. Staff screens are English.
+
+**Verified:** `tsc --noEmit` clean; eslint no errors in changed files; `next build` passes;
+`service-requests.test.ts` 6/6 on `kls_db_test`; live check on a production build against the test DB 12/12
+pages (guest, member, admin), 0 server errors. Not checked by eye in a browser.
+
+**Needs running on the dev DB:** `npx prisma generate` and `npx prisma db push` (two new models, two enums, unique
+indexes). The duplicate programmes / life areas from the earlier seeding race were already removed from
+`kls_db_dev`, so the push can create the unique indexes.
+
+### 2026-11-06 — Shop categories linked to services (optional); service pages show their products
+
+**Request:** connect shop product categories to services (optional), managed in the dashboard, and show a
+service's shop products on its programme and sub-service pages.
+
+- **Schema:** `ProductCategory.serviceProgramId` (optional, indexed). One programme can have several categories;
+  a category without one stays a plain shop category.
+- **Admin:** Beauty & Shop → Shop Categories: the add/edit form has an optional **Service** dropdown (all
+  programmes, hidden ones marked) and the table a **Service** column. Services & Programs: each programme shows its
+  linked shop categories (with product counts) and a "Link a category" shortcut.
+- **API:** `POST /api/shop/categories` and `PATCH /api/shop/categories/[id]` accept `serviceProgramId` (null clears
+  it; an unknown programme is refused) and expire the `services` cache so service pages update at once.
+- **Pages:** `/services/<programme>` (+ member) now shows "Products for this service" — products in the linked,
+  visible categories (best sellers first) plus products picked on its sub-services, up to 12, no duplicates
+  (`getProgramProducts` in `lib/services/data.ts`, `listServiceProducts` in `lib/shop/data.ts`). A sub-service page
+  shows its own picked products first, then the programme's category products. Shared section
+  `components/services/service-products.tsx` with category chips and "Visit the shop".
+- **Shop deep link:** `/shop?category=<id>` and `/member/shop?category=<id>` open with that category selected
+  (`ShopBrowser initialCategory`); an unknown id falls back to "All".
+
+**Verified:** `tsc --noEmit` clean; eslint no errors in changed files; `next build` passes;
+`service-products.test.ts` 3/3, `service-requests.test.ts` 6/6, `shop.test.ts` pass on `kls_db_test`; live check
+16/16 pages, 0 server errors.
+
+**Needs running on the dev DB:** `npx prisma generate` and `npx prisma db push` (new optional field + index).
+
+### 2026-11-06 — Anyone signed in can submit a book: public /publish + member portal
+
+**Request:** submitting a book should be on the public site and in the member dashboard (submit only); the person
+must be signed in, any role; all other publishing management stays in the admin dashboard; add the link under
+"Digital Library" in the header.
+
+- **API:** `POST /api/publications` now needs only a signed-in user (`requireAuth`) instead of the
+  `publications:submit` permission. Editing / submitting / withdrawing were already owner-only. Review, approval,
+  catalogue, revenue and the admin Submit / My Submissions pages are unchanged (the admin pages still check the
+  permission).
+- **Public:** `/publish` — title, the three steps, and the book form for signed-in users; signed-out visitors get
+  "Sign in to continue" / "Create an account" (sign-in returns to /publish). `/publish/books` — your submitted books
+  and their review status (Edit / Submit / Withdraw while draft or sent back). `?edit=<id>` edits your own book.
+- **Member portal:** `/member/publish` and `/member/publish/books` (same form and list); sidebar Library section:
+  "Publish a Book", "My Submitted Books".
+- **Header:** Digital Library → "Publish a book" (desktop menu and phone menu).
+- **Reused:** `BookSubmissionForm` gained `doneHref` (where to go after saving) and `staffHelp` (members see a plain
+  "no categories yet" message instead of the staff-only KCS Map link); `MySubmissionsView` gained `submitHref`.
+  New `lib/server/publish-page.ts` (`loadBookForm`, server-loaded, ownership check for ?edit) and
+  `components/publishing/publish-intro.tsx`.
+- **Translations:** `publish.*`, `nav.publish_book`, `member.publish_book`, `member.my_books` (en/fr/rw; fr/rw to be
+  checked). The form itself is still English.
+
+**Verified:** `tsc --noEmit` clean; eslint: no new errors (two old ones in `use-publications.ts` and
+`review-modal.tsx`); `next build` passes; `publishing-flow.test.ts` 9/9 (first test now: signed out → 401, a role
+with no permissions → 201 draft); live check 11/12 — `/member/publish?edit=<not yours>` shows the not-found page but
+with status 200 because `app/member/loading.tsx` streams the page (same as other member pages).
+
+**Watch:** registering from /publish lands on /member after sign-up, not back on /publish.
+
+### 2026-11-06 — Lesson quiz checks, "Open class" for finished courses, room shows only joined people, new certificates
+
+**Lesson page** (`/member/courses/<course>/lessons/<lesson>`):
+- `lesson-quiz-inline.tsx` rewritten (theme tokens): "Next" and "Submit" refuse to move on until the question is
+  answered (multi-select: at least one; matching: every item; open: some text), with a clear message; on submit the
+  member is taken to the first unanswered question. After grading, if some answers are wrong: "Would you like to see
+  the correct answers?" → **Show correct answers** (each question: your answer / correct answer, right or wrong;
+  open questions "a teacher will check this") or **Try again** (resets the quiz). Grading in the browser for the
+  review uses the same rules as the server; the score shown is the server's.
+- **Mark complete** still works without the quiz, but if the lesson has a quiz the member has not taken (no attempt
+  yet), a dialog asks: "Take the quiz" (opens and scrolls to it) or "Complete without the quiz".
+- When the course is completed, the **Open class** panel appears under the lesson.
+
+**Open class** (renamed from "session"; `app/member/_shared/open-class-panel.tsx`):
+- Only for completed courses — on the lesson page and under each course in My Courses → Completed. The in-progress
+  list and the "request session" modal on My Courses are gone; My Sessions' start menu lists only completed courses.
+- Ask: the time starts at **now** (can be changed) + optional topic → creates the SessionRequest and notifies admins.
+  Then: "Waiting for your teacher" (PENDING) → once approved, a live countdown in hours / minutes / seconds → when the
+  room opens (10 minutes early, as before) **Enter the class room** → `/member/sessions/<id>/room`. After it ends
+  the member can ask again.
+- API (`POST /api/session-requests`): a member may only ask for a course they COMPLETED, and only one open
+  (PENDING / APPROVED) class per course at a time. Staff are unaffected.
+- Wording: admin sidebar/page "Open Classes" (`/dashboard/e-learning/sessions`), member "My Open Classes", room
+  messages ("The class room is not open yet", "Waiting for the teacher", …), translations en/fr/rw (`m_class.*`,
+  `m_quiz.*`, `m_sessions.*`).
+
+**Meeting room:** people who have not joined are no longer shown — no "waiting" tile in the video grid and no
+"— not joined" rows in Participants (`video-tile-grid.tsx`, `participant-list-panel.tsx`).
+
+**Certificates:**
+- New PDF (`lib/certificates/pdf.ts`, `GET /api/certificates/<id>/pdf`, owner or staff; `?inline=1` to open):
+  A4 landscape, site colours (ink navy frame, gold rules and corner diamonds on cream), logo, recipient in deep
+  gold, course title (wrapped), gold seal, issue date and signature line, certificate ID and a QR code to the public
+  verification page; "REVOKED" watermark when revoked.
+- On-screen certificate (`certificate-preview.tsx`) redesigned to match, scales with its width (container units).
+  Member page: **Download PDF** + **Print**; admin certificate page: **Download PDF**.
+- Admin **Process certificates** (`/dashboard/e-learning/certificates`, server-loaded): everyone who completed a
+  course and has no certificate yet (marked when no final exam was passed) → "Issue all certificates" (each member
+  notified). APIs `GET|POST /api/certificates/issue-completed`. Creation shared in `lib/certificates/issue.ts`
+  (also used by the automatic issue on completion + exam passed).
+
+**Verified:** `tsc --noEmit` clean; eslint no new errors (old ones remain in session-room `use-livekit-room.ts`,
+`invite-link-modal.tsx`, `transcript-panel.tsx` and two admin hooks); `next build` passes;
+`open-class-certificates.test.ts` 3/3 on `kls_db_test`; live check 7/7 (My Courses, member certificate + PDF,
+My Sessions, admin certificates + detail, Open Classes), 0 server errors; the PDF was rendered and checked by eye.
+The quiz, the countdown and the on-screen certificate were not checked in a signed-in browser.
+
+### 2026-11-06 — Why finished members got no certificate (fixed)
+
+**Report:** "no way to create a certificate" on member or admin side.
+
+**Found in kls_db_dev:** the only 2 enrollments ("Foundation of faith") were `DROPPED` — someone pressed **Unenroll**
+(the only code path that sets DROPPED). Certificates only consider COMPLETED enrollments, so neither the automatic
+issue nor the admin "Process certificates" list saw them. Four real gaps behind it, all fixed:
+
+1. **Finished courses showed "Unenroll"** (My Courses → Completed). Removed — only "Pay" shows there for an unpaid
+   priced course. Dropped courses are no longer listed in My Courses.
+2. **Joining a course again after leaving failed** ("already enrolled") and the catalog hid "Enroll" for it. Now
+   `POST /api/enrollments` brings a DROPPED enrollment back with its progress (and payment) and recomputes its status;
+   the catalog, the course link and the lesson page treat DROPPED as "not enrolled".
+3. **Courses without a final exam never issued a certificate automatically** (the rule required "exam passed").
+   New rule (`lib/data/enrollment-progress.ts certificateEligible`): COMPLETED and (final exam passed, or the course
+   has no final exam).
+4. **"Finished" used the lesson count stored at enrol time** — lessons added later were ignored (or removed ones
+   made a course impossible to finish). `completeLesson` now compares with the course's current published lessons
+   and updates `totalLessons`.
+
+Also: `createCertificate` removes a duplicate if two paths issue at the same moment (member finishing + admin
+"issue all"), keeping the oldest and notifying once. My Courses → Completed shows per course: "Certificate ready"
+(link) / "Your certificate will be ready soon" / "Pass the final exam to get your certificate" (en/fr/rw).
+
+**Verified:** `tsc` clean, eslint clean on changed files; `course-completion-certificate.test.ts` 3/3 and
+`open-class-certificates.test.ts` 3/3, run together twice (they race on purpose) on `kls_db_test`.
+
+**Dev data not changed:** the two DROPPED enrollments stay as they are; enrolling again from E-Learning now restores
+them (see the reply for what each will get).
+
+## 2026-11-06 - Lesson quiz on its own lesson only, exam on the last lesson, one try only
+
+**Problem:** a quiz without a lesson showed on EVERY lesson (the lesson page fell back to "any quiz with no
+lesson"), and the admin form could only link a *Test* to a lesson, never a *Quiz*. Members could also redo a quiz
+or exam as many times as they liked to get better marks.
+
+**What changed**
+- Admin quiz form (`app/dashboard/e-learning/quizzes/_components/quiz-form-schema.ts`, `add-quiz-modal.tsx`,
+  `edit-quiz-modal.tsx`): Quiz now asks for its Lesson (required, like Test). API `POST /api/assessments` and
+  `PATCH /api/assessments/[id]` keep `lessonId` for QUIZ as well as TEST (EXAM/PROJECT still have none).
+- Lesson page (`lesson-viewer-view.tsx`): shows only the quiz/test whose `lessonId` is this lesson. A quiz with
+  no lesson (older data) no longer shows on lessons — admin must edit it and pick its lesson. The EXAM card stays
+  on the last lesson only.
+- One try only: `POST /api/assessment-attempts` refuses a second attempt for QUIZ/TEST/EXAM with 409
+  "You have already done this. Your marks: x / y" (PROJECT unchanged).
+- `lesson-quiz-inline.tsx`: "Try again" removed. Done → header shows "Done · Your marks: x / y"; opening shows
+  the marks (and "waiting for a teacher" for written answers). Right after submitting, "Show correct answers"
+  still works (answers are only in memory, not saved). `lesson-content-pane.tsx`: props `quizDone` replaced by
+  `quizAttempt` / `examAttempt`; the last-lesson exam card shows "Exam done" + marks + passed / not passed
+  instead of "Take assessment"; untaken quiz/exam say "You can do it only once".
+- Exam page (`take-assessment-view.tsx`): if already done, shows the results screen with the earlier marks
+  instead of the questions. Exam timer start moved from an effect to render-time state (lint fix).
+- New keys `m_quiz.exam_done/your_marks/passed/not_passed/waiting_review/one_try/already_done` (en/fr/rw).
+
+**Interactions to watch:** a member who FAILS the final exam cannot retake it, so the automatic certificate will
+not come — staff can still issue it from /dashboard/e-learning/certificates ("Issue certificates" lists everyone
+who completed the course). Staff-side PATCH grading of attempts is unchanged. Dev data: the existing quizzes
+"Steps to Peace with God" and "testing test" have no lesson yet, so they will not show on lessons until linked.
+
+**Verified:** `tsc` clean; eslint clean on changed files (2 old react-hook-form warnings); new
+`app/api/__tests__/assessment-one-try.test.ts` 2/2 plus certificate tests 6/6 on `kls_db_test`.

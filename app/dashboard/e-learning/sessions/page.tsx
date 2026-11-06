@@ -5,7 +5,7 @@ import { SessionsView } from './_components/sessions-view'
 export default function AdminSessionsPage() {
   return (
     <PageTransition>
-      <PageHeader title="Live Sessions" subtitle="All session requests across every lecturer and course" />
+      <PageHeader title="Open Classes" subtitle="Live online classes members ask for after finishing a course — confirm a time, then teach in the class room" />
       <SessionsView />
     </PageTransition>
   )

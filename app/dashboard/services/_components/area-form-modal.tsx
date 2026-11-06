@@ -6,12 +6,12 @@ import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { LifeAreaItem } from '@/lib/services/shared'
+import { normalizeColorKey, type LifeAreaItem } from '@/lib/services/shared'
 import { ColorPicker, IconPicker } from './pickers'
 
 /** Add / edit a life area ("Life Cycle" step). Order is set with the number field. */
 export function AreaFormModal({ editing, onClose, onSaved }: { editing: LifeAreaItem | null; onClose: () => void; onSaved: (a: LifeAreaItem, message: string) => void }) {
-  const [d, setD] = useState({ name: editing?.name ?? '', description: editing?.description ?? '', icon: editing?.icon ?? 'sparkles', color: editing?.color ?? 'gold', sortOrder: editing?.sortOrder ?? 0 })
+  const [d, setD] = useState({ name: editing?.name ?? '', description: editing?.description ?? '', icon: editing?.icon ?? 'sparkles', color: normalizeColorKey(editing?.color ?? 'gold'), sortOrder: editing?.sortOrder ?? 0 })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const set = (patch: Partial<typeof d>) => setD((x) => ({ ...x, ...patch }))

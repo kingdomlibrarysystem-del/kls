@@ -11,11 +11,22 @@ import { Switch } from '@/components/ui/switch'
 import { Modal } from '@/components/ui/modal'
 import { cn } from '@/lib/utils'
 import type { ShopCategory } from '@/lib/shop/shared'
+import Link from 'next/link'
 
-/** Shop categories: add, rename, show/hide in the shop, delete when unused. */
-export function CategoriesView({ initialCategories }: { initialCategories: ShopCategory[] }) {
+const selectCls = 'h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30'
+
+/** Service programmes a category can be linked to (admin-managed at /dashboard/services). */
+export interface ServiceChoice { id: string; name: string; active: boolean }
+
+/**
+ * Shop categories: add, rename, show/hide in the shop, delete when unused,
+ * and optionally link a category to a service programme — that service's
+ * pages then show the category's products.
+ */
+export function CategoriesView({ initialCategories, services }: { initialCategories: ShopCategory[]; services: ServiceChoice[] }) {
   const [rows, setRows] = useState(initialCategories)
-  const [form, setForm] = useState<{ editing: ShopCategory | null; name: string; description: string } | null>(null)
+  const [form, setForm] = useState<{ editing: ShopCategory | null; name: string; description: string; serviceProgramId: string } | null>(null)
+  const serviceName = (id: string | null) => services.find((s) => s.id === id)?.name ?? null
   const [deleting, setDeleting] = useState<ShopCategory | null>(null)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
@@ -36,7 +47,7 @@ export function CategoriesView({ initialCategories }: { initialCategories: ShopC
     setBusy(true)
     setFormError('')
     try {
-      const body = { name: form.name.trim(), description: form.description.trim() || null }
+      const body = { name: form.name.trim(), description: form.description.trim() || null, serviceProgramId: form.serviceProgramId || null }
       const saved = form.editing ? await call(`/api/shop/categories/${form.editing.id}`, 'PATCH', body) : await call('/api/shop/categories', 'POST', body)
       setRows((list) => form.editing ? list.map((c) => (c.id === saved.id ? { ...c, ...saved } : c)) : [...list, saved])
       flash(true, form.editing ? 'Category saved' : 'Category added')
@@ -86,6 +97,10 @@ export function CategoriesView({ initialCategories }: { initialCategories: ShopC
     },
     { key: 'productCount', label: 'Products', sortable: true, render: (c) => <span className="tabular-nums">{c.productCount ?? 0}</span> },
     {
+      key: 'serviceProgramId', label: 'Service',
+      render: (c) => serviceName(c.serviceProgramId) ? <Badge variant="secondary">{serviceName(c.serviceProgramId)}</Badge> : <span className="text-xs text-muted-foreground">—</span>,
+    },
+    {
       key: 'active', label: 'Shown in shop',
       render: (c) => <div className="flex items-center gap-2"><Switch checked={c.active} onCheckedChange={(on) => toggle(c, on)} aria-label={`Show ${c.name} in the shop`} />{!c.active && <Badge variant="outline">Hidden</Badge>}</div>,
     },
@@ -93,7 +108,7 @@ export function CategoriesView({ initialCategories }: { initialCategories: ShopC
       key: 'actions', label: 'Actions', className: 'text-right',
       render: (c) => (
         <div className="flex justify-end gap-1.5">
-          <Button variant="outline" size="sm" onClick={() => { setFormError(''); setForm({ editing: c, name: c.name, description: c.description ?? '' }) }}><Pencil /> Edit</Button>
+          <Button variant="outline" size="sm" onClick={() => { setFormError(''); setForm({ editing: c, name: c.name, description: c.description ?? '', serviceProgramId: c.serviceProgramId ?? '' }) }}><Pencil /> Edit</Button>
           <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={(c.productCount ?? 0) > 0} title={(c.productCount ?? 0) > 0 ? 'Move its products to another category first' : undefined} onClick={() => setDeleting(c)}><Trash2 /></Button>
         </div>
       ),
@@ -108,7 +123,7 @@ export function CategoriesView({ initialCategories }: { initialCategories: ShopC
         </p>
       )}
       <div className="flex justify-end">
-        <Button onClick={() => { setFormError(''); setForm({ editing: null, name: '', description: '' }) }}><Plus /> Add category</Button>
+        <Button onClick={() => { setFormError(''); setForm({ editing: null, name: '', description: '', serviceProgramId: '' }) }}><Plus /> Add category</Button>
       </div>
       <DataTable<ShopCategory> data={rows} columns={columns} rowKey={(c) => c.id} searchPlaceholder="Search categories…" searchFilter={(c, q) => c.name.toLowerCase().includes(q)} emptyMessage="No categories yet — add the first one (e.g. Skin care, Hair, Fragrance)." />
 
@@ -123,6 +138,16 @@ export function CategoriesView({ initialCategories }: { initialCategories: ShopC
             <div className="space-y-1.5">
               <Label htmlFor="cat-desc">Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <Input id="cat-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={300} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cat-service">Service <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <select id="cat-service" value={form.serviceProgramId} onChange={(e) => setForm({ ...form, serviceProgramId: e.target.value })} className={selectCls}>
+                <option value="">Not linked to a service</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? '' : ' (hidden)'}</option>)}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                The service&apos;s pages show this category&apos;s products. Services are managed in <Link href="/dashboard/services" className="text-primary hover:underline">Services &amp; Programs</Link>.
+              </p>
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" disabled={busy} onClick={() => setForm(null)}>Cancel</Button>

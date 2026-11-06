@@ -73,7 +73,7 @@ export const quizFormSchema = z
     title: z.string().min(3, 'Title must be at least 3 characters'),
     courseId: z.string().min(1, 'Select a course'),
     kind: z.enum(['TEST', 'QUIZ', 'EXAM', 'PROJECT']),
-    /** Lesson ID — only relevant when kind === 'TEST'. */
+    /** Lesson ID — a lesson quiz or test shows on this lesson only. */
     lessonId: z.string().optional(),
     durationMinutes: z.number().min(1, 'Duration must be at least 1 minute').optional(),
     questions: z.array(questionSchema),
@@ -82,8 +82,8 @@ export const quizFormSchema = z
     projectMarks: z.number().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.kind === 'TEST' && !data.lessonId) {
-      ctx.addIssue({ code: 'custom', path: ['lessonId'], message: 'Select the lesson this test belongs to' })
+    if ((data.kind === 'TEST' || data.kind === 'QUIZ') && !data.lessonId) {
+      ctx.addIssue({ code: 'custom', path: ['lessonId'], message: 'Select the lesson this belongs to' })
     }
     if (data.kind === 'PROJECT') {
       if (!data.brief || data.brief.trim().length < 10) {

@@ -1,5 +1,6 @@
 import {
   Hash,
+  Inbox,
   LayoutGrid,
   CreditCard,
   LayoutDashboard,
@@ -100,7 +101,7 @@ export const adminMainNav: NavItem[] = [
       { icon: <ClipboardList size={14} />, label: "Enrollments",    href: "/dashboard/e-learning/enrollments" },
       { icon: <BarChart3 size={14} />,    label: "Progress",        href: "/dashboard/e-learning/progress" },
       { icon: <BookCopy size={14} />,     label: "Certificates",    href: "/dashboard/e-learning/certificates" },
-      { icon: <Video size={14} />,        label: "Live Sessions",   href: "/dashboard/e-learning/sessions" },
+      { icon: <Video size={14} />,        label: "Open Classes",    href: "/dashboard/e-learning/sessions" },
     ],
   },
   {
@@ -196,7 +197,13 @@ export const adminMgmtNav: NavItem[] = [
       { icon: <Receipt size={14} />, label: "History",   href: "/dashboard/donations/history" },
     ],
   },
-  { icon: <LayoutGrid size={16} />, label: "Services & Programs", href: "/dashboard/services" },
+  {
+    icon: <LayoutGrid size={16} />, label: "Services & Programs",
+    subItems: [
+      { icon: <LayoutGrid size={14} />, label: "Programmes",       href: "/dashboard/services" },
+      { icon: <Inbox size={14} />,      label: "Service Requests", href: "/dashboard/services/requests" },
+    ],
+  },
   { icon: <BookHeart size={16} />, label: "Daily Wisdom",        href: "/dashboard/daily-wisdom" },
   { icon: <BarChart3 size={16} />, label: "Reports & Analytics", href: "/dashboard/reports" },
   { icon: <Shield size={16} />,   label: "Roles & Permissions", href: "/dashboard/roles" },

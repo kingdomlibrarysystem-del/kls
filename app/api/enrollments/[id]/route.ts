@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
+import { progressStatus, publishedLessonIds } from '@/lib/data/enrollment-progress'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { serializeEnrollment, INCLUDE } from '@/lib/data/enrollments'
@@ -58,8 +59,10 @@ export const PATCH = withErrorHandling('/api/enrollments/[id]', 'PATCH', async (
     const completedLessonIds = existing.completedLessonIds.includes(body.lessonId)
       ? existing.completedLessonIds
       : [...existing.completedLessonIds, body.lessonId]
-    const status = completedLessonIds.length >= existing.totalLessons ? 'COMPLETED' : 'ENROLLED'
-    const updated = await prisma.enrollment.update({ where: { id }, data: { completedLessonIds, status }, include: INCLUDE })
+    // Finished = every lesson the course has NOW (not the count stored at enrol time).
+    const lessonIds = await publishedLessonIds(existing.courseId)
+    const status = progressStatus(completedLessonIds, lessonIds)
+    const updated = await prisma.enrollment.update({ where: { id }, data: { completedLessonIds, status, totalLessons: lessonIds.length }, include: INCLUDE })
     await issueCertificateIfEligible(updated.userId, updated.courseId)
     return NextResponse.json({ data: serializeEnrollment(updated), message: 'Lesson marked complete', code: 'success', status: 200 })
   }

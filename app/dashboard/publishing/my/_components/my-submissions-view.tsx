@@ -25,7 +25,8 @@ const EDITABLE = ['DRAFT', 'REJECTED']
 const WITHDRAWABLE = ['DRAFT', 'SUBMITTED', 'REJECTED']
 
 /** The publisher's own books: status, reviewer notes, and edit / submit / withdraw / open in library. */
-export function MySubmissionsView({ initialPublications, justDone }: { initialPublications: SerializedPublication[]; justDone: 'submitted' | 'saved' | null }) {
+/** submitHref: the Submit page this list belongs to (admin, /member/publish or /publish) — Edit links add ?edit=<id>. */
+export function MySubmissionsView({ initialPublications, justDone, submitHref = '/dashboard/publishing/submit' }: { initialPublications: SerializedPublication[]; justDone: 'submitted' | 'saved' | null; submitHref?: string }) {
   const [rows, setRows] = useState(initialPublications)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [withdrawing, setWithdrawing] = useState<SerializedPublication | null>(null)
@@ -86,7 +87,7 @@ export function MySubmissionsView({ initialPublications, justDone }: { initialPu
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           {EDITABLE.includes(p.status) && (
             <>
-              <Link href={`/dashboard/publishing/submit?edit=${p.id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}><Pencil /> Edit</Link>
+              <Link href={`${submitHref}?edit=${p.id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}><Pencil /> Edit</Link>
               <Button size="sm" disabled={busyId === p.id} onClick={() => act(p, 'submit')}>
                 {busyId === p.id ? <Loader2 className="animate-spin" /> : <Send />} Submit
               </Button>
@@ -113,7 +114,7 @@ export function MySubmissionsView({ initialPublications, justDone }: { initialPu
         </div>
       )}
       <div className="flex justify-end">
-        <Link href="/dashboard/publishing/submit" className={buttonVariants()}><Plus /> Submit a Book</Link>
+        <Link href={submitHref} className={buttonVariants()}><Plus /> Submit a Book</Link>
       </div>
       {rows.length === 0 ? (
         <EmptyState icon={BookOpen} title="No books yet" description="Use “Submit a Book” to add your first book. It goes to review before members can see it." />

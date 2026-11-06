@@ -69,7 +69,7 @@ export const PATCH = withErrorHandling('/api/assessments/[id]', 'PATCH', async (
     data: {
       ...rest,
       ...(kind !== undefined && { kind: kind as 'TEST' | 'QUIZ' | 'EXAM' | 'PROJECT' }),
-      ...(nextKind !== 'TEST' ? { lessonId: null } : lessonId !== undefined ? { lessonId } : {}),
+      ...(nextKind !== 'TEST' && nextKind !== 'QUIZ' ? { lessonId: null } : lessonId !== undefined ? { lessonId } : {}),
       ...(submissionFormat !== undefined && { submissionFormat: submissionFormat as 'TEXT' | 'LINK' | 'FILE_REF' | null }),
       ...(questions !== undefined && {
         questions: questions.map((q, i) => ({

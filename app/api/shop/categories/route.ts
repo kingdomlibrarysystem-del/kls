@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requirePermission } from '@/lib/auth/permissions'
-import { listCategories } from '@/lib/shop/data'
+import { checkServiceProgram, listCategories } from '@/lib/shop/data'
+import { expireServicesCache } from '@/lib/services/data'
 import { categorySchema } from '@/lib/shop/schemas'
 import { SHOP_PERMISSION } from '@/lib/shop/shared'
 
@@ -26,9 +27,12 @@ export const POST = withErrorHandling('/api/shop/categories', 'POST', async (req
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   const clash = await prisma.productCategory.findFirst({ where: { name: { equals: parsed.data.name, mode: 'insensitive' } }, select: { id: true } })
   if (clash) throw new ApiError('A category with this name already exists', 409)
+  const serviceProgramId = await checkServiceProgram(parsed.data.serviceProgramId)
   const max = await prisma.productCategory.aggregate({ _max: { sortOrder: true } })
   const created = await prisma.productCategory.create({
-    data: { name: parsed.data.name, description: parsed.data.description || null, sortOrder: parsed.data.sortOrder ?? (max._max.sortOrder ?? 0) + 1, active: parsed.data.active ?? true },
+    data: { name: parsed.data.name, description: parsed.data.description || null, serviceProgramId, sortOrder: parsed.data.sortOrder ?? (max._max.sortOrder ?? 0) + 1, active: parsed.data.active ?? true },
   })
+  // Service pages show the products of their linked categories.
+  if (serviceProgramId) await expireServicesCache()
   return NextResponse.json({ data: { ...created, productCount: 0 }, message: 'Category added', code: 'success', status: 201 }, { status: 201 })
 })

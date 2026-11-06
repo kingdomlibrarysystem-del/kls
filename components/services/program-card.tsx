@@ -47,7 +47,7 @@ export function ProgramCard({ program, areaCount, basePath = '/services' }: Prop
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className={`text-sm font-bold ${c.text}`}>{t('services.key_services')}</p>
         <ul className="space-y-1.5">
-          {program.keyServices.map((s) => (
+          {(program.offerings.length ? program.offerings.map((o) => o.name) : program.keyServices).map((s) => (
             <li key={s} className="flex items-start gap-2 text-sm text-foreground">
               <Check className={`mt-0.5 size-4 shrink-0 ${c.text}`} aria-hidden /> <span>{s}</span>
             </li>

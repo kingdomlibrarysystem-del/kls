@@ -56,16 +56,16 @@ function buildColumns(
           <div className="flex items-center justify-end gap-1.5">
             {r.status === 'PENDING' && !isLapsed && (
               <>
-                <button onClick={() => onOpenModal(r, 'approve')} aria-label={`Approve session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors">
+                <button onClick={() => onOpenModal(r, 'approve')} aria-label={`Approve open class request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-success/10 text-green-700 dark:text-success border border-green-200 dark:border-success/30 rounded text-xs font-lato hover:bg-green-100 dark:hover:bg-success/20 transition-colors">
                   <CheckCircle size={12} /> Approve
                 </button>
-                <button onClick={() => onOpenModal(r, 'reject')} aria-label={`Reject session request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
+                <button onClick={() => onOpenModal(r, 'reject')} aria-label={`Reject open class request from ${r.learnerName}`} className="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-destructive/10 text-red-700 dark:text-destructive border border-red-200 dark:border-destructive/30 rounded text-xs font-lato hover:bg-red-100 dark:hover:bg-destructive/20 transition-colors">
                   <XCircle size={12} /> Reject
                 </button>
               </>
             )}
             {r.status === 'PENDING' && isLapsed && (
-              <button onClick={() => onMarkUnavailable(r)} aria-label={`Mark session request from ${r.learnerName} unavailable`} className="flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 border border-gray-200 rounded text-xs font-lato hover:bg-gray-100 transition-colors">
+              <button onClick={() => onMarkUnavailable(r)} aria-label={`Mark open class request from ${r.learnerName} unavailable`} className="flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 border border-gray-200 rounded text-xs font-lato hover:bg-gray-100 transition-colors">
                 <Ban size={12} /> Mark Unavailable
               </button>
             )}
@@ -148,7 +148,7 @@ export function SessionsView() {
 
   if (loading) {
     return (
-      <div className="space-y-2" aria-label="Loading session requests">
+      <div className="space-y-2" aria-label="Loading open class requests">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-12 w-full rounded-lg" />
         ))}
@@ -157,7 +157,7 @@ export function SessionsView() {
   }
 
   if (error) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load session requests" description={error} />
+    return <EmptyState icon={AlertTriangle} title="Could not load open class requests" description={error} />
   }
 
   const tableData = statusFilter === 'all' ? requests : requests.filter((r) => r.status === statusFilter)
@@ -180,7 +180,7 @@ export function SessionsView() {
       {toast && <div className="mb-4 bg-green-50 dark:bg-success/10 border border-green-200 dark:border-success/30 text-green-800 dark:text-success px-4 py-3 rounded font-lato text-sm">{toast}</div>}
       <SessionsStats data={requests} />
       {requests.length === 0 ? (
-        <EmptyState icon={CalendarClock} title="No session requests yet" description="Requests learners make across all courses will appear here." />
+        <EmptyState icon={CalendarClock} title="No open class requests yet" description="When members finish a course and ask for an open class, it appears here." />
       ) : (
         <DataTable<SessionRequest>
           data={tableData}

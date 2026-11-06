@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowLeft, Award, Download } from 'lucide-react'
+import { ArrowLeft, Award, Download, Printer } from 'lucide-react'
+import { useLanguage } from '@/contexts/language-context'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { CertificatePreview } from '@/app/dashboard/e-learning/certificates/_components/certificate-preview'
@@ -20,6 +21,7 @@ interface CertificateDetailViewProps {
  */
 export function CertificateDetailView({ initialCertificate }: CertificateDetailViewProps) {
   const certificate: Certificate | null = initialCertificate
+  const { t } = useLanguage()
 
   if (!certificate) {
     return (
@@ -47,7 +49,7 @@ export function CertificateDetailView({ initialCertificate }: CertificateDetailV
         </UniversalButton>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 560 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 960 }}>
         <div id="certificate-print-area">
           <CertificatePreview certificate={certificate} />
         </div>
@@ -62,16 +64,15 @@ export function CertificateDetailView({ initialCertificate }: CertificateDetailV
         `}</style>
 
         {!certificate.revoked && (
-          <UniversalButton
-            className="certificate-print-hide"
-            variant="gold"
-            fullWidth
-            icon={<Download size={16} />}
-            onClick={() => window.print()}
-            aria-label={`Download certificate for ${certificate.course}`}
-          >
-            Download (Print to PDF)
-          </UniversalButton>
+          <div className="certificate-print-hide" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            {/* A real PDF built on the server (lib/certificates/pdf.ts) — same design, with a QR code to verify it. */}
+            <UniversalButton href={`/api/certificates/${certificate.id}/pdf`} variant="gold" icon={<Download size={16} />} aria-label={`${t('m_cert.download_pdf')}: ${certificate.course}`}>
+              {t('m_cert.download_pdf')}
+            </UniversalButton>
+            <UniversalButton variant="gold-outline" icon={<Printer size={16} />} onClick={() => window.print()}>
+              {t('m_cert.print')}
+            </UniversalButton>
+          </div>
         )}
       </div>
     </div>

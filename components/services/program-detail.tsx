@@ -8,6 +8,9 @@ import { useLanguage } from '@/contexts/language-context'
 import { serviceColor, type LifeAreaItem, type ServiceProgramItem } from '@/lib/services/shared'
 import { ServiceIcon } from '@/components/services/service-icon'
 import { LifeCycle } from './life-cycle'
+import { OfferingPicker } from './offering-picker'
+import { ServiceProducts } from './service-products'
+import type { ShopProduct } from '@/lib/shop/shared'
 
 interface Props {
   program: ServiceProgramItem
@@ -16,10 +19,15 @@ interface Props {
   basePath?: string
   /** Signed out: member-only buttons go through sign-in and come back. */
   signedIn: boolean
+  /** Products from the shop categories linked to this programme (and picked on its sub-services). */
+  products?: ShopProduct[]
+  categories?: { id: string; name: string }[]
+  /** /shop or /member/shop. */
+  shopPath?: string
 }
 
 /** One programme: what it is, its key services, the button into the real feature, the life areas it supports and the other programmes. */
-export function ProgramDetail({ program, others, areas, basePath = '/services', signedIn }: Props) {
+export function ProgramDetail({ program, others, areas, basePath = '/services', signedIn, products = [], categories = [], shopPath = '/shop' }: Props) {
   const { t } = useLanguage()
   const c = serviceColor(program.color)
   const cta = program.ctaHref
@@ -42,14 +50,17 @@ export function ProgramDetail({ program, others, areas, basePath = '/services', 
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.1fr_1fr]">
           <div className="space-y-5">
             <p className="text-base leading-relaxed text-foreground">{program.description}</p>
-            <div>
-              <h2 className={`text-sm font-bold uppercase tracking-wide ${c.text}`}>{t('services.key_services')}</h2>
-              <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                {program.keyServices.map((s) => (
-                  <li key={s} className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${c.soft}`}><Check className="mt-0.5 size-4 shrink-0" aria-hidden /> {s}</li>
-                ))}
-              </ul>
-            </div>
+            {/* Programmes not yet split into sub-services still show their plain list. */}
+            {program.offerings.length === 0 && program.keyServices.length > 0 && (
+              <div>
+                <h2 className={`text-sm font-bold uppercase tracking-wide ${c.text}`}>{t('services.key_services')}</h2>
+                <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                  {program.keyServices.map((s) => (
+                    <li key={s} className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${c.soft}`}><Check className="mt-0.5 size-4 shrink-0" aria-hidden /> {s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {cta && (
               <Link href={cta} className={buttonVariants({ size: 'lg' })}>
                 {program.ctaLabel || t('services.get_started')} <ArrowRight />
@@ -64,6 +75,10 @@ export function ProgramDetail({ program, others, areas, basePath = '/services', 
         </div>
         {areas.length > 0 && <div className={`px-6 py-2 text-center text-sm font-semibold ${c.solid}`}>{t('services.supports_areas').replace('{n}', String(areas.length))}</div>}
       </article>
+
+      <OfferingPicker program={program} basePath={basePath} signedIn={signedIn} />
+
+      <ServiceProducts products={products} categories={categories} shopPath={shopPath} />
 
       <LifeCycle areas={areas} compact />
 

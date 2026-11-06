@@ -1,10 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronRight } from 'lucide-react'
+import { Modal } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { OpenClassPanel } from '../../../../../_shared/open-class-panel'
 import { MarkdownContent } from '@/components/ui/markdown-content'
 import type { Lesson } from '../../../../../_shared/lesson-data'
 import type { TakeableAssessment } from '../../../../../_shared/assessment-data'
+import type { AssessmentAttempt } from '../../../../../_shared/use-assessment-attempts'
 import { LessonQuizInline } from './lesson-quiz-inline'
 import { useLanguage } from '@/contexts/language-context'
 
@@ -21,6 +26,12 @@ interface LessonContentPaneProps {
   /** The next lesson in the course, if one exists — renders a real "Next Lesson" link. */
   nextLesson?: { id: string; title: string }
   courseId: string
+  /** The member's one attempt at lessonAssessment, once done (no second try). */
+  quizAttempt?: AssessmentAttempt
+  /** The member's one attempt at the final exam, once done — the exam card then shows the marks. */
+  examAttempt?: AssessmentAttempt
+  /** Set once the whole course is COMPLETED — the Open class panel then shows under the lesson. */
+  completedCourse?: { id: string; title: string; lecturerId?: string }
 }
 
 /**
@@ -40,8 +51,23 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
  * paragraphs) only for a lesson created before the markdown editor
  * existed and never migrated.
  */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId, quizAttempt, examAttempt, completedCourse }: LessonContentPaneProps) {
   const { t } = useLanguage()
+  const [quizOpen, setQuizOpen] = useState(false)
+  const [justTookQuiz, setJustTookQuiz] = useState(false)
+  const [askSkip, setAskSkip] = useState(false)
+  const tookQuiz = !!quizAttempt || justTookQuiz
+
+  // Completing is always allowed; if the lesson has a quiz the member hasn't taken, ask first.
+  const complete = () => {
+    if (lessonAssessment && !tookQuiz) { setAskSkip(true); return }
+    onMarkComplete()
+  }
+  const takeQuiz = () => {
+    setAskSkip(false)
+    setQuizOpen(true)
+    requestAnimationFrame(() => document.getElementById('lesson-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
   return (
     <div className="card">
       <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
@@ -109,7 +135,9 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         </>
       )}
 
-      {lessonAssessment && <LessonQuizInline assessment={lessonAssessment} />}
+      {lessonAssessment && (
+        <LessonQuizInline assessment={lessonAssessment} open={quizOpen} onOpenChange={setQuizOpen} attempt={quizAttempt} onSubmitted={() => setJustTookQuiz(true)} />
+      )}
 
       {markError && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--red-dim)', color: 'var(--red-light)', border: '1px solid var(--red)', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>
@@ -119,7 +147,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <button
-          onClick={onMarkComplete}
+          onClick={complete}
           disabled={completed}
           className={completed ? 'btn btn-outline-dim btn-sm' : 'btn btn-gold btn-sm'}
           style={completed ? { cursor: 'default' } : undefined}
@@ -139,17 +167,49 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         )}
       </div>
 
-      {courseCompleteAssessmentTitle && (
+      {courseCompleteAssessmentTitle && (examAttempt ? (
+        // Exam already done: show the marks — it cannot be taken again.
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-success/40 bg-success/5 p-3">
+          <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden />
+          <span className="min-w-0 flex-1 text-sm text-foreground">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-success">{t('m_quiz.exam_done')}</span>
+            <strong>{courseCompleteAssessmentTitle}</strong>
+            <span className="block text-xs text-muted-foreground">
+              {examAttempt.reviewStatus === 'PENDING_REVIEW' ? t('m_quiz.waiting_review') : examAttempt.status === 'PASSED' ? t('m_quiz.passed') : t('m_quiz.not_passed')}
+            </span>
+          </span>
+          <span className="text-right">
+            <span className="block text-xs text-muted-foreground">{t('m_quiz.your_marks')}</span>
+            <span className="font-cinzel text-xl font-bold text-foreground">{examAttempt.score} / {examAttempt.totalMarks}</span>
+          </span>
+        </div>
+      ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>
           <ClipboardList size={18} color="#7a5c00" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 14, color: '#3a2e00', flex: 1 }}>
             {t("m_courses.all_lessons_complete_take")} <strong>{courseCompleteAssessmentTitle}</strong> {t("m_courses.to_finish_course")}
+            <span style={{ display: 'block', fontSize: 12, marginTop: 2 }}>{t('m_quiz.one_try')}</span>
           </span>
           <Link href={`/member/assessments/${courseCompleteAssessmentId}/take`} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
             {t("m_courses.take_assessment")}
           </Link>
         </div>
+      ))}
+      {completedCourse && (
+        <div style={{ marginTop: 18 }}>
+          <OpenClassPanel course={completedCourse} />
+        </div>
       )}
+
+      <Modal open={askSkip} onClose={() => setAskSkip(false)} title={t('m_quiz.skip_title')} size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t('m_quiz.skip_text')}</p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="outline" onClick={() => { setAskSkip(false); onMarkComplete() }}>{t('m_quiz.complete_anyway')}</Button>
+            <Button onClick={takeQuiz}><ClipboardList /> {t('m_quiz.take_quiz')}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

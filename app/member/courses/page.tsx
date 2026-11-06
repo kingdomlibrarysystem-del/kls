@@ -4,18 +4,16 @@ import { Award, BookX, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCourses, type CatalogCourse } from "../_shared/use-courses";
-import { useEnrollments, getProgressPercent, isCertificateEligible, unenrollFromCourse } from "../_shared/use-enrollments";
+import { useEnrollments, getProgressPercent, unenrollFromCourse } from "../_shared/use-enrollments";
 import { useCertificates } from "../_shared/use-certificates";
 import { InProgressCoursesSection } from "./_components/in-progress-courses-section";
 import { CompletedCoursesSection } from "./_components/completed-courses-section";
-import { RequestSessionModal } from "./_components/request-session-modal";
 import { CourseCheckoutModal } from "./_components/course-checkout-modal";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/language-context";
 
 export default function MyCoursesPage() {
   const { t } = useLanguage();
-  const [requesting, setRequesting] = useState<CatalogCourse | null>(null);
   const [checkoutCourse, setCheckoutCourse] = useState<CatalogCourse | null>(null);
   const { data: enrollments, loading: enrollmentsLoading, refetch: refetchEnrollments } = useEnrollments();
   const { data: courseCatalog, loading: coursesLoading } = useCourses();
@@ -52,13 +50,15 @@ export default function MyCoursesPage() {
   }
 
   const rows = enrollments
+    .filter((e) => e.status !== "DROPPED")
     .map((e) => ({ enrollment: e, course: courseCatalog.find((c) => c.id === e.courseId) }))
     .filter((r): r is { enrollment: typeof enrollments[number]; course: NonNullable<typeof r.course> } => !!r.course);
 
   const inProgress = rows.filter((r) => r.enrollment.status !== "COMPLETED");
   const completed = rows.filter((r) => r.enrollment.status === "COMPLETED");
   const totalProgress = rows.length ? Math.round(rows.reduce((s, r) => s + getProgressPercent(r.enrollment), 0) / rows.length) : 0;
-  const eligibleForCertificate = completed.filter((r) => isCertificateEligible(r.enrollment));
+  // Courses whose certificate has actually been issued.
+  const eligibleForCertificate = completed.filter((r) => certificates.some((c) => c.courseId === r.course.id));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -106,10 +106,10 @@ export default function MyCoursesPage() {
       })()}
 
       {/* In progress */}
-      <InProgressCoursesSection inProgress={inProgress} onRequestSession={setRequesting} onUnenroll={handleUnenroll} onPay={setCheckoutCourse} />
+      <InProgressCoursesSection inProgress={inProgress} onUnenroll={handleUnenroll} onPay={setCheckoutCourse} />
 
       {/* Completed */}
-      <CompletedCoursesSection completed={completed} onRequestSession={setRequesting} certificates={certificates} onUnenroll={handleUnenroll} onPay={setCheckoutCourse} />
+      <CompletedCoursesSection completed={completed} certificates={certificates} onUnenroll={handleUnenroll} onPay={setCheckoutCourse} />
 
       <div style={{ textAlign: "center" }}>
         <Link href="/member/e-learning" style={{ fontSize: 13, fontWeight: 600, color: "var(--teal-light)", textDecoration: "none" }}>
@@ -117,7 +117,6 @@ export default function MyCoursesPage() {
         </Link>
       </div>
 
-      <RequestSessionModal course={requesting} onClose={() => setRequesting(null)} availableCourses={rows.map((r) => r.course)} />
       <CourseCheckoutModal
         course={checkoutCourse}
         onClose={() => setCheckoutCourse(null)}

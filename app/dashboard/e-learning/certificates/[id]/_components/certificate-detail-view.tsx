@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, CalendarDays, Hash, User, ShieldAlert, ArrowLeft, ShieldOff, Award } from 'lucide-react'
+import { BookOpen, CalendarDays, Hash, User, ShieldAlert, ArrowLeft, ShieldOff, Award, Download } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
@@ -77,8 +77,9 @@ export function CertificateDetailView({ initialCertificate }: CertificateDetailV
         )}
       </div>
 
-      <div className="max-w-2xl space-y-4">
+      <div className="max-w-4xl space-y-4">
         <CertificatePreview certificate={certificate} />
+        <a href={`/api/certificates/${certificate.id}/pdf`} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"><Download size={14} /> Download PDF</a>
 
         <div className="flex items-center justify-between gap-3">
           <span className="font-lato text-xs font-semibold text-w-700 uppercase tracking-wide">Record</span>
