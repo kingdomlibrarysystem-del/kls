@@ -18,6 +18,7 @@ export const defaultPermissions = [
   'sessions:approve',
   'shop:manage',
   'services:manage',
+  'services:requests',
 ]
 
 export const permissionLabels: Record<string, string> = {
@@ -42,5 +43,6 @@ export const permissionLabels: Record<string, string> = {
   'sessions:approve': 'Approve Session Requests',
   'shop:manage': 'Manage Shop (products, categories, orders)',
   'services:manage': 'Manage Services & Programs',
+  'services:requests': 'Handle Service Requests (call, message, meeting)',
 }
 

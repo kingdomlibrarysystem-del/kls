@@ -125,6 +125,14 @@ export const POST = withErrorHandling('/api/session-requests', 'POST', async (re
   if (body.lecturerId && !lecturer) throw new ApiError('The specified lecturer does not exist', 400)
   if (!course) throw new ApiError('The specified course does not exist', 400)
 
+  // A member asks for an open class only after finishing the course (staff can still start one for anyone).
+  if (auth.session.role === 'member') {
+    const enrollment = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.learnerId, courseId: body.courseId } }, select: { status: true } })
+    if (enrollment?.status !== 'COMPLETED') throw new ApiError('You can ask for an open class after you finish this course.', 403)
+    const open = await prisma.sessionRequest.findFirst({ where: { learnerId: body.learnerId, courseId: body.courseId, status: { in: ['PENDING', 'APPROVED'] } }, select: { id: true } })
+    if (open) throw new ApiError('You already have an open class for this course. Join it or wait for it to finish first.', 409)
+  }
+
   const proposedTime = new Date(body.proposedTime)
   const sessionRequest = await prisma.sessionRequest.create({
     data: {

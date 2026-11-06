@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
-import { requirePermission } from '@/lib/auth/permissions'
+import { requireAuth } from '@/lib/auth/require-role'
 import { getMediaCapabilities, isValidMediaTypeCode } from '@/lib/data/media-types'
 import { REVENUE_INCLUDE, findKcsCategory, serializePublication } from '@/lib/data/publications'
 import { notifySubmitted } from '@/lib/data/publication-notify'
@@ -67,14 +67,14 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/publications — a publisher adds a book (role permission
- * "publications:submit"; Admin always). The book belongs to the signed-in
- * user. `submit: true` sends it for review (status SUBMITTED) — it is NOT
+ * POST /api/publications — any signed-in user (member or staff, any role)
+ * adds a book from /publish, /member/publish or the admin Submit page. The
+ * book belongs to the signed-in user. `submit: true` sends it for review (status SUBMITTED) — it is NOT
  * visible to members until a reviewer approves it; otherwise it is saved as
  * a DRAFT the publisher can finish later.
  */
 export const POST = withErrorHandling('/api/publications', 'POST', async (request: NextRequest) => {
-  const auth = await requirePermission('publications:submit', 'Your role cannot submit books. Ask an admin to grant "Submit Publications" in Roles & Permissions.')
+  const auth = await requireAuth()
   if (auth.response) return auth.response
 
   const parsed = createPublicationSchema.safeParse(await request.json().catch(() => null))

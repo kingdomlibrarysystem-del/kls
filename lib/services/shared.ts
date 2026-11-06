@@ -18,7 +18,10 @@ export interface ServiceProgramItem {
   image: string | null
   icon: string
   color: string
+  /** Legacy text list — emptied once its entries become sub-services (offerings). */
   keyServices: string[]
+  /** Sub-services: visible ones on public pages, all of them on the admin page. */
+  offerings: ServiceOfferingItem[]
   ctaLabel: string | null
   ctaHref: string | null
   sortOrder: number
@@ -61,20 +64,106 @@ export function serviceIcon(key: string): LucideIcon {
   return SERVICE_ICONS[key]?.Icon ?? Sparkles
 }
 
-/** solid = header band / button; soft = tinted chip; text = accent text; ring = outline. Each works in light and dark mode. */
+/**
+ * The website's own colours only (app/globals.css): gold (primary #d4a843),
+ * deep gold (#a07830), espresso (w-950 #2c2416) and ink (#1a1a2e, the text
+ * navy). solid = header band / icon disc; soft = tinted chip; text = accent
+ * text; ring = hover outline. Each works in light and dark mode.
+ */
 export const SERVICE_COLORS: Record<string, { label: string; solid: string; soft: string; text: string; ring: string }> = {
-  blue: { label: 'Blue', solid: 'bg-blue-700 text-white', soft: 'bg-blue-50 text-blue-800 dark:bg-blue-500/15 dark:text-blue-200', text: 'text-blue-700 dark:text-blue-300', ring: 'ring-blue-700/40' },
-  gold: { label: 'Gold', solid: 'bg-amber-600 text-white', soft: 'bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200', text: 'text-amber-700 dark:text-amber-300', ring: 'ring-amber-600/40' },
-  green: { label: 'Green', solid: 'bg-emerald-700 text-white', soft: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200', text: 'text-emerald-700 dark:text-emerald-300', ring: 'ring-emerald-700/40' },
-  purple: { label: 'Purple', solid: 'bg-purple-700 text-white', soft: 'bg-purple-50 text-purple-800 dark:bg-purple-500/15 dark:text-purple-200', text: 'text-purple-700 dark:text-purple-300', ring: 'ring-purple-700/40' },
-  red: { label: 'Red', solid: 'bg-red-600 text-white', soft: 'bg-red-50 text-red-800 dark:bg-red-500/15 dark:text-red-200', text: 'text-red-700 dark:text-red-300', ring: 'ring-red-600/40' },
-  teal: { label: 'Teal', solid: 'bg-teal-700 text-white', soft: 'bg-teal-50 text-teal-800 dark:bg-teal-500/15 dark:text-teal-200', text: 'text-teal-700 dark:text-teal-300', ring: 'ring-teal-700/40' },
-  orange: { label: 'Orange', solid: 'bg-orange-600 text-white', soft: 'bg-orange-50 text-orange-800 dark:bg-orange-500/15 dark:text-orange-200', text: 'text-orange-700 dark:text-orange-300', ring: 'ring-orange-600/40' },
-  navy: { label: 'Navy', solid: 'bg-slate-800 text-white', soft: 'bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-200', text: 'text-slate-800 dark:text-slate-200', ring: 'ring-slate-800/40' },
+  gold: {
+    label: 'Gold',
+    solid: 'bg-primary text-primary-foreground',
+    soft: 'bg-primary/10 text-w-900 dark:bg-primary/15 dark:text-primary',
+    text: 'text-w-700 dark:text-primary',
+    ring: 'ring-primary/50',
+  },
+  bronze: {
+    label: 'Deep gold',
+    solid: 'bg-[#a07830] text-white',
+    soft: 'bg-w-100 text-w-900 dark:bg-[#a07830]/20 dark:text-w-200',
+    text: 'text-[#8a6628] dark:text-w-300',
+    ring: 'ring-[#a07830]/50',
+  },
+  espresso: {
+    label: 'Espresso',
+    solid: 'bg-w-950 text-w-100 dark:bg-w-900',
+    soft: 'bg-w-200/60 text-w-950 dark:bg-white/10 dark:text-w-100',
+    text: 'text-w-950 dark:text-w-200',
+    ring: 'ring-w-950/40',
+  },
+  ink: {
+    label: 'Ink navy',
+    solid: 'bg-[#1a1a2e] text-[#f0c96a] dark:bg-[#161e30]',
+    soft: 'bg-[#1a1a2e]/[0.06] text-[#1a1a2e] dark:bg-white/10 dark:text-[#f0f2f8]',
+    text: 'text-[#1a1a2e] dark:text-[#f0c96a]',
+    ring: 'ring-[#1a1a2e]/40',
+  },
+}
+
+/**
+ * Colour keys saved before the palette was limited to the site colours —
+ * shown in the nearest brand colour, so old records need no data change.
+ */
+const LEGACY_COLORS: Record<string, string> = {
+  blue: 'ink', navy: 'ink', purple: 'bronze',
+  green: 'espresso', teal: 'espresso',
+  red: 'bronze', orange: 'bronze',
 }
 
 export function serviceColor(key: string) {
-  return SERVICE_COLORS[key] ?? SERVICE_COLORS.gold
+  return SERVICE_COLORS[key] ?? SERVICE_COLORS[LEGACY_COLORS[key] ?? 'gold']
+}
+
+/** The saved key as one of the current colours (for the admin picker). */
+export function normalizeColorKey(key: string): string {
+  return key in SERVICE_COLORS ? key : LEGACY_COLORS[key] ?? 'gold'
+}
+
+// ─── Sub-services and requests ───────────────────────────────────────────────
+
+export type ServiceChannelCode = 'CALL' | 'MESSAGE' | 'MEETING'
+export const SERVICE_CHANNEL_CODES: readonly ServiceChannelCode[] = ['CALL', 'MESSAGE', 'MEETING']
+
+export interface ServiceOfferingItem {
+  id: string
+  programId: string
+  slug: string
+  name: string
+  summary: string
+  description: string | null
+  image: string | null
+  channels: ServiceChannelCode[]
+  productIds: string[]
+  priceNote: string | null
+  sortOrder: number
+  active: boolean
+}
+
+export type ServiceRequestStatusCode = 'PENDING' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED'
+
+export interface ServiceRequestItem {
+  id: string
+  number: string
+  userId: string
+  userName: string | null
+  userEmail: string | null
+  programId: string
+  programName: string
+  programSlug: string | null
+  offeringIds: string[]
+  offeringNames: string[]
+  channel: ServiceChannelCode
+  preferredAt: string | null
+  phone: string | null
+  note: string
+  status: ServiceRequestStatusCode
+  scheduledAt: string | null
+  meetingLink: string | null
+  staffNote: string | null
+  cancelReason: string | null
+  handledById: string | null
+  createdAt: string
 }
 
 export function slugify(name: string): string {

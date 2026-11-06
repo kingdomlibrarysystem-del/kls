@@ -76,7 +76,7 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
         title: data.title,
         courseId: data.courseId,
         kind: data.kind,
-        lessonId: data.kind === 'TEST' ? data.lessonId : undefined,
+        lessonId: data.kind === 'TEST' || data.kind === 'QUIZ' ? data.lessonId : undefined,
         durationSeconds: data.kind === 'EXAM' && data.durationMinutes ? data.durationMinutes * 60 : undefined,
         questions: data.kind === 'PROJECT' ? [] : data.questions.map((q, i) => ({
           id: `q${i + 1}`,
@@ -131,7 +131,7 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
               <FormInput id="add-quiz-duration" type="number" min={1} error={errors.durationMinutes?.message} {...register('durationMinutes', { valueAsNumber: true })} />
             </div>
           )}
-          {kind === 'TEST' && (
+          {(kind === 'TEST' || kind === 'QUIZ') && (
             <div>
               <FieldLabel htmlFor="add-quiz-lesson" required>Lesson</FieldLabel>
               <select id="add-quiz-lesson" className="w-full px-4 py-3 font-lato text-sm border border-w-500 dark:border-white/15 bg-form-bg dark:bg-white/5 rounded focus:border-w-600 dark:focus:border-primary focus:outline-none" {...register('lessonId')}>

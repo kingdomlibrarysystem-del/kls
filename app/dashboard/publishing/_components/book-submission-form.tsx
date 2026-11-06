@@ -46,6 +46,10 @@ interface BookSubmissionFormProps {
   mediaTypes: MediaTypeOption[]
   /** The draft / rejected book being edited, or null for a new book. */
   initial: SerializedPublication | null
+  /** Where "My books" lives — the form goes there after saving (?done=submitted|saved). */
+  doneHref?: string
+  /** Staff see the "set up the KCS Map" hint when there are no categories; members / the public a plain message. */
+  staffHelp?: boolean
 }
 
 /**
@@ -54,7 +58,7 @@ interface BookSubmissionFormProps {
  * The category list is the KCS taxonomy (pillar → scroll) and the media type
  * list is admin-managed; the upload fields shown follow the media type.
  */
-export function BookSubmissionForm({ categories, pillarNames, mediaTypes, initial }: BookSubmissionFormProps) {
+export function BookSubmissionForm({ categories, pillarNames, mediaTypes, initial, doneHref = '/dashboard/publishing/my', staffHelp = true }: BookSubmissionFormProps) {
   const router = useRouter()
   const [form, setForm] = useState<FormState>(() => ({
     title: initial?.title ?? '',
@@ -123,7 +127,7 @@ export function BookSubmissionForm({ categories, pillarNames, mediaTypes, initia
       } else {
         await call('/api/publications', 'POST', { ...fields, submit })
       }
-      router.push(`/dashboard/publishing/my?done=${submit ? 'submitted' : 'saved'}`)
+      router.push(`${doneHref}?done=${submit ? 'submitted' : 'saved'}`)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save the book')
@@ -188,7 +192,10 @@ export function BookSubmissionForm({ categories, pillarNames, mediaTypes, initia
                 </optgroup>
               ))}
             </select>
-            {categories.length === 0 && (
+            {categories.length === 0 && !staffHelp && (
+              <p className="text-xs text-warning">No book categories are available yet. Please try again later, or save your book as a draft for now.</p>
+            )}
+            {categories.length === 0 && staffHelp && (
               <p className="text-xs text-warning">
                 {pillarNames.length > 0
                   ? <>Your KCS Map has {pillarNames.length === 1 ? 'the pillar' : 'the pillars'} <b>{pillarNames.join(', ')}</b> but no scrolls under {pillarNames.length === 1 ? 'it' : 'them'}. Books are filed under a scroll: in{' '}</>

@@ -1,4 +1,5 @@
 import prisma from '@/prisma/client'
+import { ApiError } from '@/lib/api-error-handler'
 import { isObjectId } from '@/lib/server/object-id'
 import type { ShopCart, ShopCategory, ShopOrder, ShopProduct } from '@/lib/shop/shared'
 
@@ -65,7 +66,7 @@ export async function listCategories(opts: { activeOnly?: boolean; withCounts?: 
   ])
   const countBy = new Map(counts.map((c) => [c.categoryId, c._count._all]))
   return rows.map((c) => ({
-    id: c.id, name: c.name, description: c.description, sortOrder: c.sortOrder, active: c.active,
+    id: c.id, name: c.name, description: c.description, serviceProgramId: c.serviceProgramId ?? null, sortOrder: c.sortOrder, active: c.active,
     ...(opts.withCounts && { productCount: countBy.get(c.id) ?? 0 }),
   }))
 }
@@ -153,4 +154,46 @@ export async function getShopOverview() {
     completed: count('COMPLETED'),
     revenueRwf: revenue._sum.totalRwf ?? 0,
   }
+}
+
+/** Buyable products by id, in the given order (e.g. the products linked to a service). Missing / hidden ones are skipped. */
+export async function listProductsByIds(ids: string[]): Promise<ShopProduct[]> {
+  const valid = ids.filter(isObjectId)
+  if (valid.length === 0) return []
+  const rows = await prisma.product.findMany({
+    where: { id: { in: valid }, status: 'ACTIVE', ...NOT_TRASHED, category: { is: { active: true } } },
+    include: PRODUCT_INCLUDE,
+  })
+  const byId = new Map(rows.map((r) => [r.id, serializeProduct(r)]))
+  return valid.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
+}
+
+/**
+ * Products of a service programme: buyable products in the visible shop
+ * categories linked to it (ProductCategory.serviceProgramId), best sellers
+ * first, plus those categories for "see all in the shop" links.
+ */
+export async function listServiceProducts(programId: string, limit = 12): Promise<{ products: ShopProduct[]; categories: { id: string; name: string }[] }> {
+  if (!isObjectId(programId)) return { products: [], categories: [] }
+  const categories = await prisma.productCategory.findMany({
+    where: { serviceProgramId: programId, active: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true },
+  })
+  if (categories.length === 0) return { products: [], categories: [] }
+  const rows = await prisma.product.findMany({
+    where: { categoryId: { in: categories.map((c) => c.id) }, status: 'ACTIVE', ...NOT_TRASHED },
+    include: PRODUCT_INCLUDE,
+    orderBy: [{ soldCount: 'desc' }, { createdAt: 'desc' }],
+    take: Math.min(limit, 48),
+  })
+  return { products: rows.map(serializeProduct), categories }
+}
+
+/** Validates an optional service programme id for a category (null clears the link). */
+export async function checkServiceProgram(id: string | null | undefined): Promise<string | null> {
+  if (!id) return null
+  const p = await prisma.serviceProgram.findUnique({ where: { id }, select: { id: true } })
+  if (!p) throw new ApiError('That service no longer exists — choose another one', 400)
+  return p.id
 }

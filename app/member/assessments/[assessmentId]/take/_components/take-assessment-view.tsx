@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { FileX, AlertCircle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -9,7 +9,7 @@ import { CountdownTimer } from './countdown-timer'
 import { QuestionNavigator } from './question-navigator'
 import { ResultsScreen } from './results-screen'
 import { ProjectSubmissionView } from './project-submission-view'
-import { recordAssessmentAttempt, type SubmittedAnswer, type AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
+import { recordAssessmentAttempt, useAssessmentAttempts, type SubmittedAnswer, type AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
 import { useAssessmentCatalog } from '../../../../_shared/use-assessments'
 
 interface TakeAssessmentViewProps {
@@ -38,14 +38,19 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const [submitError, setSubmitError] = useState('')
   const [result, setResult] = useState<AssessmentAttempt | null>(null)
 
-  const { data: assessmentCatalog, loading } = useAssessmentCatalog()
+  const { data: assessmentCatalog, loading: catalogLoading } = useAssessmentCatalog()
+  const { data: attempts, loading: attemptsLoading } = useAssessmentAttempts()
+  const loading = catalogLoading || attemptsLoading
   const assessment = assessmentCatalog[assessmentId]
+  // One try only for a quiz, test or exam: once done, the page shows the marks instead.
+  const earlier = assessment && assessment.kind !== 'PROJECT' ? (attempts ?? []).find((a) => a.assessmentId === assessment.id) : undefined
 
-  useEffect(() => {
-    if (assessment?.kind === 'EXAM' && assessment.durationSeconds) {
-      setSecondsRemaining(assessment.durationSeconds)
-    }
-  }, [assessment])
+  // Start the exam timer once the exam has loaded (set while rendering, not in an effect).
+  const [timerFor, setTimerFor] = useState<string | null>(null)
+  if (assessment?.kind === 'EXAM' && assessment.durationSeconds && timerFor !== assessment.id) {
+    setTimerFor(assessment.id)
+    setSecondsRemaining(assessment.durationSeconds)
+  }
 
   const handleSubmit = useCallback(async (expired: boolean) => {
     try {
@@ -75,6 +80,10 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
 
   if (submitted && result) {
     return <ResultsScreen assessment={assessment} attempt={result} autoSubmitted={autoSubmitted} />
+  }
+
+  if (earlier) {
+    return <ResultsScreen assessment={assessment} attempt={earlier} autoSubmitted={false} />
   }
 
   if (assessment.kind === 'PROJECT') {

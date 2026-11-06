@@ -5,6 +5,8 @@ import { requirePermission } from '@/lib/auth/permissions'
 import { categorySchema } from '@/lib/shop/schemas'
 import { SHOP_PERMISSION } from '@/lib/shop/shared'
 import { isObjectId } from '@/lib/server/object-id'
+import { checkServiceProgram } from '@/lib/shop/data'
+import { expireServicesCache } from '@/lib/services/data'
 
 type Ctx = { params: Promise<{ id: string }> }
 const DENIED = 'Your role cannot manage the shop. Ask an admin to grant "Manage Shop" in Roles & Permissions.'
@@ -21,14 +23,21 @@ export const PATCH = withErrorHandling('/api/shop/categories/[id]', 'PATCH', asy
   const auth = await requirePermission(SHOP_PERMISSION, DENIED)
   if (auth.response) return auth.response
   const { id } = await params
-  await find(id)
+  const existing = await find(id)
   const parsed = categorySchema.partial().safeParse(await request.json().catch(() => null))
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   if (parsed.data.name) {
     const clash = await prisma.productCategory.findFirst({ where: { name: { equals: parsed.data.name, mode: 'insensitive' }, id: { not: id } }, select: { id: true } })
     if (clash) throw new ApiError('A category with this name already exists', 409)
   }
-  const updated = await prisma.productCategory.update({ where: { id }, data: { ...parsed.data, ...(parsed.data.description !== undefined && { description: parsed.data.description || null }) } })
+  const { serviceProgramId: wanted, ...rest } = parsed.data
+  const serviceProgramId = wanted === undefined ? undefined : await checkServiceProgram(wanted)
+  const updated = await prisma.productCategory.update({
+    where: { id },
+    data: { ...rest, ...(rest.description !== undefined && { description: rest.description || null }), ...(serviceProgramId !== undefined && { serviceProgramId }) },
+  })
+  // Linking / unlinking or hiding a linked category changes what service pages show.
+  if (serviceProgramId !== undefined || existing.serviceProgramId) await expireServicesCache()
   return NextResponse.json({ data: updated, message: 'Category saved', code: 'success', status: 200 })
 })
 

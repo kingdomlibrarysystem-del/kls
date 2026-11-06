@@ -125,7 +125,8 @@ export const POST = withErrorHandling('/api/assessments', 'POST', async (request
       title: body.title,
       kind: body.kind as 'TEST' | 'QUIZ' | 'EXAM' | 'PROJECT',
       courseId: body.courseId,
-      lessonId: body.kind === 'TEST' ? body.lessonId ?? null : null,
+      // A lesson quiz / test shows on its own lesson only.
+      lessonId: body.kind === 'TEST' || body.kind === 'QUIZ' ? body.lessonId ?? null : null,
       durationSeconds: body.durationSeconds ?? null,
       questions: (body.questions ?? []).map((q, i) => ({
         id: q.id ?? `q${i + 1}`,

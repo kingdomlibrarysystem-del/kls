@@ -40,7 +40,7 @@ export function CourseRedirectView({ courseId }: CourseRedirectViewProps) {
 
     async function redirect() {
       try {
-        const existing = enrollments.find((e) => e.courseId === courseId)
+        const existing = enrollments.find((e) => e.courseId === courseId && e.status !== 'DROPPED')
         let enrollment = existing
         if (!enrollment) {
           enrollment = await enrollInCourse(user!.id, courseId)

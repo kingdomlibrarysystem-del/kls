@@ -17,6 +17,8 @@ export const productSchema = z.object({
 export const categorySchema = z.object({
   name: z.string().trim().min(2, 'Category name is too short').max(60),
   description: z.string().trim().max(300).nullable().optional(),
+  /** Optional service programme these products belong to (null = none). */
+  serviceProgramId: z.string().regex(/^[a-f0-9]{24}$/i, 'Choose a service').nullable().optional(),
   sortOrder: z.number().int().min(0).max(9999).optional(),
   active: z.boolean().optional(),
 })

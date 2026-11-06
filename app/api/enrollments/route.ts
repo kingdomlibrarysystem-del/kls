@@ -7,6 +7,8 @@ import { notifyUser } from '@/lib/notify'
 import { enrollmentConfirmedEmailHtml } from '@/lib/email-templates'
 import { appBaseUrl } from '@/lib/mailer'
 import { serializeEnrollment, INCLUDE } from '@/lib/data/enrollments'
+import { progressStatus, publishedLessonIds } from '@/lib/data/enrollment-progress'
+import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 
 /**
  * Real Enrollment API, replacing app/member/_shared/enrollment-data.ts
@@ -74,7 +76,18 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
   if (!course) throw new ApiError('The specified course does not exist', 400)
 
   const already = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: body.courseId } } })
-  if (already) throw new ApiError('This user is already enrolled in this course', 409)
+  if (already && already.status !== 'DROPPED') throw new ApiError('This user is already enrolled in this course', 409)
+  if (already) {
+    // Re-joining a course they left: keep their progress (and payment), recompute where they are.
+    const lessonIds = await publishedLessonIds(body.courseId)
+    const back = await prisma.enrollment.update({
+      where: { id: already.id },
+      data: { status: progressStatus(already.completedLessonIds, lessonIds), totalLessons: lessonIds.length },
+      include: INCLUDE,
+    })
+    await issueCertificateIfEligible(back.userId, back.courseId)
+    return NextResponse.json({ data: serializeEnrollment(back), message: 'Welcome back — your progress was kept', code: 'success', status: 200 })
+  }
 
   if (course.price > 0) throw new ApiError('This course requires payment — use /api/course-orders to pay and enroll', 400)
 

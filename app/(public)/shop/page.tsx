@@ -6,12 +6,12 @@ import { loadShopHome } from '@/lib/shop/pages'
 export const metadata: Metadata = { title: 'Shop', description: 'Beauty & Services products from the Kingdom Library — pay with mobile money or card, pickup or delivery.' }
 
 /** Public shop: guests browse everything; "Add to cart" asks them to sign in and brings them back. */
-export default async function PublicShopPage() {
-  const { products, categories } = await loadShopHome()
+export default async function PublicShopPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const [{ products, categories }, sp] = await Promise.all([loadShopHome(), searchParams])
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
       <ShopHeader title="Beauty & Services Shop" subtitle="Quality products, delivered or ready for pickup" />
-      <ShopBrowser products={products} categories={categories} basePath="/shop" />
+      <ShopBrowser products={products} categories={categories} basePath="/shop" initialCategory={sp.category} />
     </div>
   )
 }

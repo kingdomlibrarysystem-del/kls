@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { PlayCircle, GraduationCap, CalendarPlus } from 'lucide-react'
+import { PlayCircle, GraduationCap } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { getProgressPercent, getNextLessonId, type CourseEnrollment } from '@/app/member/_shared/use-enrollments'
 import { getPublishedLessons, useLessonsByCourse } from '@/app/member/_shared/use-lessons'
@@ -11,7 +11,6 @@ import { useLanguage } from '@/contexts/language-context'
 
 interface InProgressCoursesSectionProps {
   inProgress: { enrollment: CourseEnrollment; course: CatalogCourse }[]
-  onRequestSession: (course: CatalogCourse) => void
   onUnenroll: (enrollmentId: string) => void
   onPay: (course: CatalogCourse) => void
 }
@@ -24,7 +23,7 @@ interface InProgressCoursesSectionProps {
  * gated to COMPLETED (see completed-courses-section.tsx, which now shares
  * the same unrestricted requestSession() call).
  */
-export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenroll, onPay }: InProgressCoursesSectionProps) {
+export function InProgressCoursesSection({ inProgress, onUnenroll, onPay }: InProgressCoursesSectionProps) {
   const { t } = useLanguage()
   const { data: lessonsByCourse } = useLessonsByCourse()
   if (inProgress.length === 0) return null
@@ -49,13 +48,6 @@ export function InProgressCoursesSection({ inProgress, onRequestSession, onUnenr
                 <div style={{ width: `${progress}%`, height: '100%', background: 'var(--teal-light)', borderRadius: 2, transition: 'width 0.3s' }} />
               </div>
             </div>
-            <button
-              onClick={() => onRequestSession(course)}
-              aria-label={`Request a live session with ${course.instructor} for ${course.title}`}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--teal-light)', background: 'transparent', color: 'var(--teal-light)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <CalendarPlus size={14} /> {t("m_courses.request_session")}
-            </button>
             <EnrollmentActionButton enrollment={enrollment} course={course} onUnenroll={onUnenroll} onPay={onPay} />
             {nextLessonId ? (
               <Link

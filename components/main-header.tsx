@@ -19,8 +19,9 @@ import {
   X,
   ShoppingBag,
   Package,
-  LayoutGrid,
+  // LayoutGrid,
   ArrowRight,
+  PenLine,
 } from "lucide-react";
 import { serviceColor, type ServiceNavItem } from "@/lib/services/shared";
 import { ServiceIcon } from "@/components/services/service-icon";
@@ -68,6 +69,8 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
         { label: t("nav.browse_books"), href: "/library", icon: <BookOpen size={14} /> },
         { label: t("nav.my_borrowings"), href: "/member/borrowings", icon: <Bookmark size={14} /> },
         { label: t("nav.reservations"), href: "/member/reservations", icon: <CalendarDays size={14} /> },
+        // Anyone signed in can submit a book; /publish asks guests to sign in first.
+        { label: t("nav.publish_book"), href: "/publish", icon: <PenLine size={14} /> },
       ],
     },
     {
@@ -176,7 +179,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                   aria-haspopup="menu"
                   className="px-4 py-2 text-w-950 dark:text-gray-200 hover:text-w-600 dark:hover:text-amber-400 transition font-lato text-sm font-semibold flex items-center gap-1"
                 >
-                  <LayoutGrid size={14} /> {t("nav.services")}
+                   {t("nav.services")}
                   <ChevronDown size={12} />
                 </Link>
                 <div className="absolute left-0 z-10 mt-0 w-[min(40rem,calc(100vw-2rem))] rounded-lg border border-w-200 bg-white p-3 shadow-xl opacity-0 invisible transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:border-gray-700 dark:bg-[#161e30]">
@@ -256,7 +259,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                   })}
                   <li>
                     <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm font-semibold text-w-600 transition hover:bg-w-100 dark:text-amber-400 dark:hover:bg-gray-800">
-                      <LayoutGrid size={14} /> {t("nav.all_services")}
+                      {t("nav.all_services")}
                     </Link>
                   </li>
                 </ul>

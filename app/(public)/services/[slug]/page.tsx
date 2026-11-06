@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ProgramDetail } from '@/components/services/program-detail'
-import { getProgramBySlug, getPublicServices } from '@/lib/services/data'
+import { getProgramBySlug, getProgramProducts, getPublicServices } from '@/lib/services/data'
 import { getPageSession } from '@/lib/server/page-session'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -17,9 +17,11 @@ export default async function ProgramPage({ params }: Props) {
   const [{ programs, areas }, session] = await Promise.all([getPublicServices(), getPageSession()])
   const program = programs.find((p) => p.slug === slug)
   if (!program) notFound()
+  // Products of the shop categories linked to this programme, and those picked on its sub-services.
+  const { products, categories } = await getProgramProducts(program)
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <ProgramDetail program={program} others={programs.filter((p) => p.id !== program.id)} areas={areas} signedIn={!!session} />
+      <ProgramDetail program={program} others={programs.filter((p) => p.id !== program.id)} areas={areas} signedIn={!!session} products={products} categories={categories} shopPath="/shop" />
     </div>
   )
 }

@@ -3,6 +3,9 @@
 import { useRef, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  PenLine,
+  BookUp,
+  ClipboardCheck,
   LayoutGrid,
   Home,
   BookOpen,
@@ -62,6 +65,8 @@ function buildNavSections(t: (k: string) => string): NavSection[] {
         { icon: <ShoppingCart size={14} />, key: "my_cart", href: "/member/cart" },
         { icon: <ShoppingBag size={14} />, key: "my_orders", href: "/member/orders" },
         { icon: <Newspaper size={14} />, key: "news", href: "/member/news" },
+        { icon: <PenLine size={14} />, key: "publish_book", href: "/member/publish" },
+        { icon: <BookUp size={14} />, key: "my_books", href: "/member/publish/books" },
       ],
     },
     {
@@ -100,6 +105,7 @@ function buildNavSections(t: (k: string) => string): NavSection[] {
 function buildSingleItems(t: (k: string) => string): NavItem[] {
   return [
     { icon: <LayoutGrid size={16} />, key: "services", href: "/member/services" },
+    { icon: <ClipboardCheck size={16} />, key: "service_requests", href: "/member/services/requests" },
     { icon: <Bell size={16} />, key: "notifications", href: "/member/notifications" },
     { icon: <MessageSquare size={16} />, key: "messages", href: "/member/messages" },
     { icon: <Heart size={16} />, key: "favorites", href: "/member/favorites" },
@@ -151,6 +157,9 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
     // Section overviews only light up on their own page, not on their sub-pages (e.g. Care → Read & Listen).
     // (A product page /member/shop/<id> still counts as "Browse Products".)
     if (href === "/member/care" || href === "/member/shop") return currentRoute === href || (href === "/member/shop" && /^\/member\/shop\/(?!cart|orders)[^/]+$/.test(currentRoute));
+    // "Our Services" covers programme / sub-service pages, but not "My service requests".
+    if (href === "/member/publish") return currentRoute === href;
+    if (href === "/member/services") return currentRoute.startsWith(href) && !currentRoute.startsWith("/member/services/requests");
     return currentRoute.startsWith(href);
   };
 

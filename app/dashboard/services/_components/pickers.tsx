@@ -1,11 +1,11 @@
 'use client'
 
 import { Check } from 'lucide-react'
-import { SERVICE_COLORS, SERVICE_ICONS } from '@/lib/services/shared'
+import { SERVICE_COLORS, SERVICE_ICONS, serviceColor } from '@/lib/services/shared'
 
 /** Icon choice as a grid of buttons (keyboard and screen-reader friendly). */
 export function IconPicker({ value, onChange, color }: { value: string; onChange: (v: string) => void; color: string }) {
-  const solid = (SERVICE_COLORS[color] ?? SERVICE_COLORS.gold).solid
+  const solid = serviceColor(color).solid
   return (
     <div role="radiogroup" aria-label="Icon" className="grid grid-cols-8 gap-1.5">
       {Object.entries(SERVICE_ICONS).map(([key, { label, Icon }]) => (

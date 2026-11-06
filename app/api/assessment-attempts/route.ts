@@ -97,6 +97,12 @@ export const POST = withErrorHandling('/api/assessment-attempts', 'POST', async 
   if (!user) throw new ApiError('The specified user does not exist', 400)
   if (!assessment) throw new ApiError('The specified assessment does not exist', 400)
 
+  // One try only — a member cannot redo a quiz, test or exam to get better marks.
+  if (assessment.kind !== 'PROJECT') {
+    const done = await prisma.assessmentAttempt.findFirst({ where: { userId: body.userId, assessmentId: body.assessmentId }, select: { score: true, totalMarks: true } })
+    if (done) throw new ApiError(`You have already done this. Your marks: ${done.score} / ${done.totalMarks}`, 409)
+  }
+
   if (assessment.kind === 'PROJECT') {
     const attempt = await prisma.assessmentAttempt.create({
       data: {

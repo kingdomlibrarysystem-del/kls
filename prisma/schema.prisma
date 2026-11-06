@@ -2467,11 +2467,16 @@ model ProductCategory {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String    @unique
   description String?
+  /// Optional: the service programme (ServiceProgram) these products belong to — its pages show them.
+  /// One programme can have several categories; a category without one is just a shop category.
+  serviceProgramId String?  @db.ObjectId
   sortOrder   Int       @default(0)
   active      Boolean   @default(true)
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([serviceProgramId])
 }
 
 enum ProductStatus {
@@ -2677,4 +2682,82 @@ model LifeArea {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+
+/// How a member wants to be helped for a service request.
+enum ServiceChannel {
+  /// Staff phone the member.
+  CALL
+  /// Chat in Messages.
+  MESSAGE
+  /// Online meeting (video link).
+  MEETING
+}
+
+enum ServiceRequestStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+/// A sub-service of a programme (e.g. Beauty → "Skin health education"). Has its own page under
+/// /services/<programme>/<sub-service>; members request one or several of them. Admin-managed at
+/// /dashboard/services. Seeded once from each programme's old keyServices list.
+model ServiceOffering {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  programId   String           @db.ObjectId
+  slug        String
+  name        String
+  /// One or two lines shown on the card.
+  summary     String
+  /// Longer text on the sub-service page (optional).
+  description String?
+  image       String?
+  /// Ways members can get this help.
+  channels    ServiceChannel[]
+  /// Shop products that go with this service (ProductCard links on its page).
+  productIds  String[]         @db.ObjectId
+  /// Free text like "Free" or "From 5,000 RWF".
+  priceNote   String?
+  sortOrder   Int              @default(0)
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([programId, slug])
+  @@index([programId, active, sortOrder])
+}
+
+/// A member asking for one or more sub-services of a programme, and how they want to be helped.
+/// Staff (services:requests) schedule, complete or cancel it at /dashboard/services/requests.
+model ServiceRequest {
+  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  /// Human reference, e.g. SRV-261106-K3PQ.
+  number         String               @unique
+  userId         String               @db.ObjectId
+  programId      String               @db.ObjectId
+  /// Snapshots, so the request still reads right if the catalogue changes later.
+  programName    String
+  offeringIds    String[]             @db.ObjectId
+  offeringNames  String[]
+  channel        ServiceChannel
+  /// When the member would like it (optional).
+  preferredAt    DateTime?
+  phone          String?
+  note           String
+  status         ServiceRequestStatus @default(PENDING)
+  scheduledAt    DateTime?
+  /// Online meeting link (MEETING) set by staff.
+  meetingLink    String?
+  /// Message to the member when scheduling / completing.
+  staffNote      String?
+  cancelReason   String?
+  handledById    String?              @db.ObjectId
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }

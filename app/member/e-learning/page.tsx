@@ -116,7 +116,8 @@ export default function ELearningPage() {
       {/* Course grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ display: "grid", gap: 12 }}>
         {paged.map((course) => {
-          const enrolled = enrollments.some((e) => e.courseId === course.id);
+          // A course the member left (DROPPED) shows Enroll again — enrolling brings their progress back.
+          const enrolled = enrollments.some((e) => e.courseId === course.id && e.status !== 'DROPPED');
           return (
             <div key={course.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", transition: "transform 0.2s", cursor: "pointer" }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.12)"; }}
