@@ -50,6 +50,7 @@
     "home": "Home",
     "dashboard": "Dashboard",
     "library": "Digital Library",
+    "life_sciences": "Life Sciences",
     "e_learning": "E-Learning",
     "publishing": "Publishing",
     "research": "Research",
@@ -303,7 +304,10 @@
     "services": "Our Services",
     "service_requests": "My service requests",
     "publish_book": "Publish a Book",
-    "my_books": "My Submitted Books"
+    "my_books": "My Submitted Books",
+    "section_life_sciences": "Life Sciences",
+    "life_sciences_folders": "Browse Folders",
+    "all_books": "All Books"
   },
   "m_welcome": {
     "welcome_back": "Welcome back,",

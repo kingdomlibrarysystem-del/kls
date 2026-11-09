@@ -22,6 +22,7 @@ import {
   // LayoutGrid,
   ArrowRight,
   PenLine,
+  FlaskConical,
 } from "lucide-react";
 import { serviceColor, type ServiceNavItem } from "@/lib/services/shared";
 import { ServiceIcon } from "@/components/services/service-icon";
@@ -201,6 +202,12 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                   </Link>
                 </div>
               </div>
+              <Link
+                href="/life-sciences/books"
+                className="px-4 py-2 text-w-950 dark:text-gray-200 hover:text-w-600 dark:hover:text-amber-400 transition font-lato text-sm font-semibold flex items-center gap-1.5"
+              >
+                {t("nav.life_sciences")}
+              </Link>
               {navSections.map((section) => (
                 <div key={section.title} className="relative group">
                   <button
@@ -235,14 +242,23 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
               key={`${lang}-mobile-nav`}
               className="md:hidden mt-3 max-h-[70vh] overflow-y-auto border-t border-w-200 pt-3 pb-2 animate-in fade-in slide-in-from-top-1 duration-150 dark:border-gray-700"
             >
-              <Link
-                href="/library"
-                onClick={() => setMenuOpen(false)}
-                className="mb-3 flex items-center justify-center gap-2 rounded bg-w-950 px-4 py-2.5 font-lato text-sm font-semibold text-white transition hover:bg-w-900 dark:text-primary-foreground"
-              >
-                <BookOpen size={16} />
-                {t("nav.browse_library")}
-              </Link>
+              <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Link
+                  href="/library"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 rounded bg-w-950 px-4 py-2.5 font-lato text-sm font-semibold text-white transition hover:bg-w-900 dark:text-primary-foreground"
+                >
+                  <BookOpen size={16} />
+                  {t("nav.browse_library")}
+                </Link>
+                <Link
+                  href="/life-sciences/books"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 rounded bg-w-950 px-4 py-2.5 font-lato text-sm font-semibold text-white transition hover:bg-w-900 dark:text-primary-foreground"
+                >
+                  {t("nav.life_sciences")}
+                </Link>
+              </div>
 
               <div className="mb-2">
                 <p className="px-2 pb-1 font-cinzel text-xs font-bold uppercase tracking-widest text-w-600 dark:text-amber-400">{t("nav.services")}</p>

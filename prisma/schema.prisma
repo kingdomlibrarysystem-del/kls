@@ -66,26 +66,26 @@ model Authenticator {
 }
 
 model User {
-  id                        String              @id @default(auto()) @map("_id") @db.ObjectId
+  id                        String                @id @default(auto()) @map("_id") @db.ObjectId
   name                      String?
   firstName                 String?
   lastName                  String?
-  email                     String              @unique
+  email                     String                @unique
   country                   String?
   phonenumber               String?
   emailVerified             DateTime?
   image                     String?
   password                  String?
   notificationPreferences   Json? // e.g., { "email": true, "sms": false }
-  status                    UserStatus          @default(ACTIVE)
+  status                    UserStatus            @default(ACTIVE)
   /// Soft delete (RULES.md "Database Standards"): set when an admin moves the
   /// account to Trash. A trashed user cannot sign in and is hidden from user
   /// lists; it can be restored, or deleted permanently from the Trash.
   deletedAt                 DateTime?
   /// Id of the admin who moved the account to Trash.
-  deletedBy                 String?             @db.ObjectId
-  roleId                    String?             @db.ObjectId
-  role                      Role?               @relation(fields: [roleId], references: [id])
+  deletedBy                 String?               @db.ObjectId
+  roleId                    String?               @db.ObjectId
+  role                      Role?                 @relation(fields: [roleId], references: [id])
   accounts                  Account[]
   sessions                  Session[]
   Authenticator             Authenticator[]
@@ -97,8 +97,8 @@ model User {
   enrollments               Enrollment[]
   assessmentAttempts        AssessmentAttempt[]
   certificates              Certificate[]
-  sessionRequestsAsLearner  SessionRequest[]    @relation("SessionRequestLearner")
-  sessionRequestsAsLecturer SessionRequest[]    @relation("SessionRequestLecturer")
+  sessionRequestsAsLearner  SessionRequest[]      @relation("SessionRequestLearner")
+  sessionRequestsAsLecturer SessionRequest[]      @relation("SessionRequestLecturer")
   projectMemberships        ProjectMember[]
   researchPapers            ResearchPaper[]
   messagesSent              Message[]
@@ -122,15 +122,15 @@ model User {
   productOrders             ProductOrder[]
   beautyReviews             BeautyReview[]
   counselingSessions        CounselingSession[]
-  counselingNotes           CounselingNote[]    @relation("CounselingNoteSubject")
-  counselingNotesAuthored   CounselingNote[]    @relation("CounselingNoteAuthor")
+  counselingNotes           CounselingNote[]      @relation("CounselingNoteSubject")
+  counselingNotesAuthored   CounselingNote[]      @relation("CounselingNoteAuthor")
   counselingConsent         CounselingConsent?
-  rehabIntakes              RehabIntake[]       @relation("RehabIntakeSubject")
-  rehabIntakesReviewed      RehabIntake[]       @relation("RehabIntakeReviewer")
-  rehabSessions             RehabSession[]      @relation("RehabSessionSubject")
-  rehabSessionsFacilitated  RehabSession[]      @relation("RehabSessionFacilitator")
-  rehabMilestones           RehabMilestone[]    @relation("RehabMilestoneSubject")
-  rehabMilestonesRecorded   RehabMilestone[]    @relation("RehabMilestoneRecorder")
+  rehabIntakes              RehabIntake[]         @relation("RehabIntakeSubject")
+  rehabIntakesReviewed      RehabIntake[]         @relation("RehabIntakeReviewer")
+  rehabSessions             RehabSession[]        @relation("RehabSessionSubject")
+  rehabSessionsFacilitated  RehabSession[]        @relation("RehabSessionFacilitator")
+  rehabMilestones           RehabMilestone[]      @relation("RehabMilestoneSubject")
+  rehabMilestonesRecorded   RehabMilestone[]      @relation("RehabMilestoneRecorder")
   rehabGroupMemberships     RehabGroupMember[]
   newsArticles              NewsArticle[]
   newsSubscriptions         NewsSubscription[]
@@ -257,35 +257,35 @@ model Settings {
 /// separate from its parent pillar (ruling out embedding children inside
 /// their root document).
 model Category {
-  id          String          @id @default(auto()) @map("_id") @db.ObjectId
-  slug        String          @unique
-  nameEn      String
-  nameFr      String
-  nameRw      String
-  parentId    String?         @db.ObjectId
-  parent      Category?       @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children    Category[]      @relation("CategoryToParent")
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  slug         String          @unique
+  nameEn       String
+  nameFr       String
+  nameRw       String
+  parentId     String?         @db.ObjectId
+  parent       Category?       @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children     Category[]      @relation("CategoryToParent")
   /// KCS classification code, e.g. "KCS-FND". Roots only.
-  code        String?
+  code         String?
   /// Tagline, e.g. "Constitution of the Kingdom". Roots only.
-  subtitle    String?
+  subtitle     String?
   /// Book span covered by this pillar, e.g. "Genesis – Deuteronomy". Roots only.
-  range       String?
+  range        String?
   /// Theme phrase, e.g. "Origins and Covenant". Roots only.
-  theme       String?
+  theme        String?
   /// One-sentence description. Roots only.
-  description String?
+  description  String?
   /// Longer descriptive paragraph. Roots only.
-  detail      String?
+  detail       String?
   /// Hero/header image URL. Roots only.
-  heroImage   String?
+  heroImage    String?
   /// Availability status. Leaf/scroll rows only.
-  status      CategoryStatus?
-  resources   Resource[]
+  status       CategoryStatus?
+  resources    Resource[]
   /// Books submitted by publishers under this KCS category (Publication.categoryId).
   publications Publication[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
 enum CategoryStatus {
@@ -510,41 +510,41 @@ enum ResourceStatus {
 /// from Order.status alone). See settleOrder in app/api/orders/settle.ts
 /// for where that record actually gets created.
 model Order {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String      @db.ObjectId
-  user            User        @relation(fields: [userId], references: [id])
-  buyerName       String
-  buyerEmail      String
-  buyerPhone      String
-  resourceId      String      @db.ObjectId
-  resource        Resource    @relation(fields: [resourceId], references: [id])
-  resourceTitle   String
-  resourceFormat  String
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String      @db.ObjectId
+  user              User        @relation(fields: [userId], references: [id])
+  buyerName         String
+  buyerEmail        String
+  buyerPhone        String
+  resourceId        String      @db.ObjectId
+  resource          Resource    @relation(fields: [resourceId], references: [id])
+  resourceTitle     String
+  resourceFormat    String
   /// Cover image URL, denormalized from Resource.coverImages[0] at order
   /// creation time — lets My Orders and the checkout page show a
   /// thumbnail without an extra join, and keeps showing something
   /// sensible if the resource's cover later changes.
-  resourceCover   String?
-  type            OrderType
-  amountRwf       Float
+  resourceCover     String?
+  type              OrderType
+  amountRwf         Float
   /// Set once this paid order's amount was added to the publisher's
   /// RevenueShare.totalRevenue — makes the credit happen exactly once even
   /// if several payment callbacks settle the same order.
   revenueCreditedAt DateTime?
-  status          OrderStatus @default(PENDING)
+  status            OrderStatus @default(PENDING)
   /// Set when this Order was created as one line of a combined
   /// multi-item Checkout (see Checkout's docstring) rather than the
   /// older single-item flow — null for an Order predating combined
   /// checkout. All Orders sharing a checkoutId are paid together in one
   /// PayPack cashin or one Stripe Checkout Session, and are settled
   /// together (see settleOrder in app/api/orders/settle.ts).
-  checkoutId      String?     @db.ObjectId
-  checkout        Checkout?   @relation(fields: [checkoutId], references: [id])
+  checkoutId        String?     @db.ObjectId
+  checkout          Checkout?   @relation(fields: [checkoutId], references: [id])
   /// Set once settlement succeeds and the real Borrow/Reservation row is
   /// created — makes settlement idempotent (a re-settle, e.g. the
   /// webhook and a poll racing, finds this already set and skips
   /// re-creating the row).
-  createdRecordId String?
+  createdRecordId   String?
   /// PayPack's own transaction reference (a UUID), returned immediately
   /// by the cashin call — the key used to match an incoming webhook or
   /// status-poll response back to this Order. Deliberately NOT declared
@@ -559,17 +559,17 @@ model Order {
   /// scripts/create-order-sparse-indexes.mjs instead (run once after any
   /// `prisma db push` touching this model), which still enforces real
   /// uniqueness once a value IS set, just exempts null/absent.
-  paypackRef      String?
-  paypackStatus   String?
-  paypackProvider String?
+  paypackRef        String?
+  paypackStatus     String?
+  paypackProvider   String?
   /// Real Stripe Checkout Session id (cs_test_... in test mode) — set
   /// only for an Order created from Cart checkout, matched back to this
   /// row by the Stripe webhook's checkout.session.completed event. Same
   /// sparse-index reasoning as paypackRef above — not `@unique` here.
-  stripeSessionId String?
-  paidAt          DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  stripeSessionId   String?
+  paidAt            DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([userId])
   @@index([resourceId])
@@ -706,26 +706,26 @@ enum PaymentAttemptStatus {
 /// the attempt by `reference` (the id we send the provider), re-check the status with the provider, then settle
 /// the target through its own settle function. PayPack/Stripe keep their existing fields on each model.
 model PaymentAttempt {
-  id          String               @id @default(auto()) @map("_id") @db.ObjectId
-  provider    PaymentMethod
-  targetKind  PaymentTargetKind
-  targetId    String               @db.ObjectId
-  userId      String?              @db.ObjectId
+  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  provider       PaymentMethod
+  targetKind     PaymentTargetKind
+  targetId       String               @db.ObjectId
+  userId         String?              @db.ObjectId
   /// Our transaction id sent to the provider (unique, idempotent).
-  reference   String               @unique
+  reference      String               @unique
   /// The provider's own id (InTouch transactionid, MTN X-Reference-Id, PesaPal order_tracking_id, UrubutoPay internal ref).
-  providerRef String?
-  amountRwf   Float
-  phone       String?
-  status      PaymentAttemptStatus @default(PENDING)
+  providerRef    String?
+  amountRwf      Float
+  phone          String?
+  status         PaymentAttemptStatus @default(PENDING)
   /// Last raw status text from the provider, for support.
   providerStatus String?
   /// Hosted payment page (PesaPal) the payer is sent to.
-  redirectUrl String?
-  failureReason String?
-  settledAt   DateTime?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  redirectUrl    String?
+  failureReason  String?
+  settledAt      DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   @@index([targetKind, targetId])
   @@index([providerRef])
@@ -958,24 +958,24 @@ enum ReservationStatus {
 /// call kls-architecture-rules already made for e-learning's category
 /// field.
 model Publication {
-  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
   title           String
-  contributorId   String              @db.ObjectId
-  contributor     User                @relation(fields: [contributorId], references: [id])
+  contributorId   String               @db.ObjectId
+  contributor     User                 @relation(fields: [contributorId], references: [id])
   contributorName String
   /// Display name of the KCS category (copied from Category.nameEn when the
   /// book is submitted). Older rows hold free text from before categoryId.
   category        String
   /// The KCS category (a scroll under a pillar) the publisher filed the book
   /// under; copied to Resource.categoryId when the book is approved.
-  categoryId      String?             @db.ObjectId
-  kcsCategory     Category?           @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  categoryId      String?              @db.ObjectId
+  kcsCategory     Category?            @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   /// The book's author as printed on it; defaults to the contributor's name.
   author          String?
-  language        PublicationLanguage @default(EN)
+  language        PublicationLanguage  @default(EN)
   coverImage      String?
   description     String
-  status          PublicationStatus   @default(DRAFT)
+  status          PublicationStatus    @default(DRAFT)
   /// Real Resource FK, populated when this Publication is approved and
   /// published — see the model docstring above.
   /// Not @unique: MongoDB/Prisma's sparse-unique-index behavior treats
@@ -985,8 +985,8 @@ model Publication {
   /// non-published row. One-to-one-ness is enforced at the application
   /// level instead: resourceId is only ever set once, inside the
   /// approve-action transaction in app/api/publications/[id]/route.ts.
-  resourceId      String?             @db.ObjectId
-  resource        Resource?           @relation(fields: [resourceId], references: [id])
+  resourceId      String?              @db.ObjectId
+  resource        Resource?            @relation(fields: [resourceId], references: [id])
   /// Sale price and stock, only meaningful once PUBLISHED — mirrors
   /// catalog-data.ts's PublishedBook.price/quantity/bindingType/mediaType,
   /// which had no equivalent on the pre-publish submission.
@@ -1009,10 +1009,10 @@ model Publication {
   /// Reviewer's note: required when rejecting, shown to the publisher.
   reviewNotes     String?
   reviewedAt      DateTime?
-  featured        Boolean             @default(false)
-  submittedAt     DateTime            @default(now())
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  featured        Boolean              @default(false)
+  submittedAt     DateTime             @default(now())
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   revenueShare    RevenueShare?
 
   // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
@@ -1210,7 +1210,6 @@ model Enrollment {
   updatedAt          DateTime         @updatedAt
 
   @@unique([userId, courseId])
-
   // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
   @@index([courseId])
 }
@@ -1960,23 +1959,23 @@ model BeautyReview {
 /// Real accredited counselor directory, modeled on Clinic/BeautyProvider.
 /// GET-only reference data this pass, no admin CRUD UI yet.
 model Counselor {
-  id        String              @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  specialty String
-  bio       String?
-  image     String
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  specialty    String
+  bio          String?
+  image        String
   /// The staff account behind this counselor — lets members message them
   /// (Messages) and lets that person see their own bookings.
-  userId    String?             @db.ObjectId
+  userId       String?             @db.ObjectId
   /// Languages they counsel in (shown to members), e.g. ["English", "Kinyarwanda"].
-  languages String[]
+  languages    String[]
   /// When they are usually available, shown on the booking form.
   availability String?
   /// Hidden from members when false (kept for past sessions).
-  active    Boolean             @default(true)
-  sessions  CounselingSession[]
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  active       Boolean             @default(true)
+  sessions     CounselingSession[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 /// Real session request/booking, modeled on Appointment, with a `mode`
@@ -1984,25 +1983,25 @@ model Counselor {
 /// distinction for a confidential-counseling flow a checkup booking
 /// doesn't need.
 model CounselingSession {
-  id           String                  @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String                  @db.ObjectId
-  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  counselorId  String                  @db.ObjectId
-  counselor    Counselor               @relation(fields: [counselorId], references: [id])
-  requestedAt  DateTime                @default(now())
-  proposedTime DateTime
-  mode         CounselingSessionMode   @default(IN_PERSON)
+  id             String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String                  @db.ObjectId
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  counselorId    String                  @db.ObjectId
+  counselor      Counselor               @relation(fields: [counselorId], references: [id])
+  requestedAt    DateTime                @default(now())
+  proposedTime   DateTime
+  mode           CounselingSessionMode   @default(IN_PERSON)
   /// Number to call for a PHONE session (the member's, given when booking).
-  contactPhone String?
+  contactPhone   String?
   /// Video link (VIRTUAL) or place (IN_PERSON), sent by staff when confirming.
   meetingDetails String?
   /// Staff message to the member (e.g. why it was moved or cancelled).
-  staffNote    String?
-  reason       String
-  status       CounselingSessionStatus @default(PENDING)
-  notes        CounselingNote[]
-  createdAt    DateTime                @default(now())
-  updatedAt    DateTime                @updatedAt
+  staffNote      String?
+  reason         String
+  status         CounselingSessionStatus @default(PENDING)
+  notes          CounselingNote[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
 
   @@index([userId])
   @@index([counselorId])
@@ -2234,9 +2233,9 @@ model NewsArticle {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
-  comments    NewsArticleComment[]
-  reactions   NewsArticleReaction[]
-  views       NewsArticleView[]
+  comments  NewsArticleComment[]
+  reactions NewsArticleReaction[]
+  views     NewsArticleView[]
 
   @@index([status])
   @@index([category])
@@ -2363,10 +2362,10 @@ model NewsSubscription {
 /// `active` is false when an admin disables the subscriber (they still
 /// receive no emails but the record is kept for audit purposes).
 model NewsletterSubscriber {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
 
@@ -2464,17 +2463,17 @@ model Donation {
 
 /// Admin-managed product category (e.g. Skin care, Hair, Fragrance).
 model ProductCategory {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String    @unique
-  description String?
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String    @unique
+  description      String?
   /// Optional: the service programme (ServiceProgram) these products belong to — its pages show them.
   /// One programme can have several categories; a category without one is just a shop category.
-  serviceProgramId String?  @db.ObjectId
-  sortOrder   Int       @default(0)
-  active      Boolean   @default(true)
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  serviceProgramId String?   @db.ObjectId
+  sortOrder        Int       @default(0)
+  active           Boolean   @default(true)
+  products         Product[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([serviceProgramId])
 }
@@ -2489,7 +2488,7 @@ enum ProductStatus {
 }
 
 model Product {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
   title             String
   description       String
   priceRwf          Int
@@ -2497,21 +2496,21 @@ model Product {
   compareAtPriceRwf Int?
   /// Cloudinary image URLs; the first is the main image.
   images            String[]
-  categoryId        String          @db.ObjectId
-  category          ProductCategory @relation(fields: [categoryId], references: [id])
+  categoryId        String            @db.ObjectId
+  category          ProductCategory   @relation(fields: [categoryId], references: [id])
   /// Units available. Reserved when an order is placed, given back when it fails or is cancelled.
-  stockQty          Int             @default(0)
-  status            ProductStatus   @default(ACTIVE)
+  stockQty          Int               @default(0)
+  status            ProductStatus     @default(ACTIVE)
   /// Units in paid orders (shown as "sold" and used for "Best sellers").
-  soldCount         Int             @default(0)
-  createdById       String?         @db.ObjectId
+  soldCount         Int               @default(0)
+  createdById       String?           @db.ObjectId
   createdByName     String
   /// Soft delete (Trash) — RULES.md deletedAt/deletedBy.
   deletedAt         DateTime?
-  deletedBy         String?         @db.ObjectId
+  deletedBy         String?           @db.ObjectId
   cartItems         ProductCartItem[]
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@index([status, categoryId])
   @@index([createdAt])
@@ -2534,7 +2533,7 @@ model ProductCartItem {
 
 /// Copy of a product as it was bought (title/price/image never change afterwards).
 type ProductOrderItem {
-  productId    String @db.ObjectId
+  productId    String  @db.ObjectId
   title        String
   image        String?
   unitPriceRwf Int
@@ -2639,7 +2638,6 @@ model CareResource {
   @@index([program, published])
 }
 
-
 /// A service programme shown on /services, the home page and the header "Services" menu (Health System,
 /// Beauty, Consultation & Counseling, Rehabilitation, ...). Admin-managed at /dashboard/services; the four
 /// from the Kingdom Library overview are seeded once (lib/services/data.ts).
@@ -2683,7 +2681,6 @@ model LifeArea {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
-
 
 /// How a member wants to be helped for a service request.
 enum ServiceChannel {
@@ -2733,31 +2730,88 @@ model ServiceOffering {
 /// A member asking for one or more sub-services of a programme, and how they want to be helped.
 /// Staff (services:requests) schedule, complete or cancel it at /dashboard/services/requests.
 model ServiceRequest {
-  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
   /// Human reference, e.g. SRV-261106-K3PQ.
-  number         String               @unique
-  userId         String               @db.ObjectId
-  programId      String               @db.ObjectId
+  number        String               @unique
+  userId        String               @db.ObjectId
+  programId     String               @db.ObjectId
   /// Snapshots, so the request still reads right if the catalogue changes later.
-  programName    String
-  offeringIds    String[]             @db.ObjectId
-  offeringNames  String[]
-  channel        ServiceChannel
+  programName   String
+  offeringIds   String[]             @db.ObjectId
+  offeringNames String[]
+  channel       ServiceChannel
   /// When the member would like it (optional).
-  preferredAt    DateTime?
-  phone          String?
-  note           String
-  status         ServiceRequestStatus @default(PENDING)
-  scheduledAt    DateTime?
+  preferredAt   DateTime?
+  phone         String?
+  note          String
+  status        ServiceRequestStatus @default(PENDING)
+  scheduledAt   DateTime?
   /// Online meeting link (MEETING) set by staff.
-  meetingLink    String?
+  meetingLink   String?
   /// Message to the member when scheduling / completing.
-  staffNote      String?
-  cancelReason   String?
-  handledById    String?              @db.ObjectId
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  staffNote     String?
+  cancelReason  String?
+  handledById   String?              @db.ObjectId
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+/// Life Sciences library folder — a category that groups document-only books
+/// (PDF / PowerPoint). Managed from /dashboard/life-sciences; members browse
+/// active folders at /member/life-sciences.
+model BookFolder {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  /// Display name, e.g. "Anatomy".
+  name        String
+  /// URL-safe identifier derived from the name; unique so folders stay distinguishable.
+  slug        String       @unique
+  description String?
+  status      FolderStatus @default(ACTIVE)
+  /// Staff-chosen display order; lower first.
+  sortOrder   Int          @default(0)
+  createdById String?      @db.ObjectId
+  books       FolderBook[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, sortOrder])
+}
+
+enum FolderStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// A document-only book inside a Life Sciences folder. Unlike Resource, it has
+/// no chapters, pricing, audio or video — just one uploaded PDF/PowerPoint.
+model FolderBook {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  folderId     String           @db.ObjectId
+  folder       BookFolder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  author       String
+  /// Cloudinary secure_url of the uploaded document.
+  documentUrl  String
+  /// Original file name, shown to staff and members.
+  documentName String
+  /// Uppercased file extension (e.g. "PDF", "PPTX", "DOCX") or "FILE" — derived from the upload, never typed.
+  documentType String
+  /// Size in bytes, when Cloudinary reports it.
+  documentSize Int?
+  status       FolderBookStatus @default(ACTIVE)
+  createdById  String?          @db.ObjectId
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([folderId, status])
+  @@index([status, createdAt])
+}
+
+enum FolderBookStatus {
+  ACTIVE
+  ARCHIVED
 }

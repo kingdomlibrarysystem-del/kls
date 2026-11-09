@@ -50,6 +50,7 @@
     "home": "Ahabanza",
     "dashboard": "Ikibaho",
     "library": "Isomero rya digitale",
+    "life_sciences": "Ubumenyi bw'ubuzima",
     "e_learning": "E-Learning",
     "publishing": "Gutangaza",
     "research": "Ubushakashatsi",
@@ -304,7 +305,10 @@
     "services": "Serivisi zacu",
     "service_requests": "Serivisi nasabye",
     "publish_book": "Tangaza igitabo",
-    "my_books": "Ibitabo natanze"
+    "my_books": "Ibitabo natanze",
+    "section_life_sciences": "Ubumenyi bw'ibinyabuzima",
+    "life_sciences_folders": "Reba udosiye",
+    "all_books": "Ibitabo byose"
   },
   "m_welcome": {
     "welcome_back": "Murakaza neza,",

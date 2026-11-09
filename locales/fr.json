@@ -50,6 +50,7 @@
     "home": "Accueil",
     "dashboard": "Tableau de bord",
     "library": "Bibliothèque numérique",
+    "life_sciences": "Sciences de la vie",
     "e_learning": "E-Learning",
     "publishing": "Publication",
     "research": "Recherche",
@@ -304,7 +305,10 @@
     "services": "Nos services",
     "service_requests": "Mes demandes de service",
     "publish_book": "Publier un livre",
-    "my_books": "Mes livres soumis"
+    "my_books": "Mes livres soumis",
+    "section_life_sciences": "Sciences de la vie",
+    "life_sciences_folders": "Parcourir les dossiers",
+    "all_books": "Tous les livres"
   },
   "m_welcome": {
     "welcome_back": "Bon retour,",
