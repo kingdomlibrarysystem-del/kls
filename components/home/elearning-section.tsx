@@ -6,7 +6,7 @@ import type { HomeCourse } from '@/lib/data/home'
 import { useLanguage } from '@/contexts/language-context'
 
 /** Featured courses + catalog totals, loaded on the server (lib/data/home.ts) — was a browser download of every published course. */
-export function ELearningSection({ courses: featured, stats: totals }: { courses: HomeCourse[]; stats: { courses: number; lessons: number; enrollments: number } }) {
+export function ELearningSection({ courses: featured, stats: totals, asPage = false }: { courses: HomeCourse[]; stats: { courses: number; lessons: number; enrollments: number }; asPage?: boolean }) {
   const { t } = useLanguage()
 
   const stats = [
@@ -15,7 +15,8 @@ export function ELearningSection({ courses: featured, stats: totals }: { courses
     { icon: <Award size={20} />, value: String(totals.lessons), label: t('elearning.lessons') },
   ]
 
-  if (featured.length === 0) return null
+  if (featured.length === 0 && !asPage) return null
+  const Heading = asPage ? 'h1' : 'h2'
 
   return (
     <div className="py-16 px-4 bg-[#fdf8ef] dark:bg-[#0a0d1a]">
@@ -25,9 +26,9 @@ export function ELearningSection({ courses: featured, stats: totals }: { courses
             <span className="font-lato text-xs font-semibold text-w-600 dark:text-amber-500/70 uppercase tracking-widest">
               {t('elearning.learn_at_pace')}
             </span>
-            <h2 className="font-cinzel text-2xl md:text-4xl font-bold text-w-950 dark:text-gray-100 mt-2 leading-tight">
+            <Heading className="font-cinzel text-2xl md:text-4xl font-bold text-w-950 dark:text-gray-100 mt-2 leading-tight">
               {t('elearning.title')}
-            </h2>
+            </Heading>
             <p className="font-lato text-w-700 dark:text-gray-400 mt-3 max-w-md">
               {t('elearning.subtitle')}
             </p>
@@ -73,15 +74,15 @@ export function ELearningSection({ courses: featured, stats: totals }: { courses
           ))}
         </div>
 
-        <div className="flex justify-center">
+        {!asPage && <div className="flex justify-center">
           <Link
-            href="/member/e-learning"
+            href="/e-learning"
             className="inline-flex items-center gap-2 px-8 py-3 bg-w-950 dark:bg-amber-500 text-w-accent dark:text-[#0a0d1a] font-lato font-bold rounded hover:bg-w-800 dark:hover:bg-amber-400 transition"
           >
             <PlayCircle size={18} />
             {t('elearning.browse_all')}
           </Link>
-        </div>
+        </div>}
       </div>
     </div>
   )

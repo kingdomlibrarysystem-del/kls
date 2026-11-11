@@ -36,6 +36,39 @@ export interface HomeCourse {
   image: string | null
 }
 
+const COURSE_CARD_SELECT = {
+  id: true, title: true, category: true, image: true,
+  lecturer: { select: { name: true, firstName: true, lastName: true } },
+  _count: { select: { lessons: true, enrollments: true } },
+} as const
+
+type CourseCardRow = {
+  id: string; title: string; category: string; image: string | null
+  lecturer: { name: string | null; firstName: string | null; lastName: string | null } | null
+  _count: { lessons: number; enrollments: number }
+}
+
+const toHomeCourse = (c: CourseCardRow): HomeCourse => ({
+  id: c.id,
+  title: c.title,
+  category: c.category,
+  // Same rule as the courses API + useCourses: lecturer's name, else 'Unassigned'.
+  instructor: (c.lecturer ? c.lecturer.name ?? `${c.lecturer.firstName ?? ''} ${c.lecturer.lastName ?? ''}`.trim() : '') || 'Unassigned',
+  lessons: c._count.lessons,
+  students: c._count.enrollments,
+  image: c.image ?? null,
+})
+
+/** Every published course for the public /e-learning catalogue (Google can read it; no login needed). */
+export async function getPublicCourseCatalog() {
+  const [rows, lessons, enrollments] = await Promise.all([
+    prisma.course.findMany({ where: { status: 'PUBLISHED' }, orderBy: { createdAt: 'desc' }, take: 300, select: COURSE_CARD_SELECT }),
+    prisma.lesson.count({ where: { course: { status: 'PUBLISHED' } } }),
+    prisma.enrollment.count({ where: { course: { status: 'PUBLISHED' } } }),
+  ])
+  return { courses: rows.map(toHomeCourse), stats: { courses: rows.length, lessons, enrollments } }
+}
+
 export interface HomePaper {
   id: string
   title: string
@@ -97,11 +130,7 @@ export async function getHomePageData() {
       where: { status: 'PUBLISHED' },
       orderBy: { createdAt: 'desc' },
       take: 3,
-      select: {
-        id: true, title: true, category: true, image: true,
-        lecturer: { select: { name: true, firstName: true, lastName: true } },
-        _count: { select: { lessons: true, enrollments: true } },
-      },
+      select: COURSE_CARD_SELECT,
     }), []),
     safe(prisma.course.count({ where: { status: 'PUBLISHED' } }), 0),
     safe(prisma.lesson.count({ where: { course: { status: 'PUBLISHED' } } }), 0),
@@ -116,16 +145,7 @@ export async function getHomePageData() {
 
   const news: HomeNewsItem[] = await withArticleStats(newsRows.map((n) => ({ ...n, publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null })))
 
-  const courses: HomeCourse[] = courseRows.map((c) => ({
-    id: c.id,
-    title: c.title,
-    category: c.category,
-    // Same rule as the courses API + useCourses: lecturer's name, else 'Unassigned'.
-    instructor: (c.lecturer ? c.lecturer.name ?? `${c.lecturer.firstName ?? ''} ${c.lecturer.lastName ?? ''}`.trim() : '') || 'Unassigned',
-    lessons: c._count.lessons,
-    students: c._count.enrollments,
-    image: c.image ?? null,
-  }))
+  const courses: HomeCourse[] = courseRows.map(toHomeCourse)
 
   const papers: HomePaper[] = paperRows.map((p) => ({
     id: p.id,

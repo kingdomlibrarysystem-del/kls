@@ -8099,3 +8099,39 @@ who completed the course). Staff-side PATCH grading of attempts is unchanged. De
 
 **Verified:** `tsc` clean; eslint clean on changed files (2 old react-hook-form warnings); new
 `app/api/__tests__/assessment-one-try.test.ts` 2/2 plus certificate tests 6/6 on `kls_db_test`.
+
+## 2026-11-11 - Google Search setup (sitemap, robots, titles, public E-Learning page)
+
+**Goal:** Google shows www.libkingdom.com with links to Log in, Sign up, Library, E-Learning, Newsletter and Services.
+Google picks those sitelinks itself; this makes each page easy to find and clearly named.
+
+**What changed**
+- `lib/site.ts` (new): `SITE_URL` (default https://www.libkingdom.com, override `NEXT_PUBLIC_SITE_URL`),
+  `SITE_NAME`, `SITE_DESCRIPTION`, `MAIN_PAGES` (the six pages, in order).
+- `app/robots.ts` (new): allows the public site; blocks /dashboard, /member, /api, one-time auth links
+  (forgot/reset password, verify email) and /certificate; points to the sitemap.
+- `app/sitemap.ts` (new, rebuilt hourly): home, the six main pages, shop, publish, life sciences, every service
+  programme, published courses (/courses/[id]), published news (/news/[id]) and books (/library/[id]). A part that
+  fails to load is skipped.
+- `app/layout.tsx`: `metadataBase`, title template "%s | Kingdom Library", new description, link preview
+  (Open Graph / X card with /kls-logo.jpg), optional `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` meta tag; removed
+  the "v0.app" generator tag.
+- Titles + canonical: /library "Digital Library", /news "Newsletter & News", /services, new
+  `app/(public)/auth/login/layout.tsx` "Log in" and `register/layout.tsx` "Sign up" (the pages are client
+  components). Life-sciences and not-found titles no longer repeat "Kingdom Library".
+- **New public `/e-learning`** (`app/(public)/e-learning/page.tsx`): every published course, no login needed
+  (/member/e-learning redirects guests to login, so Google could not see it). Reuses `ELearningSection` with
+  `asPage` (h1, no "Browse all" button); data from `getPublicCourseCatalog` (`lib/data/home.ts`, shared
+  `toHomeCourse` mapping) cached 60s as `getCachedCourseCatalog` (`lib/server/home-page.ts`, tag 'home-page').
+  The home page's "Browse all courses" now opens /e-learning (course cards → /courses/[id] → Enroll).
+- `app/page.tsx`: canonical "/" and JSON-LD (Organization, WebSite, SiteNavigationElement for the six pages).
+
+**Interactions to watch:** any new page's title should be just its own name (the template adds the site name).
+Header member links (/member/e-learning) are unchanged. Adding a new public section → add it to `MAIN_PAGES`
+or the sitemap list.
+
+**Verified:** `tsc` clean, eslint clean on changed files; dev server on port 3111 (test DB): robots.txt, sitemap.xml
+(15 URLs), titles + canonical on all six pages, verification tag, og:image and JSON-LD on the home page.
+
+**Online steps (owner):** Search Console → Add property → Domain "libkingdom.com" → add the TXT record in Hostinger
+DNS → Verify → submit sitemap.xml → request indexing for the home page.

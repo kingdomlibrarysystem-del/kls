@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/ui/page-header'
@@ -11,6 +12,12 @@ import { LibraryBrowser } from './_components/library-browser'
  * and no quantity/binding/media data, which drifted from the real
  * inventory and couldn't support real availability checks.
  */
+export const metadata: Metadata = {
+  title: 'Digital Library',
+  description: 'Browse and read books, journals and digital resources in the Kingdom Library — online or borrow a printed copy.',
+  alternates: { canonical: '/library' },
+}
+
 export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-white">
