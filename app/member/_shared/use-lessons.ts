@@ -58,6 +58,9 @@ function loadLessons(): Promise<void> {
         content: l.content,
         contentMarkdown: l.contentMarkdown,
         status: (l.status ?? 'PUBLISHED') as LessonStatus,
+        access: l.access ?? 'COURSE',
+        price: l.price ?? 0,
+        locked: !!l.locked,
         completed: false,
       })
     }
@@ -126,6 +129,8 @@ export interface AddLessonInput {
   contentMarkdown?: string
   /** Visibility to members; omitted means the API's PUBLISHED default. */
   status?: LessonStatus
+  access?: 'COURSE' | 'FREE' | 'PAID'
+  price?: number
 }
 
 export async function addLesson(courseId: string, _courseTitle: string, input: AddLessonInput): Promise<Lesson> {

@@ -13,6 +13,7 @@ export function serializeEnrollment(e: {
   totalLessons: number
   assessmentPassed: boolean
   paid: boolean
+  unlockedLessonIds?: string[] | null
 }) {
   const memberName = e.user.name ?? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim()
   const progress = e.totalLessons > 0 ? Math.round((e.completedLessonIds.length / e.totalLessons) * 100) : 0
@@ -29,6 +30,7 @@ export function serializeEnrollment(e: {
     totalLessons: e.totalLessons,
     assessmentPassed: e.assessmentPassed,
     paid: e.paid,
+    unlockedLessonIds: e.unlockedLessonIds ?? [],
   }
 }
 

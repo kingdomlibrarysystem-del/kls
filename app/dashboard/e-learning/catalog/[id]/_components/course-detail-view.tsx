@@ -35,6 +35,7 @@ export interface CourseApiResponse {
   students?: number
   /** Lecturer display name, resolved server-side by serializeCourse. */
   instructor?: string
+  price?: number
 }
 
 function toCatalogEntry(d: CourseApiResponse): CourseCatalogEntry {
@@ -49,6 +50,7 @@ function toCatalogEntry(d: CourseApiResponse): CourseCatalogEntry {
     createdAt: d.createdAt,
     author: d.author,
     lecturerId: d.lecturerId,
+    price: d.price ?? 0,
   }
 }
 

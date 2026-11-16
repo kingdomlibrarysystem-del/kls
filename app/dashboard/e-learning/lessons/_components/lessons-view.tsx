@@ -58,6 +58,9 @@ export function LessonsView() {
       content: lesson.content,
       contentMarkdown: lesson.contentMarkdown,
       status: lesson.status ?? 'PUBLISHED',
+      access: lesson.access ?? 'COURSE',
+      price: lesson.price ?? 0,
+      coursePrice: courseCatalog.find((c) => c.id === course.courseId)?.price ?? 0,
     }))
   )
 
@@ -113,6 +116,17 @@ export function LessonsView() {
       ),
     },
     { key: 'durationMinutes', label: 'Duration', sortable: true, render: (r) => <span className="text-w-700">{r.durationMinutes} min</span> },
+    {
+      key: 'access', label: 'Price', sortable: true,
+      render: (r) => {
+        // Same rules as lib/course-access.ts: what a member must pay to open it.
+        const label = r.access === 'FREE' ? 'Free for everyone'
+          : r.access === 'PAID' && r.price > 0 ? `${r.price.toLocaleString()} RWF`
+          : r.coursePrice > 0 ? 'With the course' : 'Free'
+        const paid = label !== 'Free' && label !== 'Free for everyone'
+        return <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${paid ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-primary/40 dark:bg-primary/10 dark:text-primary' : 'border-green-200 bg-green-50 text-green-800 dark:border-success/30 dark:bg-success/10 dark:text-success'}`}>{label}</span>
+      },
+    },
     {
       key: 'status', label: 'Status', sortable: true,
       render: (r) => (

@@ -58,6 +58,8 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
           marks: q.marks,
         })),
         brief: assessment.brief ?? '',
+        briefFileUrl: assessment.briefFileUrl ?? '',
+        briefFileName: assessment.briefFileName ?? '',
         submissionFormat: assessment.submissionFormat,
         projectMarks: assessment.projectMarks,
       })
@@ -95,7 +97,9 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
           matchingPairs: q.type === 'MATCHING' ? q.matchingPairs : undefined,
           marks: q.marks,
         })),
-        brief: data.kind === 'PROJECT' ? data.brief : undefined,
+        // A project is its uploaded document; the old typed brief is left as it was.
+        briefFileUrl: data.kind === 'PROJECT' ? data.briefFileUrl || undefined : undefined,
+        briefFileName: data.kind === 'PROJECT' ? data.briefFileName || undefined : undefined,
         submissionFormat: data.kind === 'PROJECT' ? data.submissionFormat : undefined,
         projectMarks: data.kind === 'PROJECT' ? data.projectMarks : undefined,
       })
@@ -151,7 +155,7 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         </div>
 
         {kind === 'PROJECT' ? (
-          <ProjectFields register={register} errors={errors} />
+          <ProjectFields register={register} errors={errors} setValue={setValue} watch={watch} />
         ) : (
           <QuestionBuilder control={control} register={register} setValue={setValue} errors={errors} />
         )}

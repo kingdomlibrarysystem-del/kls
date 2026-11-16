@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Target, Users, HeartHandshake, BookMarked } from 'lucide-react'
 import { useLanguage } from '@/contexts/language-context'
 
@@ -10,52 +11,56 @@ const pillars = [
 ]
 
 /**
- * Simple About Us section on the landing page — deliberately one short
- * section (a label, a headline, a few sentences, and three bullet cards)
- * that staff can find quickly via the footer "About Us" link (#about).
+ * About Us on the landing page (the footer "About Us" link opens #about).
+ * A deep navy band like the header and hero: real photos of the
+ * community reading together on one side, the label, headline, a few
+ * sentences and three short points on the other.
  */
 export function AboutSection() {
   const { t } = useLanguage()
 
   return (
-    <div id="about" className="py-20 px-4 bg-[#fdf8ef] dark:bg-[#0a0d1a]">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
-          <span className="font-lato text-sm font-semibold text-w-600 dark:text-amber-500/70 uppercase tracking-widest">
-            {t('about.label')}
-          </span>
-          <h2 className="font-cinzel text-3xl md:text-4xl font-bold text-w-950 dark:text-gray-100 mt-3 mb-4" style={{ letterSpacing: '1.5px' }}>
+    <section id="about" className="relative scroll-mt-28 overflow-hidden bg-[#12304a] px-4 py-20 lg:py-24 dark:bg-[#080b16]">
+      <div aria-hidden className="pointer-events-none absolute -right-40 top-0 size-[520px] rounded-full bg-[#2a5f8f]/45 blur-3xl" />
+
+      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        {/* Photos: the community reading together, with a smaller classroom photo in front. */}
+        <div className="relative mx-auto w-full max-w-[520px] pb-10 pr-10 sm:pb-14 sm:pr-14">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-[#f6efe0]/10">
+            <Image src="/home/church-group-reading.jpg" alt="Believers reading their Bibles together in church" fill sizes="(max-width: 1024px) 90vw, 460px" className="object-cover" />
+          </div>
+          <div className="absolute bottom-0 right-0 aspect-[4/3] w-1/2 overflow-hidden rounded-2xl border-4 border-[#12304a] shadow-2xl dark:border-[#080b16]">
+            <Image src="/home/classroom-reading.jpg" alt="A teacher reading with children in a classroom" fill sizes="260px" className="object-cover" />
+          </div>
+        </div>
+
+        <div className="text-center lg:text-left">
+          <span className="font-lato text-xs font-bold uppercase tracking-[0.25em] text-primary">{t('about.label')}</span>
+          <h2 className="mt-3 font-cinzel text-3xl font-bold text-[#f6efe0] md:text-4xl" style={{ letterSpacing: '1.5px' }}>
             {t('about.title')}
           </h2>
-          <p className="font-cormorant text-xl text-w-700 dark:text-gray-300 leading-relaxed">
-            {t('about.body')}
+          <p className="mt-4 font-cormorant text-xl leading-relaxed text-[#f6efe0]/80">{t('about.body')}</p>
+
+          <ul className="mt-8 space-y-4 text-left">
+            {pillars.map(({ icon: Icon, key }) => (
+              <li key={key} className="flex gap-4 rounded-xl border border-[#f6efe0]/10 bg-white/[0.04] p-4 transition-colors hover:border-primary/40">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Icon size={20} />
+                </span>
+                <span>
+                  <span className="block font-cinzel font-semibold text-[#f6efe0]">{t(`about.${key}_title`)}</span>
+                  <span className="mt-1 block font-lato text-sm leading-relaxed text-[#f6efe0]/65">{t(`about.${key}_body`)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-8 flex items-center justify-center gap-2 font-lato text-sm text-[#f6efe0]/65 lg:justify-start">
+            <BookMarked size={15} className="text-primary" />
+            {t('about.signoff')}
           </p>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {pillars.map(({ icon: Icon, key }) => (
-            <div
-              key={key}
-              className="bg-white dark:bg-[#121726] border border-w-200 dark:border-gray-700 rounded-lg p-6 text-center hover:shadow-md transition-shadow"
-            >
-              <div className="w-11 h-11 mx-auto mb-3 rounded-full bg-w-100 dark:bg-gray-800 flex items-center justify-center">
-                <Icon size={20} className="text-w-600 dark:text-amber-500/70" />
-              </div>
-              <p className="font-cinzel font-semibold text-w-950 dark:text-gray-100">
-                {t(`about.${key}_title`)}
-              </p>
-              <p className="font-lato text-sm text-w-700 dark:text-gray-400 mt-2 leading-relaxed">
-                {t(`about.${key}_body`)}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-10 flex items-center justify-center gap-2 font-lato text-sm text-w-700 dark:text-gray-400">
-          <BookMarked size={15} className="text-w-500 dark:text-amber-500/70" />
-          {t('about.signoff')}
-        </p>
       </div>
-    </div>
+    </section>
   )
 }

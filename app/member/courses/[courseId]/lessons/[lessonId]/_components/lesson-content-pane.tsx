@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronRight } from 'lucide-react'
+import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronRight, FileText, Lock, CreditCard } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { OpenClassPanel } from '../../../../../_shared/open-class-panel'
@@ -30,6 +30,15 @@ interface LessonContentPaneProps {
   quizAttempt?: AssessmentAttempt
   /** The member's one attempt at the final exam, once done — the exam card then shows the marks. */
   examAttempt?: AssessmentAttempt
+  /** Last lesson only: the course's projects, each with the member's submission once handed in. */
+  projects?: { id: string; title: string; attempt?: AssessmentAttempt }[]
+  /** True when this member has not paid for the lesson (the API sent no content). */
+  locked?: boolean
+  /** What can be paid to open it: the whole course and/or just this lesson (RWF). */
+  unlock?: { course?: number; lesson?: number }
+  /** False while a paid course is not paid — the exam and projects stay closed. */
+  courseOpen?: boolean
+  onUnlock?: (what: 'course' | 'lesson') => void
   /** Set once the whole course is COMPLETED — the Open class panel then shows under the lesson. */
   completedCourse?: { id: string; title: string; lecturerId?: string }
 }
@@ -51,7 +60,7 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
  * paragraphs) only for a lesson created before the markdown editor
  * existed and never migrated.
  */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId, quizAttempt, examAttempt, completedCourse }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId, quizAttempt, examAttempt, projects = [], completedCourse, locked = false, unlock = {}, courseOpen = true, onUnlock }: LessonContentPaneProps) {
   const { t } = useLanguage()
   const [quizOpen, setQuizOpen] = useState(false)
   const [justTookQuiz, setJustTookQuiz] = useState(false)
@@ -75,6 +84,26 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
       </h1>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} {t("m_courses.min")}</p>
 
+      {locked ? (
+        <div className="mb-4 rounded-xl border border-primary/40 bg-primary/5 p-5 text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary"><Lock className="size-6" aria-hidden /></span>
+          <p className="mt-3 font-semibold text-foreground">{t('m_pay.locked_title')}</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{t('m_pay.locked_text')}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {unlock.course !== undefined && (
+              <Button onClick={() => onUnlock?.('course')}><CreditCard /> {t('m_pay.pay_course').replace('{price}', unlock.course.toLocaleString())}</Button>
+            )}
+            {unlock.lesson !== undefined && (
+              <Button variant={unlock.course !== undefined ? 'outline' : 'default'} onClick={() => onUnlock?.('lesson')}><CreditCard /> {t('m_pay.pay_lesson').replace('{price}', unlock.lesson.toLocaleString())}</Button>
+            )}
+          </div>
+          {nextLesson && (
+            <Link href={`/member/courses/${courseId}/lessons/${nextLesson.id}`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+              {t("m_courses.next_lesson")} <ChevronRight size={15} />
+            </Link>
+          )}
+        </div>
+      ) : (<>
       {lesson.contentMarkdown ? (
         <div style={{ marginBottom: 16 }}>
           <MarkdownContent markdown={lesson.contentMarkdown} />
@@ -166,8 +195,18 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
           </Link>
         )}
       </div>
+      </>)}
 
-      {courseCompleteAssessmentTitle && (examAttempt ? (
+      {/* Paid course not paid yet: the exam and projects wait for the course payment. */}
+      {!courseOpen && (courseCompleteAssessmentTitle || projects.length > 0) && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
+          <Lock className="size-5 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1 text-sm text-foreground">{t('m_pay.exam_locked')}</span>
+          {unlock.course !== undefined && <Button size="sm" onClick={() => onUnlock?.('course')}><CreditCard /> {t('m_pay.pay_course').replace('{price}', unlock.course.toLocaleString())}</Button>}
+        </div>
+      )}
+
+      {courseOpen && courseCompleteAssessmentTitle && (examAttempt ? (
         // Exam already done: show the marks — it cannot be taken again.
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-success/40 bg-success/5 p-3">
           <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden />
@@ -185,13 +224,30 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gold-light)', border: '1px solid var(--gold)', borderRadius: 8, padding: 12, marginTop: 14 }}>
-          <ClipboardList size={18} color="#7a5c00" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 14, color: '#3a2e00', flex: 1 }}>
+          <ClipboardList size={18} color="#12304a" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 14, color: '#12304a', flex: 1 }}>
             {t("m_courses.all_lessons_complete_take")} <strong>{courseCompleteAssessmentTitle}</strong> {t("m_courses.to_finish_course")}
             <span style={{ display: 'block', fontSize: 12, marginTop: 2 }}>{t('m_quiz.one_try')}</span>
           </span>
           <Link href={`/member/assessments/${courseCompleteAssessmentId}/take`} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
             {t("m_courses.take_assessment")}
+          </Link>
+        </div>
+      ))}
+      {courseOpen && projects.map((p) => (
+        <div key={p.id} className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
+          <FileText className="size-5 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1 text-sm text-foreground">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-primary">{t('m_quiz.project')}</span>
+            <strong>{p.title}</strong>
+            {p.attempt && (
+              <span className="block text-xs text-muted-foreground">
+                {p.attempt.reviewStatus === 'PENDING_REVIEW' ? t('m_quiz.project_sent') : `${t('m_quiz.your_marks')}: ${p.attempt.score} / ${p.attempt.totalMarks}`}
+              </span>
+            )}
+          </span>
+          <Link href={`/member/assessments/${p.id}/take`} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
+            {p.attempt ? t('m_quiz.project_view') : t('m_quiz.project_open')}
           </Link>
         </div>
       ))}

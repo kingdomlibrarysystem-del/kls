@@ -29,9 +29,9 @@ export const POST = withErrorHandling('/api/newsletter/subscribe', 'POST', async
   const base = appBaseUrl()
   sendMail(email, 'Welcome to Kingdom Library Newsletter', `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
-      <h2 style="color:#2c2416">Welcome to Kingdom Library!</h2>
+      <h2 style="color:#12304a">Welcome to Kingdom Library!</h2>
       <p>You're now subscribed to our newsletter. You'll receive updates about new books, courses, lessons, and published articles.</p>
-      <p style="margin-top:24px"><a href="${base}/library" style="background:#8a6d3b;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Browse the Library</a></p>
+      <p style="margin-top:24px"><a href="${base}/library" style="background:#12304a;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Browse the Library</a></p>
       <p style="margin-top:24px;font-size:12px;color:#888">To unsubscribe, reply to this email or contact us.</p>
     </div>
   `).catch(() => {})

@@ -4,7 +4,7 @@ interface PublicLifeSciencesBookPageProps {
   params: Promise<{ bookId: string }>
 }
 
-export const metadata = { title: 'Life Sciences Book | Kingdom Library' }
+export const metadata = { title: 'Life Sciences Book' }
 
 /** Public, guest-visible reader for a single Life Sciences book. */
 export default async function PublicLifeSciencesBookPage({ params }: PublicLifeSciencesBookPageProps) {

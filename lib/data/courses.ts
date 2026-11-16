@@ -51,6 +51,13 @@ export async function getCourseDetail(id: string) {
 }
 
 /** Just a course's title (e.g. to label a lesson) — one indexed lookup instead of loading the catalog. */
+/** The course's title and price (RWF, 0 = free) for the admin lesson page. */
+export async function getCourseTitleAndPrice(courseId: string): Promise<{ title: string; price: number }> {
+  if (!isObjectId(courseId)) return { title: '', price: 0 }
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { title: true, price: true } })
+  return { title: course?.title ?? '', price: course?.price ?? 0 }
+}
+
 export async function getCourseTitle(courseId: string): Promise<string> {
   if (!isObjectId(courseId)) return ''
   const course = await prisma.course.findUnique({ where: { id: courseId }, select: { title: true } })

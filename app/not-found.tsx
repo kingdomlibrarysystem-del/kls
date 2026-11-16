@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { NotFoundContent } from '@/components/app-shell/not-found-content'
 
 export const metadata: Metadata = {
-  title: 'Page not found — Kingdom Library',
+  title: 'Page not found',
 }
 
 /** Site-wide 404 (any unknown URL) — replaces Next's default "This page could not be found." */

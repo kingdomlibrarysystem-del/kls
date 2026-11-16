@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { MemberFoldersView } from '@/app/member/life-sciences/_components/member-folders-view'
 
-export const metadata = { title: 'Life Sciences | Kingdom Library' }
+export const metadata = { title: 'Life Sciences' }
 
 /** Public, guest-visible Life Sciences folder browser. */
 export default function PublicLifeSciencesPage() {

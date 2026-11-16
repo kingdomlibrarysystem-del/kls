@@ -24,4 +24,8 @@ export interface LessonRow {
   content: string
   contentMarkdown?: string
   status: LessonStatus
+  access: 'COURSE' | 'FREE' | 'PAID'
+  price: number
+  /** The course's price (RWF) — 0 = free course. */
+  coursePrice: number
 }

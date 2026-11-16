@@ -13,6 +13,8 @@ import { useLanguage } from '@/contexts/language-context'
 
 interface CourseCheckoutModalProps {
   course: CatalogCourse | null
+  /** Buy just this lesson (Lesson.access PAID) instead of the whole course. */
+  lesson?: { id: string; title: string; price: number } | null
   onClose: () => void
   onPaid: () => void
 }
@@ -32,7 +34,7 @@ const POLL_TIMEOUT_MS = 3 * 60_000
  * paid/failed, polling GET /api/course-orders/:id as a fallback for
  * whichever webhook hasn't arrived yet.
  */
-export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutModalProps) {
+export function CourseCheckoutModal({ course, lesson, onClose, onPaid }: CourseCheckoutModalProps) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [phone, setPhone] = useState('')
@@ -51,6 +53,8 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
   }, [])
 
   if (!course) return null
+  const amount = lesson ? lesson.price : course.price
+  const itemTitle = lesson ? lesson.title : course.title
 
   const startPolling = (id: string) => {
     const startedAt = Date.now()
@@ -90,6 +94,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
         body: JSON.stringify({
           userId: user.id,
           courseId: course.id,
+          ...(lesson && { lessonId: lesson.id }),
           buyerName: `${user.firstName} ${user.lastName}`.trim(),
           buyerEmail: user.email,
           buyerPhone: phone,
@@ -121,12 +126,12 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
   }
 
   return (
-    <Modal open onClose={handleClose} title={`${t("m_courses.pay_to_enroll")} — "${course.title}"`} size="sm">
+    <Modal open onClose={handleClose} title={lesson ? `${t("m_pay.buy_lesson_title")} — "${lesson.title}"` : `${t("m_courses.pay_to_enroll")} — "${course.title}"`} size="sm">
       <div className="text-center py-2">
         {stage === 'form' && (
           <>
             <p className="font-lato text-sm text-w-950 mb-4">
-              {t("m_courses.enroll_in_for")} <span className="font-semibold">&ldquo;{course.title}&rdquo;</span> {t("m_request.for_word")} <span className="font-semibold">{course.price.toLocaleString()} RWF</span>
+              {lesson ? t("m_pay.open_lesson_for") : t("m_courses.enroll_in_for")} <span className="font-semibold">&ldquo;{itemTitle}&rdquo;</span> {t("m_request.for_word")} <span className="font-semibold">{amount.toLocaleString()} RWF</span>
             </p>
 
             <div className="text-left mb-4">
@@ -182,7 +187,7 @@ export function CourseCheckoutModal({ course, onClose, onPaid }: CourseCheckoutM
             <CheckCircle2 size={32} className="mx-auto text-green-600 dark:text-success mb-3" />
             <p className="font-lato text-sm text-w-950 mb-1">{t("m_courses.payment_confirmed")}</p>
             <p className="font-lato text-xs text-w-600 mb-4">
-              {t("m_courses.youre_enrolled_in")} <span className="font-semibold">&ldquo;{course.title}&rdquo;</span>.
+              {lesson ? t("m_pay.lesson_open_now") : t("m_courses.youre_enrolled_in")} <span className="font-semibold">&ldquo;{itemTitle}&rdquo;</span>.
             </p>
             <ElegantButton variant="primary" onClick={handleClose} className="w-full text-sm py-2">
               {t("common.done")}

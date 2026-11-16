@@ -7,7 +7,9 @@ export const lessonSchema = z.object({
   durationMinutes: z.number().min(1, 'Duration must be at least 1 minute'),
   content: z.string().min(3, 'Content is required'),
   contentMarkdown: z.string().min(1, 'Lesson content is required'),
-})
+  access: z.enum(['COURSE', 'FREE', 'PAID']),
+  price: z.number(),
+}).refine((d) => d.access !== 'PAID' || d.price > 0, { path: ['price'], message: 'Set a price for a paid lesson' })
 
 export type LessonFormData = z.infer<typeof lessonSchema>
 

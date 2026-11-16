@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CheckCircle2, Circle, PlayCircle, FileText, BookOpen } from 'lucide-react'
+import { CheckCircle2, Circle, PlayCircle, FileText, BookOpen, Lock } from 'lucide-react'
 import type { Lesson, LessonContentType } from '../../../../../_shared/lesson-data'
 import { useLanguage } from '@/contexts/language-context'
 
@@ -49,7 +49,7 @@ export function LessonListSidebar({ courseId, courseTitle, lessons, currentLesso
               transition: 'background 0.15s, color 0.15s',
             }}
           >
-            {lesson.completed ? <CheckCircle2 size={16} color="var(--green-light)" /> : <Circle size={16} color="var(--text-muted)" />}
+            {lesson.completed ? <CheckCircle2 size={16} color="var(--green-light)" /> : lesson.locked ? <Lock size={15} color="var(--gold)" aria-label="Needs payment" /> : <Circle size={16} color="var(--text-muted)" />}
             <span style={{ flex: 1 }}>{lesson.title}</span>
             <span style={{ color: 'var(--text-muted)' }}>{contentIcon[lesson.contentType]}</span>
           </Link>

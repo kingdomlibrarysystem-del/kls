@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { MemberBooksView } from '@/app/member/life-sciences/_components/member-books-view'
 
-export const metadata = { title: 'Life Sciences Books | Kingdom Library' }
+export const metadata = { title: 'Life Sciences Books' }
 
 /** Public, guest-visible list of every active Life Sciences book. */
 export default function PublicLifeSciencesBooksPage() {

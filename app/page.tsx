@@ -11,6 +11,25 @@ import { MainFooter } from '@/components/main-footer'
 import { getCachedHomePageData } from '@/lib/server/home-page'
 import { getPublicServices } from '@/lib/services/data'
 import { ServicesSection } from '@/components/home/services-section'
+import type { Metadata } from 'next'
+import { MAIN_PAGES, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site'
+
+export const metadata: Metadata = { alternates: { canonical: '/' } }
+
+/**
+ * Structured data for Google: who we are (Organization), the site name
+ * (WebSite) and the main pages (SiteNavigationElement). Google picks the links
+ * under the result (sitelinks) by itself; this and the sitemap tell it which
+ * pages matter most: Library, E-Learning, Services, Newsletter, Sign up, Log in.
+ */
+const STRUCTURED_DATA = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'Organization', '@id': `${SITE_URL}/#organization`, name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/kls-logo.jpg`, description: SITE_DESCRIPTION },
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, alternateName: ['Kingdom Library System', 'LibKingdom'], url: SITE_URL, publisher: { '@id': `${SITE_URL}/#organization` } },
+    ...MAIN_PAGES.map((p) => ({ '@type': 'SiteNavigationElement', name: p.name, description: p.description, url: `${SITE_URL}${p.path}` })),
+  ],
+}
 
 /**
  * Public landing page — a Server Component (PERFORMANCE.md Rule 15). All
@@ -29,15 +48,15 @@ export default async function Page() {
 
   return (
     <main className="min-h-screen bg-white">
+      {/* Read by Google only; '<' is escaped so the JSON can never close the script tag. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA).replace(/</g, '\\u003c') }} />
       <MainHeader services={services.programs.map(({ slug, name, tagline, icon, color }) => ({ slug, name, tagline, icon, color }))} />
-      <HeroSection
-        bookCovers={data.trendingBooks.flatMap((b) => (b.cover ? [b.cover] : [])).slice(0, 4)}
-        courseImages={data.courses.flatMap((c) => (c.image ? [c.image] : []))}
-      />
-      <ServicesSection programs={services.programs} areas={services.areas} />
-      <NewsPaperSection items={data.news} />
+      <HeroSection stats={{ books: data.bookCount, courses: data.courseStats.courses, learners: data.courseStats.enrollments }} />
+      {/* Scripture reading comes first, then learning, then everything else. */}
       <TrendingBooks books={data.trendingBooks} />
       <ELearningSection courses={data.courses} stats={data.courseStats} />
+      <ServicesSection programs={services.programs} areas={services.areas} />
+      <NewsPaperSection items={data.news} />
       <ResearchSection papers={data.papers} />
       <AboutSection />
       <TestimonialsSection />

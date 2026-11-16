@@ -124,7 +124,14 @@
     "publishing_heading_2": "Recherchez",
     "publishing_heading_3": "avec impact",
     "publishing_body": "Soumettez des manuscrits pour examen, partagez des articles de recherche et atteignez un public mondial de chercheurs et de lecteurs.",
-    "publishing_cta": "Commencer à publier"
+    "publishing_cta": "Commencer à publier",
+    "go_account": "Aller à mon compte",
+    "stat_books": "Livres",
+    "stat_courses": "Cours",
+    "stat_learners": "Apprenants",
+    "verse_of_day": "Verset du jour",
+    "verse_daily_note": "Un nouveau verset chaque jour",
+    "verse_read_more": "Continuer la lecture"
   },
   "trending": {
     "handpicked": "Sélectionné pour vous",
@@ -895,7 +902,11 @@
     "not_passed": "Vous n'avez pas réussi",
     "waiting_review": "En attente de la correction de vos réponses écrites par l'enseignant",
     "one_try": "Vous ne pouvez le faire qu’une seule fois",
-    "already_done": "Vous l’avez déjà fait"
+    "already_done": "Vous l’avez déjà fait",
+    "project": "Projet",
+    "project_open": "Ouvrir le projet",
+    "project_view": "Voir le projet",
+    "project_sent": "Remis — en attente de la correction par l'enseignant"
   },
   "m_class": {
     "title": "Classe ouverte",
@@ -927,5 +938,20 @@
   },
   "m_cert": {
     "download_pdf": "Télécharger le PDF",
-    "print": "Imprimer"  }
+    "print": "Imprimer"
+  },
+  "m_pay": {
+    "locked_title": "Cette leçon est payante",
+    "locked_text": "Payez pour ouvrir cette leçon et continuer. Les leçons gratuites restent ouvertes.",
+    "pay_course": "Payer tout le cours — {price} RWF",
+    "pay_lesson": "Acheter seulement cette leçon — {price} RWF",
+    "exam_locked": "L'examen final et les projets s'ouvrent après le paiement du cours.",
+    "buy_lesson_title": "Acheter cette leçon",
+    "open_lesson_for": "Ouvrir la leçon",
+    "lesson_open_now": "Cette leçon est maintenant ouverte :",
+    "assessment_locked_title": "Paiement nécessaire d'abord",
+    "assessment_locked_text": "Payez ce cours (ou sa leçon) pour le faire. Retournez au cours pour payer.",
+    "start_free": "Commencer les leçons gratuites",
+    "free_lessons": "{n} leçons gratuites"
+  }
 }

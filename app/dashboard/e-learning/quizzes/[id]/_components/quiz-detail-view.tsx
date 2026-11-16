@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Circle, ClipboardX, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Circle, ClipboardX, FileText, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
@@ -93,8 +93,14 @@ export function QuizDetailView({ initialAssessment, courseTitle }: QuizDetailVie
 
         {assessment.kind === 'PROJECT' ? (
           <div className="bg-w-100 border border-w-300 rounded p-3 space-y-2">
-            <p className="text-xs font-semibold text-w-950">Brief</p>
-            <p className="text-xs text-w-700 whitespace-pre-wrap">{assessment.brief}</p>
+            <p className="text-xs font-semibold text-w-950">Project document</p>
+            {assessment.briefFileUrl ? (
+              <a href={assessment.briefFileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-w-700 underline-offset-2 hover:underline dark:text-primary">
+                <FileText size={14} /> {assessment.briefFileName || 'Open the project document'}
+              </a>
+            ) : (
+              <p className="text-xs text-w-700 whitespace-pre-wrap">{assessment.brief || 'No document yet — edit this project to upload one.'}</p>
+            )}
             <div className="flex items-center gap-4 pt-1">
               <span className="text-xs text-w-600">
                 Submission format: <span className="font-semibold text-w-950">{assessment.submissionFormat ? projectSubmissionFormatLabels[assessment.submissionFormat] : '—'}</span>

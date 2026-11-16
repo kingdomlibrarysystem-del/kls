@@ -23,6 +23,8 @@ export const courseSchema = z.object({
   lecturerId: z.string().optional(),
   /** Real Cloudinary secure_url from CourseFormView's upload field, or '' for no cover image. */
   image: z.string().optional(),
+  /** RWF. 0 = the whole course is free; lessons can still be free previews or sold alone (see lib/course-access.ts). */
+  price: z.number({ message: 'Enter a price (0 for a free course)' }).min(0, 'The price cannot be negative'),
 })
 
 export type CourseFormData = z.infer<typeof courseSchema>

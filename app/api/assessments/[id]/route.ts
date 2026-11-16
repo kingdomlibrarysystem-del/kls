@@ -41,6 +41,8 @@ const updateAssessmentSchema = z.object({
   durationSeconds: z.number().int().nonnegative().nullable().optional(),
   questions: z.array(questionSchema).optional(),
   brief: z.string().nullable().optional(),
+  briefFileUrl: z.string().url().startsWith('https://', 'The project document must be an uploaded file').nullable().optional(),
+  briefFileName: z.string().max(200).nullable().optional(),
   submissionFormat: z.string().nullable().optional(),
   projectMarks: z.number().nullable().optional(),
 })
@@ -60,6 +62,13 @@ export const PATCH = withErrorHandling('/api/assessments/[id]', 'PATCH', async (
   const { questions, kind, submissionFormat, lessonId, ...rest } = parsed.data
   const nextKind = kind ?? existing.kind
   const nextLessonId = lessonId !== undefined ? lessonId : existing.lessonId
+  // A project needs its document (older projects with a typed brief stay valid).
+  // (null in the request means "remove", so only an omitted field falls back to the saved value.)
+  const nextFile = rest.briefFileUrl !== undefined ? rest.briefFileUrl : existing.briefFileUrl
+  const nextBrief = rest.brief !== undefined ? rest.brief : existing.brief
+  if (nextKind === 'PROJECT' && !nextFile && !nextBrief?.trim()) {
+    throw new ApiError('Upload the project document (PDF, Word, PowerPoint…)', 400)
+  }
   if (nextKind === 'TEST' && !nextLessonId) {
     throw new ApiError('A test must be linked to a lesson', 400)
   }

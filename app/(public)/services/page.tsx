@@ -5,6 +5,7 @@ import { getPageSession } from '@/lib/server/page-session'
 
 export const metadata: Metadata = {
   title: 'Our Services',
+  alternates: { canonical: '/services' },
   description: 'Health System, Beauty, Consultation & Counseling and Rehabilitation — practical services from Kingdom Library and Global Rehab Center.',
 }
 

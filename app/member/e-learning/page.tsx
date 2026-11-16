@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { useCourses, type CatalogCourse } from "../_shared/use-courses";
 import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
 import { CourseCheckoutModal } from "../courses/_components/course-checkout-modal";
+import { getPublishedLessons, useLessonsByCourse } from "../_shared/use-lessons";
 
 /** Courses shown per page — keeps a large catalog from rendering unbounded. */
 const PAGE_SIZE = 9;
@@ -24,6 +25,9 @@ export default function ELearningPage() {
   const { user } = useAuth();
   const { data: courseCatalog, loading: coursesLoading } = useCourses();
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments();
+  const { data: lessonsByCourse } = useLessonsByCourse();
+  // Free lessons in a paid course: members can start them without paying (lib/course-access.ts).
+  const freeLessonCount = (courseId: string) => getPublishedLessons(lessonsByCourse[courseId]?.lessons).filter((l) => l.access === "FREE").length;
 
   const categories = ["All", ...Array.from(new Set(courseCatalog.map((c) => c.category))).sort()];
 
@@ -180,6 +184,12 @@ export default function ELearningPage() {
                     </button>
                   )}
                 </div>
+                {!enrolled && course.price > 0 && freeLessonCount(course.id) > 0 && (
+                  // Opening the course enrolls the member for free; paid lessons stay locked until paid.
+                  <Link href={`/member/courses/${course.id}`} style={{ display: "block", marginTop: 8, fontSize: 12, fontWeight: 600, color: "var(--gold)", textAlign: "right" }}>
+                    {t("m_pay.start_free")} · {t("m_pay.free_lessons").replace("{n}", String(freeLessonCount(course.id)))} →
+                  </Link>
+                )}
               </div>
             </div>
           );

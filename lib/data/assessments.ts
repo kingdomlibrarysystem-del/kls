@@ -10,6 +10,8 @@ export function serializeAssessment(a: {
   durationSeconds: number | null
   questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; matchingPairs: { left: string; right: string }[]; marks: number }[]
   brief: string | null
+  briefFileUrl?: string | null
+  briefFileName?: string | null
   submissionFormat: string | null
   projectMarks: number | null
 }) {
@@ -32,6 +34,8 @@ export function serializeAssessment(a: {
       marks: q.marks,
     })),
     brief: a.brief ?? undefined,
+    briefFileUrl: a.briefFileUrl ?? undefined,
+    briefFileName: a.briefFileName ?? undefined,
     submissionFormat: a.submissionFormat ?? undefined,
     projectMarks: a.projectMarks ?? undefined,
   }

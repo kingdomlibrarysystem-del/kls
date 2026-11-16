@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/ui/page-header'
@@ -10,6 +11,12 @@ import { NewsFeedView } from '@/app/member/news/_components/news-feed-view'
  * lives outside /member so anonymous visitors can read published articles
  * (same pattern as the public /library next to member /member/library).
  */
+export const metadata: Metadata = {
+  title: 'Newsletter & News',
+  description: 'Read the Kingdom Library newsletter, articles and newspaper editions, and subscribe to get them by email.',
+  alternates: { canonical: '/news' },
+}
+
 export default function PublicNewsPage() {
   return (
     <div className="min-h-screen bg-white">

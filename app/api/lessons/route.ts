@@ -5,6 +5,8 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 import { serializeLesson } from '@/lib/data/lessons'
+import { getViewer, loadAccess } from '@/lib/data/course-access'
+import { LESSON_ACCESS, lessonIsOpen } from '@/lib/course-access'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> �?" already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 export async function GET(request: NextRequest) {
@@ -22,8 +24,13 @@ export async function GET(request: NextRequest) {
 
   const totalPages = Math.ceil(totalItems / pageSize)
 
+  // Paid lessons: staff see everything; others get only what they may open (lib/course-access.ts).
+  const viewer = await getViewer()
+  const access = viewer.staff ? null : await loadAccess(viewer.userId, lessons.map((l) => l.courseId))
+  const isLocked = (l: (typeof lessons)[number]) => !!access && !lessonIsOpen(l, access.priceOf(l.courseId), access.enrollmentOf(l.courseId))
+
   return NextResponse.json({
-    data: lessons.map(serializeLesson),
+    data: lessons.map((l) => serializeLesson(l, isLocked(l))),
     message: 'Lessons fetched successfully',
     code: 'success',
     status: 200,
@@ -40,6 +47,8 @@ const createLessonSchema = z.object({
   /** Real markdown-authored lesson body �?" see Lesson.contentMarkdown's schema comment. */
   contentMarkdown: z.string().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+  access: z.enum(LESSON_ACCESS as [string, ...string[]]).optional(),
+  price: z.number().min(0).optional(),
 })
 
 export const POST = withErrorHandling('/api/lessons', 'POST', async (request: NextRequest) => {
@@ -54,6 +63,7 @@ export const POST = withErrorHandling('/api/lessons', 'POST', async (request: Ne
 
   const course = await prisma.course.findUnique({ where: { id: body.courseId } })
   if (!course) throw new ApiError('The specified course does not exist', 400)
+  if (body.access === 'PAID' && !(body.price && body.price > 0)) throw new ApiError('Set a price for a paid lesson', 400)
 
   const maxOrder = await prisma.lesson.aggregate({ where: { courseId: body.courseId }, _max: { order: true } })
   const lesson = await prisma.lesson.create({
@@ -65,6 +75,8 @@ export const POST = withErrorHandling('/api/lessons', 'POST', async (request: Ne
       content: body.content ?? '',
       contentMarkdown: body.contentMarkdown ?? null,
       status: body.status ?? 'PUBLISHED',
+      access: (body.access ?? 'COURSE') as 'COURSE' | 'FREE' | 'PAID',
+      price: body.access === 'PAID' ? body.price ?? 0 : 0,
       order: (maxOrder._max.order ?? 0) + 1,
     },
   })

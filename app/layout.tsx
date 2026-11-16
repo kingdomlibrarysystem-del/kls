@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { SessionProvider } from '@/components/session-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import { LanguageProvider, type Lang } from '@/contexts/language-context'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -31,9 +32,25 @@ const lato = Lato({
 })
 
 export const metadata: Metadata = {
-  title: 'Kingdom Library System',
-  description: 'Digital library management, research, publishing, and e-learning platform',
-  generator: 'v0.app',
+  // Every page title ends with "| Kingdom Library" (pages give only their own name).
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} — Digital Library, E-Learning & Services`, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // What WhatsApp, Facebook, LinkedIn and X show when a link is shared.
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Digital Library, E-Learning & Services`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    images: [{ url: '/kls-logo.jpg', width: 1134, height: 771, alt: SITE_NAME }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/kls-logo.jpg'] },
+  // Google Search Console "HTML tag" check — only needed if the site is not verified through DNS.
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && {
+    verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION },
+  }),
   icons: {
     icon: [
       {

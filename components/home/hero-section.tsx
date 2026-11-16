@@ -3,203 +3,277 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookOpen, GraduationCap, BookCopy, ArrowRight } from 'lucide-react'
+import { ArrowRight, BookHeart, BookOpen, GraduationCap, PenLine, PlayCircle } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { accountHomeFor } from '@/components/profile-dropdown'
 import { useAuth } from '@/contexts/auth-context'
 import { useLanguage } from '@/contexts/language-context'
+import { localDateKey, type TodayVerse } from '@/lib/daily-wisdom-shared'
 import { cn } from '@/lib/utils'
-import { LibraryArt, ELearningArt, PublishingArt } from './hero-path-art'
-
-/** How long each hero picture stays before the next one fades in. */
-const HERO_SLIDE_MS = 7000
-
-/**
- * The hero's pictures, shown one at a time. The first is the original
- * transparent photo, which keeps turning slowly; the other two are upright
- * (2:3) photos that simply fade in (no rotation), each in a rounded frame of
- * its own shape. A replacement photo should also be 2:3 upright.
- */
-const HERO_SLIDES = [
-  { src: '/hero-img1.png', alt: 'People praying together around a table with open Bibles', kind: 'spin' },
-  { src: '/hero-img2.jpg', alt: 'A reader with an open book by a window at sunset', kind: 'photo' },
-  { src: '/hero-img3.jpg', alt: 'A woman praying beside a Holy Bible', kind: 'photo' },
-] as const
 
 interface HeroSectionProps {
-  /** Real book covers (trending books) for the Library card's fanned covers. */
-  bookCovers?: string[]
-  /** Course cover images for the E-Learning card's lesson tiles. */
-  courseImages?: string[]
+  /** Real totals from the database; a total of 0 is simply not shown. */
+  stats?: { books: number; courses: number; learners: number }
 }
 
 /**
- * Landing hero. One message instead of the old auto-rotating 3-slide
- * carousel: the app exists to get people reading the Bible, so the first
- * screen says that, offers one primary action ("Start reading" -> /library)
- * and one secondary (create an account, or "My Account" when signed in).
- * The three former slides (Library / E-Learning / Publishing & Research)
- * are kept as three always-visible cards underneath, with their existing
- * translated copy and links. Each card has a soft tinted gradient and a
- * small image cluster in its top-right corner (see hero-path-art.tsx).
+ * The three photo frames of the hero collage. Each frame has two real photos
+ * (free Unsplash photos, saved in /public/home) and fades between them; the
+ * frames change one at a time so the collage never jumps all at once.
+ * Replacement photos: the tall frame wants an upright photo, the two small
+ * frames a landscape one.
  */
-export function HeroSection({ bookCovers = [], courseImages = [] }: HeroSectionProps) {
-  const { t } = useLanguage()
-  const { user, isAuthenticated } = useAuth()
-  const [slide, setSlide] = useState(0)
+const FRAMES = [
+  [
+    { src: '/home/reading-elder.jpg', alt: 'An elderly woman reading her Bible outdoors' },
+    { src: '/home/church-group-reading.jpg', alt: 'Believers reading their Bibles together in church' },
+  ],
+  [
+    { src: '/home/reading-young-man.jpg', alt: 'A young man reading the Bible on the grass' },
+    { src: '/home/church-family.jpg', alt: 'A family together at church' },
+  ],
+  [
+    { src: '/home/classroom-reading.jpg', alt: 'A teacher reading with children in a classroom' },
+    { src: '/home/boy-holy-bible.jpg', alt: 'A boy reading the Holy Bible' },
+  ],
+] as const
 
-  // Advance the hero picture on a timer (browser-only, so an effect is the right tool).
+/** One frame changes every TICK_MS (so each frame changes every 3 ticks). */
+const TICK_MS = 4000
+
+// Hero colours: deep navy (#12304a, the blue of the logo family) with parchment text and the brand gold.
+const PARCHMENT = 'text-[#f6efe0]'
+const PARCHMENT_SOFT = 'text-[#f6efe0]/70'
+
+/**
+ * Landing hero, scripture first, on a deep navy band that continues the
+ * header. Left: the message, Start reading / Explore courses, account link and
+ * real totals. Right: a collage of real photos of people reading the Word,
+ * with TODAY'S VERSE (managed at /dashboard/daily-wisdom) on a card in front.
+ * Below the band: Library / E-Learning / Publishing cards, each with a photo.
+ * Motion is limited to a rise-in on load, the photo cross-fade with a slow
+ * zoom, and card hover — all off for "reduce motion" (see globals.css).
+ */
+export function HeroSection({ stats }: HeroSectionProps) {
+  const { t, lang } = useLanguage()
+  const { user, isAuthenticated } = useAuth()
+  const [tick, setTick] = useState(0)
+
+  // Cross-fade the collage (browser-only timer, so an effect is the right tool).
   useEffect(() => {
-    const id = setInterval(() => setSlide((i) => (i + 1) % HERO_SLIDES.length), HERO_SLIDE_MS)
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const id = setInterval(() => setTick((n) => n + 1), TICK_MS)
     return () => clearInterval(id)
   }, [])
+  // Frame i shows photo floor((tick + i) / 3) — exactly one frame changes per tick.
+  const shown = (frame: number) => Math.floor((tick + frame) / FRAMES.length) % FRAMES[frame].length
 
-  // Per-card tint: card gradient + icon chip + CTA color (theme tokens, so light and dark both work).
+  const totals = [
+    { value: stats?.books ?? 0, label: t('hero.stat_books') },
+    { value: stats?.courses ?? 0, label: t('hero.stat_courses') },
+    { value: stats?.learners ?? 0, label: t('hero.stat_learners') },
+  ].filter((s) => s.value > 0)
+
   const paths = [
-    {
-      icon: <BookOpen />, title: t('hero.library_tag'), body: t('hero.library_body'), cta: t('hero.library_cta'), href: '/library',
-      art: <LibraryArt covers={bookCovers} />,
-      card: 'to-primary/15 hover:border-primary/50', chip: 'bg-primary/15 text-primary', link: 'text-primary',
-    },
-    {
-      icon: <GraduationCap />, title: t('hero.elearning_tag'), body: t('hero.elearning_body'), cta: t('hero.elearning_cta'), href: '/member/e-learning',
-      art: <ELearningArt images={courseImages} />,
-      card: 'to-info/15 hover:border-info/50', chip: 'bg-info/15 text-info', link: 'text-info',
-    },
-    {
-      icon: <BookCopy />, title: t('hero.publishing_tag'), body: t('hero.publishing_body'), cta: t('hero.publishing_cta'), href: '/auth/register',
-      art: <PublishingArt cover={bookCovers[0] ?? ''} />,
-      card: 'to-success/15 hover:border-success/50', chip: 'bg-success/15 text-success', link: 'text-success',
-    },
+    { icon: <BookOpen />, title: t('hero.library_tag'), body: t('hero.library_body'), cta: t('hero.library_cta'), href: '/library', image: '/home/bible-hands.jpg', alt: 'Hands holding an open Bible' },
+    { icon: <GraduationCap />, title: t('hero.elearning_tag'), body: t('hero.elearning_body'), cta: t('hero.elearning_cta'), href: '/e-learning', image: '/home/bible-tablet-study.jpg', alt: 'A man studying the Bible with a tablet' },
+    { icon: <PenLine />, title: t('hero.publishing_tag'), body: t('hero.publishing_body'), cta: t('hero.publishing_cta'), href: '/publish', image: '/home/woman-writing.jpg', alt: 'A woman writing in her notebook' },
   ]
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#fdf8ef] to-white dark:from-[#111828] dark:to-[#0a0d1a]">
-      {/* Decorative glows */}
-      <div aria-hidden className="pointer-events-none absolute -left-32 -top-32 size-[420px] rounded-full bg-primary/15 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -right-24 top-24 size-[360px] rounded-full bg-primary/10 blur-3xl" />
+    <>
+      <section className="relative overflow-hidden bg-[#12304a] dark:bg-[#080b16]">
+        {/* Soft blue light from the top left and a faint gold glow behind the photos (decorative). */}
+        <div aria-hidden className="pointer-events-none absolute -left-40 -top-48 size-[620px] rounded-full bg-[#2a5f8f]/45 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -right-20 bottom-0 size-[520px] rounded-full bg-primary/10 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:pt-10 lg:pb-16 lg:pt-12">
-        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-12 sm:pt-16 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pb-28 lg:pt-20">
           {/* Message */}
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3.5 py-1.5 font-lato text-xs font-semibold uppercase tracking-widest text-primary">
+            <p className="kls-rise inline-flex items-center gap-3 font-lato text-xs font-bold uppercase tracking-[0.25em] text-primary">
+              <span aria-hidden className="h-px w-8 bg-primary" />
               {t('hero.eyebrow')}
-            </span>
+            </p>
 
-            <h1 className="mt-5 font-cinzel text-xl font-bold leading-[1.12] text-foreground sm:text-2xl lg:text-3xl">
-              {t('hero.title_1')}{' '}
-              <span className="text-primary">{t('hero.title_2')}</span>
+            <h1 className={cn('kls-rise mt-6 text-balance font-cinzel text-[2rem] font-bold leading-[1.1] sm:text-5xl lg:text-[3.25rem]', PARCHMENT)} style={{ '--kls-delay': '0.1s' } as React.CSSProperties}>
+              <span className="block">{t('hero.title_1').trim()}</span>
+              <span className="mt-1 block text-primary">{t('hero.title_2')}</span>
             </h1>
 
-            <p className="mx-auto mt-5 max-w-xl font-lato text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0">
+            <p className={cn('kls-rise mx-auto mt-6 max-w-xl font-lato text-base leading-relaxed sm:text-lg lg:mx-0', PARCHMENT_SOFT)} style={{ '--kls-delay': '0.2s' } as React.CSSProperties}>
               {t('hero.subtitle')}
             </p>
 
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-              <Link href="/library" className={cn(buttonVariants(), 'h-12 w-full gap-2 px-7 font-lato text-base font-bold shadow-md sm:w-auto')}>
+            <div className="kls-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:justify-start" style={{ '--kls-delay': '0.3s' } as React.CSSProperties}>
+              <Link href="/library" className={cn(buttonVariants({ size: 'lg' }), 'h-12 gap-2 px-7 font-lato text-base font-bold shadow-lg shadow-primary/30')}>
                 <BookOpen className="size-5" /> {t('hero.cta_read')}
               </Link>
-           
+              <Link href="/e-learning" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'h-12 gap-2 border-[#f6efe0]/30 bg-white/5 px-7 font-lato text-base font-semibold text-[#f6efe0] hover:bg-white/10 hover:text-[#f6efe0] dark:border-[#f6efe0]/30 dark:bg-white/5')}>
+                <PlayCircle className="size-5 text-primary" /> {t('hero.elearning_cta')}
+              </Link>
             </div>
+            <p className="kls-rise mt-4 font-lato text-sm" style={{ '--kls-delay': '0.35s' } as React.CSSProperties}>
+              <Link
+                href={isAuthenticated && user ? accountHomeFor(user.role) : '/auth/register'}
+                className={cn('font-semibold underline-offset-4 hover:text-primary hover:underline', PARCHMENT)}
+              >
+                {isAuthenticated && user ? t('hero.go_account') : t('hero.cta_join')} →
+              </Link>
+            </p>
+
+            {totals.length > 0 && (
+              <dl className="kls-rise mx-auto mt-10 flex max-w-md justify-center divide-x divide-[#f6efe0]/15 border-t border-[#f6efe0]/15 pt-6 lg:mx-0 lg:justify-start" style={{ '--kls-delay': '0.45s' } as React.CSSProperties}>
+                {totals.map((s) => (
+                  <div key={s.label} className="flex-1 px-4 first:pl-0 last:pr-0">
+                    <dt className="sr-only">{s.label}</dt>
+                    <dd className={cn('font-cinzel text-2xl font-bold sm:text-3xl', PARCHMENT)}>{s.value.toLocaleString('en')}</dd>
+                    <dd className={cn('mt-0.5 font-lato text-xs uppercase tracking-wider', PARCHMENT_SOFT)}>{s.label}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </div>
 
-          {/* Visual: three pictures shown one after another. Each fades in with a slight
-              zoom and the previous one fades out. Only the first (the transparent photo of
-              people praying around a table) turns slowly; the other two just appear. The
-              box keeps the first picture's proportions so the row height never jumps.
-              Motion is switched off for visitors who ask their device for reduced motion. */}
-          <div className="relative mx-auto aspect-[1503/1046] w-full max-w-[360px] sm:max-w-[500px] lg:max-w-[620px]">
-            <div aria-hidden className="absolute inset-x-16 inset-y-2 rounded-full bg-primary/15 blur-3xl" />
-            {HERO_SLIDES.map((item, i) => {
-              const active = i === slide
-              return (
+          {/* Real people reading the Word, with today's verse in front. */}
+          <div className="kls-rise relative mx-auto w-full max-w-[600px] lg:pl-6" style={{ '--kls-delay': '0.2s' } as React.CSSProperties}>
+            <div className="grid h-[340px] grid-cols-5 grid-rows-2 gap-3 sm:h-[460px] lg:h-[520px]">
+              {FRAMES.map((photos, frame) => (
                 <div
-                  key={item.src}
-                  aria-hidden={!active}
+                  key={frame}
                   className={cn(
-                    'absolute inset-0 transition-all duration-1000 ease-out motion-reduce:transition-none',
-                    active ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
+                    'relative overflow-hidden rounded-2xl bg-[#1a3d5c] shadow-2xl ring-1 ring-[#f6efe0]/10',
+                    frame === 0 ? 'col-span-3 row-span-2' : 'col-span-2',
                   )}
                 >
-                  {item.kind === 'spin' ? (
-                    // A small scale-up fills the PNG's transparent margins (on this wrapper,
-                    // because the image itself carries the rotation).
-                    <div className="absolute inset-0 scale-[1.12] lg:scale-[1.18]">
+                  {photos.map((p, i) => {
+                    const active = shown(frame) === i
+                    return (
                       <Image
-                        src={item.src}
-                        alt={item.alt}
+                        key={p.src}
+                        src={p.src}
+                        alt={active ? p.alt : ''}
+                        aria-hidden={!active}
                         fill
-                        priority
-                        sizes="(max-width: 640px) 420px, (max-width: 1024px) 580px, 740px"
-                        className="animate-[spin_90s_linear_infinite] object-contain drop-shadow-2xl motion-reduce:animate-none"
+                        priority={i === 0}
+                        sizes={frame === 0 ? '(max-width: 1024px) 60vw, 360px' : '(max-width: 1024px) 40vw, 240px'}
+                        className={cn(
+                          'object-cover transition-opacity duration-[1500ms] ease-in-out',
+                          active ? 'kls-kenburns opacity-100' : 'opacity-0',
+                        )}
                       />
-                    </div>
-                  ) : (
-                    // Both photos are upright (2:3). The frame takes the PHOTO's own shape —
-                    // a little taller than the box, centered — so the whole picture is visible:
-                    // nothing is cropped and there are no empty bars beside it.
-                    <div className="absolute -inset-y-6 left-1/2 aspect-[2/3] -translate-x-1/2 lg:-inset-y-10 overflow-hidden rounded-3xl shadow-2xl ring-1 ring-border">
-                      <Image
-                        src={item.src}
-                        alt={item.alt}
-                        fill
-                        sizes="(max-width: 640px) 200px, (max-width: 1024px) 270px, 350px"
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
+                    )
+                  })}
+                  {/* Soft shade at the bottom so the frames sit in the dark band. */}
+                  <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/35 to-transparent" />
                 </div>
-              )
-            })}
-
-            {/* Which picture is showing; tap a dot to jump to it. */}
-            <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2 lg:-bottom-16">
-              {HERO_SLIDES.map((item, i) => (
-                <button
-                  key={item.src}
-                  type="button"
-                  onClick={() => setSlide(i)}
-                  aria-label={`Show picture ${i + 1} of ${HERO_SLIDES.length}`}
-                  aria-current={i === slide}
-                  className={cn('h-1.5 rounded-full transition-all', i === slide ? 'w-6 bg-primary' : 'w-1.5 bg-primary/30 hover:bg-primary/60')}
-                />
               ))}
+            </div>
+
+            <div className="relative mt-4 lg:absolute lg:-bottom-12 lg:-left-10 lg:mt-0 lg:w-[80%]">
+              <VerseOfTheDay lang={lang} />
             </div>
           </div>
         </div>
+      </section>
 
-        {/* The three former slides, now always visible */}
-        <div className="mt-14 lg:mt-20">
-          <p className="mb-4 text-center font-lato text-xs font-semibold uppercase tracking-widest text-muted-foreground lg:text-left">
+      {/* Library · E-Learning · Publishing */}
+      <section className="bg-background px-4 pb-16 pt-20 lg:pt-24">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-6 text-center font-lato text-xs font-bold uppercase tracking-[0.25em] text-muted-foreground">
             {t('hero.paths_title')}
           </p>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-3">
             {paths.map((p) => (
               <Link
-                key={p.title}
+                key={p.href}
                 href={p.href}
-                className={cn(
-                  "group relative flex flex-col overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card via-card p-5 shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md",
-                  p.card,
-                )}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"
               >
-                {/* Corner artwork (decorative) */}
-                {p.art}
-                {/* Icon + title share the top band with the artwork; pr keeps the title clear of it. */}
-                <span className="flex min-h-[92px] flex-col pr-32">
-                  <span className={cn("flex size-10 items-center justify-center rounded-lg [&_svg]:size-5", p.chip)}>{p.icon}</span>
-                  <span className="mt-3 font-cinzel text-base font-bold text-foreground">{p.title}</span>
+                <span className="relative block aspect-[16/10] overflow-hidden bg-muted">
+                  <Image
+                    src={p.image}
+                    alt={p.alt}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105 motion-reduce:transition-none"
+                  />
+                  <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#12304a]/70 via-transparent to-transparent" />
+                  <span className="absolute bottom-3 left-4 flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg [&_svg]:size-5">{p.icon}</span>
                 </span>
-                <span className="mt-1.5 flex-1 font-lato text-sm leading-relaxed text-muted-foreground">{p.body}</span>
-                <span className={cn("mt-4 inline-flex items-center gap-1.5 font-lato text-sm font-semibold", p.link)}>
-                  {p.cta} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                <span className="flex flex-1 flex-col p-6">
+                  <span className="font-cinzel text-lg font-bold text-foreground">{p.title}</span>
+                  <span className="mt-2 flex-1 font-lato text-sm leading-relaxed text-muted-foreground">{p.body}</span>
+                  <span className="mt-5 inline-flex items-center gap-1.5 font-lato text-sm font-semibold text-[#12304a] dark:text-primary">
+                    {p.cta} <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                  </span>
                 </span>
               </Link>
             ))}
           </div>
         </div>
+      </section>
+    </>
+  )
+}
+
+/**
+ * Today's verse on a dark card with a gold ribbon. Fetched in the browser
+ * because "today" is the reader's own local date (same rule as the header's
+ * Daily Wisdom). Falls back to Habakkuk 2:14 when there is no verse.
+ */
+function VerseOfTheDay({ lang }: { lang: string }) {
+  const { t } = useLanguage()
+  const [dateKey] = useState(() => localDateKey())
+  /** undefined while loading, null when none exists. */
+  const [verse, setVerse] = useState<TodayVerse | null | undefined>(undefined)
+
+  useEffect(() => {
+    let alive = true
+    fetch(`/api/daily-wisdom?date=${dateKey}&lang=${lang}`)
+      .then((r) => r.json())
+      .then((json) => { if (alive) setVerse(json?.code === 'success' ? json.data : null) })
+      .catch(() => { if (alive) setVerse(null) })
+    return () => { alive = false }
+  }, [dateKey, lang])
+
+  const text = verse ? verse.text : t('hero.bible_verse')
+  const reference = verse ? verse.reference : t('hero.bible_ref').replace(/^[—–-]\s*/, '')
+  const dateLabel = (() => {
+    try { return new Date(`${dateKey}T12:00:00`).toLocaleDateString(lang === 'rw' ? 'en' : lang, { weekday: 'long', day: 'numeric', month: 'long' }) } catch { return dateKey }
+  })()
+
+  return (
+    <figure className="relative overflow-hidden rounded-2xl border border-primary/35 bg-[#1a3d5c]/92 px-6 pb-5 pt-6 shadow-2xl shadow-black/40 backdrop-blur-md dark:bg-[#111828]/92 sm:px-7">
+      {/* Gold ribbon bookmark */}
+      <span aria-hidden className="absolute right-6 top-0 h-12 w-5 bg-primary shadow-md [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]" />
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pr-10">
+        <span className="inline-flex items-center gap-2 font-lato text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+          <BookHeart className="size-4" /> {t('hero.verse_of_day')}
+        </span>
+        {verse !== undefined && <span className={cn('font-lato text-xs', PARCHMENT_SOFT)}>{dateLabel}</span>}
       </div>
-    </section>
+
+      {verse === undefined ? (
+        <div className="mt-4 space-y-2.5" aria-label={t('hero.verse_of_day')}>
+          <div className="h-4 w-full animate-pulse rounded bg-white/10" />
+          <div className="h-4 w-5/6 animate-pulse rounded bg-white/10" />
+          <div className="h-3.5 w-24 animate-pulse rounded bg-white/10" />
+        </div>
+      ) : (
+        <>
+          <blockquote className={cn('mt-3 font-cormorant italic leading-snug', PARCHMENT, text.length > 220 ? 'text-base sm:text-lg' : 'text-lg sm:text-xl')}>
+            {text}
+          </blockquote>
+          <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="font-cinzel text-xs font-bold tracking-wider text-primary">{reference}</span>
+            <Link href="/library" className="inline-flex items-center gap-1 font-lato text-xs font-semibold text-[#f6efe0] hover:text-primary">
+              {t('hero.verse_read_more')} <ArrowRight className="size-3.5" />
+            </Link>
+          </figcaption>
+        </>
+      )}
+    </figure>
   )
 }

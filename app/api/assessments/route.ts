@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
+import { serializeAssessment } from '@/lib/data/assessments'
+import { loadAccess } from '@/lib/data/course-access'
+import { assessmentIsOpen } from '@/lib/course-access'
 import { requireAuth, requireStaff } from '@/lib/auth/require-role'
 
 /**
@@ -11,42 +14,6 @@ import { requireAuth, requireStaff } from '@/lib/auth/require-role'
  * embedded (Prisma Mongo `type Question`), matching the mock's own
  * always-fetched-together shape.
  */
-function serializeAssessment(a: {
-  id: string
-  title: string
-  kind: string
-  courseId: string
-  lessonId: string | null
-  durationSeconds: number | null
-  questions: { id: string; text: string; type: string; context: string | null; options: string[]; correctOptionIndex: number | null; correctOptionIndices: number[]; matchingPairs: { left: string; right: string }[]; marks: number }[]
-  brief: string | null
-  submissionFormat: string | null
-  projectMarks: number | null
-}) {
-  return {
-    id: a.id,
-    title: a.title,
-    kind: a.kind,
-    courseId: a.courseId,
-    lessonId: a.lessonId ?? undefined,
-    durationSeconds: a.durationSeconds ?? undefined,
-    questions: a.questions.map((q) => ({
-      id: q.id,
-      text: q.text,
-      type: q.type,
-      context: q.context ?? undefined,
-      options: q.options.length ? q.options : undefined,
-      correctOptionIndex: q.correctOptionIndex ?? undefined,
-      correctOptionIndices: q.correctOptionIndices.length ? q.correctOptionIndices : undefined,
-      matchingPairs: q.matchingPairs?.length ? q.matchingPairs : undefined,
-      marks: q.marks,
-    })),
-    brief: a.brief ?? undefined,
-    submissionFormat: a.submissionFormat ?? undefined,
-    projectMarks: a.projectMarks ?? undefined,
-  }
-}
-
 export async function GET(request: NextRequest) {
   const auth = await requireAuth()
   if (auth.response) return auth.response
@@ -66,8 +33,20 @@ export async function GET(request: NextRequest) {
 
   const totalPages = Math.ceil(totalItems / pageSize)
 
+  // Paid content: a member gets no questions for an assessment they have not paid for (staff see all).
+  const isStaff = auth.session.role !== 'member'
+  const access = isStaff ? null : await loadAccess(auth.session.userId, assessments.map((a) => a.courseId))
+  const lessonIds = [...new Set(assessments.flatMap((a) => (a.lessonId ? [a.lessonId] : [])))]
+  const lessons = access && lessonIds.length ? await prisma.lesson.findMany({ where: { id: { in: lessonIds } }, select: { id: true, access: true, price: true } }) : []
+  const lessonsById = new Map(lessons.map((l) => [l.id, l]))
+  const view = (a: (typeof assessments)[number]) => {
+    const data = serializeAssessment(a)
+    if (!access || assessmentIsOpen(a, lessonsById, access.priceOf(a.courseId), access.enrollmentOf(a.courseId))) return data
+    return { ...data, questions: [], briefFileUrl: undefined, brief: undefined, locked: true }
+  }
+
   return NextResponse.json({
-    data: assessments.map(serializeAssessment),
+    data: assessments.map(view),
     message: 'Assessments fetched successfully',
     code: 'success',
     status: 200,
@@ -100,6 +79,8 @@ const createAssessmentSchema = z.object({
   durationSeconds: z.number().int().nonnegative().optional(),
   questions: z.array(questionSchema).optional(),
   brief: z.string().optional(),
+  briefFileUrl: z.string().url().startsWith('https://', 'The project document must be an uploaded file').optional(),
+  briefFileName: z.string().max(200).optional(),
   submissionFormat: z.string().optional(),
   projectMarks: z.number().optional(),
 })
@@ -116,6 +97,9 @@ export const POST = withErrorHandling('/api/assessments', 'POST', async (request
 
   const course = await prisma.course.findUnique({ where: { id: body.courseId } })
   if (!course) throw new ApiError('The specified course does not exist', 400)
+  if (body.kind === 'PROJECT' && !body.briefFileUrl) {
+    throw new ApiError('Upload the project document (PDF, Word, PowerPoint…)', 400)
+  }
   if (body.kind === 'TEST' && !body.lessonId) {
     throw new ApiError('A test must be linked to a lesson', 400)
   }
@@ -140,6 +124,8 @@ export const POST = withErrorHandling('/api/assessments', 'POST', async (request
         marks: q.marks,
       })),
       brief: body.brief ?? null,
+      briefFileUrl: body.kind === 'PROJECT' ? body.briefFileUrl ?? null : null,
+      briefFileName: body.kind === 'PROJECT' ? body.briefFileName ?? null : null,
       submissionFormat: (body.submissionFormat as 'TEXT' | 'LINK' | 'FILE_REF' | undefined) ?? null,
       projectMarks: body.projectMarks ?? null,
     },

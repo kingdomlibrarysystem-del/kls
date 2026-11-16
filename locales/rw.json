@@ -124,7 +124,14 @@
     "publishing_heading_2": "Shakisha",
     "publishing_heading_3": "n'ingaruka",
     "publishing_body": "Ohereza inyandiko z'ibitabo kugirango zisubirwemo, sangira inyandiko z'ubushakashatsi, ugere ku bafatanyabikorwa ku isi yose.",
-    "publishing_cta": "Tangira gutangaza"
+    "publishing_cta": "Tangira gutangaza",
+    "go_account": "Jya kuri konti yanjye",
+    "stat_books": "Ibitabo",
+    "stat_courses": "Amasomo",
+    "stat_learners": "Abiga",
+    "verse_of_day": "Umurongo w'umunsi",
+    "verse_daily_note": "Umurongo mushya buri munsi",
+    "verse_read_more": "Komeza usome"
   },
   "trending": {
     "handpicked": "Yahiswemo kuri wewe",
@@ -895,7 +902,11 @@
     "not_passed": "Ntiwatsinze",
     "waiting_review": "Turategereje ko umwarimu akosora ibisubizo wanditse",
     "one_try": "Ushobora kubikora rimwe gusa",
-    "already_done": "Wamaze kubikora"
+    "already_done": "Wamaze kubikora",
+    "project": "Umushinga",
+    "project_open": "Fungura umushinga",
+    "project_view": "Reba umushinga",
+    "project_sent": "Byoherejwe — turategereje ko umwarimu abikosora"
   },
   "m_class": {
     "title": "Isomo rifunguye",
@@ -928,5 +939,19 @@
   "m_cert": {
     "download_pdf": "Kura PDF",
     "print": "Capa"
+  },
+  "m_pay": {
+    "locked_title": "Iri somo rirasaba kwishyura",
+    "locked_text": "Ishyura kugira ngo ufungure iri somo ukomeze kwiga. Amasomo y’ubuntu akomeza gufunguka.",
+    "pay_course": "Ishyura isomo ryose — {price} RWF",
+    "pay_lesson": "Gura iri somo gusa — {price} RWF",
+    "exam_locked": "Isuzuma rya nyuma n’imishinga bifunguka umaze kwishyura isomo.",
+    "buy_lesson_title": "Gura iri somo",
+    "open_lesson_for": "Fungura isomo",
+    "lesson_open_now": "Iri somo ryafunguwe:",
+    "assessment_locked_title": "Banza wishyure",
+    "assessment_locked_text": "Ishyura iri somo (cyangwa isomo ryaryo) kugira ngo ubikore. Subira ku isomo wishyure.",
+    "start_free": "Tangira amasomo y’ubuntu",
+    "free_lessons": "Amasomo {n} y’ubuntu"
   }
 }

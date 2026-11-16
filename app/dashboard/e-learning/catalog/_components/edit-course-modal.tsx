@@ -54,6 +54,7 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
         status: course.status,
         lecturerId: course.lecturerId ?? '',
         image: course.image ?? '',
+        price: course.price ?? 0,
       })
       setSubmitError('')
     }
@@ -146,6 +147,13 @@ export function EditCourseModal({ course, onClose }: EditCourseModalProps) {
               {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+        </div>
+
+
+        <div>
+          <FieldLabel htmlFor="edit-price" required>Price (RWF)</FieldLabel>
+          <FormInput id="edit-price" type="number" min={0} step={100} error={errors.price?.message} {...register('price', { valueAsNumber: true })} />
+          <p className="mt-1 font-lato text-xs text-w-600 dark:text-muted-foreground">0 = the whole course is free. In each lesson you can make it free for everyone or sell it alone.</p>
         </div>
 
         <div>

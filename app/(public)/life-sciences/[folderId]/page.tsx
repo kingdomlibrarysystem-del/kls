@@ -4,7 +4,7 @@ interface PublicLifeSciencesFolderPageProps {
   params: Promise<{ folderId: string }>
 }
 
-export const metadata = { title: 'Life Sciences Folder | Kingdom Library' }
+export const metadata = { title: 'Life Sciences Folder' }
 
 /** Public, guest-visible list of books inside one Life Sciences folder. */
 export default async function PublicLifeSciencesFolderPage({ params }: PublicLifeSciencesFolderPageProps) {

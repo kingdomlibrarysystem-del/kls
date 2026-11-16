@@ -124,7 +124,14 @@
     "publishing_heading_2": "Research",
     "publishing_heading_3": "with Impact",
     "publishing_body": "Submit manuscripts for review, share research papers, and reach a global audience of scholars and readers.",
-    "publishing_cta": "Start Publishing"
+    "publishing_cta": "Start Publishing",
+    "go_account": "Go to my account",
+    "stat_books": "Books",
+    "stat_courses": "Courses",
+    "stat_learners": "Learners",
+    "verse_of_day": "Verse of the day",
+    "verse_daily_note": "A new verse every day",
+    "verse_read_more": "Keep reading"
   },
   "trending": {
     "handpicked": "Handpicked for You",
@@ -894,7 +901,11 @@
     "not_passed": "You did not pass",
     "waiting_review": "Waiting for a teacher to mark your written answers",
     "one_try": "You can do it only once",
-    "already_done": "You have already done this"
+    "already_done": "You have already done this",
+    "project": "Project",
+    "project_open": "Open the project",
+    "project_view": "View project",
+    "project_sent": "Handed in — waiting for a teacher to mark it"
   },
   "m_class": {
     "title": "Open class",
@@ -926,5 +937,20 @@
   },
   "m_cert": {
     "download_pdf": "Download PDF",
-    "print": "Print"  }
+    "print": "Print"
+  },
+  "m_pay": {
+    "locked_title": "This lesson needs payment",
+    "locked_text": "Pay to open this lesson and keep learning. Free lessons stay open for you.",
+    "pay_course": "Pay for the whole course — {price} RWF",
+    "pay_lesson": "Buy only this lesson — {price} RWF",
+    "exam_locked": "The final exam and projects open after you pay for the course.",
+    "buy_lesson_title": "Buy this lesson",
+    "open_lesson_for": "Open the lesson",
+    "lesson_open_now": "This lesson is open for you now:",
+    "assessment_locked_title": "Payment needed first",
+    "assessment_locked_text": "Pay for this course (or its lesson) to take this. Go back to the course to pay.",
+    "start_free": "Start the free lessons",
+    "free_lessons": "{n} free lessons"
+  }
 }

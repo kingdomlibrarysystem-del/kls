@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Send, AlertCircle, ClipboardList } from 'lucide-react'
+import { Send, AlertCircle, ClipboardList, Download, FileText } from 'lucide-react'
+import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
 import { useAuth } from '@/contexts/auth-context'
 import { projectSubmissionSchema, type ProjectSubmissionData } from './project-submission-schema'
 import { recordProjectSubmission, type AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
@@ -15,8 +16,9 @@ interface ProjectSubmissionViewProps {
 }
 
 /**
- * One-screen submission view for a PROJECT (hackathon-style) assessment —
- * brief display + a single input matching `submissionFormat` + Submit.
+ * One-screen submission view for a PROJECT assessment — the project
+ * document to open/download (or an older typed brief), then one input
+ * matching `submissionFormat` (text, a link, or an uploaded document) + Submit.
  * Deliberately does not reuse `QuestionNavigator`/`CountdownTimer`: a
  * project has no per-question navigation and is never timed, so routing it
  * through the quiz-taking flow would force a question-shaped UI onto
@@ -32,6 +34,8 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ProjectSubmissionData>({ resolver: zodResolver(projectSubmissionSchema) })
 
@@ -50,6 +54,9 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
   }
 
   const isLink = assessment.submissionFormat === 'LINK'
+  const isFile = assessment.submissionFormat === 'FILE_REF'
+  const uploadedUrl = watch('response') ?? ''
+  const [uploadedName, setUploadedName] = useState('')
 
   return (
     <div>
@@ -59,16 +66,37 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
 
       <div className="card" style={{ marginBottom: 16 }}>
         <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
-          <ClipboardList size={15} /> Project Brief
+          <ClipboardList size={15} /> Project
         </p>
-        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{assessment.brief}</p>
+        {assessment.briefFileUrl ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary"><FileText size={20} /></span>
+            <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">{assessment.briefFileName || 'Project document'}</span>
+            <a href={assessment.briefFileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+              <Download size={15} /> Open the project
+            </a>
+          </div>
+        ) : (
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{assessment.brief}</p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="card">
         <label htmlFor="project-response" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-          {isLink ? 'Submission Link' : 'Your Submission'}
+          {isLink ? 'Submission Link' : isFile ? 'Your document' : 'Your Submission'}
         </label>
-        {isLink ? (
+        {isFile ? (
+          <CloudinaryUploadField
+            id="project-response"
+            kind="office"
+            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods,.rtf,.txt"
+            label="Upload your work (PDF, Word, PowerPoint, Excel)"
+            value={uploadedUrl}
+            fileName={uploadedName}
+            onUploaded={(r) => { setUploadedName(r.fileName); setValue('response', r.url, { shouldValidate: true }) }}
+            onClear={() => { setUploadedName(''); setValue('response', '', { shouldValidate: true }) }}
+          />
+        ) : isLink ? (
           <input
             id="project-response"
             type="url"
