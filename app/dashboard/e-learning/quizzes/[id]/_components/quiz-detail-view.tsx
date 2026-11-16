@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { UniversalButton } from '@/components/ui/universal-button'
 import { projectSubmissionFormatLabels } from '@/app/member/_shared/assessment-data'
+import { formatTimeLimit } from '@/lib/assessment-time'
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { kindConfig, type TakeableAssessment } from '../../_components/quizzes-config'
 import { EditQuizModal } from '../../_components/edit-quiz-modal'
@@ -86,9 +87,9 @@ export function QuizDetailView({ initialAssessment, courseTitle }: QuizDetailVie
           <span className={`px-2.5 py-0.5 rounded border text-xs font-lato font-semibold ${kindConfig[assessment.kind].cls}`}>
             {kindConfig[assessment.kind].label}
           </span>
-          {assessment.durationSeconds && (
-            <span className="text-xs text-w-600">{Math.round(assessment.durationSeconds / 60)} min time limit</span>
-          )}
+          <span className="text-xs text-w-600">
+            {assessment.kind === 'PROJECT' ? 'Time to complete' : 'Time limit'}: <span className="font-semibold text-w-950">{formatTimeLimit(assessment.kind, assessment.durationSeconds)}</span>
+          </span>
         </div>
 
         {assessment.kind === 'PROJECT' ? (

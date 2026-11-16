@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
@@ -10,7 +10,8 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { updateAssessment } from '@/app/member/_shared/use-assessments'
-import { quizFormSchema, type QuizFormData } from './quiz-form-schema'
+import { quizFormSchema, firstFormError, type QuizFormData } from './quiz-form-schema'
+import { toDurationSeconds, SECONDS_PER_DAY } from '@/lib/assessment-time'
 import { QuestionBuilder } from './question-builder'
 import { ProjectFields } from './project-fields'
 import type { TakeableAssessment } from './quizzes-config'
@@ -46,7 +47,8 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         courseId: assessment.courseId,
         kind: assessment.kind,
         lessonId: assessment.lessonId,
-        durationMinutes: assessment.durationSeconds ? Math.round(assessment.durationSeconds / 60) : undefined,
+        durationMinutes: assessment.kind !== 'PROJECT' && assessment.durationSeconds ? Math.round(assessment.durationSeconds / 60) : undefined,
+        durationDays: assessment.kind === 'PROJECT' && assessment.durationSeconds ? Math.round(assessment.durationSeconds / SECONDS_PER_DAY) : undefined,
         questions: assessment.questions.map((q) => ({
           type: q.type,
           text: q.text,
@@ -69,7 +71,9 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
   // See AddQuizModal's onInvalid for why this is needed â€” the modal body
   // scrolls independently, so a validation failure on a question above
   // the current scroll position gave no visible feedback at all.
-  const onInvalid = () => {
+  const onInvalid = (formErrors: FieldErrors<QuizFormData>) => {
+    // Say what is wrong (a field can be hidden, e.g. questions on a project), then scroll to it.
+    setSubmitError(`Not saved yet: ${firstFormError(formErrors) ?? 'please check the form'}`)
     requestAnimationFrame(() => {
       const target = document.querySelector('form [aria-invalid="true"], form .text-destructive')
       target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -85,7 +89,9 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
         courseId: data.courseId,
         kind: data.kind,
         lessonId: data.kind === 'TEST' || data.kind === 'QUIZ' ? data.lessonId : undefined,
-        durationSeconds: data.kind === 'EXAM' && data.durationMinutes ? data.durationMinutes * 60 : undefined,
+        // Every kind can be timed: minutes for quiz/test/exam, days for a project (lib/assessment-time.ts).
+        // Empty field = no time limit (null removes a saved one).
+        durationSeconds: toDurationSeconds(data.kind, data.durationMinutes, data.durationDays) ?? null,
         questions: data.kind === 'PROJECT' ? [] : data.questions.map((q, i) => ({
           id: assessment.questions[i]?.id ?? `q${i + 1}`,
           text: q.text,
@@ -133,10 +139,15 @@ export function EditQuizModal({ assessment, onClose }: EditQuizModalProps) {
               <option value="PROJECT">Project</option>
             </select>
           </div>
-          {kind === 'EXAM' && (
+          {kind === 'PROJECT' ? (
             <div>
-              <FieldLabel htmlFor="edit-quiz-duration" required>Time Limit (min)</FieldLabel>
-              <FormInput id="edit-quiz-duration" type="number" min={1} error={errors.durationMinutes?.message} {...register('durationMinutes', { valueAsNumber: true })} />
+              <FieldLabel htmlFor="edit-quiz-days">Days to complete</FieldLabel>
+              <FormInput id="edit-quiz-days" type="number" min={1} placeholder="No limit" error={errors.durationDays?.message} {...register('durationDays', { valueAsNumber: true })} />
+            </div>
+          ) : (
+            <div>
+              <FieldLabel htmlFor="edit-quiz-duration" required={kind === 'EXAM'}>Time limit (minutes)</FieldLabel>
+              <FormInput id="edit-quiz-duration" type="number" min={1} placeholder={kind === 'EXAM' ? undefined : 'No limit'} error={errors.durationMinutes?.message} {...register('durationMinutes', { valueAsNumber: true })} />
             </div>
           )}
           {(kind === 'TEST' || kind === 'QUIZ') && (

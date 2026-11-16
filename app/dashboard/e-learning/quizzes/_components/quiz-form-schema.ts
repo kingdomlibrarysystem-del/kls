@@ -75,8 +75,15 @@ export const quizFormSchema = z
     kind: z.enum(['TEST', 'QUIZ', 'EXAM', 'PROJECT']),
     /** Lesson ID — a lesson quiz or test shows on this lesson only. */
     lessonId: z.string().optional(),
-    durationMinutes: z.number().min(1, 'Duration must be at least 1 minute').optional(),
-    questions: z.array(questionSchema),
+    /** Time limit in minutes (quiz/test/exam; empty = no limit, an exam needs one). NaN = left empty. */
+    durationMinutes: z.number().min(1, 'Time limit must be at least 1 minute').optional().or(z.nan()),
+    /** Project only: days members have to complete it (empty = no limit). */
+    durationDays: z.number().min(1, 'Give at least 1 day').optional().or(z.nan()),
+    /**
+     * Checked in superRefine, and only for a quiz/test/exam: a PROJECT hides the
+     * question builder, so its (blank) starter question must never block saving.
+     */
+    questions: z.array(z.custom<z.infer<typeof questionSchema>>()),
     /** Older projects only (read-only now) — new projects are a document. */
     brief: z.string().optional(),
     /** PROJECT: the uploaded project document (PDF, Word, PowerPoint…). */
@@ -86,6 +93,9 @@ export const quizFormSchema = z
     projectMarks: z.number().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.kind === 'EXAM' && !(data.durationMinutes && data.durationMinutes >= 1)) {
+      ctx.addIssue({ code: 'custom', path: ['durationMinutes'], message: 'Set the exam time limit (minutes)' })
+    }
     if ((data.kind === 'TEST' || data.kind === 'QUIZ') && !data.lessonId) {
       ctx.addIssue({ code: 'custom', path: ['lessonId'], message: 'Select the lesson this belongs to' })
     }
@@ -102,10 +112,29 @@ export const quizFormSchema = z
       }
     } else if (data.questions.length === 0) {
       ctx.addIssue({ code: 'custom', path: ['questions'], message: 'At least 1 question is required' })
+    } else {
+      data.questions.forEach((q, i) => {
+        const checked = questionSchema.safeParse(q)
+        if (!checked.success) {
+          for (const issue of checked.error.issues) ctx.addIssue({ code: 'custom', path: ['questions', i, ...issue.path], message: issue.message })
+        }
+      })
     }
   })
 
 export type QuizFormData = z.infer<typeof quizFormSchema>
+
+/** The first validation message in react-hook-form's nested errors — shown above the buttons so a refusal is never silent. */
+export function firstFormError(errors: unknown): string | undefined {
+  if (!errors || typeof errors !== 'object') return undefined
+  const e = errors as { message?: unknown }
+  if (typeof e.message === 'string' && e.message) return e.message
+  for (const value of Object.values(errors as Record<string, unknown>)) {
+    const found = value && typeof value === 'object' ? firstFormError(value) : undefined
+    if (found) return found
+  }
+  return undefined
+}
 
 /**
  * Builds a fresh empty question. A function (rather than one shared object)

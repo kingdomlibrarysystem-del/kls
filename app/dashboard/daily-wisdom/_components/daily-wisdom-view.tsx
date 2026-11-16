@@ -48,7 +48,7 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
   const handleSaved = (saved: DailyVerseItem, wasEditing: boolean) => {
     setVerses((list) => (wasEditing ? list.map((v) => (v.id === saved.id ? saved : v)) : [saved, ...list]))
     setForm(null)
-    flash(true, wasEditing ? 'Verse updated' : saved.scheduledDate ? `Verse sent for ${dayLabel(saved.scheduledDate)}` : 'Verse added to the automatic rotation')
+    flash(true, wasEditing ? 'Wisdom updated' : saved.scheduledDate ? `Wisdom sent for ${dayLabel(saved.scheduledDate)}` : 'Wisdom added to the automatic rotation')
   }
 
   const toggleActive = async (v: DailyVerseItem, active: boolean) => {
@@ -56,10 +56,10 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
     try {
       const res = await fetch(`/api/daily-wisdom/verses/${v.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active }) })
       const json = await res.json().catch(() => null)
-      if (!res.ok || json?.code !== 'success') throw new Error(json?.message ?? 'Could not update the verse')
+      if (!res.ok || json?.code !== 'success') throw new Error(json?.message ?? 'Could not update the wisdom')
       setVerses((list) => list.map((x) => (x.id === v.id ? json.data : x)))
     } catch (err) {
-      flash(false, err instanceof Error ? err.message : 'Could not update the verse')
+      flash(false, err instanceof Error ? err.message : 'Could not update the wisdom')
     } finally {
       setBusyId(null)
     }
@@ -71,12 +71,12 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
     try {
       const res = await fetch(`/api/daily-wisdom/verses/${deleting.id}`, { method: 'DELETE' })
       const json = await res.json().catch(() => null)
-      if (!res.ok || json?.code !== 'success') throw new Error(json?.message ?? 'Could not delete the verse')
+      if (!res.ok || json?.code !== 'success') throw new Error(json?.message ?? 'Could not delete the wisdom')
       setVerses((list) => list.filter((x) => x.id !== deleting.id))
-      flash(true, 'Verse deleted')
+      flash(true, 'Wisdom deleted')
       setDeleting(null)
     } catch (err) {
-      flash(false, err instanceof Error ? err.message : 'Could not delete the verse')
+      flash(false, err instanceof Error ? err.message : 'Could not delete the wisdom')
     } finally {
       setBusyId(null)
     }
@@ -100,7 +100,7 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
       render: (v) => (
         <div className="flex justify-end gap-1.5">
           <Button variant="outline" size="sm" onClick={() => setForm({ editing: v, kind: v.scheduledDate ? 'sent' : 'automatic' })}><Pencil /> Edit</Button>
-          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleting(v)} aria-label="Delete verse"><Trash2 /></Button>
+          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleting(v)} aria-label="Delete wisdom"><Trash2 /></Button>
         </div>
       ),
     },
@@ -116,10 +116,10 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
         </div>
       ),
     },
-    { key: 'text', label: 'Verse', render: verseCell },
+    { key: 'text', label: 'Wisdom', render: verseCell },
     ...commonColumns,
   ]
-  const automaticColumns: Column<DailyVerseItem>[] = [{ key: 'text', label: 'Verse', render: verseCell }, ...commonColumns]
+  const automaticColumns: Column<DailyVerseItem>[] = [{ key: 'text', label: 'Wisdom', render: verseCell }, ...commonColumns]
 
   return (
     <div className="space-y-4">
@@ -134,8 +134,8 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-sm font-bold tracking-wide text-primary"><BookHeart className="size-4" /> Showing today{today && <span suppressHydrationWarning className="font-normal text-muted-foreground">· {dayLabel(today)}</span>}</h2>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setForm({ editing: null, kind: 'sent' })}><Send /> Send a Verse</Button>
-            <Button variant="outline" onClick={() => setForm({ editing: null, kind: 'automatic' })}><Plus /> Add Automatic Verse</Button>
+            <Button onClick={() => setForm({ editing: null, kind: 'sent' })}><Send /> Send Wisdom</Button>
+            <Button variant="outline" onClick={() => setForm({ editing: null, kind: 'automatic' })}><Plus /> Add Automatic Wisdom</Button>
           </div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -157,7 +157,7 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
                     <p className="mt-1 text-xs font-semibold text-primary">— {v.reference}{v.language !== lang && <span className="font-normal text-muted-foreground"> ({LANGUAGE_NAMES[v.language]})</span>}</p>
                   </>
                 ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">{today ? 'No active verse — the header hides Daily Wisdom.' : '…'}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{today ? 'No active wisdom — the header hides Daily Wisdom.' : '…'}</p>
                 )}
               </div>
             )
@@ -171,25 +171,25 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
           <TabsTrigger value="automatic"><Repeat /> Automatic rotation ({automatic.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="sent" className="mt-3">
-          <p className="mb-3 text-xs text-muted-foreground">A sent verse replaces the automatic one on its day, for readers using that language. One per day per language.</p>
+          <p className="mb-3 text-xs text-muted-foreground">Sent wisdom replaces the automatic one on its day, for readers using that language. One per day per language.</p>
           <DataTable<DailyVerseItem>
             data={sent}
             columns={sentColumns}
             rowKey={(v) => v.id}
-            searchPlaceholder="Search verses or references..."
+            searchPlaceholder="Search wisdom or authors..."
             searchFilter={(v, q) => v.text.toLowerCase().includes(q) || v.reference.toLowerCase().includes(q)}
-            emptyMessage="No verse sent yet — use “Send a Verse”."
+            emptyMessage="No wisdom sent yet — use “Send Wisdom”."
           />
         </TabsContent>
         <TabsContent value="automatic" className="mt-3">
-          <p className="mb-3 text-xs text-muted-foreground">On days nobody sent a verse, the site shows one of these, changing every day at midnight and cycling through all active verses of the reader&apos;s language.</p>
+          <p className="mb-3 text-xs text-muted-foreground">On days nobody sent wisdom, the site shows one of these, changing every day at midnight and cycling through all active wisdom of the reader&apos;s language.</p>
           <DataTable<DailyVerseItem>
             data={automatic}
             columns={automaticColumns}
             rowKey={(v) => v.id}
-            searchPlaceholder="Search verses or references..."
+            searchPlaceholder="Search wisdom or authors..."
             searchFilter={(v, q) => v.text.toLowerCase().includes(q) || v.reference.toLowerCase().includes(q)}
-            emptyMessage="No automatic verses yet."
+            emptyMessage="No automatic wisdom yet."
           />
         </TabsContent>
       </Tabs>
@@ -204,7 +204,7 @@ export function DailyWisdomView({ initialVerses }: { initialVerses: DailyVerseIt
         />
       )}
 
-      <Modal open={!!deleting} onClose={() => setDeleting(null)} title="Delete Verse" size="sm">
+      <Modal open={!!deleting} onClose={() => setDeleting(null)} title="Delete Wisdom" size="sm">
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Delete <span className="font-semibold text-foreground">{deleting?.reference}</span>

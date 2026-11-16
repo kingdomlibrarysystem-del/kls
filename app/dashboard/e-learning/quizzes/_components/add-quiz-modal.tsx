@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Modal } from '@/components/ui/modal'
 import { FieldLabel } from '@/components/ui/field-label'
@@ -10,7 +10,8 @@ import { ElegantButton } from '@/components/ui/elegant-button'
 import { useCourseCatalog } from '../../_shared/use-course-catalog'
 import { useLessonsByCourse } from '@/app/member/_shared/use-lessons'
 import { addAssessment } from '@/app/member/_shared/use-assessments'
-import { quizFormSchema, createEmptyQuestion, type QuizFormData } from './quiz-form-schema'
+import { quizFormSchema, firstFormError, createEmptyQuestion, type QuizFormData } from './quiz-form-schema'
+import { toDurationSeconds } from '@/lib/assessment-time'
 import { QuestionBuilder } from './question-builder'
 import { ProjectFields } from './project-fields'
 
@@ -62,7 +63,9 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
   // reach into a nested scroll container), which looked exactly like the
   // submit button silently doing nothing. Scrolling the first invalid
   // field into view makes the failure visible.
-  const onInvalid = () => {
+  const onInvalid = (formErrors: FieldErrors<QuizFormData>) => {
+    // Say what is wrong (a field can be hidden, e.g. questions on a project), then scroll to it.
+    setSubmitError(`Not saved yet: ${firstFormError(formErrors) ?? 'please check the form'}`)
     requestAnimationFrame(() => {
       const target = document.querySelector('form [aria-invalid="true"], form .text-destructive')
       target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -77,7 +80,8 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
         courseId: data.courseId,
         kind: data.kind,
         lessonId: data.kind === 'TEST' || data.kind === 'QUIZ' ? data.lessonId : undefined,
-        durationSeconds: data.kind === 'EXAM' && data.durationMinutes ? data.durationMinutes * 60 : undefined,
+        // Every kind can be timed: minutes for quiz/test/exam, days for a project (lib/assessment-time.ts).
+        durationSeconds: toDurationSeconds(data.kind, data.durationMinutes, data.durationDays),
         questions: data.kind === 'PROJECT' ? [] : data.questions.map((q, i) => ({
           id: `q${i + 1}`,
           text: q.text,
@@ -127,10 +131,15 @@ export function AddQuizModal({ open, onClose }: AddQuizModalProps) {
               <option value="PROJECT">Project</option>
             </select>
           </div>
-          {kind === 'EXAM' && (
+          {kind === 'PROJECT' ? (
             <div>
-              <FieldLabel htmlFor="add-quiz-duration" required>Time Limit (min)</FieldLabel>
-              <FormInput id="add-quiz-duration" type="number" min={1} error={errors.durationMinutes?.message} {...register('durationMinutes', { valueAsNumber: true })} />
+              <FieldLabel htmlFor="add-quiz-days">Days to complete</FieldLabel>
+              <FormInput id="add-quiz-days" type="number" min={1} placeholder="No limit" error={errors.durationDays?.message} {...register('durationDays', { valueAsNumber: true })} />
+            </div>
+          ) : (
+            <div>
+              <FieldLabel htmlFor="add-quiz-duration" required={kind === 'EXAM'}>Time limit (minutes)</FieldLabel>
+              <FormInput id="add-quiz-duration" type="number" min={1} placeholder={kind === 'EXAM' ? undefined : 'No limit'} error={errors.durationMinutes?.message} {...register('durationMinutes', { valueAsNumber: true })} />
             </div>
           )}
           {(kind === 'TEST' || kind === 'QUIZ') && (

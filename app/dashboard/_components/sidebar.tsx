@@ -65,8 +65,8 @@ export default function Sidebar() {
   return (
     <aside
       style={{
-        width: collapsed ? 60 : 232,
-        minWidth: collapsed ? 60 : 232,
+        width: collapsed ? 60 : 256,
+        minWidth: collapsed ? 60 : 256,
         background: "var(--bg-sidebar)",
         borderRight: "1px solid var(--border)",
         display: "flex",

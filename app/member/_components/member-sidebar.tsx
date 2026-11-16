@@ -181,8 +181,8 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
   return (
     <aside
       style={{
-        width: collapsed ? 64 : 248,
-        minWidth: collapsed ? 64 : 248,
+        width: collapsed ? 64 : 272,
+        minWidth: collapsed ? 64 : 272,
         background: "var(--bg-sidebar)",
         borderRight: "1px solid var(--border)",
         display: "flex",
@@ -265,7 +265,7 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
             gap: 10,
             padding: "9px 14px",
             textDecoration: "none",
-            fontSize: 14,
+            fontSize: 16,
             background: isActive("/member")
               ? "rgba(212,168,67,0.12)"
               : "transparent",
@@ -295,7 +295,7 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
                   gap: 10,
                   padding: "9px 14px",
                   cursor: "pointer",
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: 700,
                   color: "var(--text-muted)",
                   letterSpacing: 1,
@@ -327,7 +327,7 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
                       gap: 10,
                       padding: "7px 14px 7px 36px",
                       textDecoration: "none",
-                      fontSize: 13,
+                      fontSize: 15,
                       color: isActive(item.href)
                         ? "var(--gold)"
                         : "var(--text-secondary)",
@@ -372,7 +372,7 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
               gap: 10,
               padding: "9px 14px",
               textDecoration: "none",
-              fontSize: 14,
+              fontSize: 16,
               color: isActive(item.href)
                 ? "var(--gold)"
                 : "var(--text-secondary)",

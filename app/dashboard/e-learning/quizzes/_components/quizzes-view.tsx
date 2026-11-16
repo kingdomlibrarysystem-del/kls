@@ -1,5 +1,6 @@
 'use client'
 
+import { formatTimeLimit } from '@/lib/assessment-time'
 import { useState } from 'react'
 import Link from 'next/link'
 import { ClipboardList, ClipboardCheck, Eye, Pencil, Trash2, PlusCircle, AlertTriangle } from 'lucide-react'
@@ -94,10 +95,13 @@ export function QuizzesView() {
         </span>
       ),
     },
-    { key: 'questions', label: 'Questions', sortable: true, render: (a) => <span className="text-w-700">{a.questions.length}</span> },
+    {
+      key: 'questions', label: 'Questions', sortable: true,
+      render: (a) => <span className="text-w-700">{a.kind === 'PROJECT' ? `Document${a.projectMarks ? ` · ${a.projectMarks} marks` : ''}` : a.questions.length}</span>,
+    },
     {
       key: 'durationSeconds', label: 'Time Limit', sortable: true,
-      render: (a) => <span className="text-w-700">{a.durationSeconds ? `${Math.round(a.durationSeconds / 60)} min` : '—'}</span>,
+      render: (a) => <span className={a.durationSeconds ? 'text-w-700' : 'text-w-500'}>{formatTimeLimit(a.kind, a.durationSeconds)}</span>,
     },
     {
       key: 'actions', label: 'Actions', className: 'text-right',

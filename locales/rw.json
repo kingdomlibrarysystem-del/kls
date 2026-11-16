@@ -129,8 +129,8 @@
     "stat_books": "Ibitabo",
     "stat_courses": "Amasomo",
     "stat_learners": "Abiga",
-    "verse_of_day": "Umurongo w'umunsi",
-    "verse_daily_note": "Umurongo mushya buri munsi",
+    "verse_of_day": "Impamba yu munsi",
+    "verse_daily_note": "Impamba nshya buri munsi",
     "verse_read_more": "Komeza usome"
   },
   "trending": {
@@ -392,7 +392,24 @@
     "search_placeholder": "Shakisha ibikoresho ukurikije umutwe cyangwa umwanditsi...",
     "resources": "ibikoresho",
     "across": "mu",
-    "sections": "ibice"
+    "sections": "ibice",
+    "subtitle": "Ibitabo n’amajwi {n} — soma, umva cyangwa urebe, tira cyangwa ubike.",
+    "type_all": "Byose",
+    "read": "Soma",
+    "listen": "Umva",
+    "watch": "Reba",
+    "details": "Ibisobanuro",
+    "days": "iminsi",
+    "sort_newest": "Ibishya mbere",
+    "sort_rating": "Byakunzwe cyane",
+    "sort_price_low": "Igiciro: gito → kinini",
+    "sort_price_high": "Igiciro: kinini → gito",
+    "all_sections": "Ibice byose",
+    "no_results_title": "Nta gitabo kibonetse",
+    "no_results_search": "Nta kintu gihuye na “{q}”. Gerageza irindi jambo.",
+    "no_results_filter": "Nta kintu kiraboneka kuri aya mahitamo.",
+    "clear_filters": "Siba amahitamo",
+    "showing": "Byabonetse {n}"
   },
   "m_borrowings": {
     "title": "Ibyo naguze",

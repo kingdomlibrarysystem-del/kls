@@ -16,8 +16,8 @@ function formatTime(totalSeconds: number): string {
 }
 
 /**
- * Mock countdown timer for timed exams (per kls-product-spec Task 6.5 —
- * quizzes are not timed). Announces remaining time via an `aria-live`
+ * Countdown for any timed quiz, test or exam (admins set the minutes on
+ * each one; see lib/assessment-time.ts). Announces remaining time via an `aria-live`
  * region and calls `onExpire` once when it reaches zero.
  */
 export function CountdownTimer({ secondsRemaining, onTick, onExpire }: CountdownTimerProps) {

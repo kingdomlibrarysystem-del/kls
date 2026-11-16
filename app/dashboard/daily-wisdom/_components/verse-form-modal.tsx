@@ -50,9 +50,9 @@ export function VerseFormModal({ editing, initialKind, onClose, onSaved }: Verse
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (text.trim().length < 5) { setError('Write the verse (at least 5 characters)'); return }
+    if (text.trim().length < 5) { setError('Write the wisdom (at least 5 characters)'); return }
     if (reference.trim().length < 2) { setError('Add the reference, e.g. John 3:16'); return }
-    if (kind === 'sent' && !date) { setError('Pick the day this verse is for'); return }
+    if (kind === 'sent' && !date) { setError('Pick the day this wisdom is for'); return }
 
     setSaving(true)
     setError('')
@@ -63,10 +63,10 @@ export function VerseFormModal({ editing, initialKind, onClose, onSaved }: Verse
         body: JSON.stringify({ text: text.trim(), reference: reference.trim(), language, scheduledDate: kind === 'sent' ? date : null, active }),
       })
       const json = await res.json().catch(() => null)
-      if (!res.ok || json?.code !== 'success') throw new Error(json?.message ?? 'Could not save the verse')
+      if (!res.ok || json?.code !== 'success') throw new Error(json?.message ?? 'Could not save the wisdom')
       onSaved(json.data as DailyVerseItem, !!editing)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save the verse')
+      setError(err instanceof Error ? err.message : 'Could not save the wisdom')
     } finally {
       setSaving(false)
     }
@@ -91,7 +91,7 @@ export function VerseFormModal({ editing, initialKind, onClose, onSaved }: Verse
   )
 
   return (
-    <Modal open onClose={onClose} title={editing ? 'Edit Verse' : kind === 'sent' ? 'Send a Daily Verse' : 'Add Automatic Verse'} size="lg">
+    <Modal open onClose={onClose} title={editing ? 'Edit Wisdom' : kind === 'sent' ? 'Send Daily Wisdom' : 'Add Automatic Wisdom'} size="lg">
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div role="alert" className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -100,8 +100,8 @@ export function VerseFormModal({ editing, initialKind, onClose, onSaved }: Verse
         )}
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          {kindButton('sent', <CalendarDays />, 'Send for a day', 'Shown on that day instead of the automatic verse.')}
-          {kindButton('automatic', <Repeat />, 'Automatic rotation', 'Picked automatically on days nobody sent a verse.')}
+          {kindButton('sent', <CalendarDays />, 'Send for a day', 'Shown on that day instead of the automatic wisdom.')}
+          {kindButton('automatic', <Repeat />, 'Automatic rotation', 'Picked automatically on days nobody sent wisdom.')}
         </div>
 
         <div className={cn('grid gap-4', kind === 'sent' ? 'sm:grid-cols-2' : '')}>
@@ -120,20 +120,20 @@ export function VerseFormModal({ editing, initialKind, onClose, onSaved }: Verse
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="verse-text">Verse</Label>
-          <Textarea id="verse-text" value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={VERSE_TEXT_MAX} placeholder="For God so loved the world…" autoFocus />
+          <Label htmlFor="verse-text">Wisdom</Label>
+          <Textarea id="verse-text" value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={VERSE_TEXT_MAX} placeholder="Write today’s wisdom…" autoFocus />
           <p className="text-right text-xs text-muted-foreground">{text.length}/{VERSE_TEXT_MAX}</p>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="verse-reference">Reference</Label>
-          <Input id="verse-reference" value={reference} onChange={(e) => setReference(e.target.value)} maxLength={VERSE_REFERENCE_MAX} placeholder="John 3:16" />
+          <Label htmlFor="verse-reference">Author or source</Label>
+          <Input id="verse-reference" value={reference} onChange={(e) => setReference(e.target.value)} maxLength={VERSE_REFERENCE_MAX} placeholder="e.g. SEKAMONYO Gilbert, or Proverbs 3:5" />
         </div>
 
         <label htmlFor="verse-active" className="flex items-center justify-between gap-4 rounded-lg border border-border px-3 py-2.5">
           <span>
             <span className="block text-sm font-medium text-foreground">Active</span>
-            <span className="block text-xs text-muted-foreground">Switched off, the verse is kept but never shown.</span>
+            <span className="block text-xs text-muted-foreground">Switched off, the wisdom is kept but never shown.</span>
           </span>
           <Switch id="verse-active" checked={active} onCheckedChange={setActive} />
         </label>

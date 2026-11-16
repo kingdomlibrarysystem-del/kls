@@ -129,8 +129,8 @@
     "stat_books": "Books",
     "stat_courses": "Courses",
     "stat_learners": "Learners",
-    "verse_of_day": "Verse of the day",
-    "verse_daily_note": "A new verse every day",
+    "verse_of_day": "Wisdom of the day",
+    "verse_daily_note": "New wisdom every day",
     "verse_read_more": "Keep reading"
   },
   "trending": {
@@ -391,7 +391,24 @@
     "search_placeholder": "Search resources by title or author...",
     "resources": "resources",
     "across": "across",
-    "sections": "sections"
+    "sections": "sections",
+    "subtitle": "{n} books and recordings — read, listen or watch, borrow or reserve.",
+    "type_all": "All",
+    "read": "Read",
+    "listen": "Listen",
+    "watch": "Watch",
+    "details": "Details",
+    "days": "days",
+    "sort_newest": "Newest first",
+    "sort_rating": "Highest rated",
+    "sort_price_low": "Price: low to high",
+    "sort_price_high": "Price: high to low",
+    "all_sections": "All sections",
+    "no_results_title": "No books found",
+    "no_results_search": "Nothing matches “{q}”. Try another word.",
+    "no_results_filter": "Nothing here yet with these choices.",
+    "clear_filters": "Clear filters",
+    "showing": "{n} found"
   },
   "m_borrowings": {
     "title": "My Borrowings",

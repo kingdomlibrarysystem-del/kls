@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, FileClock } from "lucide-react";
@@ -28,7 +28,8 @@ interface ResourceFormModalProps {
   /** KLP collections (admin-managed), for the publication-code section. */
   collections: CollectionOption[];
   onClose: () => void;
-  onSave: (data: ResourceFormData, editingId: string | null) => void;
+  /** Awaited: the form stays locked ("Saving…") until it finishes, so one click = one book. */
+  onSave: (data: ResourceFormData, editingId: string | null) => void | Promise<void>;
 }
 
 /** The edited resource as form values (chapters loaded separately for chapter-based media types). */
@@ -150,20 +151,33 @@ export function ResourceFormModal({
     if (code) setValue("klpCollection", code)
   }, [open, editing, categoryId, allCategories, collections, getValues, setValue])
 
-  const onSubmit = (data: ResourceFormData) => {
+  // One save at a time: a second click while the first is still uploading/saving
+  // used to create the same book again (three copies from three clicks).
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const onSubmit = async (data: ResourceFormData) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSubmitError("");
     try {
-      onSave(data, editing?.id ?? null);
+      await onSave(data, editing?.id ?? null);
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Failed to save resource",
       );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   };
+  // Closing mid-save would hide the result, so the window stays open until the save ends.
+  const close = () => { if (!savingRef.current) onClose(); };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={close}
       title={editing ? `Edit Resource: ${editing.title}` : "Add New Resource"}
       size="3xl"
     >
@@ -211,13 +225,16 @@ export function ResourceFormModal({
             variant="primary"
             className="flex-1 text-sm py-2"
             disabled={chapterLoadFailed}
+            loading={saving}
+            loadingText={editing ? "Saving changes…" : "Saving the book…"}
           >
             {editing ? "Save Changes" : "Save as Draft"}
           </ElegantButton>
           <ElegantButton
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={close}
+            disabled={saving}
             className="text-sm py-2 px-4"
           >
             Cancel

@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, Headphones, PlayCircle } from 'lucide-react'
+import { Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, Headphones, PlayCircle, Info } from 'lucide-react'
+import { useLanguage } from '@/contexts/language-context'
 import { MediaCoverBadge } from '@/components/media/media-cover-badge'
 import { playableKind } from '@/lib/media-embed'
 import { RemoteImage } from '@/components/ui/remote-image'
@@ -55,9 +56,6 @@ function ResourceCover({ resource, liked, height }: { resource: Resource; liked:
           <MediaCoverBadge resource={resource} chip="bottom" />
         </div>
       </Link>
-      {resource.status === 'available' && resource.availableQty > 0 && (
-        <span style={{ position: 'absolute', top: 10, left: 10, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20 }}>Featured</span>
-      )}
       <button
         onClick={(e) => { e.stopPropagation(); toggleFavorite(resource.id, 'RESOURCE', resource.title, resource.author) }}
         aria-label={liked ? `Remove ${resource.title} from favorites` : `Add ${resource.title} to favorites`}
@@ -101,95 +99,101 @@ function useResourceCardState(resource: Resource) {
 }
 
 /**
- * Resource-first card for the member library — cover, real star rating
- * (Resource.avgRating/reviewCount, recomputed from Review rows), price,
- * and real actions: Preview/Read (if any Chapter rows or a documentUrl
- * exist), Borrow (RENTAL), Reserve (SALE), and View Details. Borrow/
- * Reserve are real charges added straight to the cart — there is no
- * separate free confirm flow; payment happens on the Cart page.
- * Modeled on ScrollCard's Dialect B styling since this is a /member/*
- * route.
+ * Grid card for the member library, made to be easy to use: a book-shaped
+ * cover (tap it or the title for details), title, author, a short price line,
+ * ONE main action — Read / Listen / Watch when the title has that, otherwise
+ * Details — and smaller Borrow / Reserve buttons (real cart items; payment
+ * happens on the Cart page). Theme tokens, so light and dark mode both work.
  */
 export function ResourceCard({ resource }: ResourceCardProps) {
+  const { t } = useLanguage()
   const { isAuthenticated, addingType, cartError, liked, isReadable, mediaKind, outOfStock, inCartRental, inCartSale, loginHref, handleAddToCart } = useResourceCardState(resource)
+  const detailHref = `/member/library/resource/${resource.id}`
+  const main = mediaKind === 'video'
+    ? { href: `${detailHref}#player`, icon: <PlayCircle className="size-4" />, label: t('m_library.watch') }
+    : mediaKind === 'audio'
+      ? { href: `${detailHref}#player`, icon: <Headphones className="size-4" />, label: t('m_library.listen') }
+      : isReadable
+        ? { href: `/member/library/read/${resource.id}`, icon: <BookOpenCheck className="size-4" />, label: t('m_library.read') }
+        : { href: detailHref, icon: <Info className="size-4" />, label: t('m_library.details') }
+  const money = (n: number) => (n > 0 ? `${n.toLocaleString()} RWF` : t('m_library.price_free'))
+  const small = 'flex h-9 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50'
 
   return (
-    <div
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s' }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.16)' }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
-    >
-      <ResourceCover resource={resource} liked={liked} height={220} />
-
-      <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-          <Link href={`/member/library/resource/${resource.id}`} style={{ textDecoration: 'none', minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{resource.title}</div>
-          </Link>
-          <StarRating avgRating={resource.avgRating} reviewCount={resource.reviewCount} />
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{getCategoryName(resource.categoryId)}</div>
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-          {resource.description}
-        </p>
-
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--gold)' }}>{resource.price > 0 ? `${resource.price.toLocaleString()} RWF` : 'Free'} <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>to reserve</span></span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{resource.borrowPrice > 0 ? `${resource.borrowPrice.toLocaleString()} RWF` : 'Free'} to borrow · {resource.borrowDurationDays}d</span>
-            </div>
-            {mediaKind && (
-              <Link href={`/member/library/resource/${resource.id}#player`} aria-label={`${mediaKind === 'video' ? 'Watch' : 'Listen to'} ${resource.title}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
-                {mediaKind === 'video' ? <PlayCircle size={13} /> : <Headphones size={13} />} {mediaKind === 'video' ? 'Watch' : 'Listen'}
-              </Link>
-            )}
-            {isReadable && (
-              <Link href={`/member/library/read/${resource.id}`} aria-label={`Preview ${resource.title}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
-                <BookOpenCheck size={13} /> Preview
-              </Link>
-            )}
-          </div>
-
-          {(inCartRental || inCartSale) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--gold-dim, rgba(184,134,11,0.12))', color: 'var(--gold)', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 6 }}>
-              <Check size={12} /> {inCartRental && inCartSale ? 'Borrow & Reserve in cart' : inCartRental ? 'Borrow in cart' : 'Reserve in cart'}
-            </div>
+    <article className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="relative">
+        <Link href={detailHref} aria-label={`${t('m_library.details')}: ${resource.title}`} className="relative block aspect-[3/4] overflow-hidden bg-muted">
+          {resource.coverImages[0] ? (
+            <RemoteImage src={resource.coverImages[0]} alt={resource.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1280px) 25vw, 240px" className="object-cover transition-transform duration-500 group-hover:scale-105" fallback={<Package size={32} color="var(--text-muted)" />} />
+          ) : (
+            <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <Package className="size-8" />
+              <span className="px-3 text-center text-[11px] font-semibold uppercase tracking-wider">{resource.title}</span>
+            </span>
           )}
+          {/* Book spine shading */}
+          <span aria-hidden className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/30 to-transparent" />
+          <MediaCoverBadge resource={resource} chip="bottom" />
+        </Link>
+        <button
+          type="button"
+          onClick={() => toggleFavorite(resource.id, 'RESOURCE', resource.title, resource.author)}
+          aria-label={liked ? `Remove ${resource.title} from favorites` : `Add ${resource.title} to favorites`}
+          className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-full bg-white/90 shadow-sm transition hover:scale-105"
+        >
+          <Heart size={16} color={liked ? 'var(--red-light)' : '#6b6b80'} fill={liked ? 'var(--red-light)' : 'none'} />
+        </button>
+      </div>
 
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <Link href={detailHref} className="line-clamp-2 text-[15px] font-bold leading-snug text-foreground hover:text-primary">{resource.title}</Link>
+        {resource.author && <p className="mt-0.5 truncate text-sm text-muted-foreground">{resource.author}</p>}
+        <p className="truncate text-xs text-muted-foreground/80">{getCategoryName(resource.categoryId)}</p>
+        {resource.reviewCount > 0 && <div className="mt-1"><StarRating avgRating={resource.avgRating} reviewCount={resource.reviewCount} /></div>}
+
+        <dl className="mt-2 space-y-0.5 text-xs">
+          <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t('m_library.borrow')} · {resource.borrowDurationDays} {t('m_library.days')}</dt><dd className="font-semibold text-foreground">{money(resource.borrowPrice)}</dd></div>
+          <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t('m_library.reserve')}</dt><dd className="font-semibold text-foreground">{money(resource.price)}</dd></div>
+        </dl>
+
+        <div className="mt-auto space-y-2 pt-3">
+          <Link href={main.href} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90">
+            {main.icon} {main.label}
+          </Link>
+          {(inCartRental || inCartSale) && (
+            <p className="flex items-center justify-center gap-1 text-xs font-semibold text-primary"><Check size={12} /> {t('m_library.in_cart')}</p>
+          )}
           {isAuthenticated ? (
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div className="grid grid-cols-2 gap-2">
               <button
+                type="button"
                 onClick={() => handleAddToCart('RENTAL')}
                 disabled={outOfStock || inCartRental || addingType === 'RENTAL'}
                 aria-label={inCartRental ? `${resource.title} (Borrow) is already in your cart` : `Borrow ${resource.title}`}
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: outOfStock ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: outOfStock || inCartRental ? 'not-allowed' : 'pointer', opacity: inCartRental ? 0.6 : 1 }}
+                className={`${small} border-border text-foreground hover:bg-muted`}
               >
-                <ShoppingCart size={13} /> Borrow
+                <ShoppingCart size={13} /> {t('m_library.borrow')}
               </button>
               <button
+                type="button"
                 onClick={() => handleAddToCart('SALE')}
                 disabled={inCartSale || addingType === 'SALE'}
                 aria-label={inCartSale ? `${resource.title} (Reserve) is already in your cart` : `Reserve ${resource.title}`}
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: inCartSale ? 'not-allowed' : 'pointer', opacity: inCartSale ? 0.6 : 1 }}
+                className={`${small} border-primary/60 text-primary hover:bg-primary/10`}
               >
-                <ShoppingCart size={13} /> Reserve
+                <ShoppingCart size={13} /> {t('m_library.reserve')}
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <Link href={loginHref} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Borrow</Link>
-              <Link href={loginHref} style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--gold)', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Reserve</Link>
+            <div className="grid grid-cols-2 gap-2">
+              <Link href={loginHref} className={`${small} border-border text-foreground hover:bg-muted`}>{t('m_library.borrow')}</Link>
+              <Link href={loginHref} className={`${small} border-primary/60 text-primary hover:bg-primary/10`}>{t('m_library.reserve')}</Link>
             </div>
           )}
-          {cartError && <p style={{ fontSize: 11, color: 'var(--red-light)' }}>{cartError}</p>}
-
-          <Link href={`/member/library/resource/${resource.id}`} style={{ textAlign: 'center', padding: '7px 0', borderRadius: 7, border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 12, textDecoration: 'none' }}>
-            View Details
-          </Link>
+          {cartError && <p className="text-xs text-destructive">{cartError}</p>}
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 

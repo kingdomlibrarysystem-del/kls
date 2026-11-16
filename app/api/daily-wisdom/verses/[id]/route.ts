@@ -14,22 +14,22 @@ export const PATCH = withErrorHandling('/api/daily-wisdom/verses/[id]', 'PATCH',
   if (auth.response) return auth.response
 
   const { id } = await params
-  if (!isObjectId(id)) throw new ApiError('Verse not found', 404)
+  if (!isObjectId(id)) throw new ApiError('Wisdom not found', 404)
   const parsed = updateVerseSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) throw new ApiError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
   const body = parsed.data
 
   const existing = await prisma.dailyVerse.findUnique({ where: { id } })
-  if (!existing) throw new ApiError('Verse not found', 404)
+  if (!existing) throw new ApiError('Wisdom not found', 404)
 
   const date = body.scheduledDate !== undefined ? body.scheduledDate : existing.scheduledDate
   const language = body.language ?? existing.language
   if (date && (await findSentVerseClash(date, language, id))) {
-    throw new ApiError('A verse is already sent for that day in this language', 409)
+    throw new ApiError('Wisdom is already sent for that day in this language', 409)
   }
 
   const updated = await prisma.dailyVerse.update({ where: { id }, data: body })
-  return NextResponse.json({ data: serializeVerse(updated), message: 'Verse updated', code: 'success', status: 200 })
+  return NextResponse.json({ data: serializeVerse(updated), message: 'Wisdom updated', code: 'success', status: 200 })
 })
 
 /** DELETE /api/daily-wisdom/verses/[id] — staff. */
@@ -38,9 +38,9 @@ export const DELETE = withErrorHandling('/api/daily-wisdom/verses/[id]', 'DELETE
   if (auth.response) return auth.response
 
   const { id } = await params
-  if (!isObjectId(id)) throw new ApiError('Verse not found', 404)
+  if (!isObjectId(id)) throw new ApiError('Wisdom not found', 404)
   const existing = await prisma.dailyVerse.findUnique({ where: { id }, select: { id: true } })
-  if (!existing) throw new ApiError('Verse not found', 404)
+  if (!existing) throw new ApiError('Wisdom not found', 404)
   await prisma.dailyVerse.delete({ where: { id } })
-  return NextResponse.json({ data: { id }, message: 'Verse deleted', code: 'success', status: 200 })
+  return NextResponse.json({ data: { id }, message: 'Wisdom deleted', code: 'success', status: 200 })
 })

@@ -10,6 +10,7 @@ import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-e
 import { getPublishedLessons, refetchLessons, useLessonsByCourse } from '../../../../../_shared/use-lessons'
 import { CourseCheckoutModal } from '../../../../_components/course-checkout-modal'
 import { courseIsOpen, unlockOptions } from '@/lib/course-access'
+import { formatTimeLimit } from '@/lib/assessment-time'
 import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
 import { useAssessmentAttempts } from '../../../../../_shared/use-assessment-attempts'
 import { useCourses } from '../../../../../_shared/use-courses'
@@ -103,7 +104,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         completed={completedIds.has(lesson.id)}
         markError={markError}
         onMarkComplete={handleMarkComplete}
-        courseCompleteAssessmentTitle={courseExam?.title}
+        courseCompleteAssessmentTitle={courseExam ? `${courseExam.title}${courseExam.durationSeconds ? ` (${formatTimeLimit('EXAM', courseExam.durationSeconds)})` : ''}` : undefined}
         courseCompleteAssessmentId={courseExam?.id}
         lessonAssessment={lessonAssessment}
         nextLesson={nextLesson}

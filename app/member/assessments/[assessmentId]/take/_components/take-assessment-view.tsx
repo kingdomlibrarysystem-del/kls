@@ -49,7 +49,7 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
 
   // Start the exam timer once the exam has loaded (set while rendering, not in an effect).
   const [timerFor, setTimerFor] = useState<string | null>(null)
-  if (assessment?.kind === 'EXAM' && assessment.durationSeconds && timerFor !== assessment.id) {
+  if (assessment && assessment.kind !== 'PROJECT' && assessment.durationSeconds && timerFor !== assessment.id) {
     setTimerFor(assessment.id)
     setSecondsRemaining(assessment.durationSeconds)
   }
@@ -113,7 +113,8 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{assessment.title}</h1>
-        {assessment.kind === 'EXAM' && secondsRemaining !== null && (
+        {/* Projects returned above, so this is a timed quiz, test or exam. */}
+        {secondsRemaining !== null && (
           <CountdownTimer
             secondsRemaining={secondsRemaining}
             onTick={setSecondsRemaining}

@@ -75,7 +75,8 @@ export interface AddAssessmentInput {
   courseId: string
   /** Required when kind === 'TEST' — the lesson this test belongs to. */
   lessonId?: string
-  durationSeconds?: number
+  /** null = remove the time limit (edit). */
+  durationSeconds?: number | null
   questions: Question[]
   brief?: string
   briefFileUrl?: string

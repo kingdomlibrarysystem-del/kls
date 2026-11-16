@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { recordAssessmentAttempt, type AssessmentAttempt, type SubmittedAnswer } from '../../../../../_shared/use-assessment-attempts'
 import type { Question, TakeableAssessment } from '../../../../../_shared/assessment-data'
 import { useAuth } from '@/contexts/auth-context'
+import { CountdownTimer } from '@/app/member/assessments/[assessmentId]/take/_components/countdown-timer'
+import { formatTimeLimit } from '@/lib/assessment-time'
 import { useLanguage } from '@/contexts/language-context'
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -91,6 +93,10 @@ export function LessonQuizInline({ assessment, open, onOpenChange, attempt, onSu
   const total = questions.length
   const kindLabel = assessment.kind === 'TEST' ? 'Lesson Test' : 'Lesson Quiz'
   const done = !!attempt || !!result
+  // Time limit (set by the admin): starts the first time the quiz is opened, hands in at 0.
+  const limit = assessment.durationSeconds ?? 0
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
+  if (open && limit > 0 && secondsLeft === null && !done) setSecondsLeft(limit)
   const marks = result ?? (attempt ? { earned: attempt.score, total: attempt.totalMarks } : null)
 
   const setAnswer = (patch: SubmittedAnswer) => { setError(''); setAnswers((p) => ({ ...p, [q.id]: { ...p[q.id], ...patch } })) }
@@ -100,9 +106,10 @@ export function LessonQuizInline({ assessment, open, onOpenChange, attempt, onSu
     setError(''); setIndex((i) => Math.min(total - 1, i + 1))
   }
 
-  const submit = async () => {
+  /** `timeUp`: the countdown reached 0 — hand in what was answered, without asking for the rest. */
+  const submit = async (timeUp = false) => {
     const missing = questions.findIndex((x) => !isAnswered(x, answers[x.id]))
-    if (missing >= 0) { setIndex(missing); setError(t('m_quiz.answer_all').replace('{n}', String(missing + 1))); return }
+    if (missing >= 0 && !timeUp) { setIndex(missing); setError(t('m_quiz.answer_all').replace('{n}', String(missing + 1))); return }
     setBusy(true); setError('')
     try {
       if (!user) throw new Error('You must be signed in')
@@ -125,7 +132,7 @@ export function LessonQuizInline({ assessment, open, onOpenChange, attempt, onSu
         <span className="min-w-0 flex-1">
           <span className="block text-[11px] font-bold uppercase tracking-wider text-primary">{kindLabel}</span>
           <span className="block font-semibold text-foreground">{assessment.title}</span>
-          <span className="text-xs text-muted-foreground">{done && marks ? `${t('m_quiz.done')} · ${t('m_quiz.your_marks')}: ${marks.earned} / ${marks.total}` : `${total} question${total !== 1 ? 's' : ''} · optional · ${t('m_quiz.one_try')}`}</span>
+          <span className="text-xs text-muted-foreground">{done && marks ? `${t('m_quiz.done')} · ${t('m_quiz.your_marks')}: ${marks.earned} / ${marks.total}` : `${total} question${total !== 1 ? 's' : ''}${limit > 0 ? ` · ${formatTimeLimit(assessment.kind, limit)}` : ''} · optional · ${t('m_quiz.one_try')}`}</span>
         </span>
         {done && <CheckCircle2 className="size-5 text-success" aria-hidden />}
         {open ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
@@ -187,7 +194,12 @@ export function LessonQuizInline({ assessment, open, onOpenChange, attempt, onSu
             </div>
           ) : (
             <div>
-              <p className="mb-2 text-xs text-muted-foreground">Question {index + 1} of {total} · {q.marks} mark{q.marks !== 1 ? 's' : ''}</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">Question {index + 1} of {total} · {q.marks} mark{q.marks !== 1 ? 's' : ''}</p>
+                {secondsLeft !== null && !busy && (
+                  <CountdownTimer secondsRemaining={secondsLeft} onTick={setSecondsLeft} onExpire={() => submit(true)} />
+                )}
+              </div>
               {q.context && <p className="mb-3 rounded-md bg-muted/50 p-2.5 text-sm leading-relaxed text-muted-foreground">{q.context}</p>}
               <p className="mb-3 font-semibold text-foreground">{q.text}</p>
 
@@ -249,7 +261,7 @@ export function LessonQuizInline({ assessment, open, onOpenChange, attempt, onSu
               <div className="flex items-center justify-between gap-2">
                 <Button size="sm" variant="outline" onClick={() => { setError(''); setIndex((i) => Math.max(0, i - 1)) }} disabled={index === 0}><ChevronLeft /> Previous</Button>
                 {index === total - 1
-                  ? <Button size="sm" onClick={submit} disabled={busy}><Send /> {busy ? 'Sending…' : 'Submit'}</Button>
+                  ? <Button size="sm" onClick={() => submit()} disabled={busy}><Send /> {busy ? 'Sending…' : 'Submit'}</Button>
                   : <Button size="sm" onClick={next}>Next <ChevronRight /></Button>}
               </div>
             </div>

@@ -129,8 +129,8 @@
     "stat_books": "Livres",
     "stat_courses": "Cours",
     "stat_learners": "Apprenants",
-    "verse_of_day": "Verset du jour",
-    "verse_daily_note": "Un nouveau verset chaque jour",
+    "verse_of_day": "Sagesse du jour",
+    "verse_daily_note": "Une nouvelle sagesse chaque jour",
     "verse_read_more": "Continuer la lecture"
   },
   "trending": {
@@ -392,7 +392,24 @@
     "search_placeholder": "Rechercher des ressources par titre ou auteur...",
     "resources": "ressources",
     "across": "dans",
-    "sections": "sections"
+    "sections": "sections",
+    "subtitle": "{n} livres et enregistrements — lisez, écoutez ou regardez, empruntez ou réservez.",
+    "type_all": "Tout",
+    "read": "Lire",
+    "listen": "Écouter",
+    "watch": "Regarder",
+    "details": "Détails",
+    "days": "jours",
+    "sort_newest": "Plus récents",
+    "sort_rating": "Mieux notés",
+    "sort_price_low": "Prix croissant",
+    "sort_price_high": "Prix décroissant",
+    "all_sections": "Toutes les sections",
+    "no_results_title": "Aucun livre trouvé",
+    "no_results_search": "Rien ne correspond à « {q} ». Essayez un autre mot.",
+    "no_results_filter": "Rien pour ces choix pour le moment.",
+    "clear_filters": "Effacer les filtres",
+    "showing": "{n} trouvés"
   },
   "m_borrowings": {
     "title": "Mes emprunts",

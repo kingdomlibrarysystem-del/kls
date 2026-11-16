@@ -152,6 +152,14 @@ export const POST = withErrorHandling('/api/resources', 'POST', async (request: 
     if (!officialIsbn) throw new ApiError('That ISBN is not valid — check the digits (ISBN-13 or ISBN-10), or leave it empty while it is pending.', 400)
   }
 
+  // A double click / slow network re-sending the same form must not create a second copy.
+  const justAdded = await prisma.resource.findFirst({
+    // Same person, title, author AND media type (an audio edition of a text book is a real new item).
+    where: { createdById: auth.session.userId, title: body.title, author: body.author, mediaType, createdAt: { gte: new Date(Date.now() - 2 * 60_000) } },
+    select: { id: true },
+  })
+  if (justAdded) throw new ApiError('This book was just added — it is already in the list as a draft.', 409)
+
   // The legacy unique `isbn` column becomes an internal record key — never a self-made ISBN.
   const id = newObjectId()
 

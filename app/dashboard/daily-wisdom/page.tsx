@@ -11,7 +11,7 @@ export default async function DailyWisdomPage() {
   const verses = await getAllVerses()
   return (
     <div>
-      <PageHeader title="Daily Wisdom" subtitle="Send the verse of the day, or let the automatic rotation choose one" />
+      <PageHeader title="Daily Wisdom" subtitle="Send the wisdom of the day, or let the automatic rotation choose one" />
       <DailyWisdomView initialVerses={toPlain<DailyVerseItem[]>(verses)} />
     </div>
   )

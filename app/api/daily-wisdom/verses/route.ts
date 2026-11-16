@@ -10,7 +10,7 @@ export const GET = withErrorHandling('/api/daily-wisdom/verses', 'GET', async ()
   const auth = await requireStaff()
   if (auth.response) return auth.response
   const data = await getAllVerses()
-  return NextResponse.json({ data, message: 'Verses fetched successfully', code: 'success', status: 200 })
+  return NextResponse.json({ data, message: 'Wisdom fetched successfully', code: 'success', status: 200 })
 })
 
 /**
@@ -29,7 +29,7 @@ export const POST = withErrorHandling('/api/daily-wisdom/verses', 'POST', async 
   const body = parsed.data
 
   if (body.scheduledDate && (await findSentVerseClash(body.scheduledDate, body.language))) {
-    throw new ApiError('A verse is already sent for that day in this language — edit it instead', 409)
+    throw new ApiError('Wisdom is already sent for that day in this language — edit it instead', 409)
   }
 
   const user = await prisma.user.findUnique({ where: { id: auth.session.userId }, select: { name: true, firstName: true, lastName: true } })
@@ -39,7 +39,7 @@ export const POST = withErrorHandling('/api/daily-wisdom/verses', 'POST', async 
     data: { ...body, createdById: auth.session.userId, createdByName },
   })
   return NextResponse.json(
-    { data: serializeVerse(created), message: body.scheduledDate ? 'Verse sent for that day' : 'Verse added to the automatic rotation', code: 'success', status: 201 },
+    { data: serializeVerse(created), message: body.scheduledDate ? 'Wisdom sent for that day' : 'Wisdom added to the automatic rotation', code: 'success', status: 201 },
     { status: 201 },
   )
 })

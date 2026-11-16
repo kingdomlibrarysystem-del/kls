@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Send, AlertCircle, ClipboardList, Download, FileText } from 'lucide-react'
 import { CloudinaryUploadField } from '@/components/ui/cloudinary-upload-field'
+import { formatTimeLimit } from '@/lib/assessment-time'
 import { useAuth } from '@/contexts/auth-context'
 import { projectSubmissionSchema, type ProjectSubmissionData } from './project-submission-schema'
 import { recordProjectSubmission, type AssessmentAttempt } from '../../../../_shared/use-assessment-attempts'
@@ -67,6 +68,7 @@ export function ProjectSubmissionView({ assessment, onSubmitted }: ProjectSubmis
       <div className="card" style={{ marginBottom: 16 }}>
         <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
           <ClipboardList size={15} /> Project
+          {assessment.durationSeconds ? <span style={{ marginLeft: 'auto', fontWeight: 500 }}>Time to complete: {formatTimeLimit('PROJECT', assessment.durationSeconds)}</span> : null}
         </p>
         {assessment.briefFileUrl ? (
           <div className="flex flex-wrap items-center gap-3">

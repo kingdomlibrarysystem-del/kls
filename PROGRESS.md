@@ -8297,3 +8297,124 @@ design). Dark mode is unchanged (it already overrides these to light text).
 dev server cached the old CSS variables — restart it to see the change.
 
 **Verified:** tsc clean; no brown text hex left in app/components/lib (scan of text colours).
+
+## 2026-11-17 - Fix: "Add Assessment" did nothing for a Project
+
+**Cause:** the add form starts with one blank question. For a PROJECT the question builder is hidden, but
+`quizFormSchema` still validated `questions` ("Question text must be at least 3 characters"), so submit
+stopped in the browser with the message on a hidden field — no request, no visible error.
+
+**Fix** (`app/dashboard/e-learning/quizzes/_components/`): `quiz-form-schema.ts` checks each question only for
+TEST/QUIZ/EXAM (in superRefine, same messages and paths), never for a PROJECT. New `firstFormError()`; the
+Add and Edit modals now show "Not saved yet: <reason>" above the buttons whenever validation refuses, then
+scroll to the field.
+
+**Verified:** tsc + eslint clean; schema check: project with blank starter question → valid; exam with a
+blank question → refused with the question message; filled exam → valid.
+
+## 2026-11-17 - Time limits for every assessment type
+
+**What changed**
+- `lib/assessment-time.ts` (new): `formatTimeLimit()` ("15 min", "1 h 30 min", "7 days", "No limit") and
+  `toDurationSeconds()`. All kinds store `durationSeconds`: minutes for QUIZ/TEST/EXAM, days for PROJECT.
+- Admin form (add/edit): "Time limit (minutes)" for quiz/test/exam (required for an exam, empty = no
+  limit for quiz/test); "Days to complete" for a project. Edit sends null when emptied (removes a limit).
+  Schema: `durationMinutes` / `durationDays` accept an empty field (NaN).
+- Table (`quizzes-view.tsx`): Time Limit uses formatTimeLimit for every kind; a project shows
+  "Document · N marks" instead of 0 questions. Detail page shows "Time limit" / "Time to complete".
+- Member: the quiz/exam page counts down for any timed quiz, test or exam (was exams only); the lesson quiz
+  shows its time and a countdown from the first opening, handing in what was answered at 0; the project page
+  shows "Time to complete: N days"; the last-lesson exam card shows the exam time.
+
+**Interactions to watch:** the countdown is in the browser (as exams already were); a project's days are
+shown, not enforced. `AddAssessmentInput.durationSeconds` may now be null.
+
+**Verified:** tsc clean; eslint clean on changed files (old errors in grade-attempt-modal.tsx /
+use-attempts-admin.ts untouched); time wording + form rules checked; project-document + one-try tests 5/5.
+
+## 2026-11-17 - Daily Wisdom says "wisdom", never "verse"
+
+**Rule (owner):** anything about Daily Wisdom uses the word "wisdom" (en), "sagesse" (fr), "impamba" (rw).
+**What changed (wording only):** home card `hero.verse_of_day` → "Wisdom of the day" / "Sagesse du jour" /
+"Impamba yu munsi" (same name as `daily_wisdom.label`), `hero.verse_daily_note` likewise. Admin
+`/dashboard/daily-wisdom`: subtitle, buttons ("Send Wisdom", "Add Automatic Wisdom"), table column, empty
+messages, search ("Search wisdom or authors..."), delete dialog, toasts; form: titles, "Wisdom" field,
+"Author or source" (was "Reference", placeholder "e.g. SEKAMONYO Gilbert, or Proverbs 3:5"), errors.
+API messages in `app/api/daily-wisdom/verses/*` (schema, create, update, delete, not found).
+**Not changed:** code names (DailyVerse model, /api/daily-wisdom/verses path, ids) and real Bible verses
+(the header verse bar Habakkuk 2:14, reader "key verse" highlights).
+**Verified:** tsc clean; daily-wisdom.test.ts 7/7.
+
+## 2026-11-19 - Audio "now playing" animation; bigger sidebar text; member sidebar hidden by default
+
+**Audio** (`components/media/resource-media-player.tsx`, used by the public book page, member resource page
+#player and admin resource page): uploaded audio now has a navy "now playing" panel — big gold play/pause
+button, two pulsing rings and 32 bouncing sound bars that move only while the audio plays and freeze on
+pause/end ("Tap to play" / "Now playing" / "Paused"). The native controls stay underneath (seek, volume,
+speed, background play). CSS in `app/globals.css` (`.kls-eq-bar`, `.kls-ring`, driven by
+`[data-playing]`, off for reduced motion). YouTube audio and video are unchanged.
+
+**Sidebar text:** admin (`app/dashboard/_components/sidebar*.tsx`) links/sections 13 → 15px, sub-items
+12 → 14px, width 232 → 256. Member (`member-sidebar.tsx`) Home/single links 14 → 16px, sections/sub-items
+13 → 15px, width 248 → 272.
+
+**Member sidebar hidden by default on every screen:** `app/member/layout.tsx` no longer renders the
+desktop sidebar column; the topbar ☰ button (`mobile-menu.tsx`, now shown on all sizes) opens the same
+MemberSidebar as a slide-in drawer (closes on a link, outside click or Escape). Pages use the full width.
+
+**Verified:** tsc clean; eslint 0 errors (4 old unused-variable warnings). Not checked in a browser
+(member and audio pages need a signed-in account).
+
+## 2026-11-19 - Member library: grid by default, easier design; no more duplicate books on save
+
+**Duplicate books:** the admin resource form called `onSave` without waiting, so while a book was still
+uploading/saving (can take a minute) every extra click on "Save as Draft" created another copy (three copies
+seen). `resource-form-modal.tsx` now awaits the save, allows one save at a time (ref guard), shows
+"Saving the book…" / "Saving changes…" on a disabled button, and cannot be closed mid-save. Safety net in
+`POST /api/resources`: the same person + title + author + media type within 2 minutes → 409 "This book was
+just added" (an audio edition of a text book is still allowed). New test
+`resource-double-submit.test.ts` 2/2; `library-approval.test.ts` still passes.
+
+**Member library** (`app/member/library/page.tsx`, `_components/resource-card.tsx`): grid is the default
+(list still available); 2/3/4/5 columns by screen width; book-shaped covers; each card shows title, author,
+section, borrow/reserve prices, ONE main button (Read / Listen / Watch, else Details) plus smaller Borrow /
+Reserve; cover and title open the details. New "All / Read / Listen / Watch" filter; section buttons show the
+section NAME (code only as tooltip) and scroll sideways on phones; clear-search button, "N found", friendly
+empty state with "Clear filters". Removed: the "Featured" badge (it showed on every available book) and the
+"About KCS" button (it toggled nothing). New keys `m_library.*` (en/fr/rw). List rows unchanged apart from
+losing "Featured".
+
+**Verified:** tsc clean; eslint 0 errors; tests above on kls_db_test. The member page was not checked in a
+browser (needs a signed-in member).
+
+## 2026-11-19 - Audio player: own controls, waveform progress, own Download button
+
+`components/media/resource-media-player.tsx` (AudioWithAnimation): the browser's native audio controls are
+gone (they added a ⋮ menu with the browser's own Download / speed) — the <audio> element is hidden
+(`controlsList="nodownload"`, no context menu). The site's own controls: big play/pause with pulsing rings;
+7 thin "now playing" bars by the title (the old 32 wide bars looked like blobs when scaled); a 72-bar
+WAVEFORM progress — played part gold, tap/drag to jump (pointer capture), arrow keys ±5 s, slider ARIA;
+"14:59 / 15:26" time; back / forward 15 s; speed button (1 → 1.25 → 1.5 → 2 → 0.75×); our Download button
+(Cloudinary audio links get `fl_attachment` so the file saves instead of opening). Load errors show a short
+message. Shown only when the member may play the title (same access rules as before).
+**Verified:** tsc + eslint clean. Not played in a browser here (needs a signed-in member with access).
+
+## 2026-11-19 - Thin gold progress line (YouTube-style) for audio AND uploaded video
+
+`components/media/resource-media-player.tsx`: the waveform progress is replaced by `ProgressLine` — a thin
+straight track (thicker on hover), loaded part lighter, played part gold, round gold knob at the play
+position; tap/drag to jump, arrow keys ±5 s, slider ARIA. Shared by the audio player and a new `VideoPlayer`
+for uploaded video (replaces the native <video controls>, so no browser download menu there either): tap the
+picture to play/pause, big gold play button while paused, bottom bar with the gold line, play/pause,
+minutes, speed, Download (Cloudinary fl_attachment) and full screen; the bar fades out after 2.5 s of no
+mouse while playing. YouTube links keep YouTube's own player.
+**Verified:** tsc + eslint clean; screenshot of a temporary preview page (since deleted) with a sample audio.
+
+## 2026-11-19 - Audio/video: animate only while the sound really moves; show loading otherwise
+
+`resource-media-player.tsx`: new `useStalled(media, playing)` — "loading" when play was asked for but the time
+is not advancing (slow / no internet, part not loaded, seeking). It listens to waiting / stalled / playing /
+canplay / seeking / seeked AND checks once a second that currentTime moved (some browsers send no "waiting"
+when the network drops). Audio: the rings and bars animate only when `playing && !loading`; while loading the
+big button shows a spinner and the label says "Loading…". Video: a spinner in the middle while loading.
+**Verified:** tsc + eslint clean (not tested with a real network drop here).

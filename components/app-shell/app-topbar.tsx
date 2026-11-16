@@ -15,7 +15,7 @@ interface AppTopbarProps {
   profileHref: string
   /** Shows a real cart icon (with a live item-count badge) next to notifications — member portal only; the admin dashboard has its own separate topbar and never passes this. */
   showCart?: boolean
-  /** Rendered at the far left — the member portal passes its phone menu button (hidden from md up). */
+  /** Rendered at the far left — the member portal passes its menu button (opens the sidebar on every screen). */
   menu?: React.ReactNode
 }
 
