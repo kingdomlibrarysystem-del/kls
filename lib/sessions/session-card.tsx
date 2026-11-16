@@ -43,7 +43,7 @@ export function SessionCard({ request, viewer }: SessionCardProps) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {isInstant && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--gold)', background: 'var(--gold-light)', color: '#7a5c00', fontSize: 10, fontWeight: 700 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--gold)', background: 'var(--gold-light)', color: '#12304a', fontSize: 10, fontWeight: 700 }}>
               <Zap size={10} /> Instant
             </span>
           )}

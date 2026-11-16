@@ -145,7 +145,7 @@ export function SocialLinks({
           rel="noopener noreferrer"
           aria-label={link.label}
           title={link.label}
-          className="flex items-center justify-center w-9 h-9 rounded-full border border-w-300 dark:border-gray-700 text-w-700 dark:text-gray-400 hover:text-w-950 dark:hover:text-amber-400 hover:border-w-600 dark:hover:border-amber-400 transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-full border border-[#f6efe0]/20 text-[#f6efe0]/75 hover:text-primary hover:border-primary transition-colors"
         >
           {link.Icon}
         </a>

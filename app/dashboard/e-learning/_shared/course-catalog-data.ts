@@ -28,4 +28,6 @@ export interface CourseCatalogEntry {
   lecturerId?: string
   /** Real Cloudinary secure_url for the course's cover image, or undefined if none set. */
   image?: string
+  /** RWF — 0 means the course is free. */
+  price: number
 }

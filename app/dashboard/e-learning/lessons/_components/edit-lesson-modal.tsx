@@ -11,6 +11,7 @@ import { FormInput } from '@/components/ui/form-input'
 import { ElegantButton } from '@/components/ui/elegant-button'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { updateLesson } from '@/app/member/_shared/use-lessons'
+import { LessonAccessFields } from './lesson-access-fields'
 import { contentTypeLabels } from './lesson-form-schema'
 import { LessonMediaUpload } from './lesson-media-upload'
 import type { LessonRow } from './lessons-config'
@@ -23,7 +24,9 @@ const editSchema = z.object({
   status: z.enum(['DRAFT', 'PUBLISHED']),
   content: z.string().min(3, 'Content is required'),
   contentMarkdown: z.string().min(1, 'Lesson content is required'),
-})
+  access: z.enum(['COURSE', 'FREE', 'PAID']),
+  price: z.number(),
+}).refine((d) => d.access !== 'PAID' || d.price > 0, { path: ['price'], message: 'Set a price for a paid lesson' })
 
 type EditFormData = z.infer<typeof editSchema>
 
@@ -50,7 +53,7 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
 
   useEffect(() => {
     if (lesson) {
-      reset({ title: lesson.title, contentType: lesson.contentType, durationMinutes: lesson.durationMinutes, order: lesson.order, status: lesson.status, content: lesson.content, contentMarkdown: lesson.contentMarkdown ?? '' })
+      reset({ title: lesson.title, contentType: lesson.contentType, durationMinutes: lesson.durationMinutes, order: lesson.order, status: lesson.status, content: lesson.content, contentMarkdown: lesson.contentMarkdown ?? '', access: lesson.access, price: lesson.price })
       setSubmitError('')
     }
   }, [lesson, reset])
@@ -60,7 +63,7 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
     setSubmitting(true)
     setSubmitError('')
     try {
-      await updateLesson(lesson.courseId, lesson.lessonId, data)
+      await updateLesson(lesson.courseId, lesson.lessonId, { ...data, price: data.access === 'PAID' ? data.price : 0 })
       onClose()
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to save changes')
@@ -100,6 +103,18 @@ export function EditLessonModal({ lesson, onClose }: EditLessonModalProps) {
             <FormInput id="edit-lesson-order" type="number" min={1} error={errors.order?.message} {...register('order', { valueAsNumber: true })} />
           </div>
         </div>
+
+        {lesson && (
+          <LessonAccessFields
+            idPrefix="edit-lesson"
+            access={watch('access') ?? lesson.access}
+            price={watch('price') ?? lesson.price}
+            coursePrice={lesson.coursePrice}
+            onAccess={(v) => setValue('access', v, { shouldValidate: true })}
+            onPrice={(n) => setValue('price', n, { shouldValidate: true })}
+            error={errors.price?.message}
+          />
+        )}
 
         <div>
           <FieldLabel htmlFor="edit-lesson-status" required>Status</FieldLabel>

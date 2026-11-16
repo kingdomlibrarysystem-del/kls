@@ -9,6 +9,7 @@ import { ElegantButton } from "@/components/ui/elegant-button";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { useCourseCatalog } from "../../_shared/use-course-catalog";
 import { addLesson } from "@/app/member/_shared/use-lessons";
+import { LessonAccessFields } from "./lesson-access-fields";
 import { LessonMediaUpload } from "./lesson-media-upload";
 import {
   lessonSchema,
@@ -41,6 +42,8 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
       durationMinutes: 10,
       content: "",
       contentMarkdown: "",
+      access: "COURSE",
+      price: 0,
     },
   });
 
@@ -54,6 +57,8 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
         durationMinutes: data.durationMinutes,
         content: data.content,
         contentMarkdown: data.contentMarkdown,
+        access: data.access,
+        price: data.access === "PAID" ? data.price : 0,
       });
       reset();
       onClose();
@@ -133,6 +138,16 @@ export function AddLessonModal({ open, onClose }: AddLessonModalProps) {
             />
           </div>
         </div>
+
+        <LessonAccessFields
+          idPrefix="add-lesson"
+          access={watch("access")}
+          price={watch("price")}
+          coursePrice={courseCatalog.find((c) => c.id === watch("courseId"))?.price ?? 0}
+          onAccess={(v) => setValue("access", v, { shouldValidate: true })}
+          onPrice={(n) => setValue("price", n, { shouldValidate: true })}
+          error={errors.price?.message}
+        />
 
         <div>
           <FieldLabel htmlFor="add-lesson-content" required>

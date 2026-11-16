@@ -66,7 +66,7 @@ export const projectSubmissionFormatSchema = z.enum(['TEXT', 'LINK', 'FILE_REF']
  * `questions` stays a plain array (not `.min(1)` at the base level) because
  * PROJECT assessments intentionally have zero questions — the `min(1)`
  * requirement is enforced in `.superRefine` below, scoped to QUIZ/EXAM
- * only, alongside PROJECT's own `brief`/`submissionFormat` requirement.
+ * only, alongside PROJECT's own document/`submissionFormat` requirement.
  */
 export const quizFormSchema = z
   .object({
@@ -77,7 +77,11 @@ export const quizFormSchema = z
     lessonId: z.string().optional(),
     durationMinutes: z.number().min(1, 'Duration must be at least 1 minute').optional(),
     questions: z.array(questionSchema),
+    /** Older projects only (read-only now) — new projects are a document. */
     brief: z.string().optional(),
+    /** PROJECT: the uploaded project document (PDF, Word, PowerPoint…). */
+    briefFileUrl: z.string().optional(),
+    briefFileName: z.string().optional(),
     submissionFormat: projectSubmissionFormatSchema.optional(),
     projectMarks: z.number().optional(),
   })
@@ -86,8 +90,9 @@ export const quizFormSchema = z
       ctx.addIssue({ code: 'custom', path: ['lessonId'], message: 'Select the lesson this belongs to' })
     }
     if (data.kind === 'PROJECT') {
-      if (!data.brief || data.brief.trim().length < 10) {
-        ctx.addIssue({ code: 'custom', path: ['brief'], message: 'Brief must be at least 10 characters' })
+      // A project is a document; an older project that only has a typed brief can still be saved.
+      if (!data.briefFileUrl && !data.brief?.trim()) {
+        ctx.addIssue({ code: 'custom', path: ['briefFileUrl'], message: 'Upload the project document (PDF, Word, PowerPoint…)' })
       }
       if (!data.submissionFormat) {
         ctx.addIssue({ code: 'custom', path: ['submissionFormat'], message: 'Select a submission format' })

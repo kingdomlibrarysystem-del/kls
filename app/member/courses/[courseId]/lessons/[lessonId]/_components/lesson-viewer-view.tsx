@@ -7,7 +7,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { LessonListSidebar } from './lesson-list-sidebar'
 import { LessonContentPane } from './lesson-content-pane'
 import { useEnrollments, markLessonComplete } from '../../../../../_shared/use-enrollments'
-import { getPublishedLessons, useLessonsByCourse } from '../../../../../_shared/use-lessons'
+import { getPublishedLessons, refetchLessons, useLessonsByCourse } from '../../../../../_shared/use-lessons'
+import { CourseCheckoutModal } from '../../../../_components/course-checkout-modal'
+import { courseIsOpen, unlockOptions } from '@/lib/course-access'
 import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
 import { useAssessmentAttempts } from '../../../../../_shared/use-assessment-attempts'
 import { useCourses } from '../../../../../_shared/use-courses'
@@ -27,6 +29,7 @@ interface LessonViewerViewProps {
 export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) {
   const { t } = useLanguage()
   const [markError, setMarkError] = useState('')
+  const [checkout, setCheckout] = useState<'course' | 'lesson' | null>(null)
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments()
   const { data: lessonsByCourse, loading: lessonsLoading } = useLessonsByCourse()
   const { data: assessmentCatalog, loading: assessmentsLoading } = useAssessmentCatalog()
@@ -43,9 +46,14 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
   const completedIds = new Set(enrollment?.completedLessonIds ?? [])
 
   const isLastLesson = lessonIndex === courseLessons.length - 1
+  const catalogCourse = catalogCourses.find((c) => c.id === courseId)
+  const coursePrice = catalogCourse?.price ?? 0
   const courseExam = isLastLesson
     ? Object.values(assessmentCatalog).find((a) => a.courseId === courseId && a.kind === 'EXAM')
     : undefined
+  const courseProjects = isLastLesson
+    ? Object.values(assessmentCatalog).filter((a) => a.courseId === courseId && a.kind === 'PROJECT')
+    : []
   const lessonAssessment = lesson
     ? Object.values(assessmentCatalog).find(
         (a) => a.courseId === courseId && (a.kind === 'TEST' || a.kind === 'QUIZ') && a.lessonId === lesson.id
@@ -102,8 +110,23 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
         courseId={courseId}
         quizAttempt={lessonAssessment ? (attempts ?? []).find((a) => a.assessmentId === lessonAssessment.id) : undefined}
         examAttempt={courseExam ? (attempts ?? []).find((a) => a.assessmentId === courseExam.id) : undefined}
-        completedCourse={enrollment?.status === 'COMPLETED' ? { id: courseId, title: course.courseTitle, lecturerId: catalogCourses.find((c) => c.id === courseId)?.lecturerId } : undefined}
+        projects={courseProjects.map((p) => ({ id: p.id, title: p.title, attempt: (attempts ?? []).find((a) => a.assessmentId === p.id) }))}
+        completedCourse={enrollment?.status === 'COMPLETED' ? { id: courseId, title: course.courseTitle, lecturerId: catalogCourse?.lecturerId } : undefined}
+        // Paid content: the API already left out what this member has not paid for (lesson.locked).
+        locked={!!lesson.locked}
+        unlock={unlockOptions(lesson, coursePrice)}
+        courseOpen={courseIsOpen(coursePrice, enrollment)}
+        onUnlock={setCheckout}
       />
+      {checkout && catalogCourse && (
+        <CourseCheckoutModal
+          course={catalogCourse}
+          lesson={checkout === 'lesson' ? { id: lesson.id, title: lesson.title, price: lesson.price ?? 0 } : null}
+          onClose={() => setCheckout(null)}
+          // Paid: reload the enrollment and the lessons so the content arrives.
+          onPaid={() => { refetch(); refetchLessons() }}
+        />
+      )}
     </div>
   )
 }

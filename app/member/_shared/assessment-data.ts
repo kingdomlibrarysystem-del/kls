@@ -22,7 +22,7 @@ export type ProjectSubmissionFormat = 'TEXT' | 'LINK' | 'FILE_REF'
 export const projectSubmissionFormatLabels: Record<ProjectSubmissionFormat, string> = {
   TEXT: 'Free text',
   LINK: 'Link (URL)',
-  FILE_REF: 'File reference',
+  FILE_REF: 'Document upload (PDF, Word, PowerPoint…)',
 }
 
 /**
@@ -67,8 +67,11 @@ export interface TakeableAssessment {
   durationSeconds?: number
   /** Empty for PROJECT — a project assessment has no per-question structure at all. */
   questions: Question[]
-  /** PROJECT only — the hackathon-style prompt shown on the one-screen submission view instead of a question list. */
+  /** PROJECT only, older projects — a typed brief. New projects use the document below. */
   brief?: string
+  /** PROJECT only — the project document (PDF, Word, PowerPoint…) members open/download. */
+  briefFileUrl?: string
+  briefFileName?: string
   /** PROJECT only — which input the submission view renders (free text, a URL, or a reference to an uploaded file). */
   submissionFormat?: ProjectSubmissionFormat
   /** PROJECT only — total marks for the single manager-graded score, since there's no `questions[]` to sum marks from. */

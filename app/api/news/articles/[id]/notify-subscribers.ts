@@ -23,11 +23,11 @@ export async function notifyPublishSubscribers(article: { id: string; title: str
       subject: `New Article: ${article.title}`,
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
-          <h2 style="color:#2c2416">New Article Published</h2>
+          <h2 style="color:#12304a">New Article Published</h2>
           <h3 style="margin:0">${article.title}</h3>
           <p style="color:#666">${article.summary}</p>
           <p style="color:#888;font-size:12px">Category: ${article.category}</p>
-          <p style="margin-top:16px"><a href="${base}/news/${article.id}" style="background:#8a6d3b;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Read Article</a></p>
+          <p style="margin-top:16px"><a href="${base}/news/${article.id}" style="background:#12304a;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none">Read Article</a></p>
         </div>`,
     },
   })))

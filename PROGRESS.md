@@ -8135,3 +8135,165 @@ or the sitemap list.
 
 **Online steps (owner):** Search Console → Add property → Domain "libkingdom.com" → add the TXT record in Hostinger
 DNS → Verify → submit sitemap.xml → request indexing for the home page.
+
+## 2026-11-11 - Home hero redesign: scripture first, no stock photos
+
+**What changed**
+- `components/home/hero-section.tsx` rewritten. Left: eyebrow, balanced headline ("The Bible is not one book /
+  it is a library."), subtitle, Start reading (/library) + Explore courses (/e-learning), "Create a free account"
+  or "Go to my account", real totals (books / courses / learners; 0 is hidden). Right: a drawn SVG bookshelf
+  (decoration, follows light/dark) with **today's verse** on a parchment card with a gold ribbon — fetched from
+  `/api/daily-wisdom` for the reader's local date (same verse as the header Daily Wisdom, managed at
+  /dashboard/daily-wisdom); falls back to `hero.bible_verse` (Habakkuk 2:14). Below: Read / Learn / Publish
+  cards (01–03) → /library, /e-learning, /publish (was /auth/register).
+- Removed the rotating photos (public/hero-img1-3 are no longer used) and `components/home/hero-path-art.tsx`.
+- `lib/data/home.ts`: `bookCount` (resources not ARCHIVED/DRAFT). `app/page.tsx`: hero gets `stats`; sections
+  reordered — Hero, Trending books, E-Learning, Services, News, Research, About, Testimonials, Newsletter.
+- New keys `hero.go_account/stat_books/stat_courses/stat_learners/verse_of_day/verse_daily_note/verse_read_more`
+  (en/fr/rw).
+
+**Interactions to watch:** the hero verse uses the same public API as the header button (cached 60s). The
+first-visit Daily Wisdom popup still opens on top of the page as before.
+
+**Verified:** eslint clean; tsc clean for these files; screenshots of the dev server at 1440px and inside a real
+390px frame (no sideways scroll). Dark mode uses theme tokens but was not screenshot.
+
+## 2026-11-16 - Home page: darker brand colours, real photos of people reading, gentle motion
+
+**Why:** the owner asked for a slightly darker look with few colours (espresso, parchment, brand gold), a
+few animations, and real photos of people (African readers) instead of drawings — the header keeps its
+structure and text, only its colours change.
+
+**What changed**
+- Photos: 9 free Unsplash photos in `public/home/` (reading-elder, reading-young-man, classroom-reading,
+  church-group-reading, boy-holy-bible, church-family, bible-hands, bible-tablet-study, woman-writing).
+  `public/hero-img1-3` are no longer used.
+- `app/globals.css`: `.kls-rise` (rise-in on load, `--kls-delay` stagger) and `.kls-kenburns` (slow photo
+  zoom); both off under prefers-reduced-motion.
+- `components/main-header.tsx`: colours only — verse bar #17120a, main bar espresso #2c2416 (navy #0f1424 in
+  dark mode), parchment text, gold search icon/focus, translucent search box, gold-ringed logo; mobile menu
+  restyled to match. Dropdown panels unchanged (light). `components/home/daily-wisdom.tsx`: header button
+  is now a gold outline with parchment text (logic untouched).
+- `components/home/hero-section.tsx`: deep espresso band; collage of 3 photo frames that cross-fade one at a
+  time (4s tick) with a slow zoom; Verse of the Day as a dark card over the collage; Library / E-Learning /
+  Publishing cards now have photos (hover zoom). The drawn bookshelf was removed.
+- `components/home/about-section.tsx`: dark band with two photos and the three points as rows.
+- `components/home/newsletter-section.tsx`: photo background under an espresso shade, gold Subscribe.
+- `components/main-footer.tsx` + `components/social-links.tsx`: dark footer (#17120a / #05070f), gold
+  headings, parchment links. The footer is shared by every public page.
+
+**Interactions to watch:** header/footer colours apply on all public pages. `LanguageSwitcher minimal` is
+shared with the app top bar and was not changed. Service cards still show icons until admins upload service
+images. `hero.verse_daily_note` is no longer shown (key kept).
+
+**Verified:** eslint clean on changed files (2 old set-state-in-effect errors in daily-wisdom.tsx are
+unchanged code); tsc clean apart from the Life Sciences files missing on this branch; screenshots on a dev
+server (test DB) at 1440px and a real 390px frame. Dark mode not screenshot.
+
+## 2026-11-16 - Dark colour changed from espresso to navy
+
+**What changed:** the dark brown shades from the previous entry were replaced with navy, matching the
+owner's example (#12304a) and the blue family of the logo: #0b2136 (verse bar, footer, newsletter shade),
+#12304a (header bar, hero, About band), #1a3d5c (Verse of the Day card, photo frames). The hero and About
+glows are now a soft blue light (#2a5f8f/45) with a faint gold glow, because gold blurred on navy looked
+greenish. Files: `components/main-header.tsx`, `components/home/hero-section.tsx`,
+`components/home/about-section.tsx`, `components/home/newsletter-section.tsx`, `components/main-footer.tsx`.
+Dark-mode colours (navy) are unchanged.
+
+**Verified:** eslint clean; screenshots of the dev server at 1440px (header, hero, About, newsletter, footer).
+
+## 2026-11-16 - Header back to white with a few navy touches
+
+**What changed** (`components/main-header.tsx`, `components/home/daily-wisdom.tsx`; colours only): the main
+bar and navigation are white again; navy #12304a is kept for the brand name, search icon/border, menu text,
+hamburger button, the mobile "Browse library" button and the Daily Wisdom button (solid navy, white text).
+Hover on menu items is deep gold #a07830. The thin verse bar on top stays navy #0b2136. Dark mode keeps the
+navy header (#0f1424) with parchment text and gold accents.
+
+**Verified:** eslint clean; screenshots at 1440px and a 390px frame.
+
+## 2026-11-16 - E-Learning: a project is an uploaded document, next to the exam
+
+**What changed**
+- Schema: `Assessment.briefFileUrl` + `briefFileName` (optional). `brief` stays for older typed projects.
+- `components/ui/cloudinary-upload-field.tsx`: new kind `office` (pdf, doc(x), ppt(x), xls(x), odt/odp/ods,
+  rtf, txt; Cloudinary raw, folder kcs-resources/office).
+- Admin (`/dashboard/e-learning/quizzes`): `project-fields.tsx` replaces the typed brief with "Project
+  document" upload (+ "Open the uploaded document"); an older typed brief is shown read-only until replaced.
+  `quiz-form-schema.ts` requires the document (or an existing old brief). Add/Edit modals send
+  briefFileUrl/briefFileName. Button/modal titles say "Test / Quiz / Exam / Project". Detail page and the
+  grading screen link the document; a FILE_REF submission is shown as "Open the member's document".
+- API: `POST /api/assessments` refuses a PROJECT without `briefFileUrl` (400, https URL only);
+  `PATCH /api/assessments/[id]` refuses removing it unless an old typed brief exists (null = remove).
+  The route now uses the shared `serializeAssessment` from `lib/data/assessments.ts` (duplicate removed).
+- Member: the project page shows "Open the project" (document) and, when the format is "Document upload",
+  members upload their work (PDF/Word/PowerPoint…) instead of typing a file name; the URL is stored as the
+  submission. The last lesson lists the course's projects next to the exam (open / handed in / marks).
+  Label FILE_REF → "Document upload (PDF, Word, PowerPoint…)". New keys `m_quiz.project*` (en/fr/rw).
+- There was never a rule blocking a project when an exam exists; certificates still follow the exam only.
+
+**Interactions to watch:** run `npx prisma generate` with the dev server stopped (the engine file is locked
+while it runs), then restart it — until then the running server ignores the new fields. The Cloudinary
+unsigned preset must allow raw uploads of these formats (PDF already works).
+
+**Verified:** tsc clean; eslint clean on changed files (old errors in grade-attempt-modal.tsx /
+use-attempts-admin.ts untouched); `project-document.test.ts` 3/3 (found and fixed the null-removal check) and
+`assessment-one-try.test.ts` 2/2 on kls_db_test.
+
+## 2026-11-16 - E-Learning payments: admin sets course price and per-lesson access
+
+**Rules** (one shared file, `lib/course-access.ts`, used by API and pages):
+- Course price (RWF): 0 = whole course free.
+- Lesson access: COURSE (default; free course → open, paid course → after paying the course), FREE (open
+  to everyone, a preview), PAID (own price; buy just this lesson — in a paid course the course payment
+  opens it too). Old lessons without the field = COURSE.
+- A quiz/test follows its lesson; exam, projects and lesson-less quizzes follow the course.
+- A DROPPED enrollment opens nothing until the member re-joins.
+
+**Schema:** `Lesson.access` (enum LessonAccess, default COURSE) + `Lesson.price`; `Enrollment.unlockedLessonIds`;
+`CourseOrder.lessonId` + `lessonTitle`.
+
+**Server (enforced):** `lib/data/course-access.ts` (getViewer, loadAccess, memberCanOpenLesson,
+memberCanTakeAssessment). `GET /api/lessons` and `/api/lessons/[id]` send no content for lessons the viewer
+may not open (`locked: true`); staff see all. `GET /api/assessments` sends no questions/document for locked
+ones. `PATCH /api/enrollments/[id]` completeLesson → 403 when locked (members). `POST /api/assessment-attempts`
+→ 403 when locked. `POST /api/enrollments` now allows joining a paid course for free (`paid: false`) to use
+its free lessons. `POST /api/course-orders` takes optional `lessonId` (price = lesson price; 409 when already
+owned / course already paid); `settle.ts` adds the lesson to `unlockedLessonIds` (or pays the course as before).
+Lesson create/update validate PAID needs a price.
+
+**Admin:** course add/edit modals have "Price (RWF)" (0 = free) — there was no price field before. Lesson
+add/edit have "Who can open this lesson" (+ price for a paid lesson) via `lesson-access-fields.tsx`; the
+lessons table has a Price column; lesson detail page passes the course price.
+
+**Member:** locked lessons show a lock in the sidebar and a pay panel ("Pay for the whole course — X RWF" /
+"Buy only this lesson — Y RWF") using `CourseCheckoutModal` (now accepts `lesson`); after paying the lessons
+and enrollment reload. Exam/projects show "open after you pay for the course" until paid. The take page says
+"Payment needed first" for a locked assessment. The catalog shows "Start the free lessons · N free lessons"
+for a paid course with free lessons. New keys `m_pay.*` (en/fr/rw).
+
+**Interactions to watch:** enrolling in a paid course no longer requires paying first (free start). Existing
+enrollments keep `paid: true` (grandfathered) if a free course is later given a price. Run `npx prisma generate`
+with the dev server stopped, then restart it.
+
+**Verified:** tsc + eslint clean on changed files; `course-lesson-payment.test.ts` 6/6 on kls_db_test (free
+start, locked content, 403s, single-lesson purchase, full-course purchase, free course with a paid lesson);
+earlier e-learning/payment tests pass (the certificate race pair passed 2/2 when re-run).
+
+## 2026-11-16 - No more brown text: dark text is navy
+
+**What changed:** the theme's dark "w" shades were brown and are now navy / blue-grey (`app/globals.css`):
+`--amber-950` #2c2416 → #12304a (headings, text-w-950, bg-w-950 buttons), `--amber-800` → #1e3d5c,
+`--amber-900` → #4a5d70, `--amber-700` → #46596d (body text). The light parchment shades and the gold
+stay. This covers ~180 files that use text-w-950 / text-w-700 without touching them. Brown typed directly
+in code was replaced too: last-lesson exam banner, news article header gradient + badge, Daily Wisdom
+progress bar, session/publishing "pending" labels, all email templates (`lib/email-templates.ts`,
+`lib/newsletter-broadcast.ts`, newsletter subscribe, article notify), bronze text in the header menu
+(now #2a5f8f) and home cards (#12304a), the "Deep gold" service text. The service colour key "espresso"
+is kept (saved data) but its label is now "Navy". The certificate keeps its deep-gold lettering (gold
+design). Dark mode is unchanged (it already overrides these to light text).
+
+**Interactions to watch:** anything using bg-w-950 / bg-w-800 (e.g. dark buttons) is navy now. The running
+dev server cached the old CSS variables — restart it to see the change.
+
+**Verified:** tsc clean; no brown text hex left in app/components/lib (scan of text colours).

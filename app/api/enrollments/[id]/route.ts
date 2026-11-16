@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 import { progressStatus, publishedLessonIds } from '@/lib/data/enrollment-progress'
+import { memberCanOpenLesson } from '@/lib/data/course-access'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
 import { serializeEnrollment, INCLUDE } from '@/lib/data/enrollments'
@@ -56,6 +57,9 @@ export const PATCH = withErrorHandling('/api/enrollments/[id]', 'PATCH', async (
   }
 
   if (body.action === 'completeLesson') {
+    if (auth.session.role === 'member' && !(await memberCanOpenLesson(existing.userId, body.lessonId))) {
+      throw new ApiError('This lesson needs payment first', 403)
+    }
     const completedLessonIds = existing.completedLessonIds.includes(body.lessonId)
       ? existing.completedLessonIds
       : [...existing.completedLessonIds, body.lessonId]

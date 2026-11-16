@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { FileX, AlertCircle } from 'lucide-react'
+import { useLanguage } from '@/contexts/language-context'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useAuth } from '@/contexts/auth-context'
@@ -30,6 +31,7 @@ interface TakeAssessmentViewProps {
  */
 export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [questionIndex, setQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, SubmittedAnswer>>({})
   const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null)
@@ -80,6 +82,11 @@ export function TakeAssessmentView({ assessmentId }: TakeAssessmentViewProps) {
 
   if (submitted && result) {
     return <ResultsScreen assessment={assessment} attempt={result} autoSubmitted={autoSubmitted} />
+  }
+
+  // Not paid for (the API sent no questions): say so instead of an empty quiz.
+  if ((assessment as { locked?: boolean }).locked) {
+    return <EmptyState icon={FileX} title={t('m_pay.assessment_locked_title')} description={t('m_pay.assessment_locked_text')} style={{ color: 'var(--text-secondary)' }} />
   }
 
   if (earlier) {

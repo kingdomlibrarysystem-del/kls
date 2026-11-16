@@ -14,10 +14,12 @@
   --amber-400: #ede5d4;
   --amber-500: #ddd5c0;
   --amber-600: #b8860b;
-  --amber-700: #8a6d3b;
-  --amber-800: #6b5020;
-  --amber-900: #7a6a52;
-  --amber-950: #2c2416;
+  /* The dark "w" shades used for text: navy and blue-grey (they were brown — the owner replaced
+     brown with the logo's navy, #12304a). The light shades above stay warm parchment. */
+  --amber-700: #46596d;
+  --amber-800: #1e3d5c;
+  --amber-900: #4a5d70;
+  --amber-950: #12304a;
   --amber-accent: #c9a96e;
 
   /* Form colors */
@@ -576,4 +578,27 @@ body {
 #google_translate_element,
 .goog-te-combo {
   display: none !important;
+}
+
+/* ── Home page motion (kept to a few, gentle effects) ─────────────────────
+   .kls-rise     text/cards rise in once on load; set --kls-delay for a stagger.
+   .kls-kenburns very slow zoom on hero photos.
+   Both are switched off for people who ask their device for less motion. */
+@keyframes kls-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes kls-kenburns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+.kls-rise {
+  animation: kls-rise 0.8s cubic-bezier(.2,.7,.2,1) both;
+  animation-delay: var(--kls-delay, 0s);
+}
+.kls-kenburns {
+  animation: kls-kenburns 18s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kls-rise, .kls-kenburns { animation: none; }
 }

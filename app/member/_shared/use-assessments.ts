@@ -78,6 +78,8 @@ export interface AddAssessmentInput {
   durationSeconds?: number
   questions: Question[]
   brief?: string
+  briefFileUrl?: string
+  briefFileName?: string
   submissionFormat?: ProjectSubmissionFormat
   projectMarks?: number
 }

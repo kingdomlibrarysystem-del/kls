@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -46,10 +47,13 @@ export function NewsletterSection() {
   }
 
   return (
-    <div className="py-16 px-4 bg-form-highlight">
-      <div className="max-w-3xl mx-auto text-center">
-        <h2 className="font-cinzel text-3xl font-bold text-w-950 mb-4">{t('newsletter.title')}</h2>
-        <p className="font-lato text-w-700 mb-8">{t('newsletter.subtitle')}</p>
+    <section className="relative overflow-hidden px-4 py-20">
+      {/* Background photo under a deep navy shade, so the text stays easy to read. */}
+      <Image src="/home/classroom-reading.jpg" alt="" fill sizes="100vw" className="object-cover" />
+      <div aria-hidden className="absolute inset-0 bg-[#0b2136]/85 dark:bg-[#05070f]/90" />
+      <div className="relative max-w-3xl mx-auto text-center">
+        <h2 className="font-cinzel text-3xl font-bold text-[#f6efe0] mb-4">{t('newsletter.title')}</h2>
+        <p className="font-lato text-[#f6efe0]/75 mb-8">{t('newsletter.subtitle')}</p>
 
         {subscribed ? (
           <div className="flex items-center justify-center gap-2 max-w-md mx-auto bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded font-lato text-sm">
@@ -63,17 +67,17 @@ export function NewsletterSection() {
                   type="email"
                   placeholder={t('newsletter.placeholder')}
                   aria-label={t('newsletter.placeholder')}
-                  className={`w-full px-6 py-3 font-lato text-sm border bg-white rounded focus:outline-none ${
-                    errors.email ? 'border-red-500' : 'border-w-400 focus:border-w-600'
+                  className={`w-full px-6 py-3 font-lato text-sm text-[#1a1a2e] border bg-white rounded focus:outline-none focus:ring-3 focus:ring-primary/40 ${
+                    errors.email ? 'border-red-500' : 'border-transparent'
                   }`}
                   {...register('email')}
                 />
-                {error && <p className="mt-1 text-xs text-red-600 font-lato">{error}</p>}
+                {error && <p className="mt-1 text-xs text-red-300 font-lato">{error}</p>}
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 bg-w-600 text-white font-lato font-semibold rounded hover:bg-w-700 transition-colors disabled:opacity-60"
+                className="px-8 py-3 bg-primary text-primary-foreground font-lato font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-60"
               >
                 {loading ? '...' : t('newsletter.subscribe')}
               </button>
@@ -81,6 +85,6 @@ export function NewsletterSection() {
           </form>
         )}
       </div>
-    </div>
+    </section>
   )
 }

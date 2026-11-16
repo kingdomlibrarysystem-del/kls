@@ -65,7 +65,7 @@ export function QuizzesView() {
           description="Add a per-lesson test, a quiz, or an end-of-course exam to see it appear here."
           action={
             <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
-              <PlusCircle size={15} /> Add Test / Quiz / Exam
+              <PlusCircle size={15} /> Add Test / Quiz / Exam / Project
             </ElegantButton>
           }
         />
@@ -149,7 +149,7 @@ export function QuizzesView() {
           )}
         </Link>
         <ElegantButton type="button" variant="primary" className="flex items-center gap-2 px-4 py-2 text-sm" onClick={() => setAdding(true)}>
-          <PlusCircle size={15} /> Add Test / Quiz / Exam
+          <PlusCircle size={15} /> Add Test / Quiz / Exam / Project
         </ElegantButton>
       </div>
 

@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { issueCertificateIfEligible } from '@/app/api/_shared/issue-certificate-if-eligible'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireOwnerOrStaff, requireStaff } from '@/lib/auth/require-role'
+import { memberCanTakeAssessment } from '@/lib/data/course-access'
 
 /** Real AssessmentAttempt API, replacing the single-persona AssessmentAttempt embedded in app/member/_shared/enrollment-data.ts (no userId at all). */
 function serializeAttempt(a: {
@@ -96,6 +97,9 @@ export const POST = withErrorHandling('/api/assessment-attempts', 'POST', async 
   ])
   if (!user) throw new ApiError('The specified user does not exist', 400)
   if (!assessment) throw new ApiError('The specified assessment does not exist', 400)
+  if (auth.session.role === 'member' && !(await memberCanTakeAssessment(body.userId, assessment))) {
+    throw new ApiError('Pay for this course (or lesson) first to take this', 403)
+  }
 
   // One try only — a member cannot redo a quiz, test or exam to get better marks.
   if (assessment.kind !== 'PROJECT') {

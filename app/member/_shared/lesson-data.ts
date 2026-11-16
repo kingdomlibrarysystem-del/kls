@@ -14,6 +14,12 @@ export interface Lesson {
   contentMarkdown?: string
   /** Missing on lessons created before this field existed — treated as PUBLISHED. */
   status?: LessonStatus
+  /** Who may open it — see lib/course-access.ts. */
+  access?: 'COURSE' | 'FREE' | 'PAID'
+  /** RWF, for a PAID lesson. */
+  price?: number
+  /** True when this member has not paid for it: the API sent no content. */
+  locked?: boolean
   completed: boolean
 }
 

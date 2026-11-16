@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CldUploadWidget, type CloudinaryUploadWidgetResults } from 'next-cloudinary'
 import { UploadCloud, X, Loader2 } from 'lucide-react'
 
-export type UploadKind = 'image' | 'document' | 'audio' | 'video'
+export type UploadKind = 'image' | 'document' | 'office' | 'audio' | 'video'
 
 interface CloudinaryResult {
   secure_url: string
@@ -28,6 +28,7 @@ interface CloudinaryUploadFieldProps {
 const RESOURCE_TYPE: Record<UploadKind, 'auto' | 'video' | 'raw'> = {
   image: 'auto',
   document: 'raw',
+  office: 'raw',
   audio: 'video',
   video: 'video',
 }
@@ -35,6 +36,8 @@ const RESOURCE_TYPE: Record<UploadKind, 'auto' | 'video' | 'raw'> = {
 const CLIENT_ALLOWED_FORMATS: Record<UploadKind, string[]> = {
   image: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
   document: ['pdf'],
+  // Any everyday document: PDF, Word, PowerPoint, Excel (and their OpenDocument twins), RTF, plain text.
+  office: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'odt', 'odp', 'ods', 'rtf', 'txt'],
   audio: ['mp3', 'wav', 'ogg', 'm4a', 'mp4'],
   video: ['mp4', 'webm', 'mov'],
 }

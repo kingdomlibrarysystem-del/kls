@@ -23,6 +23,8 @@ interface LessonDetailViewProps {
   initialLesson: LessonApiResponse
   /** Parent course title, resolved server-side. */
   courseTitle: string
+  /** Parent course price (RWF, 0 = free), for the lesson's access wording. */
+  coursePrice: number
   /** Every lesson of the parent course in order, loaded server-side. */
   siblings: SiblingLesson[]
 }
@@ -37,6 +39,8 @@ export interface LessonApiResponse {
   contentMarkdown?: string
   order: number
   status?: LessonStatus
+  access?: 'COURSE' | 'FREE' | 'PAID'
+  price?: number
 }
 
 /**
@@ -46,7 +50,7 @@ export interface LessonApiResponse {
  * this view downloaded the whole course catalog and every lesson of every
  * course just to show one title and the prev/next links.
  */
-export function LessonDetailView({ initialLesson, courseTitle, siblings }: LessonDetailViewProps) {
+export function LessonDetailView({ initialLesson, courseTitle, coursePrice, siblings }: LessonDetailViewProps) {
   const id = initialLesson.id
   const router = useRouter()
   const [lesson, setLesson] = useState<LessonApiResponse | null>(initialLesson)
@@ -105,6 +109,9 @@ export function LessonDetailView({ initialLesson, courseTitle, siblings }: Lesso
     content: lesson.content,
     contentMarkdown: lesson.contentMarkdown,
     status,
+    access: lesson.access ?? 'COURSE',
+    price: lesson.price ?? 0,
+    coursePrice,
   }
 
   const position = siblings.findIndex((l) => l.id === lesson.id)

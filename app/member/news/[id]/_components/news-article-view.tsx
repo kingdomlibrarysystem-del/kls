@@ -80,7 +80,7 @@ export function NewsArticleView({ article, categoryColor, engagement, moreArticl
     <article className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1 xl:col-start-2">
       <div
         style={{
-          background: 'linear-gradient(135deg, #2c2416 0%, #6b5020 100%)',
+          background: 'linear-gradient(135deg, #0b2136 0%, #12304a 55%, #1a3d5c 100%)',
           borderRadius: 12,
           padding: 20,
           color: '#fff',
@@ -125,7 +125,7 @@ export function NewsArticleView({ article, categoryColor, engagement, moreArticl
             {article.isEdition ? t('m_news.edition') : article.category}
           </span>
           {article.featured && (
-            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, background: '#fff', color: '#8a5a1a', padding: '2px 9px', borderRadius: 999 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, background: '#fff', color: '#12304a', padding: '2px 9px', borderRadius: 999 }}>
               {t('m_news.featured')}
             </span>
           )}

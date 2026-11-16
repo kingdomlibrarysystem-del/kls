@@ -66,8 +66,8 @@ export function serviceIcon(key: string): LucideIcon {
 
 /**
  * The website's own colours only (app/globals.css): gold (primary #d4a843),
- * deep gold (#a07830), espresso (w-950 #2c2416) and ink (#1a1a2e, the text
- * navy). solid = header band / icon disc; soft = tinted chip; text = accent
+ * deep gold (#a07830), navy (w-950 #12304a — the key is still "espresso" in saved
+ * data) and ink (#1a1a2e, the text navy). Text is never brown. solid = header band / icon disc; soft = tinted chip; text = accent
  * text; ring = hover outline. Each works in light and dark mode.
  */
 export const SERVICE_COLORS: Record<string, { label: string; solid: string; soft: string; text: string; ring: string }> = {
@@ -82,11 +82,11 @@ export const SERVICE_COLORS: Record<string, { label: string; solid: string; soft
     label: 'Deep gold',
     solid: 'bg-[#a07830] text-white',
     soft: 'bg-w-100 text-w-900 dark:bg-[#a07830]/20 dark:text-w-200',
-    text: 'text-[#8a6628] dark:text-w-300',
+    text: 'text-[#12304a] dark:text-w-300',
     ring: 'ring-[#a07830]/50',
   },
   espresso: {
-    label: 'Espresso',
+    label: 'Navy',
     solid: 'bg-w-950 text-w-100 dark:bg-w-900',
     soft: 'bg-w-200/60 text-w-950 dark:bg-white/10 dark:text-w-100',
     text: 'text-w-950 dark:text-w-200',

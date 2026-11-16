@@ -100,7 +100,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
   return (
     <header className="sticky top-0 z-50">
       {/* 1. Verse bar */}
-      <div className="bg-[#2c2416] text-[#f0e8d5] dark:bg-[#161e30]">
+      <div className="border-b border-[#f6efe0]/5 bg-[#0b2136] text-[#f0e8d5] dark:bg-[#05070f]">
         <div
           key={`${lang}-verse`}
           className="mx-auto flex max-w-7xl items-center justify-center gap-3 px-4 py-1.5 text-center animate-in fade-in duration-200"
@@ -108,14 +108,14 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
           <p className="min-w-0 truncate font-cormorant text-sm italic leading-snug md:whitespace-normal">
             {t("hero.bible_verse")}
           </p>
-          <span className="shrink-0 font-cinzel text-[11px] not-italic tracking-widest text-[#c9a96e]">
+          <span className="shrink-0 font-cinzel text-[11px] not-italic tracking-widest text-primary">
             {t("hero.bible_ref")}
           </span>
         </div>
       </div>
 
       {/* 2. Main bar */}
-      <div className="bg-white dark:bg-[#0a0d1a] shadow-md py-2 px-4 transition-colors">
+      <div className="bg-white py-2 px-4 shadow-md shadow-[#12304a]/10 transition-colors dark:bg-[#0f1424] dark:shadow-black/25">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-3 md:flex-nowrap md:gap-6 md:mb-4">
             <button
@@ -124,7 +124,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
               aria-controls="mobile-nav"
-              className="flex size-10 shrink-0 items-center justify-center rounded border border-w-300 text-w-950 transition hover:bg-w-100 md:hidden dark:border-gray-600 dark:text-white dark:hover:bg-gray-800"
+              className="flex size-10 shrink-0 items-center justify-center rounded border border-[#12304a]/25 text-[#12304a] dark:text-[#f6efe0] transition hover:bg-[#12304a]/5 dark:hover:bg-white/10 md:hidden dark:border-[#f6efe0]/25"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -135,11 +135,11 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                 alt="Logo"
                 width={40}
                 height={40}
-                className="rounded-full w-10 h-10"
+                className="rounded-full w-10 h-10 ring-2 ring-primary/40"
               />
               <h1
                 key={`${lang}-brand`}
-                className="font-cinzel text-lg font-bold text-w-950 dark:text-white hidden sm:block animate-in fade-in duration-200"
+                className="font-cinzel text-lg font-bold text-[#12304a] dark:text-[#f6efe0] hidden sm:block animate-in fade-in duration-200"
                 style={{ letterSpacing: "1px" }}
               >
                 {t("common.app_name")}
@@ -148,14 +148,14 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
 
 
             <form onSubmit={handleSearch} role="search" className="relative order-last w-full min-w-0 basis-full md:order-none md:w-auto md:flex-1 md:basis-0">
-              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-w-600 dark:text-gray-400" />
+              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#12304a] dark:text-primary" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("header.search_placeholder")}
                 aria-label={t("header.search_placeholder")}
-                className="h-10 w-full rounded-full border border-w-300 bg-w-50 pl-10 pr-4 font-lato text-sm transition focus:border-w-600 focus:bg-white focus:outline-none focus:ring-3 focus:ring-primary/25 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+                className="h-10 w-full rounded-full border border-[#12304a]/20 bg-[#12304a]/[0.04] pl-10 pr-4 font-lato text-sm text-[#12304a] placeholder:text-[#12304a]/50 transition focus:border-[#12304a] focus:bg-white focus:outline-none focus:ring-3 focus:ring-[#12304a]/15 dark:border-[#f6efe0]/20 dark:bg-white/10 dark:text-[#f6efe0] dark:placeholder:text-[#f6efe0]/50 dark:focus:border-primary dark:focus:bg-white/15"
               />
             </form>
 
@@ -171,13 +171,13 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
           </div>
 
           {/* 3a. Desktop navigation */}
-          <nav className="hidden md:flex flex-wrap gap-2 border-t border-w-200 dark:border-gray-700 pt-3">
+          <nav className="hidden md:flex flex-wrap gap-2 border-t border-[#12304a]/10 pt-3 dark:border-[#f6efe0]/10">
             <div key={`${lang}-nav`} className="flex gap-2 items-center flex-1 animate-in fade-in duration-200">
               <div className="relative group">
                 <Link
                   href="/services"
                   aria-haspopup="menu"
-                  className="px-4 py-2 text-w-950 dark:text-gray-200 hover:text-w-600 dark:hover:text-amber-400 transition font-lato text-sm font-semibold flex items-center gap-1"
+                  className="px-4 py-2 text-[#12304a] hover:text-[#2a5f8f] dark:text-[#f6efe0]/90 dark:hover:text-primary transition font-lato text-sm font-semibold flex items-center gap-1"
                 >
                    {t("nav.services")}
                   <ChevronDown size={12} />
@@ -206,7 +206,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                   <button
                     type="button"
                     aria-haspopup="menu"
-                    className="px-4 py-2 text-w-950 dark:text-gray-200 hover:text-w-600 dark:hover:text-amber-400 transition font-lato text-sm font-semibold flex items-center gap-1"
+                    className="px-4 py-2 text-[#12304a] hover:text-[#2a5f8f] dark:text-[#f6efe0]/90 dark:hover:text-primary transition font-lato text-sm font-semibold flex items-center gap-1"
                   >
                     <span className="flex items-center gap-1.5">{section.title}</span>
                     <ChevronDown size={12} />
@@ -233,24 +233,24 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
             <nav
               id="mobile-nav"
               key={`${lang}-mobile-nav`}
-              className="md:hidden mt-3 max-h-[70vh] overflow-y-auto border-t border-w-200 pt-3 pb-2 animate-in fade-in slide-in-from-top-1 duration-150 dark:border-gray-700"
+              className="md:hidden mt-3 max-h-[70vh] overflow-y-auto border-t border-[#12304a]/10 pt-3 pb-2 animate-in fade-in slide-in-from-top-1 duration-150 dark:border-[#f6efe0]/10"
             >
               <Link
                 href="/library"
                 onClick={() => setMenuOpen(false)}
-                className="mb-3 flex items-center justify-center gap-2 rounded bg-w-950 px-4 py-2.5 font-lato text-sm font-semibold text-white transition hover:bg-w-900 dark:text-primary-foreground"
+                className="mb-3 flex items-center justify-center gap-2 rounded bg-[#12304a] px-4 py-2.5 font-lato text-sm font-semibold text-white transition hover:bg-[#0b2136] dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
               >
                 <BookOpen size={16} />
                 {t("nav.browse_library")}
               </Link>
 
               <div className="mb-2">
-                <p className="px-2 pb-1 font-cinzel text-xs font-bold uppercase tracking-widest text-w-600 dark:text-amber-400">{t("nav.services")}</p>
+                <p className="px-2 pb-1 font-cinzel text-xs font-bold uppercase tracking-widest text-[#2a5f8f] dark:text-primary">{t("nav.services")}</p>
                 <ul className="grid grid-cols-1 gap-0.5 sm:grid-cols-2">
                   {services.map((s) => {
                     return (
                       <li key={s.slug}>
-                        <Link href={`/services/${s.slug}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm text-w-950 transition hover:bg-w-100 dark:text-gray-200 dark:hover:bg-gray-800">
+                        <Link href={`/services/${s.slug}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm text-[#12304a] dark:text-[#f6efe0] transition hover:bg-[#12304a]/5 dark:hover:bg-white/10">
                           <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${serviceColor(s.color).solid}`}><ServiceIcon name={s.icon} size={14} /></span>
                           {s.name}
                         </Link>
@@ -258,7 +258,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                     );
                   })}
                   <li>
-                    <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm font-semibold text-w-600 transition hover:bg-w-100 dark:text-amber-400 dark:hover:bg-gray-800">
+                    <Link href="/services" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded px-2 py-2 font-lato text-sm font-semibold text-[#2a5f8f] transition hover:bg-[#12304a]/5 dark:hover:bg-white/10 dark:text-primary">
                       {t("nav.all_services")}
                     </Link>
                   </li>
@@ -267,7 +267,7 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
 
               {navSections.map((section) => (
                 <div key={section.title} className="mb-2">
-                  <p className="px-2 pb-1 font-cinzel text-xs font-bold uppercase tracking-widest text-w-600 dark:text-amber-400">
+                  <p className="px-2 pb-1 font-cinzel text-xs font-bold uppercase tracking-widest text-[#2a5f8f] dark:text-primary">
                     {section.title}
                   </p>
                   <ul>
@@ -276,9 +276,9 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
                         <Link
                           href={item.href}
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 rounded px-2 py-2.5 font-lato text-sm text-w-950 transition hover:bg-w-100 dark:text-gray-200 dark:hover:bg-gray-800"
+                          className="flex items-center gap-3 rounded px-2 py-2.5 font-lato text-sm text-[#12304a] dark:text-[#f6efe0] transition hover:bg-[#12304a]/5 dark:hover:bg-white/10"
                         >
-                          <span className="text-w-600 dark:text-amber-400">{item.icon}</span>
+                          <span className="text-[#2a5f8f] dark:text-primary">{item.icon}</span>
                           {item.label}
                         </Link>
                       </li>

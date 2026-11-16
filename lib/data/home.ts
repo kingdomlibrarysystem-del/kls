@@ -117,7 +117,7 @@ export async function getTrendingBooks(limit = TRENDING_BOOKS_LIMIT): Promise<Tr
 export async function getHomePageData() {
   const safe = <T,>(p: Promise<T>, fallback: T) => p.catch((err) => { console.error('[home] section failed to load:', err); return fallback })
 
-  const [trendingBooks, newsRows, courseRows, courseCount, lessonCount, enrollmentCount, paperRows] = await Promise.all([
+  const [trendingBooks, newsRows, courseRows, courseCount, lessonCount, enrollmentCount, paperRows, bookCount] = await Promise.all([
     safe(getTrendingBooks(), [] as TrendingBook[]),
     safe(prisma.newsArticle.findMany({
       where: { status: 'PUBLISHED' },
@@ -141,6 +141,7 @@ export async function getHomePageData() {
       take: 3,
       select: { id: true, title: true, keywords: true, authorName: true, publishedAt: true, project: { select: { title: true } } },
     }), []),
+    safe(prisma.resource.count({ where: { status: { notIn: ['ARCHIVED', 'DRAFT'] } } }), 0),
   ])
 
   const news: HomeNewsItem[] = await withArticleStats(newsRows.map((n) => ({ ...n, publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null })))
@@ -161,6 +162,7 @@ export async function getHomePageData() {
     news,
     courses,
     courseStats: { courses: courseCount, lessons: lessonCount, enrollments: enrollmentCount },
+    bookCount,
     papers,
   }
 }

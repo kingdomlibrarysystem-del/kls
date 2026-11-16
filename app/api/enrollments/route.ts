@@ -89,8 +89,6 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
     return NextResponse.json({ data: serializeEnrollment(back), message: 'Welcome back — your progress was kept', code: 'success', status: 200 })
   }
 
-  if (course.price > 0) throw new ApiError('This course requires payment — use /api/course-orders to pay and enroll', 400)
-
   const enrollment = await prisma.enrollment.create({
     data: {
       userId: body.userId,
@@ -98,7 +96,8 @@ export const POST = withErrorHandling('/api/enrollments', 'POST', async (request
       totalLessons: course._count.lessons,
       completedLessonIds: [],
       status: 'ENROLLED',
-      paid: true,
+      // Paid course: enrolled for its free lessons; a CourseOrder flips this to true.
+      paid: !(course.price > 0),
     },
     include: INCLUDE,
   })

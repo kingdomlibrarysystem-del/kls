@@ -15,6 +15,8 @@ export interface CourseEnrollment {
   totalLessons: number
   assessmentPassed: boolean
   paid: boolean
+  /** Lessons bought one by one (Lesson.access PAID). */
+  unlockedLessonIds?: string[]
 }
 
 /**

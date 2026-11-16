@@ -25,13 +25,21 @@ export function ProjectGradeFields({ assessment, attempt, score, onScoreChange }
 
   return (
     <div className="bg-w-100 border border-w-300 rounded p-3 space-y-2">
-      <p className="text-xs text-w-600 italic">{assessment.brief}</p>
+      {assessment.briefFileUrl ? (
+        <a href={assessment.briefFileUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-w-700 underline dark:text-primary">
+          Project: {assessment.briefFileName || 'open the document'}
+        </a>
+      ) : (
+        <p className="text-xs text-w-600 italic">{assessment.brief}</p>
+      )}
       <p className="text-xs font-semibold text-w-950">
         Submission format: {assessment.submissionFormat ? projectSubmissionFormatLabels[assessment.submissionFormat] : '—'}
       </p>
       <div className="bg-white dark:bg-card! border border-w-300 rounded p-2">
-        {submission && assessment.submissionFormat === 'LINK' ? (
-          <a href={submission} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-700 dark:text-info underline break-all">{submission}</a>
+        {submission && (assessment.submissionFormat === 'LINK' || assessment.submissionFormat === 'FILE_REF') && /^https?:\/\//.test(submission) ? (
+          <a href={submission} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-700 dark:text-info underline break-all">
+            {assessment.submissionFormat === 'FILE_REF' ? "Open the member's document" : submission}
+          </a>
         ) : (
           <p className="text-xs text-w-700 whitespace-pre-wrap">{submission || <span className="italic text-w-500">No submission recorded.</span>}</p>
         )}

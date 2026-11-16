@@ -38,7 +38,7 @@ export interface SessionRequest {
 }
 
 export const sessionStatusConfig: Record<SessionStatus, { label: string; cls: string; bg: string; color: string; border: string }> = {
-  PENDING:   { label: 'Pending',   cls: 'bg-yellow-50 text-yellow-800 border-yellow-200', bg: 'var(--gold-light)', color: '#7a5c00',       border: 'var(--gold)'   },
+  PENDING:   { label: 'Pending',   cls: 'bg-yellow-50 text-yellow-800 border-yellow-200', bg: 'var(--gold-light)', color: '#12304a',       border: 'var(--gold)'   },
   APPROVED:  { label: 'Approved',  cls: 'bg-green-50  text-green-800  border-green-200',  bg: 'var(--green-dim)',  color: 'var(--green)',   border: 'var(--green)'  },
   REJECTED:  { label: 'Rejected',  cls: 'bg-red-50    text-red-800    border-red-200',    bg: 'var(--red-dim)',    color: 'var(--red)',     border: 'var(--red)'    },
   COMPLETED: { label: 'Completed', cls: 'bg-w-100      text-w-800      border-w-300',     bg: 'var(--bg-section)', color: 'var(--text-secondary)', border: 'var(--border)' },

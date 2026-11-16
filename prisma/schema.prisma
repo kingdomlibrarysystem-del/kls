@@ -656,6 +656,9 @@ model CourseOrder {
   courseId        String        @db.ObjectId
   course          Course        @relation(fields: [courseId], references: [id])
   courseTitle     String
+  /// Set when the member buys ONE lesson (Lesson.access PAID) instead of the whole course.
+  lessonId        String?       @db.ObjectId
+  lessonTitle     String?
   method          PaymentMethod
   amountRwf       Float
   status          OrderStatus   @default(PENDING)
@@ -1164,11 +1167,23 @@ model Lesson {
   /// (MongoDB does not backfill defaults on existing documents); admins can
   /// flip a lesson to DRAFT to hide it without deleting its content.
   status          LessonStatus      @default(PUBLISHED)
+  /// Who may open this lesson (see lib/course-access.ts): COURSE follows the course (free course: open;
+  /// paid course: after paying the course), FREE is open to everyone, PAID has its own price below
+  /// (buy just this lesson; paying the whole course also opens it). Missing on old lessons = COURSE.
+  access          LessonAccess?     @default(COURSE)
+  /// RWF — only used when access is PAID.
+  price           Float?            @default(0)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   // Performance: indexes for the per-user / per-parent lists and sorts the API runs.
   @@index([courseId, order])
+}
+
+enum LessonAccess {
+  COURSE
+  FREE
+  PAID
 }
 
 enum LessonContentType {
@@ -1206,6 +1221,8 @@ model Enrollment {
   /// (completing lessons, etc.) are expected to check this like any
   /// other real entitlement gate.
   paid               Boolean          @default(true)
+  /// Lessons this member bought one by one (Lesson.access PAID), via a CourseOrder with a lessonId.
+  unlockedLessonIds  String[]         @default([])
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -1237,7 +1254,11 @@ model Assessment {
   lessonId         String?                  @db.ObjectId
   durationSeconds  Int?
   questions        Question[]
+  /// Older projects only: a typed brief. New projects use the document below.
   brief            String?
+  /// PROJECT: the project document members download (PDF, Word, PowerPoint, Excel…), uploaded by staff.
+  briefFileUrl     String?
+  briefFileName    String?
   submissionFormat ProjectSubmissionFormat?
   projectMarks     Int?
   attempts         AssessmentAttempt[]

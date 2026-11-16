@@ -28,6 +28,8 @@ function serializeCourseOrder(o: {
   buyerPhone: string
   courseId: string
   courseTitle: string
+  lessonId?: string | null
+  lessonTitle?: string | null
   method: string
   amountRwf: number
   status: string
@@ -45,6 +47,8 @@ function serializeCourseOrder(o: {
     buyerPhone: o.buyerPhone,
     courseId: o.courseId,
     courseTitle: o.courseTitle,
+    lessonId: o.lessonId ?? null,
+    lessonTitle: o.lessonTitle ?? null,
     method: o.method.toLowerCase(),
     amount: o.amountRwf,
     status: o.status.toLowerCase(),
@@ -59,6 +63,8 @@ function serializeCourseOrder(o: {
 const createCourseOrderSchema = z.object({
   userId: z.string().min(1, 'userId is required'),
   courseId: z.string().min(1, 'courseId is required'),
+  /** Buy ONE lesson (Lesson.access PAID) instead of the whole course. */
+  lessonId: z.string().optional(),
   buyerName: z.string().trim().min(1, 'buyerName is required'),
   buyerEmail: z.string().trim().email('buyerEmail must be a valid email'),
   buyerPhone: z.string().trim().min(1, 'buyerPhone is required'),
@@ -106,7 +112,25 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
 
   const course = await prisma.course.findUnique({ where: { id: body.courseId } })
   if (!course) throw new ApiError('Course not found', 404)
-  if (!course.price || course.price <= 0) throw new ApiError('This course has no price set', 400)
+  const enrollment = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: body.userId, courseId: body.courseId } } })
+
+  // What is being bought and its price: one paid lesson, or the whole course.
+  let lesson: { id: string; title: string } | null = null
+  let amountRwf = course.price ?? 0
+  if (body.lessonId) {
+    const l = await prisma.lesson.findUnique({ where: { id: body.lessonId } })
+    if (!l || l.courseId !== course.id) throw new ApiError('Lesson not found in this course', 404)
+    if (l.access !== 'PAID' || !(l.price && l.price > 0)) throw new ApiError('This lesson is not sold on its own', 400)
+    if (enrollment?.unlockedLessonIds?.includes(l.id) || (course.price > 0 && enrollment?.paid && enrollment.status !== 'DROPPED')) {
+      throw new ApiError('You already have this lesson', 409)
+    }
+    lesson = { id: l.id, title: l.title }
+    amountRwf = l.price
+  } else {
+    if (!course.price || course.price <= 0) throw new ApiError('This course has no price set', 400)
+    if (enrollment?.paid && enrollment.status !== 'DROPPED') throw new ApiError('You have already paid for this course', 409)
+  }
+  const itemTitle = lesson ? `${course.title} — ${lesson.title}` : course.title
 
   await prepareMethod(body.method, body.buyerPhone)
 
@@ -118,8 +142,10 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
       buyerPhone: body.buyerPhone,
       courseId: body.courseId,
       courseTitle: course.title,
+      lessonId: lesson?.id ?? null,
+      lessonTitle: lesson?.title ?? null,
       method: body.method,
-      amountRwf: course.price,
+      amountRwf,
       status: 'PENDING',
     },
   })
@@ -128,8 +154,8 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
   if (isProviderMethod(body.method)) {
     try {
       const started = await startProviderPayment({
-        method: body.method, targetKind: 'COURSE_ORDER', targetId: order.id, userId: body.userId, amountRwf: course.price,
-        phone: body.buyerPhone, payer: { name: body.buyerName, email: body.buyerEmail }, description: `Course — ${course.title}`, returnUrl: siteUrl('/member/courses?checkout=pending'),
+        method: body.method, targetKind: 'COURSE_ORDER', targetId: order.id, userId: body.userId, amountRwf,
+        phone: body.buyerPhone, payer: { name: body.buyerName, email: body.buyerEmail }, description: `Course — ${itemTitle}`, returnUrl: siteUrl('/member/courses?checkout=pending'),
       })
       const data = serializeCourseOrder(await prisma.courseOrder.findUniqueOrThrow({ where: { id: order.id } }))
       return NextResponse.json({ data: { ...data, ...(started.redirectUrl && { checkoutUrl: started.redirectUrl }) }, message: started.message, code: 'success', status: 201 }, { status: 201 })
@@ -141,7 +167,7 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
 
   if (body.method === 'PAYPACK') {
     try {
-      const cashin = await requestCashin({ amountRwf: course.price, phone: body.buyerPhone, idempotencyKey: order.id })
+      const cashin = await requestCashin({ amountRwf, phone: body.buyerPhone, idempotencyKey: order.id })
       const updated = await prisma.courseOrder.update({ where: { id: order.id }, data: { paypackRef: cashin.ref, paypackStatus: cashin.status } })
       return NextResponse.json(
         { data: serializeCourseOrder(updated), message: 'Payment request sent — approve it on your phone to complete enrollment.', code: 'success', status: 201 },
@@ -158,8 +184,8 @@ export const POST = withErrorHandling('/api/course-orders', 'POST', async (reque
     const session = await createCheckoutSession({
       metadataKey: 'courseOrderId',
       orderId: order.id,
-      title: course.title,
-      amountRwf: course.price,
+      title: itemTitle,
+      amountRwf,
       successUrl: `${base}/member/courses?checkout=success`,
       cancelUrl: `${base}/member/courses?checkout=cancelled`,
     })

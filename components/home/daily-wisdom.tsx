@@ -141,9 +141,10 @@ export function DailyWisdom() {
         <button
           type="button"
           onClick={openFromHeader}
-          className="flex items-center gap-2 rounded-lg bg-white dark:bg-white shadow-sm border border-w-300 dark:border-w-300 px-2 sm:px-3 py-1.5 hover:shadow-md hover:border-w-600 dark:hover:border-w-500 transition cursor-pointer whitespace-nowrap"
+          // Navy button on the white header; gold outline on the navy header in dark mode.
+          className="flex items-center gap-2 rounded-lg border border-[#12304a] bg-[#12304a] px-2 sm:px-3 py-1.5 shadow-sm transition hover:bg-[#0b2136] cursor-pointer whitespace-nowrap dark:border-primary/60 dark:bg-white/5 dark:hover:bg-primary/15"
         >
-          <span className="font-cinzel text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-w-950">
+          <span className="font-cinzel text-[10px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-white">
             {t('daily_wisdom.label')}
           </span>
         </button>
@@ -190,7 +191,7 @@ export function DailyWisdom() {
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-w-100/70 dark:bg-gray-800/70">
             <div
               className="h-full"
-              style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #6b5020, #d4a843)' }}
+              style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #12304a, #d4a843)' }}
             />
           </div>
 

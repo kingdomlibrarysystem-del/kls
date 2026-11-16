@@ -50,13 +50,13 @@ export function AddCourseModal({ open, onClose }: AddCourseModalProps) {
     formState: { errors },
   } = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
-    defaultValues: { language: 'en', status: 'DRAFT', image: '' },
+    defaultValues: { language: 'en', status: 'DRAFT', image: '', price: 0 },
   })
   const coverImage = watch('image') ?? ''
 
   useEffect(() => {
     if (open) {
-      reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT', lecturerId: '', image: '' })
+      reset({ title: '', description: '', category: '', language: 'en', status: 'DRAFT', lecturerId: '', image: '', price: 0 })
       setSubmitError('')
       setSubmitSuccess(false)
     }
@@ -78,6 +78,7 @@ export function AddCourseModal({ open, onClose }: AddCourseModalProps) {
         author: authorName || 'Kingdom Library System',
         lecturerId: data.lecturerId || undefined,
         image: data.image || undefined,
+        price: data.price,
       })
       setSubmitSuccess(true)
       setTimeout(onClose, 800)
@@ -176,6 +177,13 @@ export function AddCourseModal({ open, onClose }: AddCourseModalProps) {
               {courseStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+        </div>
+
+
+        <div>
+          <FieldLabel htmlFor="add-price" required>Price (RWF)</FieldLabel>
+          <FormInput id="add-price" type="number" min={0} step={100} error={errors.price?.message} {...register('price', { valueAsNumber: true })} />
+          <p className="mt-1 font-lato text-xs text-w-600 dark:text-muted-foreground">0 = the whole course is free. In each lesson you can make it free for everyone or sell it alone.</p>
         </div>
 
         <div>

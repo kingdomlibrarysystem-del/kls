@@ -51,14 +51,12 @@ export default async function Page() {
       {/* Read by Google only; '<' is escaped so the JSON can never close the script tag. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA).replace(/</g, '\\u003c') }} />
       <MainHeader services={services.programs.map(({ slug, name, tagline, icon, color }) => ({ slug, name, tagline, icon, color }))} />
-      <HeroSection
-        bookCovers={data.trendingBooks.flatMap((b) => (b.cover ? [b.cover] : [])).slice(0, 4)}
-        courseImages={data.courses.flatMap((c) => (c.image ? [c.image] : []))}
-      />
-      <ServicesSection programs={services.programs} areas={services.areas} />
-      <NewsPaperSection items={data.news} />
+      <HeroSection stats={{ books: data.bookCount, courses: data.courseStats.courses, learners: data.courseStats.enrollments }} />
+      {/* Scripture reading comes first, then learning, then everything else. */}
       <TrendingBooks books={data.trendingBooks} />
       <ELearningSection courses={data.courses} stats={data.courseStats} />
+      <ServicesSection programs={services.programs} areas={services.areas} />
+      <NewsPaperSection items={data.news} />
       <ResearchSection papers={data.papers} />
       <AboutSection />
       <TestimonialsSection />

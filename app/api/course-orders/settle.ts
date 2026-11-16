@@ -37,7 +37,18 @@ export async function settleCourseOrder(orderId: string, input: SettleInput) {
 
   if (isSuccessful && order.status !== 'PAID') {
     const course = await prisma.course.findUnique({ where: { id: order.courseId }, include: { _count: { select: { lessons: true } } } })
-    if (course) {
+    if (course && order.lessonId) {
+      // One lesson bought: add it to the member's unlocked lessons (enrolling them if needed).
+      const existing = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: order.userId, courseId: order.courseId } } })
+      if (existing) {
+        const unlocked = [...new Set([...(existing.unlockedLessonIds ?? []), order.lessonId])]
+        await prisma.enrollment.update({ where: { id: existing.id }, data: { unlockedLessonIds: unlocked, ...(existing.status === 'DROPPED' && { status: 'ENROLLED' }) } })
+      } else {
+        await prisma.enrollment.create({
+          data: { userId: order.userId, courseId: order.courseId, totalLessons: course._count.lessons, completedLessonIds: [], status: 'ENROLLED', paid: !(course.price > 0), unlockedLessonIds: [order.lessonId] },
+        })
+      }
+    } else if (course) {
       await prisma.enrollment.upsert({
         where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
         create: { userId: order.userId, courseId: order.courseId, totalLessons: course._count.lessons, completedLessonIds: [], status: 'ENROLLED', paid: true },
@@ -51,7 +62,9 @@ export async function settleCourseOrder(orderId: string, input: SettleInput) {
       type: 'COURSE',
       category: 'course-payment-success',
       title: 'Payment confirmed',
-      message: `Your payment for "${order.courseTitle}" was successful — you're enrolled.`,
+      message: order.lessonTitle
+        ? `Your payment for the lesson "${order.lessonTitle}" (${order.courseTitle}) was successful — it is open now.`
+        : `Your payment for "${order.courseTitle}" was successful — you're enrolled.`,
       href: '/member/courses',
       email: { subject: 'Your course payment is confirmed', html: orderPaidEmailHtml(order.buyerName, order.courseTitle, order.amountRwf, courseUrl) },
     })
