@@ -20,6 +20,8 @@ interface CloudinaryUploadFieldProps {
   /** Real Cloudinary secure_url of the currently-uploaded file, or a pre-existing remote URL when editing. Empty string means nothing uploaded. */
   value: string
   fileName?: string
+  /** When true, the widget accepts every file type instead of the kind's defaults. */
+  allowAllFormats?: boolean
   onUploaded: (result: { url: string; fileName: string; pages?: number }) => void
   onClear: () => void
 }
@@ -35,7 +37,8 @@ const RESOURCE_TYPE: Record<UploadKind, 'auto' | 'video' | 'raw'> = {
 
 const CLIENT_ALLOWED_FORMATS: Record<UploadKind, string[]> = {
   image: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-  document: ['pdf'],
+  // PDF and PowerPoint (Life Sciences books and library documents).
+  document: ['pdf', 'ppt', 'pptx'],
   // Any everyday document: PDF, Word, PowerPoint, Excel (and their OpenDocument twins), RTF, plain text.
   office: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'odt', 'odp', 'ods', 'rtf', 'txt'],
   audio: ['mp3', 'wav', 'ogg', 'm4a', 'mp4'],
@@ -55,7 +58,7 @@ const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
  * /api/uploads/pdf-page-count once the widget itself finishes, since a
  * client-side widget upload never passes through this app's own API.
  */
-export function CloudinaryUploadField({ id, label, kind, value, fileName, onUploaded, onClear }: CloudinaryUploadFieldProps) {
+export function CloudinaryUploadField({ id, label, kind, value, fileName, allowAllFormats, onUploaded, onClear }: CloudinaryUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
@@ -92,7 +95,7 @@ export function CloudinaryUploadField({ id, label, kind, value, fileName, onUplo
           multiple: false,
           maxFiles: 1,
           resourceType: RESOURCE_TYPE[kind],
-          clientAllowedFormats: CLIENT_ALLOWED_FORMATS[kind],
+          ...(allowAllFormats ? {} : { clientAllowedFormats: CLIENT_ALLOWED_FORMATS[kind] }),
           maxFileSize: 25_000_000,
           folder: `kcs-resources/${kind}`,
         }}

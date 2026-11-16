@@ -38,6 +38,7 @@ const ALIASES: Record<string, string[]> = {
   ai: ["bot", "assistant", "tools"],
   map: ["location", "where", "directions", "find"],
   library: ["books", "book", "inventory", "catalog", "read"],
+  sciences: ["science", "life", "biology", "anatomy", "medical", "pdf", "powerpoint", "folder"],
   borrow: ["lend", "checkout", "loan", "issue", "return"],
   reserve: ["reserve", "hold", "bookmark", "request"],
   sale: ["sales", "rent", "rentals", "buy", "purchase", "order", "cart", "payment"],

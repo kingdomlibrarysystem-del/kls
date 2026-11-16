@@ -36,6 +36,8 @@ import {
   HeartHandshake,
   BookHeart,
   Sprout,
+  FlaskConical,
+  FolderOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/language-context";
@@ -67,6 +69,14 @@ function buildNavSections(t: (k: string) => string): NavSection[] {
         { icon: <Newspaper size={14} />, key: "news", href: "/member/news" },
         { icon: <PenLine size={14} />, key: "publish_book", href: "/member/publish" },
         { icon: <BookUp size={14} />, key: "my_books", href: "/member/publish/books" },
+      ],
+    },
+    {
+      key: "life_sciences",
+      icon: <FlaskConical size={16} />,
+      items: [
+        { icon: <FolderOpen size={14} />, key: "life_sciences_folders", href: "/member/life-sciences" },
+        { icon: <BookCopy size={14} />, key: "all_books", href: "/member/life-sciences/books" },
       ],
     },
     {
@@ -124,6 +134,7 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     library: true,
+    life_sciences: false,
     elearning: false,
     shop: false,
     care: false,
@@ -160,6 +171,10 @@ export default function MemberSidebar({ collapsible = true }: { collapsible?: bo
     // "Our Services" covers programme / sub-service pages, but not "My service requests".
     if (href === "/member/publish") return currentRoute === href;
     if (href === "/member/services") return currentRoute.startsWith(href) && !currentRoute.startsWith("/member/services/requests");
+    // "Browse Folders" owns the folder pages, but not the flat All Books / reader pages.
+    if (href === "/member/life-sciences") {
+      return currentRoute === href || (currentRoute.startsWith("/member/life-sciences/") && !currentRoute.startsWith("/member/life-sciences/books"));
+    }
     return currentRoute.startsWith(href);
   };
 

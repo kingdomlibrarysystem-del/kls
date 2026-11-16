@@ -21,7 +21,11 @@ type UploadKind = 'image' | 'document' | 'audio' | 'video'
 
 const ALLOWED_TYPES: Record<UploadKind, Set<string>> = {
   image: new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
-  document: new Set(['application/pdf']),
+  document: new Set([
+    'application/pdf',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ]),
   audio: new Set(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/x-m4a']),
   video: new Set(['video/mp4', 'video/webm', 'video/quicktime']),
 }
@@ -86,7 +90,7 @@ export const POST = withErrorHandling('/api/uploads', 'POST', async (request: Ne
 
   if (!(file instanceof File)) throw new ApiError('No file provided', 400)
   if (!ALLOWED_TYPES[kind].has(file.type)) {
-    const label = kind === 'document' ? 'PDF' : kind
+    const label = kind === 'document' ? 'PDF or PowerPoint' : kind
     throw new ApiError(`Only a valid ${label} file is allowed for this field`, 400)
   }
   if (file.size > MAX_BYTES) throw new ApiError('File exceeds the 25MB upload limit', 400)

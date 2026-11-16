@@ -56,6 +56,7 @@ import {
   Upload,
   ShoppingBag,
   Package,
+  FlaskConical,
 } from "lucide-react";
 
 /** One flyout entry nested under a top-level nav section (e.g. "Book Inventory" under "Digital Library"). */
@@ -87,6 +88,13 @@ export const adminMainNav: NavItem[] = [
       { icon: <Bookmark size={14} />,   label: "Reservations",       href: "/dashboard/reservations" },
       { icon: <ShoppingCart size={14} />, label: "Sales & Rentals",  href: "/dashboard/library/sales" },
       { icon: <BarChart3 size={14} />,  label: "Borrow Reports",     href: "/dashboard/library/reports" },
+    ],
+  },
+  {
+    icon: <FlaskConical size={16} />, label: "Life Sciences",
+    subItems: [
+      { icon: <FolderOpen size={14} />, label: "Folders",   href: "/dashboard/life-sciences" },
+      { icon: <BookCopy size={14} />,   label: "All Books", href: "/dashboard/life-sciences/books" },
     ],
   },
   { icon: <Bot size={16} />, label: "AI & Tools", href: "/dashboard/ai" },
