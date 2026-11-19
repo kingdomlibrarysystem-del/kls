@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { BookOpen, ChevronRight } from "lucide-react";
+import { LinkPendingIcon } from '@/components/reader/link-pending-icon';
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
@@ -34,19 +36,19 @@ export default function CurrentlyReading() {
       {rows.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
           {t("m_reading.not_reading")}{" "}
-          <a href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>{t("m_reading.browse_library")}</a>
+          <Link href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>{t("m_reading.browse_library")}</Link>
         </div>
       ) : (
         rows.map(({ entry, resource }) => {
           const percent = getReadingProgressPercent(entry);
           return (
-            <a
+            <Link
               key={resource.id}
               href={`/member/library/read/${resource.id}`}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border-light)", textDecoration: "none" }}
             >
               <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <BookOpen size={16} color="var(--gold)" />
+                <LinkPendingIcon icon={<BookOpen size={16} color="var(--gold)" />} size={16} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{resource.title}</div>
@@ -55,13 +57,13 @@ export default function CurrentlyReading() {
                 </div>
               </div>
               <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{percent}%</span>
-            </a>
+            </Link>
           );
         })
       )}
-      <a href="/member/library" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
+      <Link href="/member/library" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
         {t("m_reading.go_kingdom_library")} <ChevronRight size={14} />
-      </a>
+      </Link>
     </div>
   );
 }

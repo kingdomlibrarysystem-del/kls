@@ -208,7 +208,16 @@
     "ref_2": "— Imigani 3:5",
     "verse_3": "Mubanze musabe ubwami bw'Imana no gukiranuka kwayo, n'ibindi byose muzabibongererwa.",
     "ref_3": "— Matayo 6:33",
-    "tour": "Ushya? Kanda hano usome ijambo ryo ku munsi."
+    "tour": "Ushya? Kanda hano usome ijambo ryo ku munsi.",
+    "like": "Nkunze",
+    "unlike": "Kuraho nkunze",
+    "comments": "Ibitekerezo",
+    "write_comment": "Andika igitekerezo…",
+    "post": "Ohereza",
+    "sign_in_to_react": "Injira kugira ngo ukunde cyangwa utange igitekerezo",
+    "no_comments": "Nta gitekerezo kiratangwa — ba uwa mbere.",
+    "delete_comment": "Siba igitekerezo",
+    "gone_note": "Ibyo bakunze n'ibitekerezo bisibwa umunsi urangiye, hamwe n'iyi mpamba."
   },
   "about": {
     "label": "Ibyerekeye",

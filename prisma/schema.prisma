@@ -2286,6 +2286,37 @@ model DailyVerse {
   @@index([language, scheduledDate])
 }
 
+/// A like on the Daily Wisdom of ONE day. Likes and comments live only for that day:
+/// they are deleted once `expiresAt` passes (lib/data/daily-wisdom-reactions.ts), so a
+/// wisdom shown again on another day starts fresh.
+model DailyWisdomLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  verseId   String   @db.ObjectId
+  /// The reader's local day, "YYYY-MM-DD" (same key the header uses to pick the wisdom).
+  dateKey   String
+  userId    String   @db.ObjectId
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([verseId, dateKey, userId])
+  @@index([expiresAt])
+}
+
+/// A comment on the Daily Wisdom of ONE day — deleted with the day's likes once `expiresAt` passes.
+model DailyWisdomComment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  verseId   String   @db.ObjectId
+  dateKey   String
+  userId    String   @db.ObjectId
+  userName  String
+  text      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([verseId, dateKey])
+  @@index([expiresAt])
+}
+
 /// One row per viewer per news article, written when the article page is
 /// opened — same idea as ResourceView for books. `viewerKey` is
 /// "u:<userId>" for signed-in readers and "a:<random browser id>" for

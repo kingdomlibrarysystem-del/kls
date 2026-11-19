@@ -207,7 +207,16 @@
     "ref_2": "— Proverbs 3:5",
     "verse_3": "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.",
     "ref_3": "— Matthew 6:33",
-    "tour": "New here? Tap to read today's Daily Wisdom."
+    "tour": "New here? Tap to read today's Daily Wisdom.",
+    "like": "Like",
+    "unlike": "Remove like",
+    "comments": "Comments",
+    "write_comment": "Write a comment…",
+    "post": "Post comment",
+    "sign_in_to_react": "Sign in to like or comment",
+    "no_comments": "No comments yet — be the first.",
+    "delete_comment": "Delete comment",
+    "gone_note": "Likes and comments disappear at the end of the day, with this wisdom."
   },
   "about": {
     "label": "About Us",

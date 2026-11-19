@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { LinkPendingIcon } from '@/components/reader/link-pending-icon'
 import { BookOpen, ScrollText } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useResources } from '@/app/dashboard/library/_components/use-resources'
@@ -48,8 +49,9 @@ export function ContinueReadingSection() {
             <Link
               href={`/member/library/read/${resource.id}`}
               aria-label={`Resume ${resource.title}`}
-              style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 6, border: '1px solid var(--gold)', background: 'transparent', color: 'var(--gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
             >
+              <LinkPendingIcon icon={null} size={12} />
               Resume
             </Link>
           </div>

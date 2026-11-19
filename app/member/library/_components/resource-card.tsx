@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, Headphones, PlayCircle, Info } from 'lucide-react'
 import { useLanguage } from '@/contexts/language-context'
+import { LinkPendingIcon } from '@/components/reader/link-pending-icon'
 import { MediaCoverBadge } from '@/components/media/media-cover-badge'
 import { playableKind } from '@/lib/media-embed'
 import { RemoteImage } from '@/components/ui/remote-image'
@@ -158,7 +159,7 @@ export function ResourceCard({ resource }: ResourceCardProps) {
 
         <div className="mt-auto space-y-2 pt-3">
           <Link href={main.href} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90">
-            {main.icon} {main.label}
+            <LinkPendingIcon icon={main.icon} size={16} /> {main.label}
           </Link>
           {(inCartRental || inCartSale) && (
             <p className="flex items-center justify-center gap-1 text-xs font-semibold text-primary"><Check size={12} /> {t('m_library.in_cart')}</p>
@@ -229,7 +230,7 @@ export function ResourceListItem({ resource }: { resource: Resource }) {
           )}
           {isReadable && (
             <Link href={`/member/library/read/${resource.id}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--gold)', textDecoration: 'none' }}>
-              <BookOpenCheck size={13} /> Preview
+              <LinkPendingIcon icon={<BookOpenCheck size={13} />} size={13} /> Preview
             </Link>
           )}
           {(inCartRental || inCartSale) && (

@@ -208,7 +208,16 @@
     "ref_2": "— Proverbes 3:5",
     "verse_3": "Cherchez premièrement le royaume et la justice de Dieu; et toutes ces choses vous seront données par-dessus.",
     "ref_3": "— Matthieu 6:33",
-    "tour": "Nouveaux ici ? Cliquer ici pour lire la parole du jour."
+    "tour": "Nouveaux ici ? Cliquer ici pour lire la parole du jour.",
+    "like": "J'aime",
+    "unlike": "Retirer j'aime",
+    "comments": "Commentaires",
+    "write_comment": "Écrire un commentaire…",
+    "post": "Publier",
+    "sign_in_to_react": "Connectez-vous pour aimer ou commenter",
+    "no_comments": "Aucun commentaire — soyez le premier.",
+    "delete_comment": "Supprimer le commentaire",
+    "gone_note": "Les mentions et commentaires disparaissent à la fin de la journée, avec cette sagesse."
   },
   "about": {
     "label": "À propos",

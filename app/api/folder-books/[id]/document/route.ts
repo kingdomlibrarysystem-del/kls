@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth-options'
 import { roleNameToUserRole } from '@/lib/roles'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { isObjectId } from '@/lib/server/object-id'
+import { streamRemoteFile } from '@/lib/server/stream-document'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -41,19 +42,14 @@ export const GET = withErrorHandling('/api/folder-books/[id]/document', 'GET', a
   }
 
   const download = new URL(request.url).searchParams.get('download') === '1'
-  const source = await fetch(book.documentUrl)
-  if (!source.ok) throw new ApiError('Could not load this document', 502)
-
-  const bytes = await source.arrayBuffer()
-  const contentType = CONTENT_TYPES[book.documentType.toUpperCase()] ?? source.headers.get('content-type') ?? 'application/octet-stream'
+  const contentType = CONTENT_TYPES[book.documentType.toUpperCase()] ?? 'application/octet-stream'
   const safeName = book.documentName.replace(/[^\w.\- ]+/g, '_').trim() || `book.${book.documentType.toLowerCase()}`
 
-  return new NextResponse(bytes, {
-    headers: {
-      'Content-Type': contentType,
-      'Content-Length': String(bytes.byteLength),
-      'Content-Disposition': `${download ? 'attachment' : 'inline'}; filename="${safeName}"`,
-      'Cache-Control': 'private, max-age=0, must-revalidate',
-    },
+  // Streamed with Range support (no full download into memory first) — the PDF reader shows page 1 sooner.
+  const streamed = await streamRemoteFile(book.documentUrl, request, {
+    contentType,
+    disposition: `${download ? 'attachment' : 'inline'}; filename="${safeName}"`,
   })
+  if (!streamed) throw new ApiError('Could not load this document', 502)
+  return streamed
 })

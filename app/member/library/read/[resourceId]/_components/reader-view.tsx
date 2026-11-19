@@ -20,6 +20,7 @@ import { PdfReaderView } from './pdf-reader-view'
 import { PdfViewModeToggle } from './pdf-view-mode-toggle'
 import { ReaderHeader } from './reader-header'
 import { ChapterBody } from './chapter-body'
+import { useArrowKeys } from '@/components/reader/lazy-pdf'
 
 interface ReaderViewProps {
   resourceId: string
@@ -82,6 +83,15 @@ export function ReaderView({ resourceId, resource, readableChapters, initialChap
   // Only the first locked chapter in view gets the full buy/borrow paywall —
   // a spread showing two locked chapters would otherwise stack two of them.
   const firstLockedVisible = visibleIndexes.find((i) => chapters[i]?.locked)
+
+  // ← / → turn the page in single and two-page view (a spread moves two chapters).
+  const keyStep = viewMode === 'spread' ? 2 : 1
+  const jumpBy = (delta: number) => {
+    const target = Math.max(0, Math.min(chapters.length - 1, chapterIndex + delta))
+    setChapterIndex(target)
+    requestAnimationFrame(() => document.getElementById(`reader-chapter-${chapters[target]?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+  useArrowKeys(viewMode !== 'scroll' && chapters.length > 1, () => jumpBy(-keyStep), () => jumpBy(keyStep))
 
   useEffect(() => {
     if (chapters.length === 0) return

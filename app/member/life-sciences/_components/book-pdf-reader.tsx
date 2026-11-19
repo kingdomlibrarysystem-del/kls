@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Document, Page, pdfjs } from 'react-pdf'
-import { AlertTriangle } from 'lucide-react'
+import { Document, pdfjs } from 'react-pdf'
+import { AlertTriangle, Loader2 } from 'lucide-react'
+import { LazyPdfPage, PDF_OPTIONS } from '@/components/reader/lazy-pdf'
 import { EmptyState } from '@/components/ui/empty-state'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -18,6 +19,8 @@ const CARD_PADDING = 16
 export function BookPdfReader({ file, title }: { file: string; title: string }) {
   const [numPages, setNumPages] = useState<number | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [ratio, setRatio] = useState(1.414)
+  const [loadPercent, setLoadPercent] = useState<number | null>(null)
   const [shell, setShell] = useState<HTMLDivElement | null>(null)
   const [shellWidth, setShellWidth] = useState(0)
 
@@ -51,25 +54,29 @@ export function BookPdfReader({ file, title }: { file: string; title: string }) 
       </p>
       <Document
         file={file}
-        onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+        options={PDF_OPTIONS}
+        onLoadProgress={({ loaded, total }) => { if (total) setLoadPercent(Math.min(99, Math.round((loaded / total) * 100))) }}
+        onLoadSuccess={(pdf) => {
+          setNumPages(pdf.numPages)
+          pdf.getPage(1).then((p) => { const v = p.getViewport({ scale: 1 }); if (v.width) setRatio(v.height / v.width) }).catch(() => {})
+        }}
         onLoadError={(err) => setLoadError(err.message ?? 'The document failed to load.')}
-        loading={<div style={{ height: 640, borderRadius: 8, background: 'var(--bg-section)' }} />}
+        loading={
+          <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-muted" style={{ minHeight: 420 }} role="status">
+            <Loader2 className="size-9 animate-spin text-primary" />
+            <p className="text-sm font-semibold text-foreground">Opening “{title}”…</p>
+            {loadPercent !== null && (
+              <div className="h-1.5 w-56 overflow-hidden rounded-full bg-background">
+                <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${loadPercent}%` }} />
+              </div>
+            )}
+          </div>
+        }
       >
+        {/* Only the pages near the screen are drawn (LazyPdfPage) — big books open fast. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
           {Array.from({ length: numPages ?? 0 }, (_, i) => (
-            <div
-              key={i}
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: 8,
-                maxWidth: '100%',
-                overflow: 'auto',
-              }}
-            >
-              <Page pageNumber={i + 1} width={pageWidth} aria-label={`${title} page ${i + 1}`} />
-            </div>
+            <LazyPdfPage key={i} pageNumber={i + 1} width={pageWidth} ratio={ratio} label={title} />
           ))}
         </div>
       </Document>

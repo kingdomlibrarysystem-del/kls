@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BookHeart, MousePointerClick, Pause, Play } from 'lucide-react'
 import { useLanguage } from '@/contexts/language-context'
 import { localDateKey, type TodayVerse } from '@/lib/daily-wisdom-shared'
+import { WisdomReactionsBar } from './wisdom-reactions'
 
 const SHOW_MS = 10_000
 const HIDE_MS = 60 * 60 * 1000
@@ -187,6 +188,12 @@ export function DailyWisdom() {
           <span className="mt-3 block font-cinzel text-xs tracking-widest text-w-600 dark:text-amber-500/70">
             {ref}
           </span>
+          {/* Like / comment pauses the countdown so the pop-up stays open while the reader writes. */}
+          {verse && (
+            <div className="mt-4 border-t border-w-200 pt-3 dark:border-gray-700">
+              <WisdomReactionsBar verseId={verse.id} dateKey={dateKey} tone="light" onInteract={() => setPaused(true)} />
+            </div>
+          )}
 
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-w-100/70 dark:bg-gray-800/70">
             <div

@@ -242,5 +242,6 @@ export function ResourceFormModal({
         </div>
       </form>
     </Modal>
+    
   );
 }

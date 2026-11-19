@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useLanguage } from '@/contexts/language-context'
 import { localDateKey, type TodayVerse } from '@/lib/daily-wisdom-shared'
 import { cn } from '@/lib/utils'
+import { WisdomReactionsBar } from './wisdom-reactions'
 
 interface HeroSectionProps {
   /** Real totals from the database; a total of 0 is simply not shown. */
@@ -272,6 +273,12 @@ function VerseOfTheDay({ lang }: { lang: string }) {
               {t('hero.verse_read_more')} <ArrowRight className="size-3.5" />
             </Link>
           </figcaption>
+          {/* Today's likes and comments (they are deleted when the day ends). Not on the fallback verse. */}
+          {verse && (
+            <div className="mt-2 border-t border-white/10 pt-2">
+              <WisdomReactionsBar verseId={verse.id} dateKey={verse.date || dateKey} tone="dark" />
+            </div>
+          )}
         </>
       )}
     </figure>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { LinkPendingIcon } from '@/components/reader/link-pending-icon'
 import { ArrowLeft, Pencil, Archive, BookOpenCheck, BookX, Eye, FileClock, ShieldCheck } from 'lucide-react'
 import { ResourceMediaPlayer } from '@/components/media/resource-media-player'
 import { ReviewDraftModal } from '../../_components/review-draft-modal'
@@ -168,7 +169,7 @@ export function ResourceDetailView({ initialResource, canApprove, collections }:
             {isReadable && (
               <Link href={`/dashboard/library/read/${resource.id}`}>
                 <ElegantButton variant="outline" className="flex items-center gap-1.5 text-xs py-2">
-                  <BookOpenCheck size={13} /> Read
+                  <LinkPendingIcon icon={<BookOpenCheck size={13} />} size={13} /> Read
                 </ElegantButton>
               </Link>
             )}

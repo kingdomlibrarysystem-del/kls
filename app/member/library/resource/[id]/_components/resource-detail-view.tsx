@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { LinkPendingIcon } from '@/components/reader/link-pending-icon'
 import { ChevronLeft, Star, Heart, BookOpenCheck, ShoppingCart, Check, Package, BookX, Headphones, PlayCircle } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -132,7 +133,7 @@ export function ResourceDetailView({ resource, categoryName, initialReviews }: R
             )}
             {isReadable && (
               <Link href={`/member/library/read/${resource.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, background: 'var(--gold)', color: 'var(--primary-foreground)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-                <BookOpenCheck size={14} /> {resource.price > 0 ? 'Preview' : 'Read'}
+                <LinkPendingIcon icon={<BookOpenCheck size={14} />} /> {resource.price > 0 ? 'Preview' : 'Read'}
               </Link>
             )}
             {isAuthenticated ? (

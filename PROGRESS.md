@@ -8418,3 +8418,58 @@ canplay / seeking / seeked AND checks once a second that currentTime moved (some
 when the network drops). Audio: the rings and bars animate only when `playing && !loading`; while loading the
 big button shows a spinner and the label says "Loading…". Video: a spinner in the middle while loading.
 **Verified:** tsc + eslint clean (not tested with a real network drop here).
+
+## 2026-11-19 - Daily Wisdom: likes and comments that last one day
+
+**Rule (owner):** Daily Wisdom can be liked and commented on; everything belongs to that one day and is
+deleted at the end of it. The wisdom TEXT stays (the automatic rotation reuses it) — a new day starts fresh.
+
+**Schema:** `DailyWisdomLike` (unique verseId+dateKey+userId) and `DailyWisdomComment`, each with `expiresAt`.
+**Data** (`lib/data/daily-wisdom-reactions.ts`): `wisdomExpiry(dateKey)` = UTC midnight + 36 h (after midnight
+in every time zone; Rwanda + ~10 h margin); `purgeExpiredWisdomReactions()` deletes expired rows before every
+read/write (no cron needed); `isCurrentWisdomDay()` refuses other days.
+**API:** `GET /api/daily-wisdom/reactions?verseId&date` (public; liked/mine when signed in),
+`POST …/reactions/like` (toggle, signed in), `POST …/reactions/comments` (max 500 chars),
+`DELETE …/reactions/comments/[id]` (writer or staff). Wisdom must exist and be active.
+**UI:** `components/home/wisdom-reactions.tsx` — ❤ count + 💬 count; comments panel with box, list (own =
+delete), and the note "Likes and comments disappear at the end of the day". On the home "Wisdom of the day"
+card (dark) and in the header Daily Wisdom pop-up (light; interacting pauses its 10 s countdown). Guests see
+counts and a sign-in link. New keys `daily_wisdom.*` (en/fr/rw).
+
+**Needs:** `npx prisma generate` (dev server stopped) and `npx prisma db push` on the real database for the
+new collections + unique index. Test DB already pushed.
+**Verified:** tsc + eslint clean; `daily-wisdom-reactions.test.ts` 5/5 (like toggle, comments + permissions,
+other days refused, expired rows deleted, expiry time) + `daily-wisdom.test.ts` on kls_db_test.
+
+## 2026-11-19 - Book reader: scroll by default, ← → keys, much faster opening, loading states
+
+**Why it was slow:** (1) the document API downloaded the WHOLE PDF from Cloudinary into memory, then sent it,
+so pdf.js could not show page 1 before the full file arrived; free previews were rebuilt with pdf-lib on
+every visit; (2) scroll view drew EVERY page at once; (3) the PDF only started loading after the entitlement
+check finished; (4) nothing showed while the reader page was prepared; "Currently reading" used plain <a>
+links (full site reload).
+
+**Changes**
+- `lib/server/stream-document.ts` (new) streams the remote file and forwards `Range` (206 + Content-Range,
+  Accept-Ranges). Used by `/api/resources/[id]/document` (entitled readers) and
+  `/api/folder-books/[id]/document` (Life Sciences). Free previews are cached in memory (20 books).
+  `Cache-Control: private, max-age=300`.
+- `components/reader/lazy-pdf.tsx` (new): `PDF_OPTIONS` (disableAutoFetch, 256 KB range chunks),
+  `LazyPdfPage` (draws a page only within ~1500px of the screen, placeholder sized from the real page ratio,
+  reports the current page), `PdfPageSkeleton`, `useArrowKeys` (← → , ignored while typing).
+- `pdf-reader-view.tsx`: document loads immediately (entitlement in parallel, only for Download/paywall);
+  "Opening …" with a % bar; scroll uses LazyPdfPage + live "Page X of N"; single/spread pages show a sized
+  skeleton; ← → keys; annotation layer off (faster); after buying, the full book reloads (new URL).
+- `reader-view.tsx` (text books): ← → keys in single/spread. `book-pdf-reader.tsx` (Life Sciences): lazy pages
+  + loading %.
+- `use-pdf-view-mode.ts`: default **scroll**; rewritten with useSyncExternalStore (saved choice from first
+  paint, fixes the set-state-in-effect lint error).
+- Loading: `app/member/library/read/[resourceId]/loading.tsx` + `app/dashboard/library/read/[id]/loading.tsx`
+  (`components/reader/reader-loading.tsx` "Opening the book…"); `components/reader/link-pending-icon.tsx`
+  (useLinkStatus spinner) on Read links: member library card + list, member book page, Continue reading,
+  member dashboard Currently reading (now real <Link>s), admin book page. UniversalButton links (public
+  pages) already had this.
+
+**Verified:** tsc clean; eslint clean on changed files; `streamRemoteFile` with a real Cloudinary PDF:
+Range 0-1023 → 206, 1024 bytes, Content-Range of 1,340,317; full → 200 with Content-Length. The reader UI
+was not opened in a browser (local DB books are drafts; needs a signed-in account).

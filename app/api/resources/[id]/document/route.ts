@@ -6,6 +6,14 @@ import { roleNameToUserRole } from '@/lib/roles'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { isEntitled } from '@/app/api/chapters/route'
+import { streamRemoteFile } from '@/lib/server/stream-document'
+
+/**
+ * Built free previews, kept in memory (a few books) so a preview is not rebuilt
+ * with pdf-lib on every visit. Keyed by the file URL and the number of pages.
+ */
+const previewCache = new Map<string, Uint8Array>()
+const PREVIEW_CACHE_MAX = 20
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -39,21 +47,31 @@ export const GET = withErrorHandling('/api/resources/[id]/document', 'GET', asyn
   const memberEntitled = !forcePreview && userId ? await isEntitled(userId, resource.id) : false
   const entitled = resource.price <= 0 || isStaff || memberEntitled
 
-  const sourceRes = await fetch(resource.documentUrl)
-  if (!sourceRes.ok) throw new ApiError('Could not load this document', 502)
-  const sourceBytes = await sourceRes.arrayBuffer()
-
   if (entitled) {
-    return new NextResponse(sourceBytes, { headers: { 'Content-Type': 'application/pdf' } })
+    // Streamed with Range support: the reader shows page 1 without waiting for the whole book.
+    const streamed = await streamRemoteFile(resource.documentUrl, request, { contentType: 'application/pdf' })
+    if (!streamed) throw new ApiError('Could not load this document', 502)
+    return streamed
   }
 
   const previewPages = Math.max(0, resource.freePreviewChapterCount)
+  const cacheKey = `${resource.documentUrl}#${previewPages}`
+  const cached = previewCache.get(cacheKey)
+  if (cached) {
+    return new NextResponse(Buffer.from(cached), { headers: { 'Content-Type': 'application/pdf', 'Cache-Control': 'private, max-age=300' } })
+  }
+
+  const sourceRes = await fetch(resource.documentUrl)
+  if (!sourceRes.ok) throw new ApiError('Could not load this document', 502)
+  const sourceBytes = await sourceRes.arrayBuffer()
   const source = await PDFDocument.load(sourceBytes)
   const preview = await PDFDocument.create()
   const pageIndices = Array.from({ length: Math.min(previewPages, source.getPageCount()) }, (_, i) => i)
   const copied = await preview.copyPages(source, pageIndices)
   copied.forEach((page) => preview.addPage(page))
   const previewBytes = await preview.save()
+  if (previewCache.size >= PREVIEW_CACHE_MAX) previewCache.delete(previewCache.keys().next().value as string)
+  previewCache.set(cacheKey, previewBytes)
 
-  return new NextResponse(previewBytes, { headers: { 'Content-Type': 'application/pdf' } })
+  return new NextResponse(Buffer.from(previewBytes), { headers: { 'Content-Type': 'application/pdf', 'Cache-Control': 'private, max-age=300' } })
 })
