@@ -200,6 +200,67 @@ function useStalled(media: React.RefObject<HTMLMediaElement | null>, playing: bo
   return { loading: playing && stalled, events }
 }
 
+/** Plain-words reason for a media error (code from HTMLMediaElement.error). */
+function mediaErrorText(code: number | undefined, kind: 'recording' | 'video'): string {
+  if (code === 2) return `Internet problem — the ${kind} stopped loading. Check your connection and try again.`
+  if (code === 3) return `This ${kind} file seems damaged and could not be played.`
+  if (code === 4) return `This browser cannot play this ${kind} file. Try another browser, or use Download.`
+  return `The ${kind} could not be played. Try again, or use Download.`
+}
+
+/**
+ * Recovers from playback errors instead of giving up at once: the FIRST error
+ * reloads the file silently and continues from the same second (playing again
+ * if it was playing) — a short network cut on a big file is the usual cause.
+ * Only if that also fails is an error shown, in plain words with its code,
+ * plus a "Try again". Any successful playback clears it.
+ */
+function useMediaRecovery(media: React.RefObject<HTMLMediaElement | null>) {
+  const [error, setError] = useState<{ code?: number; message?: string } | null>(null)
+  const retried = useRef(false)
+  const reload = (resume: boolean) => {
+    const m = media.current
+    if (!m) return
+    const at = m.currentTime
+    m.load()
+    const restore = () => {
+      m.removeEventListener('loadedmetadata', restore)
+      if (at > 0) m.currentTime = at
+      if (resume) m.play().catch(() => {})
+    }
+    m.addEventListener('loadedmetadata', restore)
+  }
+  const onError = (wasPlaying: boolean) => {
+    const m = media.current
+    const err = m?.error ?? undefined
+    // MEDIA_ERR_ABORTED (1) is the browser stopping a load on purpose (e.g. a quick seek) — not a failure.
+    if (err?.code === 1) return
+    if (!retried.current) {
+      retried.current = true
+      reload(wasPlaying)
+      return
+    }
+    setError({ code: err?.code, message: err?.message })
+  }
+  const clear = () => { retried.current = false; setError(null) }
+  const tryAgain = () => { retried.current = false; setError(null); reload(true) }
+  return { error, onError, clear, tryAgain }
+}
+
+function MediaErrorNote({ error, kind, onRetry, className = '' }: { error: { code?: number; message?: string }; kind: 'recording' | 'video'; onRetry: () => void; className?: string }) {
+  return (
+    <div role="alert" className={`flex flex-wrap items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-xs text-red-200 ${className}`}>
+      <span className="min-w-0 flex-1">
+        {mediaErrorText(error.code, kind)}
+        {error.code ? <span className="ml-1 opacity-60">(code {error.code}{error.message ? `: ${error.message}` : ''})</span> : null}
+      </span>
+      <button type="button" onClick={onRetry} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white/15 px-3 font-semibold text-white transition hover:bg-white/25">
+        <RotateCw className="size-3.5" /> Try again
+      </button>
+    </div>
+  )
+}
+
 /** Shared round control button on the dark players. */
 const roundBtn = 'flex size-10 items-center justify-center rounded-full text-[#f6efe0]/85 transition hover:bg-white/10 hover:text-[#f6efe0]'
 
@@ -225,7 +286,7 @@ function AudioWithAnimation({ url, title }: { url: string; title: string }) {
   const [duration, setDuration] = useState(0)
   const [buffered, setBuffered] = useState(0)
   const [speed, setSpeed] = useState(1)
-  const [failed, setFailed] = useState(false)
+  const recovery = useMediaRecovery(audio)
   const { loading, events } = useStalled(audio, playing)
   /** Animate only when the sound is really moving forward. */
   const moving = playing && !loading
@@ -282,7 +343,7 @@ function AudioWithAnimation({ url, title }: { url: string; title: string }) {
         <button type="button" onClick={nextSpeed} aria-label={`Speed ${speed}×, change`} className="h-9 min-w-12 rounded-full border border-[#f6efe0]/25 px-3 text-xs font-bold transition hover:bg-white/10">{speed}×</button>
         <DownloadButton url={url} />
       </div>
-      {failed && <p className="mt-2 text-xs text-red-300">This recording could not be loaded. Try again later or use Download.</p>}
+      {recovery.error && <MediaErrorNote error={recovery.error} kind="recording" onRetry={recovery.tryAgain} className="mt-3" />}
 
       {/* The sound itself — no browser controls (and so no browser download menu). */}
       <audio
@@ -296,10 +357,11 @@ function AudioWithAnimation({ url, title }: { url: string; title: string }) {
         onTimeUpdate={(e) => { setCurrent(e.currentTarget.currentTime); setBuffered(bufferedEnd(e.currentTarget)) }}
         onProgress={(e) => setBuffered(bufferedEnd(e.currentTarget))}
         {...events}
-        onPlay={() => { setPlaying(true); setStarted(true); setFailed(false) }}
+        onPlay={() => { setPlaying(true); setStarted(true) }}
+        onPlaying={() => { events.onPlaying(); recovery.clear() }}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
-        onError={() => { setPlaying(false); setFailed(true) }}
+        onError={() => { recovery.onError(playing); setPlaying(false) }}
         className="hidden"
       />
     </div>
@@ -322,7 +384,7 @@ function VideoPlayer({ url, title }: { url: string; title: string }) {
   const [buffered, setBuffered] = useState(0)
   const [speed, setSpeed] = useState(1)
   const [showBar, setShowBar] = useState(true)
-  const [failed, setFailed] = useState(false)
+  const recovery = useMediaRecovery(video)
   const { loading, events } = useStalled(video, playing)
 
   useEffect(() => () => { if (hideTimer.current) clearTimeout(hideTimer.current) }, [])
@@ -371,10 +433,11 @@ function VideoPlayer({ url, title }: { url: string; title: string }) {
         onTimeUpdate={(e) => { setCurrent(e.currentTarget.currentTime); setBuffered(bufferedEnd(e.currentTarget)) }}
         onProgress={(e) => setBuffered(bufferedEnd(e.currentTarget))}
         {...events}
-        onPlay={() => { setPlaying(true); setFailed(false); wake() }}
+        onPlay={() => { setPlaying(true); wake() }}
+        onPlaying={() => { events.onPlaying(); recovery.clear() }}
         onPause={() => { setPlaying(false); setShowBar(true) }}
         onEnded={() => { setPlaying(false); setShowBar(true) }}
-        onError={() => { setPlaying(false); setFailed(true) }}
+        onError={() => { recovery.onError(playing); setPlaying(false) }}
         className="size-full cursor-pointer object-contain"
       />
 
@@ -390,7 +453,7 @@ function VideoPlayer({ url, title }: { url: string; title: string }) {
           <Play className="ml-1 size-7" fill="currentColor" />
         </button>
       )}
-      {failed && <p className="absolute inset-x-0 top-3 text-center text-xs text-red-300">This video could not be loaded. Try again later or use Download.</p>}
+      {recovery.error && <MediaErrorNote error={recovery.error} kind="video" onRetry={recovery.tryAgain} className="absolute inset-x-3 top-3" />}
 
       <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2 pt-10 text-[#f6efe0] transition-opacity duration-300 sm:px-4 ${showBar ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
         <ProgressLine current={current} duration={duration} buffered={buffered} onSeek={seekTo} />

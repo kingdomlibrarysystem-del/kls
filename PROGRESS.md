@@ -8473,3 +8473,17 @@ links (full site reload).
 **Verified:** tsc clean; eslint clean on changed files; `streamRemoteFile` with a real Cloudinary PDF:
 Range 0-1023 → 206, 1024 bytes, Content-Range of 1,340,317; full → 200 with Content-Length. The reader UI
 was not opened in a browser (local DB books are drafts; needs a signed-in account).
+
+## 2026-11-20 - Audio/video player: recover from load errors, say why it failed
+
+**Report:** "This recording could not be loaded" on VUMBURA IBINTU ISI IGUHISHA while Download works.
+**Checked:** the file is fine (Cloudinary audio/mpeg, 20 MB, Range 206, CORS *); no CSP on the site; the page
+passes the plain Cloudinary URL; a headless Chrome run of the player with this exact file loaded it fully
+(readyState 4, no error). So the failure is on the reader's side (network cut while streaming 20 MB, an ad
+blocker / extension blocking media, or an unsupported browser) — and the player used to give up on the FIRST
+error with one vague message.
+**Change** (`components/media/resource-media-player.tsx`): `useMediaRecovery` — first error → silent reload,
+continues from the same second (and plays if it was playing); code 1 (aborted) ignored; only a second failure
+shows `MediaErrorNote`: plain-words reason by error code (2 internet, 3 damaged file, 4 unsupported) + the
+code/message in small print + "Try again"; cleared as soon as playback runs. Same for uploaded video.
+**Verified:** tsc + eslint clean. Not reproducible here — the code shown in the note will tell the cause.
