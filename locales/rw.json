@@ -504,7 +504,15 @@
     "course_word": "course",
     "go_to_next_lesson": "Jya ku gihe gikurikira",
     "lessons_in": "Amasomo yo muri",
-    "cert_coming": "Icyemezo cyawe kiraza vuba"
+    "cert_coming": "Icyemezo cyawe kiraza vuba",
+    "lessons_done": "Amasomo {done} kuri {total} yarangiye",
+    "lesson_n_of": "Isomo rya {n} kuri {total}",
+    "previous_lesson": "Ibanziriza",
+    "show_lessons": "Amasomo",
+    "hide_lessons": "Hisha amasomo",
+    "my_courses": "Amasomo yanjye",
+    "exam_and_projects": "Ikizamini n’imishinga",
+    "final_exam": "Ikizamini cya nyuma"
   },
   "m_sessions": {
     "title": "Amasomo yanjye afunguye",

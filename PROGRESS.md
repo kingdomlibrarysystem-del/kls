@@ -8603,3 +8603,21 @@ enrolled, a progress bar + "Continue learning"). Teal removed: only navy #12304a
 (light/dark). Search + category chips restyled; pagination text translated; PAGE_SIZE 9 → 6.
 New `m_elearning.*` keys (en/fr/rw). Enroll/checkout logic unchanged.
 **Verified:** tsc + eslint clean; screenshots of a temporary preview (deleted) at 1440px and 390px.
+
+## 2026-11-21 - Lesson viewer: fixed lesson list, course-code numbering, easier navigation
+
+- New `lib/course-code.ts`: `courseCode(title)` (initials of the main words; quoted nicknames and small words
+  skipped; one word → first 3 letters; e.g. `SCIENCE OF SUCCESSFUL LIFE "SUCCESSOLOGY"` → `SSL`) and
+  `lessonCode(code, i)` → `SSL 01`. Derived from the title (no Course.code field yet).
+- `lesson-list-sidebar.tsx` rewritten: sticky on md+ (`top-0`, `max-h: 100vh - 60px topbar - 2rem`) with its own
+  scroll (`overscroll-contain`), so reading the lesson no longer scrolls the list; the current lesson is scrolled
+  into view inside the list only. Navy header with "My courses" back link, course code, title, progress bar and
+  "x of y lessons done". Lessons numbered `CODE 01…` (green when done, navy when current), type icon + minutes,
+  done/locked marks. "Exam & projects" section at the end (only when the course is open; done ticks from attempts).
+  On phones the list folds into a "Lessons (n)" button (closes after picking a lesson).
+- `lesson-viewer-view.tsx`: sidebar 300px; passes code, previous lesson, position, exam/projects list.
+- `lesson-content-pane.tsx`: header with the lesson code, "Lesson n of N", minutes, Completed tag; bigger navy
+  title; bottom bar Previous · Mark complete · Next (Next turns gold once the lesson is done).
+- New `m_courses.*` keys (en/fr/rw).
+**Verified:** tsc + eslint clean; screenshots of a temporary preview (deleted) inside a copy of the member
+layout's scroll container: list stays put while the lesson scrolls; phone view folds the list.

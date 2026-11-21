@@ -504,7 +504,15 @@
     "course_word": "cours",
     "go_to_next_lesson": "Aller à la leçon suivante",
     "lessons_in": "Leçons de",
-    "cert_coming": "Votre certificat sera bientôt prêt"
+    "cert_coming": "Votre certificat sera bientôt prêt",
+    "lessons_done": "{done} leçons terminées sur {total}",
+    "lesson_n_of": "Leçon {n} sur {total}",
+    "previous_lesson": "Précédent",
+    "show_lessons": "Leçons",
+    "hide_lessons": "Masquer les leçons",
+    "my_courses": "Mes cours",
+    "exam_and_projects": "Examen et projets",
+    "final_exam": "Examen final"
   },
   "m_sessions": {
     "title": "Mes classes ouvertes",

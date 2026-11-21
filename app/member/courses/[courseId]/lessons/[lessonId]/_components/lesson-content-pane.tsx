@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronRight, FileText, Lock, CreditCard } from 'lucide-react'
+import { BookOpen, CheckCircle2, AlertCircle, ClipboardList, ChevronLeft, ChevronRight, Clock, FileText, Lock, CreditCard } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { OpenClassPanel } from '../../../../../_shared/open-class-panel'
@@ -15,6 +15,12 @@ import { useLanguage } from '@/contexts/language-context'
 
 interface LessonContentPaneProps {
   lesson: Lesson
+  /** The lesson's number with the course code, e.g. "SSL 05". */
+  lessonLabel?: string
+  /** Where the lesson sits in the course (1-based). */
+  position?: { n: number; total: number }
+  /** The lesson before this one — a "Previous" link at the bottom. */
+  prevLesson?: { id: string; title: string }
   completed: boolean
   markError: string
   onMarkComplete: () => void
@@ -60,7 +66,7 @@ const TEACHING_VIDEO_ID = 'H14bBuluwB8'
  * paragraphs) only for a lesson created before the markdown editor
  * existed and never migrated.
  */
-export function LessonContentPane({ lesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId, quizAttempt, examAttempt, projects = [], completedCourse, locked = false, unlock = {}, courseOpen = true, onUnlock }: LessonContentPaneProps) {
+export function LessonContentPane({ lesson, lessonLabel, position, prevLesson, completed, markError, onMarkComplete, courseCompleteAssessmentTitle, courseCompleteAssessmentId, lessonAssessment, nextLesson, courseId, quizAttempt, examAttempt, projects = [], completedCourse, locked = false, unlock = {}, courseOpen = true, onUnlock }: LessonContentPaneProps) {
   const { t } = useLanguage()
   const [quizOpen, setQuizOpen] = useState(false)
   const [justTookQuiz, setJustTookQuiz] = useState(false)
@@ -79,10 +85,17 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
   }
   return (
     <div className="card">
-      <h1 className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
-        {lesson.title}
-      </h1>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{lesson.durationMinutes} {t("m_courses.min")}</p>
+      <div className="mb-5 border-b border-border pb-4">
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {lessonLabel && <span className="rounded-md bg-[#12304a] px-2 py-0.5 font-bold tracking-wide text-[#f6efe0] dark:bg-primary dark:text-[#0b2136]">{lessonLabel}</span>}
+          {position && <span>{t('m_courses.lesson_n_of').replace('{n}', String(position.n)).replace('{total}', String(position.total))}</span>}
+          {lesson.durationMinutes > 0 && <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {lesson.durationMinutes} {t("m_courses.min")}</span>}
+          {completed && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="size-3.5" /> {t("common.completed")}</span>}
+        </div>
+        <h1 className="cinzel text-xl font-bold leading-snug text-[#12304a] dark:text-[#f6efe0] sm:text-2xl">
+          {lesson.title}
+        </h1>
+      </div>
 
       {locked ? (
         <div className="mb-4 rounded-xl border border-primary/40 bg-primary/5 p-5 text-center">
@@ -174,7 +187,17 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-border pt-4">
+        {prevLesson && (
+          <Link
+            href={`/member/courses/${courseId}/lessons/${prevLesson.id}`}
+            className="btn btn-outline-dim btn-sm"
+            aria-label={`${t("m_courses.previous_lesson")}: ${prevLesson.title}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <ChevronLeft size={15} /> {t("m_courses.previous_lesson")}
+          </Link>
+        )}
         <button
           onClick={complete}
           disabled={completed}
@@ -187,7 +210,7 @@ export function LessonContentPane({ lesson, completed, markError, onMarkComplete
         {nextLesson && (
           <Link
             href={`/member/courses/${courseId}/lessons/${nextLesson.id}`}
-            className="btn btn-outline-dim btn-sm"
+            className={completed ? "btn btn-gold btn-sm" : "btn btn-outline-dim btn-sm"}
             aria-label={`${t("m_courses.go_to_next_lesson")}: ${nextLesson.title}`}
             style={{ marginLeft: 'auto', textDecoration: 'none' }}
           >

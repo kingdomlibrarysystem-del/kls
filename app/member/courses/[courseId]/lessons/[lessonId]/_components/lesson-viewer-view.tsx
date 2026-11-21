@@ -15,6 +15,7 @@ import { useAssessmentCatalog } from '../../../../../_shared/use-assessments'
 import { useAssessmentAttempts } from '../../../../../_shared/use-assessment-attempts'
 import { useCourses } from '../../../../../_shared/use-courses'
 import { useLanguage } from '@/contexts/language-context'
+import { courseCode, lessonCode } from '@/lib/course-code'
 
 interface LessonViewerViewProps {
   courseId: string
@@ -75,7 +76,7 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4">
         <Skeleton style={{ height: 200, borderRadius: 8 }} />
         <Skeleton style={{ height: 320, borderRadius: 8 }} />
       </div>
@@ -95,12 +96,24 @@ export function LessonViewerView({ courseId, lessonId }: LessonViewerViewProps) 
 
   const displayLessons = courseLessons.map((l) => ({ ...l, completed: completedIds.has(l.id) }))
   const nextLesson = lessonIndex >= 0 && lessonIndex < courseLessons.length - 1 ? courseLessons[lessonIndex + 1] : undefined
+  const prevLesson = lessonIndex > 0 ? courseLessons[lessonIndex - 1] : undefined
+  const code = courseCode(course.courseTitle)
+  // The exam and projects are listed under the lessons once the course is open (paid or free).
+  const sidebarAssessments = courseIsOpen(coursePrice, enrollment)
+    ? Object.values(assessmentCatalog)
+        .filter((a) => a.courseId === courseId && (a.kind === 'EXAM' || a.kind === 'PROJECT'))
+        .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'EXAM' ? 1 : -1))
+        .map((a) => ({ id: a.id, title: a.title, kind: a.kind as 'EXAM' | 'PROJECT', done: (attempts ?? []).some((x) => x.assessmentId === a.id) }))
+    : []
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 items-start">
-      <LessonListSidebar courseId={courseId} courseTitle={course.courseTitle} lessons={displayLessons} currentLessonId={lessonId} />
+    <div className="grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] gap-4 items-start">
+      <LessonListSidebar courseId={courseId} courseTitle={course.courseTitle} code={code} lessons={displayLessons} currentLessonId={lessonId} assessments={sidebarAssessments} />
       <LessonContentPane
         lesson={lesson}
+        lessonLabel={lessonCode(code, lessonIndex)}
+        position={{ n: lessonIndex + 1, total: courseLessons.length }}
+        prevLesson={prevLesson}
         completed={completedIds.has(lesson.id)}
         markError={markError}
         onMarkComplete={handleMarkComplete}
