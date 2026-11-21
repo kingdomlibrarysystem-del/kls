@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { BookOpen, ChevronRight } from "lucide-react";
-import { LinkPendingIcon } from '@/components/reader/link-pending-icon';
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useResources } from "@/app/dashboard/library/_components/use-resources";
 import { useReadingProgress, getReadingProgressPercent } from "@/app/member/_shared/use-reading-progress";
+import { LinkPendingIcon } from "@/components/reader/link-pending-icon";
+import { RemoteImage } from "@/components/ui/remote-image";
+import { DashboardCard, DashboardEmpty } from "./dashboard-card";
 
 /**
- * Dashboard-home widget for in-progress reading, mirroring
- * ELearningProgress.tsx's live-wired pattern — every title and
- * percentage here is real, derived from the same
+ * Dashboard-home "Currently Reading" widget: the books the member has
+ * started, with their cover and real progress, derived from the same
  * useReadingProgress()/useResources() stores the reader and
- * /member/library's own Continue Reading section already read.
+ * /member/library's Continue Reading section read. Each row opens the
+ * reader where the member left off.
  */
-export default function CurrentlyReading() {
+export default function CurrentlyReading({ className }: { className?: string }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { data: resources } = useResources();
@@ -27,43 +29,56 @@ export default function CurrentlyReading() {
     .filter((r): r is { entry: typeof progress[number]; resource: NonNullable<typeof r.resource> } => !!r.resource);
 
   return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <BookOpen size={18} color="var(--gold)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_reading.currently_reading")}</span>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>{rows.length} {rows.length === 1 ? t("m_reading.book") : t("m_reading.books")}</span>
-      </div>
+    <DashboardCard
+      className={className}
+      icon={<BookOpen className="size-5" />}
+      iconClass="bg-primary/15 text-[#a07830] dark:text-primary"
+      title={t("m_reading.currently_reading")}
+      meta={`${rows.length} ${rows.length === 1 ? t("m_reading.book") : t("m_reading.books")}`}
+      footerHref="/member/library"
+      footerLabel={t("m_reading.go_kingdom_library")}
+    >
       {rows.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          {t("m_reading.not_reading")}{" "}
-          <Link href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>{t("m_reading.browse_library")}</Link>
-        </div>
+        <DashboardEmpty icon={<BookOpen className="size-7" />} text={t("m_reading.not_reading")} href="/member/library" linkLabel={t("m_reading.browse_library")} />
       ) : (
-        rows.map(({ entry, resource }) => {
-          const percent = getReadingProgressPercent(entry);
-          return (
-            <Link
-              key={resource.id}
-              href={`/member/library/read/${resource.id}`}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border-light)", textDecoration: "none" }}
-            >
-              <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <LinkPendingIcon icon={<BookOpen size={16} color="var(--gold)" />} size={16} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{resource.title}</div>
-                <div style={{ width: "100%", height: 3, background: "var(--bg-section)", borderRadius: 2, overflow: "hidden", marginTop: 3 }}>
-                  <div style={{ width: `${percent}%`, height: "100%", background: "var(--gold)", borderRadius: 2 }} />
-                </div>
-              </div>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{percent}%</span>
-            </Link>
-          );
-        })
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {rows.slice(0, 4).map(({ entry, resource }) => {
+            const percent = getReadingProgressPercent(entry);
+            return (
+              <li key={resource.id}>
+                <Link
+                  href={`/member/library/read/${resource.id}`}
+                  className="group flex items-center gap-4 rounded-xl border border-border bg-background/60 p-3 transition hover:border-primary/50 hover:bg-muted/50"
+                >
+                  <span className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-[#1a3d5c] to-[#0b2136] shadow-md">
+                    <RemoteImage
+                      src={resource.coverImages[0]}
+                      alt=""
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                      fallback={<BookOpen className="absolute inset-0 m-auto size-5 text-primary" />}
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="line-clamp-2 text-sm font-semibold text-card-foreground">{resource.title}</span>
+                    {resource.author && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{resource.author}</span>}
+                    <span className="mt-2 flex items-center gap-2">
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span className="block h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+                      </span>
+                      <span className="text-xs font-semibold tabular-nums text-muted-foreground">{percent}%</span>
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary">
+                    <LinkPendingIcon icon={<ChevronRight className="size-4" />} size={16} />
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <Link href="/member/library" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
-        {t("m_reading.go_kingdom_library")} <ChevronRight size={14} />
-      </Link>
-    </div>
+    </DashboardCard>
   );
 }

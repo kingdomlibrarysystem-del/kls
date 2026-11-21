@@ -8,6 +8,9 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.libkin
 
 export const SITE_NAME = 'Kingdom Library'
 
+/** The phone number people can call us on directly (shown as it is written; `tel:` uses the digits). */
+export const SITE_PHONE = '+250 788 632 303'
+
 export const SITE_DESCRIPTION =
   'Kingdom Library — read books in the digital library, learn with free online courses and certificates, read our newsletter, and get help from our services: health, beauty, counseling and rehabilitation.'
 

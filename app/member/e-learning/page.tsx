@@ -1,18 +1,18 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
-import { PlayCircle, Clock, Star, Search, CheckCircle2, GraduationCap } from "lucide-react";
-import { RemoteImage } from "@/components/ui/remote-image";
+import { Search, GraduationCap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useCourses, type CatalogCourse } from "../_shared/use-courses";
-import { useEnrollments, enrollInCourse } from "../_shared/use-enrollments";
+import { useEnrollments, enrollInCourse, getProgressPercent } from "../_shared/use-enrollments";
 import { CourseCheckoutModal } from "../courses/_components/course-checkout-modal";
 import { getPublishedLessons, useLessonsByCourse } from "../_shared/use-lessons";
+import { useAssessmentCatalog } from "../_shared/use-assessments";
+import { CourseCard } from "./_components/course-card";
 
-/** Courses shown per page — keeps a large catalog from rendering unbounded. */
-const PAGE_SIZE = 9;
+/** Courses shown per page — each course is a full-width card, so fewer per page. */
+const PAGE_SIZE = 6;
 
 export default function ELearningPage() {
   const { t } = useLanguage();
@@ -26,8 +26,8 @@ export default function ELearningPage() {
   const { data: courseCatalog, loading: coursesLoading } = useCourses();
   const { data: enrollments, loading: enrollmentsLoading, refetch } = useEnrollments();
   const { data: lessonsByCourse } = useLessonsByCourse();
-  // Free lessons in a paid course: members can start them without paying (lib/course-access.ts).
-  const freeLessonCount = (courseId: string) => getPublishedLessons(lessonsByCourse[courseId]?.lessons).filter((l) => l.access === "FREE").length;
+  const { data: assessmentsById } = useAssessmentCatalog();
+  const assessments = Object.values(assessmentsById);
 
   const categories = ["All", ...Array.from(new Set(courseCatalog.map((c) => c.category))).sort()];
 
@@ -61,163 +61,105 @@ export default function ELearningPage() {
 
   if (coursesLoading || enrollmentsLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-label="Loading courses">
-        <Skeleton style={{ height: 40, borderRadius: 8 }} />
-        <Skeleton style={{ height: 220, borderRadius: 8 }} />
+      <div className="flex flex-col gap-4" aria-label="Loading courses">
+        <Skeleton className="h-16 rounded-2xl" />
+        <Skeleton className="h-11 rounded-full" />
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", fontFamily: "'Cinzel',serif" }}>
-          {t("m_elearning.title")}
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+      <header className="flex items-center gap-4">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#12304a] text-primary shadow">
+          <GraduationCap className="size-6" />
+        </span>
+        <div>
+          <h1 className="font-cinzel text-2xl font-bold text-[#12304a] dark:text-[#f6efe0]">{t("m_elearning.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("m_elearning.subtitle")}</p>
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-          {t("m_elearning.subtitle")}
-        </div>
-      </div>
+      </header>
 
       {enrollError && (
-        <div role="alert" style={{ background: "var(--red-dim)", color: "var(--red-light)", border: "1px solid var(--red)", borderRadius: 6, padding: "8px 12px", fontSize: 13 }}>
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
           {enrollError}
         </div>
       )}
 
-      {/* Search */}
-      <div style={{ position: "relative" }}>
-        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-        <input
-          placeholder={t("m_elearning.search_placeholder")}
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          aria-label={t("m_elearning.search_placeholder")}
-          style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-input, var(--bg-card))", color: "var(--text-primary)", fontSize: 15, outline: "none" }}
-        />
+      <div className="flex flex-col gap-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            placeholder={t("m_elearning.search_placeholder")}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            aria-label={t("m_elearning.search_placeholder")}
+            className="h-11 w-full rounded-full border border-border bg-card pl-11 pr-4 text-[15px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => { setActiveCat(cat); setPage(1); }}
+              aria-pressed={activeCat === cat}
+              className={`h-9 whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition ${
+                activeCat === cat
+                  ? "border-[#12304a] bg-[#12304a] text-[#f6efe0] dark:border-primary dark:bg-primary dark:text-[#0b2136]"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-foreground"
+              }`}
+            >
+              {cat === "All" ? t("m_elearning.category_all") : cat}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Categories */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => { setActiveCat(cat); setPage(1); }}
-            aria-pressed={activeCat === cat}
-            style={{
-              padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border)", cursor: "pointer",
-              fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-              background: activeCat === cat ? "var(--teal-light)" : "transparent",
-              color: activeCat === cat ? "#fff" : "var(--text-secondary)",
-              transition: "all 0.15s",
-            }}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Course grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" style={{ display: "grid", gap: 12 }}>
+      <div className="flex flex-col gap-5">
         {paged.map((course) => {
           // A course the member left (DROPPED) shows Enroll again — enrolling brings their progress back.
-          const enrolled = enrollments.some((e) => e.courseId === course.id && e.status !== 'DROPPED');
+          const enrollment = enrollments.find((e) => e.courseId === course.id && e.status !== "DROPPED");
           return (
-            <div key={course.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", transition: "transform 0.2s", cursor: "pointer" }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.12)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
-            >
-              {/* Header */}
-              <div style={{ height: 100, position: "relative", background: "linear-gradient(135deg, var(--teal-light-transparent, rgba(45,212,191,0.1)), var(--bg-section))", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {course.image ? (
-                  <RemoteImage
-                    src={course.image}
-                    alt={course.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                    style={{ objectFit: "cover" }}
-                    fallback={<GraduationCap size={32} color="var(--teal-light)" />}
-                  />
-                ) : (
-                  <GraduationCap size={32} color="var(--teal-light)" />
-                )}
-              </div>
-              {/* Body */}
-              <div style={{ padding: "10px 12px 12px" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>{course.title}</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>{course.instructor}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, color: "var(--teal-light)", background: "rgba(45,212,191,0.1)", padding: "1px 6px", borderRadius: 3 }}>{course.category}</span>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}><Clock size={12} />{course.duration}</span>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}><Star size={12} color="var(--gold)" />{course.rating}</span>
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4, marginBottom: 10, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                  {course.description}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <PlayCircle size={16} color="var(--teal-light)" />
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{course.lessons} {t("m_elearning.lessons")}</span>
-                  {enrolled ? (
-                    <Link
-                      href={`/member/courses/${course.id}`}
-                      aria-label={`${t("m_elearning.view_course")} ${course.title}`}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
-                        background: "var(--teal-light)", color: "var(--primary-foreground)", fontSize: 12, fontWeight: 600, textDecoration: "none",
-                      }}
-                    >
-                      <CheckCircle2 size={13} /> {t("m_elearning.view_course")}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleEnroll(course)}
-                      disabled={enrolling === course.id}
-                      aria-label={course.price > 0 ? `Pay to enroll in ${course.title}` : `Enroll in ${course.title}`}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, border: "none",
-                        background: "var(--teal-light)", color: "var(--primary-foreground)",
-                        fontSize: 12, fontWeight: 600, cursor: "pointer",
-                        opacity: enrolling === course.id ? 0.7 : 1,
-                      }}
-                    >
-                      {enrolling === course.id ? t("m_elearning.enrolling") : course.price > 0 ? `Pay ${course.price.toLocaleString()} RWF` : t("m_elearning.enroll_free")}
-                    </button>
-                  )}
-                </div>
-                {!enrolled && course.price > 0 && freeLessonCount(course.id) > 0 && (
-                  // Opening the course enrolls the member for free; paid lessons stay locked until paid.
-                  <Link href={`/member/courses/${course.id}`} style={{ display: "block", marginTop: 8, fontSize: 12, fontWeight: 600, color: "var(--gold)", textAlign: "right" }}>
-                    {t("m_pay.start_free")} · {t("m_pay.free_lessons").replace("{n}", String(freeLessonCount(course.id)))} →
-                  </Link>
-                )}
-              </div>
-            </div>
+            <CourseCard
+              key={course.id}
+              course={course}
+              lessons={getPublishedLessons(lessonsByCourse[course.id]?.lessons)}
+              assessments={assessments.filter((a) => a.courseId === course.id)}
+              enrolled={!!enrollment}
+              progress={enrollment ? getProgressPercent(enrollment) : 0}
+              enrolling={enrolling === course.id}
+              onEnroll={() => handleEnroll(course)}
+            />
           );
         })}
       </div>
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>
+        <p className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
           {t("m_elearning.no_courses_match")}
-        </div>
+        </p>
       )}
 
       {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.4 : 1 }}
+            className="h-9 rounded-full border border-border px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Previous
+            {t("m_elearning.prev")}
           </button>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Page {currentPage} of {totalPages}</span>
+          <span className="text-sm text-muted-foreground">
+            {t("m_elearning.page_of").replace("{p}", String(currentPage)).replace("{t}", String(totalPages))}
+          </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.4 : 1 }}
+            className="h-9 rounded-full border border-border px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Next
+            {t("m_elearning.next")}
           </button>
         </div>
       )}

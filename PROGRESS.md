@@ -8557,3 +8557,49 @@ for books (Library card → /library). Daily Wisdom unchanged: tap → turns ove
 
 `components/home/hero-rooms.tsx`: removed the "Open the book" label on the front book card and the gold "Open the book" link under the stack (owner: the reading button belongs on the single-book page). Tapping the front book still opens `/library/[id]` (screen readers still hear "Open the book: <title>"). Under the stack only the Daily Wisdom button remains (row keeps its height so nothing jumps). Unused imports removed.
 **Verified:** tsc + eslint clean.
+
+## 2026-11-21 - Member dashboard redesign; "Member Portal" links home
+
+`/member` (`app/member/page.tsx` + `app/member/_components/*`) rebuilt with Tailwind theme tokens (light + dark),
+same fonts, same data hooks (no logic changes to what is counted):
+- New `dashboard-card.tsx` (`DashboardCard` frame + `DashboardEmpty` empty state) shared by every widget.
+- `MemberWelcome`: navy banner (same navy/gold as the home hero), today's date, initials badge (hidden on phones),
+  Next `Link`s; removed the stray "sdssaa" text after "My Profile".
+- `DashboardStats`: 5 linked tiles (2 cols phone / 3 tablet / 5 desktop) with progress bars for %; the fake
+  "Payments: Premium" tile is gone (no real data behind it).
+- `CurrentlyReading`: book covers + author + progress, 2-col on wide screens, opens the reader.
+- `ELearningProgress`: overall progress ring + per-course bars linking to `/member/courses/[id]` (replaces the chart).
+- `BorrowedBooks` / `FavoriteBooks`: status pills, link to each borrowing / book (`/library/[id]`) or course.
+  New key `m_fav_widget.view_all` (en/fr/rw).
+- `QuickActions`: Favorites now → `/member/favorites`; the duplicate "Search Resources" (→ library) replaced by
+  Certificates → `/member/certificates`.
+- Layout: Reading (2/3) + Learning (1/3); then Borrowed, Favorites, Quick Actions. One column on phones.
+`components/app-shell/app-topbar.tsx`: the portal name is now a `Link href="/"` (all portals using the top bar).
+Fixed React "getServerSnapshot should be cached" warning: `use-favorites`, `use-highlights`, `use-notes`,
+`use-reading-progress` now return one shared empty list for the server snapshot.
+**Verified:** tsc + eslint clean on touched files; screenshots of a temporary preview (deleted) at 1440px light,
+1440px dark and 390px phone; no browser warnings after the snapshot fix.
+
+## 2026-11-21 - Home trending books: no Read button
+
+`components/home/trending-books.tsx`: removed the gold "Read" button under each book card on the home page (owner request). The cover still opens `/library/[id]`, where the Read button lives. Unused imports removed. Title and views now share one row (centred, gap-3, px-2; long titles truncate with the full title on hover).
+**Verified:** tsc + eslint clean.
+
+## 2026-11-21 - Get this service: phone placeholder + call-us number
+
+`components/services/request-service-dialog.tsx`: the phone field placeholder is now just "078 ....."; when "Phone call" is chosen, a box shows "Need to talk now? Call us directly: +250 788 632 303" as a tap-to-call `tel:` link. The number lives once in `lib/site.ts` (`SITE_PHONE`). New key `services.call_us_now` (en/fr/rw).
+**Verified:** tsc + eslint clean.
+
+## 2026-11-21 - Member e-learning catalog: professional full-width course cards
+
+`/member/e-learning` (`app/member/e-learning/page.tsx` + new `_components/course-card.tsx`): each course is now a
+full-width card (one per row; stacks on phones). Left: cover (21:9) with category + price/Free badges, title
+(Cinzel, navy), lecturer (hidden when "Unassigned"), real meta (lessons, total minutes from lessons, learners,
+rating only if > 0), description. Right: "Course content" (first 5 published lessons, numbered, type icon,
+minutes, Free badge for free lessons in paid courses, "+ N more"), "This course includes" (lessons, total time,
+video/reading/file counts, quizzes, final exam, project — from the real assessments via `useAssessmentCatalog`,
+plus certificate on completion), then the CTA (Enroll for Free / Enroll — N RWF / Start the free lessons; when
+enrolled, a progress bar + "Continue learning"). Teal removed: only navy #12304a + gold primary + theme tokens
+(light/dark). Search + category chips restyled; pagination text translated; PAGE_SIZE 9 → 6.
+New `m_elearning.*` keys (en/fr/rw). Enroll/checkout logic unchanged.
+**Verified:** tsc + eslint clean; screenshots of a temporary preview (deleted) at 1440px and 390px.

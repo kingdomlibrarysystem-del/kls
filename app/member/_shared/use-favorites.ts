@@ -21,6 +21,8 @@ let favorites: FavoriteItem[] = []
 let currentUserId: string | null = null
 let loadedForUserId: string | null = null
 const listeners = new Set<() => void>()
+/** One shared empty list, so the server snapshot is the same object every render. */
+const NO_FAVORITES: FavoriteItem[] = []
 
 function emitChange() {
   listeners.forEach((listener) => listener())
@@ -97,5 +99,5 @@ export function useFavorites(userId?: string) {
     }
   }, [userId])
 
-  return useSyncExternalStore(subscribe, getSnapshot, () => (resolvedUserId ? favorites : []))
+  return useSyncExternalStore(subscribe, getSnapshot, () => (resolvedUserId ? favorites : NO_FAVORITES))
 }

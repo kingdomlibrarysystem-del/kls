@@ -176,5 +176,11 @@ export function useReadingProgress(userId?: string) {
     if (loadedForUserId !== userId) loadProgress(userId)
   }, [userId])
 
-  return useSyncExternalStore(subscribe, getProgressSnapshot, () => [])
+  return useSyncExternalStore(subscribe, getProgressSnapshot, getEmptySnapshot)
+}
+
+/** One shared empty list, so the server snapshot is the same object every render. */
+const EMPTY_SNAPSHOT: never[] = []
+function getEmptySnapshot() {
+  return EMPTY_SNAPSHOT
 }

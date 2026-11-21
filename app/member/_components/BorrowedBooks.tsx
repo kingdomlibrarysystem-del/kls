@@ -1,52 +1,54 @@
 "use client";
 
-import { BookOpen, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { BookMarked, CalendarClock } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 import { useBorrowings } from "@/app/member/_shared/use-borrowings";
+import { DashboardCard, DashboardEmpty } from "./dashboard-card";
 
-/** Dashboard-home widget for active borrowings, reading from the real /api/borrowings-backed hook — mirrors CurrentlyReading.tsx's live-wired pattern. */
-export default function BorrowedBooks() {
+/** Dashboard-home widget for active borrowings, reading from the real /api/borrowings-backed hook. */
+export default function BorrowedBooks({ className }: { className?: string }) {
   const { data: borrowings } = useBorrowings();
   const { t } = useLanguage();
   const active = borrowings.filter((b) => b.status === "active" || b.status === "overdue" || b.status === "pending");
 
   return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <BookOpen size={18} color="var(--gold)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_borrowed.currently_borrowed")}</span>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>{active.length} {t("m_borrowed.items")}</span>
-      </div>
+    <DashboardCard
+      className={className}
+      icon={<BookMarked className="size-5" />}
+      iconClass="bg-amber-500/15 text-amber-700 dark:text-amber-400"
+      title={t("m_borrowed.currently_borrowed")}
+      meta={`${active.length} ${t("m_borrowed.items")}`}
+      footerHref="/member/borrowings"
+      footerLabel={t("m_borrowed.view_all")}
+    >
       {active.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          {t("m_borrowed.no_books")}{" "}
-          <a href="/member/library" style={{ color: "var(--gold)", textDecoration: "underline" }}>{t("m_borrowed.browse_library")}</a>
-        </div>
+        <DashboardEmpty icon={<BookMarked className="size-7" />} text={t("m_borrowed.no_books")} href="/member/library" linkLabel={t("m_borrowed.browse_library")} />
       ) : (
-        active.map((b) => {
-          const isOverdue = b.status === "overdue";
-          return (
-            <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ width: 36, height: 36, background: "var(--bg-section)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <BookOpen size={16} color="var(--gold)" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{b.resourceTitle}</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{b.resourceType}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: isOverdue ? "var(--red-light)" : "var(--green-light)", fontWeight: 600 }}>
-                  {b.status === "pending" ? t("common.pending") : isOverdue ? t("common.overdue") : t("common.active")}
-                </div>
-                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t("m_borrowed.due")} {b.dueDate}</div>
-              </div>
-            </div>
-          );
-        })
+        <ul className="flex flex-col divide-y divide-border">
+          {active.slice(0, 4).map((b) => {
+            const status =
+              b.status === "pending"
+                ? { label: t("common.pending"), cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" }
+                : b.status === "overdue"
+                  ? { label: t("common.overdue"), cls: "bg-rose-500/15 text-rose-600 dark:text-rose-400" }
+                  : { label: t("common.active"), cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" };
+            return (
+              <li key={b.id}>
+                <Link href={`/member/borrowings/${b.id}`} className="flex items-center gap-3 py-3 first:pt-0">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-card-foreground hover:text-[#12304a] dark:hover:text-primary">{b.resourceTitle}</span>
+                    <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                      <CalendarClock className="size-3.5" /> {t("m_borrowed.due")} {b.dueDate}
+                    </span>
+                  </span>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.cls}`}>{status.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <a href="/member/borrowings" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
-        {t("m_borrowed.view_all")} <ChevronRight size={14} />
-      </a>
-    </div>
+    </DashboardCard>
   );
 }

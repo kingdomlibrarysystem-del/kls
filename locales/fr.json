@@ -379,7 +379,8 @@
   "m_fav_widget": {
     "title": "Livres favoris",
     "no_favorites": "Pas encore de favoris. Commencez à ajouter vos livres préférés !",
-    "browse_library": "Parcourir la bibliothèque"
+    "browse_library": "Parcourir la bibliothèque",
+    "view_all": "Voir tous les favoris"
   },
   "m_ewidget": {
     "title": "Progression e-learning",
@@ -706,7 +707,31 @@
     "enroll_free": "S'inscrire gratuitement",
     "enrolling": "Inscription…",
     "no_courses_match": "Aucun cours ne correspond à votre recherche.",
-    "lessons": "cours"
+    "lessons": "cours",
+    "course_content": "Contenu du cours",
+    "more_lessons": "+ {n} autres leçons",
+    "includes": "Ce cours comprend",
+    "n_lessons": "{n} leçons",
+    "total_time": "{t} d’apprentissage",
+    "n_videos": "{n} leçons vidéo",
+    "n_readings": "{n} leçons à lire",
+    "n_files": "{n} fichiers à télécharger",
+    "n_quizzes": "{n} quiz",
+    "one_quiz": "1 quiz",
+    "final_exam": "Examen final",
+    "project": "Projet pratique",
+    "certificate": "Certificat à la fin du cours",
+    "learners": "{n} apprenants",
+    "free": "Gratuit",
+    "free_lesson": "Gratuit",
+    "by": "Par",
+    "enroll_pay": "S’inscrire — {price} RWF",
+    "continue": "Continuer",
+    "progress": "{n}% terminé",
+    "no_lessons_yet": "Les leçons sont en préparation.",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "page_of": "Page {p} sur {t}"
   },
   "m_assessments": {
     "title": "Évaluations",
@@ -858,6 +883,7 @@
     "preferred_time": "Date et heure souhaitées",
     "optional": "facultatif",
     "phone": "Numéro à appeler",
+    "call_us_now": "Besoin de parler maintenant ? Appelez-nous directement :",
     "note": "De quoi avez-vous besoin ?",
     "note_ph": "Décrivez brièvement votre situation ou votre question.",
     "send_request": "Envoyer la demande",

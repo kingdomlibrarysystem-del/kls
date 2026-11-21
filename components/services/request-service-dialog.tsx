@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AlertCircle, CheckCircle2, Loader2, LogIn } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, LogIn, PhoneCall } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useLanguage } from '@/contexts/language-context'
+import { SITE_PHONE } from '@/lib/site'
 import { SERVICE_CHANNEL_CODES, type ServiceChannelCode, type ServiceOfferingItem } from '@/lib/services/shared'
 import { ChannelIcon } from './channel-icon'
 
@@ -113,6 +114,14 @@ export function RequestServiceDialog({ open, onClose, program, offerings, signed
             </fieldset>
           )}
 
+          {/* For a phone call right now, they can call us directly. */}
+          {active === 'CALL' && (
+            <a href={`tel:${SITE_PHONE.replace(/s/g, '')}`} className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm transition-colors hover:bg-primary/10">
+              <PhoneCall className="size-4 shrink-0 text-primary" aria-hidden />
+              <span className="text-muted-foreground">{t('services.call_us_now')} <span className="whitespace-nowrap font-semibold text-foreground">{SITE_PHONE}</span></span>
+            </a>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="rq-when">{t('services.preferred_time')} <span className="font-normal text-muted-foreground">({t('services.optional')})</span></Label>
@@ -121,7 +130,7 @@ export function RequestServiceDialog({ open, onClose, program, offerings, signed
             {active === 'CALL' && (
               <div className="space-y-1.5">
                 <Label htmlFor="rq-phone">{t('services.phone')}</Label>
-                <Input id="rq-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="078 123 4567" maxLength={20} />
+                <Input id="rq-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="078 ....." maxLength={20} />
               </div>
             )}
           </div>

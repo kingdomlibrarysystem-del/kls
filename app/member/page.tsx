@@ -8,18 +8,22 @@ import QuickActions from "@/app/member/_components/QuickActions";
 
 export default function MemberDashboardPage() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <MemberWelcome />
 
       <DashboardStats />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+      {/* Reading takes the wide column; learning sits beside it. One column on phones. */}
+      <div className="grid gap-5 lg:grid-cols-3">
+        <CurrentlyReading className="lg:col-span-2" />
+        <ELearningProgress />
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         <BorrowedBooks />
         <FavoriteBooks />
-        <ELearningProgress />
-        <CurrentlyReading />
+        <QuickActions className="md:col-span-2 xl:col-span-1" />
       </div>
-      <QuickActions />
     </div>
   );
 }

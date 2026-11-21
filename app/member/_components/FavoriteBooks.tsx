@@ -1,42 +1,53 @@
 "use client";
 
-import { Heart, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { Heart, GraduationCap, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useFavorites } from "@/app/member/_shared/use-favorites";
+import { DashboardCard, DashboardEmpty } from "./dashboard-card";
 
 /** Dashboard-home widget for favorited items, reading from the shared favorites store — the same one the library page's heart toggle and the Favorites page's Remove action write to. */
-export default function FavoriteBooks() {
+export default function FavoriteBooks({ className }: { className?: string }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const favorites = useFavorites(user?.id);
 
   return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <Heart size={18} color="var(--red-light)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("m_fav_widget.title")}</span>
-      </div>
+    <DashboardCard
+      className={className}
+      icon={<Heart className="size-5" />}
+      iconClass="bg-rose-500/12 text-rose-600 dark:text-rose-400"
+      title={t("m_fav_widget.title")}
+      meta={favorites.length || undefined}
+      footerHref={favorites.length ? "/member/favorites" : "/member/library"}
+      footerLabel={favorites.length ? t("m_fav_widget.view_all") : t("m_fav_widget.browse_library")}
+    >
       {favorites.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          {t("m_fav_widget.no_favorites")}
-        </div>
+        <DashboardEmpty icon={<Heart className="size-7" />} text={t("m_fav_widget.no_favorites")} />
       ) : (
-        favorites.map((f) => (
-          <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--border-light)" }}>
-            <div style={{ width: 32, height: 32, background: "rgba(239,68,68,0.1)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Heart size={14} color="var(--red-light)" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{f.title}</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{f.subtitle}</div>
-            </div>
-          </div>
-        ))
+        <ul className="flex flex-col divide-y divide-border">
+          {favorites.slice(0, 4).map((f) => {
+            const Icon = f.type === "COURSE" ? GraduationCap : BookOpen;
+            return (
+              <li key={f.id}>
+                <Link
+                  href={f.type === "COURSE" ? `/member/courses/${f.id}` : `/library/${f.id}`}
+                  className="group flex items-center gap-3 py-3 first:pt-0"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:text-rose-500">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-card-foreground group-hover:text-[#12304a] dark:group-hover:text-primary">{f.title}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{f.subtitle}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <a href="/member/library" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, color: "var(--gold)", textDecoration: "none" }}>
-        {t("m_fav_widget.browse_library")} <ChevronRight size={14} />
-      </a>
-    </div>
+    </DashboardCard>
   );
 }

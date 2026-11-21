@@ -58,12 +58,14 @@ export function AppTopbar({ showCart = false, menu }: AppTopbarProps) {
       }}
     >
       {menu}
-      <span
-        className="cinzel hidden sm:inline"
-        style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1 }}
+      {/* The portal name doubles as a way back to the public home page. */}
+      <Link
+        href="/"
+        className="cinzel hidden transition-opacity hover:opacity-80 sm:inline"
+        style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold)', letterSpacing: 1, textDecoration: 'none' }}
       >
         {t('member.portal')}
-      </span>
+      </Link>
 
       <div className="flex items-center" style={{ gap: 16, marginLeft: 'auto' }}>
         <LanguageSwitcher minimal />

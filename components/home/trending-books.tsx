@@ -3,9 +3,7 @@
 import Link from 'next/link'
 import { BookOpen, Eye, ArrowRight } from 'lucide-react'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { buttonVariants } from '@/components/ui/button'
 import { useLanguage } from '@/contexts/language-context'
-import { cn } from '@/lib/utils'
 import type { TrendingBook } from '@/lib/data/home'
 
 /**
@@ -65,23 +63,18 @@ export function TrendingBooks({ books }: { books: TrendingBook[] }) {
                 )}
               </Link>
 
-              <h3 className="mt-3 line-clamp-2 min-h-10 font-lato text-sm font-semibold leading-5 text-w-950 dark:text-gray-100" title={book.title}>
-                {book.title}
-              </h3>
-
-              <p className="mt-1 flex items-center gap-1.5 font-lato text-xs text-w-700 dark:text-gray-400">
-                <Eye size={13} className="text-w-600 dark:text-amber-500/70" />
-                <span suppressHydrationWarning>
-                  {book.views.toLocaleString()} {book.views === 1 ? t('common.view_singular') : t('common.views')}
-                </span>
-              </p>
-
-              <Link
-                href={`/library/${book.id}`}
-                className={cn(buttonVariants({ variant: 'default' }), 'mt-3 h-9 w-full gap-2 font-lato font-bold')}
-              >
-                <BookOpen /> {t('common.read')}
-              </Link>
+              {/* Title and views side by side, centred with padding so they never touch the card edges. */}
+              <div className="mt-3 flex items-center justify-center gap-3 px-2">
+                <h3 className="min-w-0 truncate font-lato text-sm font-semibold leading-5 text-w-950 dark:text-gray-100" title={book.title}>
+                  {book.title}
+                </h3>
+                <p className="flex shrink-0 items-center gap-1 font-lato text-xs text-w-700 dark:text-gray-400">
+                  <Eye size={13} className="text-w-600 dark:text-amber-500/70" />
+                  <span suppressHydrationWarning>
+                    {book.views.toLocaleString()} {book.views === 1 ? t('common.view_singular') : t('common.views')}
+                  </span>
+                </p>
+              </div>
             </li>
           ))}
         </ul>

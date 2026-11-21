@@ -109,5 +109,11 @@ export function useNotes(userId?: string) {
     if (loadedForUserId !== userId) loadNotes(userId)
   }, [userId])
 
-  return useSyncExternalStore(subscribe, getSnapshot, () => [])
+  return useSyncExternalStore(subscribe, getSnapshot, getEmptySnapshot)
+}
+
+/** One shared empty list, so the server snapshot is the same object every render. */
+const EMPTY_SNAPSHOT: never[] = []
+function getEmptySnapshot() {
+  return EMPTY_SNAPSHOT
 }

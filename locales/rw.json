@@ -379,7 +379,8 @@
   "m_fav_widget": {
     "title": "Ibitabo ukunze",
     "no_favorites": "Nta byo nakunze unyuze. Tangira wongereho ibitabo ukunda!",
-    "browse_library": "Shakisha isomero"
+    "browse_library": "Shakisha isomero",
+    "view_all": "Reba ibyo ukunda byose"
   },
   "m_ewidget": {
     "title": "Imiterere y'E-Learning",
@@ -706,7 +707,31 @@
     "enroll_free": "Iyandikishe biciye mu buntu",
     "enrolling": "Yiyandikisha…",
     "no_courses_match": "Nta masomo ahuza n'icyo ushaka.",
-    "lessons": "amasomo"
+    "lessons": "amasomo",
+    "course_content": "Ibikubiye mu isomo",
+    "more_lessons": "+ andi masomo {n}",
+    "includes": "Iri somo ririmo",
+    "n_lessons": "Amasomo {n}",
+    "total_time": "{t} zo kwiga",
+    "n_videos": "Amasomo {n} ya videwo",
+    "n_readings": "Amasomo {n} yo gusoma",
+    "n_files": "Inyandiko {n} zo kumanura",
+    "n_quizzes": "Utubazo {n}",
+    "one_quiz": "Akabazo 1",
+    "final_exam": "Ikizamini cya nyuma",
+    "project": "Umushinga ngiro",
+    "certificate": "Impamyabumenyi urangije",
+    "learners": "Abiga {n}",
+    "free": "Ubuntu",
+    "free_lesson": "Ubuntu",
+    "by": "Na",
+    "enroll_pay": "Iyandikishe — {price} RWF",
+    "continue": "Komeza kwiga",
+    "progress": "{n}% birarangiye",
+    "no_lessons_yet": "Amasomo ari gutegurwa.",
+    "prev": "Ibanziriza",
+    "next": "Ikurikira",
+    "page_of": "Urupapuro {p} kuri {t}"
   },
   "m_assessments": {
     "title": "Ibizamini",
@@ -858,6 +883,7 @@
     "preferred_time": "Itariki n'isaha wifuza",
     "optional": "si ngombwa",
     "phone": "Nimero tuguhamagaraho",
+    "call_us_now": "Ukeneye kuvugana natwe ubu? Duhamagare kuri:",
     "note": "Ukeneye iki?",
     "note_ph": "Tubwire muri make ikibazo cyawe cyangwa icyo wifuza.",
     "send_request": "Ohereza ubusabe",

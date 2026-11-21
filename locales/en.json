@@ -378,7 +378,8 @@
   "m_fav_widget": {
     "title": "Favorite Books",
     "no_favorites": "No favorites yet. Start adding books you love!",
-    "browse_library": "Browse library"
+    "browse_library": "Browse library",
+    "view_all": "View all favorites"
   },
   "m_ewidget": {
     "title": "E-Learning Progress",
@@ -705,7 +706,31 @@
     "enroll_free": "Enroll for Free",
     "enrolling": "Enrolling…",
     "no_courses_match": "No courses match your search.",
-    "lessons": "lessons"
+    "lessons": "lessons",
+    "course_content": "Course content",
+    "more_lessons": "+ {n} more lessons",
+    "includes": "This course includes",
+    "n_lessons": "{n} lessons",
+    "total_time": "{t} of learning",
+    "n_videos": "{n} video lessons",
+    "n_readings": "{n} reading lessons",
+    "n_files": "{n} downloadable files",
+    "n_quizzes": "{n} quizzes",
+    "one_quiz": "1 quiz",
+    "final_exam": "Final exam",
+    "project": "Practical project",
+    "certificate": "Certificate when you finish",
+    "learners": "{n} learners",
+    "free": "Free",
+    "free_lesson": "Free",
+    "by": "By",
+    "enroll_pay": "Enroll — {price} RWF",
+    "continue": "Continue learning",
+    "progress": "{n}% done",
+    "no_lessons_yet": "Lessons are being prepared.",
+    "prev": "Previous",
+    "next": "Next",
+    "page_of": "Page {p} of {t}"
   },
   "m_assessments": {
     "title": "Assessments",
@@ -857,6 +882,7 @@
     "preferred_time": "Preferred date & time",
     "optional": "optional",
     "phone": "Phone number to call",
+    "call_us_now": "Need to talk now? Call us directly:",
     "note": "What do you need?",
     "note_ph": "Tell us briefly about your situation or question.",
     "send_request": "Send request",
