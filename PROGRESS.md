@@ -8487,3 +8487,73 @@ continues from the same second (and plays if it was playing); code 1 (aborted) i
 shows `MediaErrorNote`: plain-words reason by error code (2 internet, 3 damaged file, 4 unsupported) + the
 code/message in small print + "Try again"; cleared as soon as playback runs. Same for uploaded video.
 **Verified:** tsc + eslint clean. Not reproducible here — the code shown in the note will tell the cause.
+
+## 2026-11-20 - Emails not received (Gmail rejects the App Password); email on Daily Wisdom comments
+
+**Cause of "no emails":** Gmail SMTP refuses the account's App Password — `535 5.7.8 Username and Password not
+accepted` (tested with and without spaces). `.env` already holds exactly those credentials, so every
+`sendMail` fails at login (notifyUser logs "Failed to send notification email" and continues). Google cancels App
+Passwords when the account password changes or 2-Step Verification is reset. **Owner action:** create a new App
+Password for kingdomlibrarysystem@gmail.com and put it in GOOGLE_PASSWORD in `.env` AND in Vercel → Settings →
+Environment Variables, then redeploy. No code change needed for sending itself.
+
+**New: email on a Daily Wisdom comment** — `notifyWisdomComment()` (`lib/data/daily-wisdom-reactions.ts`): in-app
+notification + email to the wisdom's writer (createdById) and every Admin, never the commenter; category
+`daily-wisdom-comment` (switchable per user). Email template `wisdomCommentEmailHtml` (`lib/email-templates.ts`)
+escapes the member's text (no HTML/links injected). The comments API runs it with `after()` (kept alive on
+Vercel after the reply; direct call outside a request).
+**Verified:** tsc + eslint clean; `daily-wisdom-reactions.test.ts` 6/6 (+ new test with mailer mocked: admin gets
+notification + escaped email, commenter does not) and `daily-wisdom.test.ts` on kls_db_test. No test email sent:
+blocked by the rejected password.
+
+## 2026-11-20 - New Gmail App Password; hero: book turntable + Daily Wisdom scroll
+
+**Email:** new App Password set in local `.env` (GOOGLE_PASSWORD; .env is git-ignored). Gmail login verified OK
+and a test email sent to the owner (sbananayo98@gmail.com) through the site's own `sendMail` + template.
+**Owner action:** put the same value in Vercel → Settings → Environment Variables → GOOGLE_PASSWORD and redeploy,
+or the live site keeps failing to send.
+
+**Hero right side** (`components/home/hero-book-stack.tsx` new, `hero-section.tsx`, `app/page.tsx`): the photo
+collage is replaced by the library's real book covers (trending, up to 5) on a turntable in a "reading room":
+church-reading photo under deep navy, a blurred glow from the front cover (cross-fades as books turn), a shelf
+line + floor shadow. Positions centre / right / left / far-right / far-left (ring order so neighbours move to
+neighbours); turns every 3.8 s (1.1 s glide, cubic-bezier(.45,.05,.25,1)); pauses on hover; tapping a side book
+brings it to the front and stops auto-turning; the front book opens `/library/[id]`; title + "Open the book" +
+dots below. Reduced motion: no auto-turn. 0 covers → a Library link panel.
+**Daily Wisdom** is now a parchment scroll with two wooden rods BELOW the books (never over them), unrolling once
+on load (`.kls-unroll` in globals.css); likes/comments use a new `tone="paper"` in `wisdom-reactions.tsx` (navy on
+parchment in both themes). New keys `hero.book_open`, `hero.books_pick` (en/fr/rw).
+**Verified:** tsc clean; eslint: only the 2 older set-state-in-effect errors in daily-wisdom.tsx; Daily Wisdom
+tests 13/13; screenshots of a temporary preview (deleted) at 1440px (turning confirmed) and 390px.
+
+## 2026-11-20 - Hero: card stack (2 newest books + Daily Wisdom), replaces turntable/scroll
+
+Owner feedback: the turntable/background photos were not right — wanted the card-stack animation (front card +
+two peeking behind), equal cards, book-shaped (taller than wide), no background images, and Daily Wisdom as one
+of the cards.
+**`components/home/hero-rooms.tsx`** (HeroRooms): three equal aspect-2/3 cards — Daily Wisdom + the 2 NEWEST books
+with a cover (`getLatestBooks()` in `lib/data/home.ts`, `data.latestBooks`); a missing book becomes a Library
+card. Slots: front / up-left (-18%,-16%, -9deg, 0.86) / up-right (18%,-10%, 8deg, 0.9), back cards
+brightness(0.78). Shuffles every 4 s (1.1 s glide, cubic-bezier(.45,.05,.25,1)); pause on hover; reduced motion
+off. Tap a back card → to front; tap the front card → 3D flip (0.9 s, preserve-3d, backface hidden; move and flip
+on separate elements). Book back: "Newly added", small cover, title, author, "Open the book" → /library/[id].
+Wisdom front: parchment card with the full wisdom; wisdom back: likes + comments (WisdomReactionsBar tone paper,
+mounted only when turned over). Button under the stack (Show the back / Like & comment / Show the front) + dots.
+Removed: `hero-book-stack.tsx`, the scroll + its `.kls-unroll` CSS, the old VerseOfTheDay in hero-section.
+New keys `hero.book_new/card_flip/card_show/card_back/card_front/wisdom_react/wisdom_flip_hint` (en/fr/rw).
+**Verified:** tsc + eslint clean; screenshots of a temporary preview (deleted): wisdom in front with books peeking;
+after 6 s a book in front (shuffle works).
+
+## 2026-11-20 - Hero cards: books open their page; only Daily Wisdom turns over
+
+`components/home/hero-rooms.tsx`: book cards no longer flip (BookBack removed). Tapping the FRONT book opens
+`/library/[id]` (the single-book page, where the member reads it); a back card still comes to the front first.
+The front book shows an "Open the book" label, and the button under the stack becomes an "Open the book" link
+for books (Library card → /library). Daily Wisdom unchanged: tap → turns over to likes and comments; button
+"Like & comment" / "Show the front". The Library card is no longer a link nested inside the card button.
+**Verified:** tsc + eslint clean; screenshot of a temporary preview (deleted) with a book in front.
+
+## 2026-11-20 - Hero book cards: no "Open the book" buttons
+
+`components/home/hero-rooms.tsx`: removed the "Open the book" label on the front book card and the gold "Open the book" link under the stack (owner: the reading button belongs on the single-book page). Tapping the front book still opens `/library/[id]` (screen readers still hear "Open the book: <title>"). Under the stack only the Daily Wisdom button remains (row keeps its height so nothing jumps). Unused imports removed.
+**Verified:** tsc + eslint clean.

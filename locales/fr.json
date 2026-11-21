@@ -131,7 +131,16 @@
     "stat_learners": "Apprenants",
     "verse_of_day": "Sagesse du jour",
     "verse_daily_note": "Une nouvelle sagesse chaque jour",
-    "verse_read_more": "Continuer la lecture"
+    "verse_read_more": "Continuer la lecture",
+    "book_open": "Ouvrir le livre",
+    "books_pick": "Choisir un livre",
+    "book_new": "Nouveauté",
+    "card_flip": "retourner la carte",
+    "card_show": "Afficher",
+    "card_back": "Voir le dos",
+    "card_front": "Voir le devant",
+    "wisdom_react": "Aimer et commenter",
+    "wisdom_flip_hint": "Touchez pour aimer ou commenter"
   },
   "trending": {
     "handpicked": "Sélectionné pour vous",

@@ -12,8 +12,8 @@ interface WisdomReactionsBarProps {
   verseId: string
   /** The reader's local day "YYYY-MM-DD" — likes and comments belong to this day only. */
   dateKey: string
-  /** 'dark' on the navy home card, 'light' in the header pop-up. */
-  tone?: 'dark' | 'light'
+  /** 'dark' on navy, 'light' in the header pop-up, 'paper' on the parchment scroll (navy in both themes). */
+  tone?: 'dark' | 'light' | 'paper'
   /** Called when the reader starts interacting (the header pop-up pauses its countdown). */
   onInteract?: () => void
 }
@@ -35,6 +35,7 @@ export function WisdomReactionsBar({ verseId, dateKey, tone = 'light', onInterac
   const [busy, setBusy] = useState<'like' | 'comment' | string | null>(null)
   const [error, setError] = useState('')
   const dark = tone === 'dark'
+  const paper = tone === 'paper'
 
   useEffect(() => {
     let alive = true
@@ -77,7 +78,7 @@ export function WisdomReactionsBar({ verseId, dateKey, tone = 'light', onInterac
 
   const pill = cn(
     'inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors',
-    dark ? 'text-[#f6efe0]/85 hover:bg-white/10' : 'text-w-700 hover:bg-w-100 dark:text-gray-300 dark:hover:bg-white/10',
+    dark ? 'text-[#f6efe0]/85 hover:bg-white/10' : paper ? 'text-[#12304a] hover:bg-[#12304a]/10' : 'text-w-700 hover:bg-w-100 dark:text-gray-300 dark:hover:bg-white/10',
   )
 
   return (
@@ -100,7 +101,7 @@ export function WisdomReactionsBar({ verseId, dateKey, tone = 'light', onInterac
       </div>
 
       {open && (
-        <div className={cn('mt-2 rounded-lg p-3', dark ? 'bg-black/20' : 'bg-w-50 dark:bg-white/5')}>
+        <div className={cn('mt-2 rounded-lg p-3', dark ? 'bg-black/20' : paper ? 'bg-[#12304a]/[0.06]' : 'bg-w-50 dark:bg-white/5')}>
           {isAuthenticated ? (
             <div className="flex items-end gap-2">
               <textarea
@@ -113,7 +114,7 @@ export function WisdomReactionsBar({ verseId, dateKey, tone = 'light', onInterac
                 placeholder={t('daily_wisdom.write_comment')}
                 className={cn(
                   'min-h-10 flex-1 resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40',
-                  dark ? 'border-white/15 bg-white/10 text-[#f6efe0] placeholder:text-[#f6efe0]/50' : 'border-w-300 bg-white text-w-950 dark:border-gray-600 dark:bg-[#0f1424] dark:text-gray-100',
+                  dark ? 'border-white/15 bg-white/10 text-[#f6efe0] placeholder:text-[#f6efe0]/50' : paper ? 'border-[#12304a]/20 bg-white/80 text-[#12304a] placeholder:text-[#12304a]/50' : 'border-w-300 bg-white text-w-950 dark:border-gray-600 dark:bg-[#0f1424] dark:text-gray-100',
                 )}
               />
               <button type="button" onClick={() => void post()} disabled={!text.trim() || busy === 'comment'} aria-label={t('daily_wisdom.post')} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50">
@@ -126,22 +127,22 @@ export function WisdomReactionsBar({ verseId, dateKey, tone = 'light', onInterac
           {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
 
           <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1">
-            {data.comments.length === 0 && <li className={cn('text-xs', dark ? 'text-[#f6efe0]/60' : 'text-w-600 dark:text-gray-400')}>{t('daily_wisdom.no_comments')}</li>}
+            {data.comments.length === 0 && <li className={cn('text-xs', dark ? 'text-[#f6efe0]/60' : paper ? 'text-[#12304a]/60' : 'text-w-600 dark:text-gray-400')}>{t('daily_wisdom.no_comments')}</li>}
             {data.comments.map((c) => (
-              <li key={c.id} className={cn('rounded-lg px-3 py-2 text-sm', dark ? 'bg-white/5' : 'bg-white dark:bg-[#0f1424]')}>
+              <li key={c.id} className={cn('rounded-lg px-3 py-2 text-sm', dark ? 'bg-white/5' : paper ? 'bg-white/70' : 'bg-white dark:bg-[#0f1424]')}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={cn('truncate text-xs font-bold', dark ? 'text-primary' : 'text-w-950 dark:text-gray-100')}>{c.userName}</span>
+                  <span className={cn('truncate text-xs font-bold', dark ? 'text-primary' : paper ? 'text-[#12304a]' : 'text-w-950 dark:text-gray-100')}>{c.userName}</span>
                   {c.mine && (
-                    <button type="button" onClick={() => void remove(c.id)} disabled={busy === c.id} aria-label={t('daily_wisdom.delete_comment')} className={cn('rounded p-1 transition', dark ? 'text-[#f6efe0]/50 hover:text-red-300' : 'text-w-500 hover:text-red-600')}>
+                    <button type="button" onClick={() => void remove(c.id)} disabled={busy === c.id} aria-label={t('daily_wisdom.delete_comment')} className={cn('rounded p-1 transition', dark ? 'text-[#f6efe0]/50 hover:text-red-300' : paper ? 'text-[#12304a]/50 hover:text-red-600' : 'text-w-500 hover:text-red-600')}>
                       <Trash2 className="size-3.5" />
                     </button>
                   )}
                 </div>
-                <p className={cn('mt-0.5 whitespace-pre-wrap break-words', dark ? 'text-[#f6efe0]/90' : 'text-w-800 dark:text-gray-200')}>{c.text}</p>
+                <p className={cn('mt-0.5 whitespace-pre-wrap break-words', dark ? 'text-[#f6efe0]/90' : paper ? 'text-[#12304a]/90' : 'text-w-800 dark:text-gray-200')}>{c.text}</p>
               </li>
             ))}
           </ul>
-          <p className={cn('mt-2 text-[11px]', dark ? 'text-[#f6efe0]/50' : 'text-w-500 dark:text-gray-500')}>{t('daily_wisdom.gone_note')}</p>
+          <p className={cn('mt-2 text-[11px]', dark ? 'text-[#f6efe0]/50' : paper ? 'text-[#12304a]/55' : 'text-w-500 dark:text-gray-500')}>{t('daily_wisdom.gone_note')}</p>
         </div>
       )}
     </div>

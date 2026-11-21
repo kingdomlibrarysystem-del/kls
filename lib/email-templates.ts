@@ -193,3 +193,21 @@ export function assessmentGradedEmailHtml(firstName: string, assessmentTitle: st
     'View Course'
   )
 }
+
+/** Text a member typed, made safe to put inside an email (no HTML or links can be slipped in). */
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
+export function wisdomCommentEmailHtml(firstName: string, commenterName: string, wisdomText: string, comment: string, manageUrl: string): string {
+  const wisdom = wisdomText.length > 160 ? `${wisdomText.slice(0, 157)}…` : wisdomText
+  return baseEmail(
+    escapeHtml(firstName),
+    `<p><strong>${escapeHtml(commenterName)}</strong> commented on today's Daily Wisdom:</p>
+      <blockquote style="margin: 12px 0; padding: 8px 12px; border-left: 3px solid #b8860b; color: #4a5d70; font-style: italic;">${escapeHtml(wisdom)}</blockquote>
+      <p style="margin: 12px 0; padding: 10px 12px; background: #f6efe0; border-radius: 6px;">${escapeHtml(comment).replace(/\n/g, '<br>')}</p>
+      <p style="font-size: 12px; color: #4a5d70;">Likes and comments are removed at the end of the day.</p>`,
+    manageUrl,
+    'Open Daily Wisdom',
+  )
+}

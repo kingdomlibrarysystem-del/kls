@@ -1,5 +1,8 @@
 import prisma from '@/prisma/client'
 import { isDateKey } from '@/lib/daily-wisdom-shared'
+import { notifyUser } from '@/lib/notify'
+import { wisdomCommentEmailHtml } from '@/lib/email-templates'
+import { appBaseUrl } from '@/lib/mailer'
 
 /**
  * Likes and comments on the Daily Wisdom live for ONE day only (owner's rule):
@@ -69,4 +72,32 @@ export async function getWisdomReactions(verseId: string, dateKey: string, userI
     liked: liked > 0,
     comments: comments.map((c) => ({ id: c.id, userName: c.userName, text: c.text, createdAt: c.createdAt.toISOString(), mine: !!userId && c.userId === userId })),
   }
+}
+
+/**
+ * A new comment on the Daily Wisdom → in-app notification + email to the person
+ * who wrote that wisdom and to every Admin (never to the commenter). Each can
+ * turn these emails off with the 'daily-wisdom-comment' notification preference.
+ */
+export async function notifyWisdomComment(input: { verseId: string; commenterId: string; commenterName: string; comment: string }): Promise<void> {
+  const verse = await prisma.dailyVerse.findUnique({ where: { id: input.verseId }, select: { text: true, createdById: true } })
+  if (!verse) return
+  const admins = await prisma.user.findMany({ where: { role: { name: 'Admin' } }, select: { id: true } })
+  const recipientIds = [...new Set([verse.createdById, ...admins.map((a) => a.id)].filter((id): id is string => !!id && id !== input.commenterId))]
+  if (recipientIds.length === 0) return
+  const users = await prisma.user.findMany({ where: { id: { in: recipientIds } }, select: { id: true, name: true, firstName: true } })
+  const url = `${appBaseUrl().replace(/\/+$/, '')}/dashboard/daily-wisdom`
+  const preview = input.comment.length > 120 ? `${input.comment.slice(0, 117)}…` : input.comment
+  await Promise.all(users.map((u) => notifyUser({
+    userId: u.id,
+    type: 'SYSTEM',
+    category: 'daily-wisdom-comment',
+    title: 'New comment on Daily Wisdom',
+    message: `${input.commenterName}: "${preview}"`,
+    href: '/dashboard/daily-wisdom',
+    email: {
+      subject: `${input.commenterName} commented on today's Daily Wisdom`,
+      html: wisdomCommentEmailHtml(u.firstName || u.name || 'there', input.commenterName, verse.text, input.comment, url),
+    },
+  })))
 }

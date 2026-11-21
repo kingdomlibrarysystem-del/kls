@@ -1,46 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, BookHeart, BookOpen, GraduationCap, PenLine, PlayCircle } from 'lucide-react'
+import { ArrowRight, BookOpen, GraduationCap, PenLine, PlayCircle } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { accountHomeFor } from '@/components/profile-dropdown'
 import { useAuth } from '@/contexts/auth-context'
 import { useLanguage } from '@/contexts/language-context'
-import { localDateKey, type TodayVerse } from '@/lib/daily-wisdom-shared'
 import { cn } from '@/lib/utils'
-import { WisdomReactionsBar } from './wisdom-reactions'
+import { HeroRooms, type HeroBook } from './hero-rooms'
 
 interface HeroSectionProps {
   /** Real totals from the database; a total of 0 is simply not shown. */
   stats?: { books: number; courses: number; learners: number }
+  /** The newest books with a cover (shown in the hero's rooms). */
+  books?: HeroBook[]
 }
-
-/**
- * The three photo frames of the hero collage. Each frame has two real photos
- * (free Unsplash photos, saved in /public/home) and fades between them; the
- * frames change one at a time so the collage never jumps all at once.
- * Replacement photos: the tall frame wants an upright photo, the two small
- * frames a landscape one.
- */
-const FRAMES = [
-  [
-    { src: '/home/reading-elder.jpg', alt: 'An elderly woman reading her Bible outdoors' },
-    { src: '/home/church-group-reading.jpg', alt: 'Believers reading their Bibles together in church' },
-  ],
-  [
-    { src: '/home/reading-young-man.jpg', alt: 'A young man reading the Bible on the grass' },
-    { src: '/home/church-family.jpg', alt: 'A family together at church' },
-  ],
-  [
-    { src: '/home/classroom-reading.jpg', alt: 'A teacher reading with children in a classroom' },
-    { src: '/home/boy-holy-bible.jpg', alt: 'A boy reading the Holy Bible' },
-  ],
-] as const
-
-/** One frame changes every TICK_MS (so each frame changes every 3 ticks). */
-const TICK_MS = 4000
 
 // Hero colours: deep navy (#12304a, the blue of the logo family) with parchment text and the brand gold.
 const PARCHMENT = 'text-[#f6efe0]'
@@ -49,25 +24,16 @@ const PARCHMENT_SOFT = 'text-[#f6efe0]/70'
 /**
  * Landing hero, scripture first, on a deep navy band that continues the
  * header. Left: the message, Start reading / Explore courses, account link and
- * real totals. Right: a collage of real photos of people reading the Word,
- * with TODAY'S VERSE (managed at /dashboard/daily-wisdom) on a card in front.
+ * real totals. Right: a grid of three "rooms" (hero-rooms.tsx) — the two
+ * newest books and today's Daily Wisdom, each on its own photo — that swap
+ * places so each takes a turn in the big tile, shown in full there.
  * Below the band: Library / E-Learning / Publishing cards, each with a photo.
- * Motion is limited to a rise-in on load, the photo cross-fade with a slow
- * zoom, and card hover — all off for "reduce motion" (see globals.css).
+ * Motion: rise-in on load, the rooms swapping places, card
+ * hover — all off for "reduce motion" (see globals.css).
  */
-export function HeroSection({ stats }: HeroSectionProps) {
-  const { t, lang } = useLanguage()
+export function HeroSection({ stats, books = [] }: HeroSectionProps) {
+  const { t } = useLanguage()
   const { user, isAuthenticated } = useAuth()
-  const [tick, setTick] = useState(0)
-
-  // Cross-fade the collage (browser-only timer, so an effect is the right tool).
-  useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    const id = setInterval(() => setTick((n) => n + 1), TICK_MS)
-    return () => clearInterval(id)
-  }, [])
-  // Frame i shows photo floor((tick + i) / 3) — exactly one frame changes per tick.
-  const shown = (frame: number) => Math.floor((tick + frame) / FRAMES.length) % FRAMES[frame].length
 
   const totals = [
     { value: stats?.books ?? 0, label: t('hero.stat_books') },
@@ -136,44 +102,9 @@ export function HeroSection({ stats }: HeroSectionProps) {
             )}
           </div>
 
-          {/* Real people reading the Word, with today's verse in front. */}
-          <div className="kls-rise relative mx-auto w-full max-w-[600px] lg:pl-6" style={{ '--kls-delay': '0.2s' } as React.CSSProperties}>
-            <div className="grid h-[340px] grid-cols-5 grid-rows-2 gap-3 sm:h-[460px] lg:h-[520px]">
-              {FRAMES.map((photos, frame) => (
-                <div
-                  key={frame}
-                  className={cn(
-                    'relative overflow-hidden rounded-2xl bg-[#1a3d5c] shadow-2xl ring-1 ring-[#f6efe0]/10',
-                    frame === 0 ? 'col-span-3 row-span-2' : 'col-span-2',
-                  )}
-                >
-                  {photos.map((p, i) => {
-                    const active = shown(frame) === i
-                    return (
-                      <Image
-                        key={p.src}
-                        src={p.src}
-                        alt={active ? p.alt : ''}
-                        aria-hidden={!active}
-                        fill
-                        priority={i === 0}
-                        sizes={frame === 0 ? '(max-width: 1024px) 60vw, 360px' : '(max-width: 1024px) 40vw, 240px'}
-                        className={cn(
-                          'object-cover transition-opacity duration-[1500ms] ease-in-out',
-                          active ? 'kls-kenburns opacity-100' : 'opacity-0',
-                        )}
-                      />
-                    )
-                  })}
-                  {/* Soft shade at the bottom so the frames sit in the dark band. */}
-                  <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/35 to-transparent" />
-                </div>
-              ))}
-            </div>
-
-            <div className="relative mt-4 lg:absolute lg:-bottom-12 lg:-left-10 lg:mt-0 lg:w-[80%]">
-              <VerseOfTheDay lang={lang} />
-            </div>
+          {/* The two newest books and today's wisdom, each in its own room; they take turns in the big tile. */}
+          <div className="kls-rise relative mx-auto w-full max-w-[600px] pb-8 lg:pl-6" style={{ '--kls-delay': '0.2s' } as React.CSSProperties}>
+            <HeroRooms books={books} />
           </div>
         </div>
       </section>
@@ -215,72 +146,5 @@ export function HeroSection({ stats }: HeroSectionProps) {
         </div>
       </section>
     </>
-  )
-}
-
-/**
- * Today's verse on a dark card with a gold ribbon. Fetched in the browser
- * because "today" is the reader's own local date (same rule as the header's
- * Daily Wisdom). Falls back to Habakkuk 2:14 when there is no verse.
- */
-function VerseOfTheDay({ lang }: { lang: string }) {
-  const { t } = useLanguage()
-  const [dateKey] = useState(() => localDateKey())
-  /** undefined while loading, null when none exists. */
-  const [verse, setVerse] = useState<TodayVerse | null | undefined>(undefined)
-
-  useEffect(() => {
-    let alive = true
-    fetch(`/api/daily-wisdom?date=${dateKey}&lang=${lang}`)
-      .then((r) => r.json())
-      .then((json) => { if (alive) setVerse(json?.code === 'success' ? json.data : null) })
-      .catch(() => { if (alive) setVerse(null) })
-    return () => { alive = false }
-  }, [dateKey, lang])
-
-  const text = verse ? verse.text : t('hero.bible_verse')
-  const reference = verse ? verse.reference : t('hero.bible_ref').replace(/^[—–-]\s*/, '')
-  const dateLabel = (() => {
-    try { return new Date(`${dateKey}T12:00:00`).toLocaleDateString(lang === 'rw' ? 'en' : lang, { weekday: 'long', day: 'numeric', month: 'long' }) } catch { return dateKey }
-  })()
-
-  return (
-    <figure className="relative overflow-hidden rounded-2xl border border-primary/35 bg-[#1a3d5c]/92 px-6 pb-5 pt-6 shadow-2xl shadow-black/40 backdrop-blur-md dark:bg-[#111828]/92 sm:px-7">
-      {/* Gold ribbon bookmark */}
-      <span aria-hidden className="absolute right-6 top-0 h-12 w-5 bg-primary shadow-md [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]" />
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pr-10">
-        <span className="inline-flex items-center gap-2 font-lato text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-          <BookHeart className="size-4" /> {t('hero.verse_of_day')}
-        </span>
-        {verse !== undefined && <span className={cn('font-lato text-xs', PARCHMENT_SOFT)}>{dateLabel}</span>}
-      </div>
-
-      {verse === undefined ? (
-        <div className="mt-4 space-y-2.5" aria-label={t('hero.verse_of_day')}>
-          <div className="h-4 w-full animate-pulse rounded bg-white/10" />
-          <div className="h-4 w-5/6 animate-pulse rounded bg-white/10" />
-          <div className="h-3.5 w-24 animate-pulse rounded bg-white/10" />
-        </div>
-      ) : (
-        <>
-          <blockquote className={cn('mt-3 font-cormorant italic leading-snug', PARCHMENT, text.length > 220 ? 'text-base sm:text-lg' : 'text-lg sm:text-xl')}>
-            {text}
-          </blockquote>
-          <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-2">
-            <span className="font-cinzel text-xs font-bold tracking-wider text-primary">{reference}</span>
-            <Link href="/library" className="inline-flex items-center gap-1 font-lato text-xs font-semibold text-[#f6efe0] hover:text-primary">
-              {t('hero.verse_read_more')} <ArrowRight className="size-3.5" />
-            </Link>
-          </figcaption>
-          {/* Today's likes and comments (they are deleted when the day ends). Not on the fallback verse. */}
-          {verse && (
-            <div className="mt-2 border-t border-white/10 pt-2">
-              <WisdomReactionsBar verseId={verse.id} dateKey={verse.date || dateKey} tone="dark" />
-            </div>
-          )}
-        </>
-      )}
-    </figure>
   )
 }

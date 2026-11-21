@@ -131,7 +131,16 @@
     "stat_learners": "Learners",
     "verse_of_day": "Wisdom of the day",
     "verse_daily_note": "New wisdom every day",
-    "verse_read_more": "Keep reading"
+    "verse_read_more": "Keep reading",
+    "book_open": "Open the book",
+    "books_pick": "Choose a book",
+    "book_new": "Newly added",
+    "card_flip": "turn the card over",
+    "card_show": "Show",
+    "card_back": "Show the back",
+    "card_front": "Show the front",
+    "wisdom_react": "Like & comment",
+    "wisdom_flip_hint": "Tap to like or comment"
   },
   "trending": {
     "handpicked": "Handpicked for You",

@@ -13,6 +13,25 @@ export interface TrendingBook {
   views: number
 }
 
+/** A newly added book for the hero's rooms (needs a cover to be shown). */
+export interface LatestBook {
+  id: string
+  title: string
+  author: string
+  cover: string
+}
+
+/** The newest published books that have a cover — the hero shows the latest additions. */
+export async function getLatestBooks(limit = 2): Promise<LatestBook[]> {
+  const rows = await prisma.resource.findMany({
+    where: { status: { notIn: ['ARCHIVED', 'DRAFT'] }, NOT: { coverImages: { isEmpty: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: { id: true, title: true, author: true, coverImages: true },
+  })
+  return rows.flatMap((r) => (r.coverImages[0] ? [{ id: r.id, title: r.title, author: r.author, cover: r.coverImages[0] }] : []))
+}
+
 export interface HomeNewsItem {
   id: string
   title: string
@@ -117,7 +136,7 @@ export async function getTrendingBooks(limit = TRENDING_BOOKS_LIMIT): Promise<Tr
 export async function getHomePageData() {
   const safe = <T,>(p: Promise<T>, fallback: T) => p.catch((err) => { console.error('[home] section failed to load:', err); return fallback })
 
-  const [trendingBooks, newsRows, courseRows, courseCount, lessonCount, enrollmentCount, paperRows, bookCount] = await Promise.all([
+  const [trendingBooks, newsRows, courseRows, courseCount, lessonCount, enrollmentCount, paperRows, bookCount, latestBooks] = await Promise.all([
     safe(getTrendingBooks(), [] as TrendingBook[]),
     safe(prisma.newsArticle.findMany({
       where: { status: 'PUBLISHED' },
@@ -142,6 +161,7 @@ export async function getHomePageData() {
       select: { id: true, title: true, keywords: true, authorName: true, publishedAt: true, project: { select: { title: true } } },
     }), []),
     safe(prisma.resource.count({ where: { status: { notIn: ['ARCHIVED', 'DRAFT'] } } }), 0),
+    safe(getLatestBooks(2), [] as LatestBook[]),
   ])
 
   const news: HomeNewsItem[] = await withArticleStats(newsRows.map((n) => ({ ...n, publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null })))
@@ -163,6 +183,7 @@ export async function getHomePageData() {
     courses,
     courseStats: { courses: courseCount, lessons: lessonCount, enrollments: enrollmentCount },
     bookCount,
+    latestBooks,
     papers,
   }
 }

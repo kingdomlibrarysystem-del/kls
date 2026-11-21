@@ -14,8 +14,11 @@ import { wisdomExpiry } from '@/lib/data/daily-wisdom-reactions'
 const RUN = `vitest-wr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 const TODAY = new Date().toISOString().slice(0, 10)
 let session: { id: string; roleName: string } | null = null
-const ids = { alice: '', bob: '', verse: '' }
+const ids = { alice: '', bob: '', admin: '', verse: '' }
 
+// No real email in tests: record what would be sent.
+const sentMail = vi.hoisted(() => [] as { to: string; subject: string; html: string }[])
+vi.mock('@/lib/mailer', () => ({ sendMail: vi.fn(async (to: string, subject: string, html: string) => { sentMail.push({ to, subject, html }) }), appBaseUrl: () => 'http://localhost' }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => (session ? { user: session } : null)) }))
 const req = (url: string, method: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, { method, headers: { 'Content-Type': 'application/json' }, ...(body !== undefined && { body: JSON.stringify(body) }) })
@@ -27,6 +30,8 @@ beforeAll(async () => {
   const mk = (n: string) => prisma.user.create({ data: { name: `Vitest ${n}`, email: `${RUN}-${n}@vitest.local`, roleId: role.id, status: 'ACTIVE' } }).then((u) => u.id)
   ids.alice = await mk('Alice')
   ids.bob = await mk('Bob')
+  const adminRole = await prisma.role.upsert({ where: { name: 'Admin' }, update: {}, create: { name: 'Admin', permissions: [] } })
+  ids.admin = (await prisma.user.create({ data: { name: 'Vitest Admin', firstName: 'Grace', email: `${RUN}-admin@vitest.local`, roleId: adminRole.id, status: 'ACTIVE' } })).id
   ids.verse = (await prisma.dailyVerse.create({ data: { text: `Vitest wisdom ${RUN}`, reference: 'Vitest', language: 'en', scheduledDate: TODAY, createdByName: 'Vitest' } })).id
 }, 60_000)
 
@@ -34,7 +39,8 @@ afterAll(async () => {
   await prisma.dailyWisdomLike.deleteMany({ where: { verseId: ids.verse } })
   await prisma.dailyWisdomComment.deleteMany({ where: { verseId: ids.verse } })
   await prisma.dailyVerse.deleteMany({ where: { id: ids.verse } })
-  await prisma.user.deleteMany({ where: { id: { in: [ids.alice, ids.bob] } } })
+  await prisma.notification.deleteMany({ where: { recipientId: { in: [ids.alice, ids.bob, ids.admin] } } })
+  await prisma.user.deleteMany({ where: { id: { in: [ids.alice, ids.bob, ids.admin] } } })
 }, 60_000)
 
 describe('likes and comments on today\'s wisdom', () => {
@@ -85,4 +91,22 @@ describe('likes and comments on today\'s wisdom', () => {
   it('a day ends 36 h after its UTC midnight (after midnight in every time zone)', () => {
     expect(wisdomExpiry('2026-11-19').toISOString()).toBe('2026-11-20T12:00:00.000Z')
   })
+})
+
+describe('a comment tells the admins', () => {
+  it('admins get an in-app notification and an email with the comment (made safe), the commenter does not', async () => {
+    as('alice')
+    sentMail.length = 0
+    const res = await addComment(req('/api/daily-wisdom/reactions/comments', 'POST', { verseId: ids.verse, date: TODAY, text: 'Blessed <b>day</b>' }))
+    expect(res.status).toBe(201)
+    // The notification runs after the reply; wait for it.
+    for (let i = 0; i < 40 && !sentMail.some((m) => m.to === `${RUN}-admin@vitest.local`); i++) await new Promise((r) => setTimeout(r, 250))
+    const mail = sentMail.find((m) => m.to === `${RUN}-admin@vitest.local`)
+    expect(mail?.subject).toBe("Vitest Alice commented on today's Daily Wisdom")
+    expect(mail?.html).toContain('Hi Grace')
+    expect(mail?.html).toContain('Blessed &lt;b&gt;day&lt;/b&gt;')
+    expect(sentMail.some((m) => m.to === `${RUN}-Alice@vitest.local`)).toBe(false)
+    // (The earlier comment test notified the admin too — check the one for THIS comment.)
+    expect(await prisma.notification.count({ where: { recipientId: ids.admin, title: 'New comment on Daily Wisdom', message: { contains: 'Blessed' } } })).toBe(1)
+  }, 60_000)
 })

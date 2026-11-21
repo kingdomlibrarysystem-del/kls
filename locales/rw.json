@@ -131,7 +131,16 @@
     "stat_learners": "Abiga",
     "verse_of_day": "Impamba yu munsi",
     "verse_daily_note": "Impamba nshya buri munsi",
-    "verse_read_more": "Komeza usome"
+    "verse_read_more": "Komeza usome",
+    "book_open": "Fungura igitabo",
+    "books_pick": "Hitamo igitabo",
+    "book_new": "Gishya",
+    "card_flip": "hindura ikarita",
+    "card_show": "Erekana",
+    "card_back": "Reba inyuma",
+    "card_front": "Reba imbere",
+    "wisdom_react": "Kunda & tanga igitekerezo",
+    "wisdom_flip_hint": "Kanda ukunde cyangwa utange igitekerezo"
   },
   "trending": {
     "handpicked": "Yahiswemo kuri wewe",
