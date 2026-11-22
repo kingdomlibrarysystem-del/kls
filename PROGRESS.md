@@ -8621,3 +8621,10 @@ New `m_elearning.*` keys (en/fr/rw). Enroll/checkout logic unchanged.
 - New `m_courses.*` keys (en/fr/rw).
 **Verified:** tsc + eslint clean; screenshots of a temporary preview (deleted) inside a copy of the member
 layout's scroll container: list stays put while the lesson scrolls; phone view folds the list.
+
+## 2026-11-22 - Hero: navy Daily Wisdom card with the whole text; shorter book cards
+
+`components/home/hero-rooms.tsx`: the stack is now 3:4 (was 2:3) so books are less tall. The wisdom card is navy (same gradient as the old grid, gold glow, gold label/reference, cream text) and 7% wider on each side than the books (its own shape). The whole wisdom is shown: no line clamp, font size follows the length (`wisdomTextSize`), and only an unusually long text scrolls inside the card. The back (likes/comments) is navy too (`WisdomReactionsBar tone="dark"`). Fixed: the glow style overrode the Tailwind gradient (both are background-image), which made the card see-through; both layers now live in one inline background-image.
+**Verified:** eslint clean; screenshots on a temporary dev server.
+
+Follow-up (same day): the wisdom card blue is now lighter than the hero (#2f6796 → #245582 → #1c4569) so it stands out.
