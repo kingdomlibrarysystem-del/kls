@@ -36,6 +36,8 @@ interface LazyPdfPageProps {
   /** Called when this page fills the middle of the screen (the "current page" in scroll mode). */
   onVisible?: (pageNumber: number) => void
   label?: string
+  /** Marks words in the page's text layer (site search highlight). */
+  textRenderer?: (item: { str: string }) => string
 }
 
 /**
@@ -44,7 +46,7 @@ interface LazyPdfPageProps {
  * once — the old scroll view — made big books take ages to open and slowed
  * the whole tab.
  */
-export function LazyPdfPage({ pageNumber, width, ratio, onVisible, label }: LazyPdfPageProps) {
+export function LazyPdfPage({ pageNumber, width, ratio, onVisible, label, textRenderer }: LazyPdfPageProps) {
   const box = useRef<HTMLDivElement>(null)
   const [near, setNear] = useState(pageNumber <= 2)
   const height = Math.round(width * ratio)
@@ -66,6 +68,7 @@ export function LazyPdfPage({ pageNumber, width, ratio, onVisible, label }: Lazy
           pageNumber={pageNumber}
           width={width}
           renderAnnotationLayer={false}
+          customTextRenderer={textRenderer}
           loading={<PdfPageSkeleton width={width} height={height} label={`Page ${pageNumber}`} />}
           aria-label={label ? `${label} — page ${pageNumber}` : `Page ${pageNumber}`}
         />

@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { AlertTriangle, ChevronLeft, Download, ExternalLink, Presentation } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isPresentation, type FolderBook } from '@/lib/data/book-folders'
-import { BookPdfReader } from './book-pdf-reader'
+import { ReaderLoading } from '@/components/reader/reader-loading'
+
+// pdf.js needs the browser (canvas, DOMMatrix): the PDF reader is loaded in the browser only, never rendered on the server.
+const BookPdfReader = dynamic(() => import('./book-pdf-reader').then((m) => m.BookPdfReader), { ssr: false, loading: () => <ReaderLoading /> })
 
 /** Reader page: PDFs render inline, PowerPoint decks embed via Office viewer. */
 export function MemberBookReader({

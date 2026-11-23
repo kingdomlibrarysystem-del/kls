@@ -15,6 +15,7 @@ import { assignKlpCodes, collectionForCategory } from '@/lib/data/klp-register'
 import { newObjectId } from '@/lib/server/object-id'
 import { isObjectId } from '@/lib/server/object-id'
 import { bookFieldsSchema, cleanChapters, missingForSubmit } from '../schema'
+import { reindexSoon } from '@/lib/search/indexer'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -228,6 +229,8 @@ export const PATCH = withErrorHandling('/api/publications/[id]', 'PATCH', async 
       include: REVENUE_INCLUDE,
     })
   })
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('BOOK', updated.resourceId)
   if (updated.resourceId) await assignKlpCodes(updated.resourceId).catch((e) => console.error('[publications] KLP code assignment failed', e))
   // The landing page lists the newest books; expire its cache.
   try { (await import('next/cache')).revalidateTag('home-page', { expire: 0 }) } catch { /* outside a Next request (tests) */ }

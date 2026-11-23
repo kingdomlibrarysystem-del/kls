@@ -7,19 +7,19 @@ import { playableKind } from '@/lib/media-embed'
 
 interface ReaderPageProps {
   params: Promise<{ resourceId: string }>
-  searchParams: Promise<{ chapter?: string; preview?: string }>
+  searchParams: Promise<{ chapter?: string; preview?: string; page?: string; q?: string }>
 }
 
 export default async function ReaderPage({ params, searchParams }: ReaderPageProps) {
   const { resourceId } = await params
-  const [{ chapter, preview }, data] = await Promise.all([searchParams, loadReaderData(resourceId)])
+  const [{ chapter, preview, page, q }, data] = await Promise.all([searchParams, loadReaderData(resourceId)])
   // An audio / video title has nothing to read — send old "Read" links to its player instead of an empty reader.
   if (data.resource && !isResourceReadable(data.resource) && playableKind(data.resource)) {
     redirect(`/member/library/resource/${resourceId}#player`)
   }
   return (
     <PageTransition>
-      <ReaderView resourceId={resourceId} resource={data.resource} readableChapters={data.readableChapters} initialChapterId={chapter} forcePreview={preview === '1'} />
+      <ReaderView resourceId={resourceId} resource={data.resource} readableChapters={data.readableChapters} initialChapterId={chapter} initialPage={Number(page) || undefined} highlight={q} forcePreview={preview === '1'} />
     </PageTransition>
   )
 }

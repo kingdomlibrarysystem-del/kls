@@ -6,6 +6,7 @@ import { requireStaff } from '@/lib/auth/require-role'
 import { serializeLesson } from '@/lib/data/lessons'
 import { getViewer, loadAccess } from '@/lib/data/course-access'
 import { LESSON_ACCESS, lessonIsOpen } from '@/lib/course-access'
+import { reindexSoon } from '@/lib/search/indexer'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -51,6 +52,8 @@ export const PATCH = withErrorHandling('/api/lessons/[id]', 'PATCH', async (requ
     where: { id },
     data: { ...rest, access: nextAccess as 'COURSE' | 'FREE' | 'PAID', price: nextAccess === 'PAID' ? nextPrice : 0 },
   })
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('COURSE', existing.courseId)
   return NextResponse.json({ data: serializeLesson(updated), message: 'Lesson updated successfully', code: 'success', status: 200 })
 })
 
@@ -62,5 +65,6 @@ export const DELETE = withErrorHandling('/api/lessons/[id]', 'DELETE', async (_r
   const existing = await prisma.lesson.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Lesson not found', 404)
   await prisma.lesson.delete({ where: { id } })
+  reindexSoon('COURSE', existing.courseId)
   return NextResponse.json({ data: null, message: 'Lesson deleted successfully', code: 'success', status: 200 })
 })

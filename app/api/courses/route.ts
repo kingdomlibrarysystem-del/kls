@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
+import { reindexSoon } from '@/lib/search/indexer'
 
 /**
  * Real Course API — consolidating the three previously-unreconciled mock
@@ -157,5 +158,7 @@ export const POST = withErrorHandling('/api/courses', 'POST', async (request: Ne
     broadcastToSubscribers({ type: 'new_course', title: course.title, category: course.category, id: course.id }).catch(() => {})
   }
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('COURSE', course.id)
   return NextResponse.json({ data: serializeCourse(course), message: 'Course created successfully', code: 'success', status: 201 }, { status: 201 })
 })

@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth-options'
 import { roleNameToUserRole } from '@/lib/roles'
 import { assignKlpCodes, isValidCollection } from '@/lib/data/klp-register'
 import { isKlpFormat, normalizeIsbn } from '@/lib/klp-code'
+import { reindexSoon } from '@/lib/search/indexer'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -148,6 +149,8 @@ export const PATCH = withErrorHandling('/api/resources/[id]', 'PATCH', async (re
     if (await assignKlpCodes(id)) resource = await prisma.resource.findUniqueOrThrow({ where: { id } })
   }
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('BOOK', id)
   const chapterCount = await prisma.chapter.count({ where: { resourceId: id } })
 
   return NextResponse.json({ data: serializeResource(resource, chapterCount), message: 'Resource updated successfully', code: 'success', status: 200 })
@@ -164,5 +167,6 @@ export const DELETE = withErrorHandling('/api/resources/[id]', 'DELETE', async (
 
   await prisma.resource.delete({ where: { id } })
 
+  reindexSoon('BOOK', id)
   return NextResponse.json({ data: null, message: 'Resource deleted successfully', code: 'success', status: 200 })
 })

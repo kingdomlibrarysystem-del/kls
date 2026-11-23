@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "seed": "npx ts-node prisma/seed.ts",
     "test": "vitest run",
-    "test:db-setup": "node scripts/test-db-setup.mjs"
+    "test:db-setup": "node scripts/test-db-setup.mjs",
+    "search:setup": "node scripts/search-setup.mjs",
+    "search:reindex": "tsx scripts/search-reindex.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -29,6 +31,7 @@
     "livekit-client": "^2.22.0",
     "livekit-server-sdk": "^2.18.0",
     "lucide-react": "^1.16.0",
+    "mammoth": "^1.13.0",
     "md-editor-rt": "^6.5.6",
     "next": "16.2.6",
     "next-auth": "^4.24.14",
@@ -66,6 +69,7 @@
     "postcss": "^8.5",
     "prisma": "^5.22.0",
     "tailwindcss": "^4.2.0",
+    "tsx": "^4.23.15",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10"

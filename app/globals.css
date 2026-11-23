@@ -633,3 +633,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .kls-eq-bar, .kls-ring { animation: none; }
 }
+
+/* ── Site search: the searched words in the reader (components/reader/search-highlight.ts) ── */
+/* PDF text layer: the text itself is invisible over the page image, so only the gold box shows. */
+.react-pdf__Page__textContent mark.kls-search-hit {
+  background: rgba(212, 168, 67, 0.45);
+  color: transparent;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(160, 120, 48, 0.6);
+}
+/* Chapter text: ::highlight(kls-search) is added from components/reader/search-highlight.ts (this CSS build cannot parse it). */

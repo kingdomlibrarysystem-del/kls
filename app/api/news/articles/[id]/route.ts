@@ -5,6 +5,7 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { notifyPublishSubscribers } from './notify-subscribers'
 import { serializeArticle } from '@/lib/data/news-articles'
+import { reindexSoon } from '@/lib/search/indexer'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -45,6 +46,9 @@ export const PATCH = withErrorHandling('/api/news/articles/[id]', 'PATCH', async
   const { id } = await params
   const existing = await prisma.newsArticle.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Article not found', 404)
+
+  // Site search: refresh its searchable text after the reply is sent. (Runs after the reply, so it sees the saved change.)
+  reindexSoon('NEWS', id)
 
   const raw = await request.json()
 
@@ -107,5 +111,6 @@ export const DELETE = withErrorHandling('/api/news/articles/[id]', 'DELETE', asy
   if (!existing) throw new ApiError('Article not found', 404)
 
   await prisma.newsArticle.delete({ where: { id } })
+  reindexSoon('NEWS', id)
   return NextResponse.json({ data: null, message: 'Article deleted successfully', code: 'success', status: 200 })
 })

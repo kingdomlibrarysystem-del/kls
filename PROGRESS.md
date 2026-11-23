@@ -8628,3 +8628,83 @@ layout's scroll container: list stays put while the lesson scrolls; phone view f
 **Verified:** eslint clean; screenshots on a temporary dev server.
 
 Follow-up (same day): the wisdom card blue is now lighter than the hero (#2f6796 → #245582 → #1c4569) so it stands out.
+
+## 2026-11-23 - Site search: find a word inside every book, article and lesson (no AI)
+
+Boss request: search a word (e.g. "corruption") and find every document on the site that contains it.
+- **Index** — new Prisma model `SearchDocument` (one row per PDF page / text part): `sourceType`
+  BOOK | LIFE_SCIENCE | NEWS | COURSE | LESSON, `sourceId`, `courseId`, title, subtitle, section, page, text, url,
+  `locked`. `lib/search/indexer.ts`:
+  - BOOK (status AVAILABLE/OUT_OF_STOCK): description + written chapters (→ reader `?chapter=`), or, when the
+    book has no chapters, the text of its uploaded PDF page by page (→ reader `?page=N`) / Word file in parts.
+  - LIFE_SCIENCE (book + folder ACTIVE): description + PDF/Word text (→ /life-sciences/books/[id]).
+  - NEWS (PUBLISHED): summary + content (→ /news/[id]).
+  - COURSE (PUBLISHED): description, plus each PUBLISHED lesson as LESSON (→ /courses/[id]); in a paid course
+    only FREE lessons show their words (`locked`), others show only the title.
+  - `indexSource(type, id)` replaces a source's rows (unpublished/deleted → 0 rows); `reindexSoon()` /
+    `reindexFolderSoon()` run it with `after()` (skipped under Vitest); `reindexAll()` rebuilds everything.
+- **Text extraction** — `lib/search/extract.ts`: pdf.js legacy build in Node (worker loaded in-process via
+  `globalThis.pdfjsWorker`, so it is traced into the server build), `mammoth` for .docx (new dependency). Scanned
+  PDFs (no text layer) and other formats give nothing (OCR would be a later step). Limits: 1500 pages / 6M chars.
+  `next.config.mjs`: `serverExternalPackages: ['pdfjs-dist', 'mammoth']`.
+- **Hooks** (index refreshed after the reply): resources PATCH/DELETE + review (approve) + publications approve,
+  chapters POST/PATCH/DELETE, folder-books POST/PATCH/DELETE, book-folders PATCH, news articles POST/PATCH(all
+  actions)/DELETE, courses POST/PATCH/DELETE, lessons POST/PATCH/DELETE.
+- **Query** — `lib/search/query.ts` `searchSite(q, { type, page })`: Atlas Search index `site_search`
+  (`npm run search:setup`; standard + English + French analyzers → word forms; exact phrase boosted; title boosted;
+  one typo allowed only in words of 5+ letters; Atlas highlights). Falls back to a plain "all words present"
+  match when the index is missing (e.g. the test DB). Rows grouped per source (best part + number of places),
+  up to 3 places each, 10 results per page, counts per kind.
+- **Page** — `app/(public)/search` (server-loaded from `?q=&type=&page=`, `robots: noindex`): navy header with the
+  search box, filter chips with counts, result cards (kind, "found in N places", title, author/course, snippets
+  with highlighted words and "Page N" linking into the reader at that page), paging. Header search box now goes
+  to `/search` (placeholder "Search books, articles, lessons…"). New `search.*` keys (en/fr/rw).
+- **Reader** — `/member/library/read/[id]?page=N` opens a PDF at that page (`initialPage` through ReaderView →
+  PdfReaderView; jumps once the first page's size is known).
+- **Scripts** — `npm run search:setup` (creates/updates the Atlas index), `npm run search:reindex` (tsx; new dev
+  dependency). Both were run on the real database: index READY, 5 sources / 129 rows.
+**Verified:** tsc + eslint clean; `lib/search/__tests__/search.test.ts` (7 tests, test DB, basic engine) + the
+related route tests (49) pass; real-DB probes: "salvaton" finds "salvation", "God" no longer matches "go",
+phrases rank first; PDF extraction works inside the Next server; `next build` passes and the hooked routes'
+traces include pdf.js, its worker and mammoth; screenshot of /search?q=peace with God.
+
+## 2026-11-23 - Daily Wisdom likes/comments: deleted exactly 24 h after they are added
+
+Review (owner: "removed after 24 hrs from any time added"). Before: every like/comment of a day expired together at
+12:00 UTC the next day (00:00 UTC + 36 h), so a reaction lived ~14 h–38 h depending on when it was added, and
+expired rows were only deleted when someone next opened/used the reactions (no visitor → rows stayed stored).
+Now (`lib/data/daily-wisdom-reactions.ts`):
+- `reactionExpiry()` → `expiresAt` = time added + 24 h (like + comment routes).
+- MongoDB TTL index on `createdAt` (`expireAfterSeconds: 86400`, `<Collection>_createdAt_ttl_24h`) on
+  DailyWisdomLike and DailyWisdomComment: MongoDB removes rows ~within a minute of their 24 h, with no visitor.
+  Prisma cannot declare TTL indexes, so `ensureWisdomTtlIndexes()` creates them once per server start (idempotent
+  createIndexes; failure is logged). Created automatically on the first Daily Wisdom read/write after deploy.
+- Reads filter `expiresAt > now` (never show an expired row in the TTL monitor's ~60 s gap); the purge-on-access
+  stays as a backup.
+- Unchanged: the card shows the current day's reactions (`dateKey`), and a day can be reacted to until
+  `wisdomDayEnd(dateKey)` (renamed from `wisdomExpiry`; 00:00 UTC + 36 h, covers every time zone).
+- Test `daily-wisdom-reactions.test.ts`: new tests for the exact 24 h expiry and the TTL index; the admin-email
+  test now picks the email about its own comment (a previous comment's email can arrive late).
+**Verified:** tsc + eslint clean; daily-wisdom tests 15/15 on the test DB (TTL index present there).
+
+## 2026-11-23 - Reader: searched words highlighted; books always open in Scroll; PDF reader browser-only
+
+- **Highlight** — new `components/reader/search-highlight.ts`. Search results link to the reader with `&q=…`
+  (`withQuery` in search-results-view.tsx); `/member/library/read/[id]?page=N&q=…` passes `highlight` through
+  ReaderView → PdfReaderView. PDF pages: react-pdf `customTextRenderer` wraps the words in
+  `<mark class="kls-search-hit">` in the text layer (scroll, single and spread views; `LazyPdfPage` got a
+  `textRenderer` prop) and, after jumping to the page, the first hit is scrolled to the middle
+  (`scrollToFirstPdfHit`). Chapter books: CSS Custom Highlight API (`useTextSearchHighlight`, no DOM changes);
+  its `::highlight(kls-search)` rule is injected from JS because the CSS build (lightningcss) rejects it.
+  Same matching as the search (`searchWords`/`wordsRegex`: "corrupt" also marks "corruption").
+- **Scroll first** — `use-pdf-view-mode.ts` no longer remembers the last view in localStorage (the old key is
+  removed): every book opens in Scroll; switching lasts while the book is open. Toggle order: Scroll · Single
+  Page · Two-Page Spread.
+- **Fix** — the earlier `serverExternalPackages: ['pdfjs-dist']` made the reader page's own pdf.js import fail
+  in dev (server crash); pdf.js is bundled again (only `mammoth` stays external) — server-side extraction
+  verified bundled. The PDF readers (`PdfReaderView`, Life Sciences `BookPdfReader`) are now loaded with
+  `next/dynamic({ ssr: false })` + `ReaderLoading`, since pdf.js needs browser APIs (DOMMatrix, canvas).
+**Verified:** tsc + eslint clean; search tests 7/7; highlight renderer checked on the real page 51 text of
+"Moral Degeneration and Youth Development" (every "corruption" wrapped); reader preview renders with Scroll
+first/selected; `next build` passes. (Headless screenshot of the drawn PDF not possible: the streamed book
+never finishes loading in headless Chrome without a session.)

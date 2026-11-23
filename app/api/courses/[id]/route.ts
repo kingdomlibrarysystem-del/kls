@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { serializeCourse, LECTURER_SELECT } from '@/lib/data/courses'
+import { reindexSoon } from '@/lib/search/indexer'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -51,6 +52,8 @@ export const PATCH = withErrorHandling('/api/courses/[id]', 'PATCH', async (requ
   if (typeof data.language === 'string') data.language = data.language.toUpperCase()
 
   const updated = await prisma.course.update({ where: { id }, data, include: LECTURER_SELECT })
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('COURSE', id)
   return NextResponse.json({ data: serializeCourse(updated), message: 'Course updated successfully', code: 'success', status: 200 })
 })
 
@@ -90,5 +93,6 @@ export const DELETE = withErrorHandling('/api/courses/[id]', 'DELETE', async (_r
 
   await prisma.lesson.deleteMany({ where: { courseId: id } })
   await prisma.course.delete({ where: { id } })
+  reindexSoon('COURSE', id)
   return NextResponse.json({ data: null, message: 'Course deleted successfully', code: 'success', status: 200 })
 })

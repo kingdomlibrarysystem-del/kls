@@ -77,7 +77,7 @@
     "publish_book": "Tangaza igitabo"
   },
   "header": {
-    "search_placeholder": "Shakisha ibitabo ukurikije umutwe cyangwa umwanditsi..."
+    "search_placeholder": "Shakisha ibitabo, inkuru, amasomo…"
   },
   "footer": {
     "tagline": "Irembo ryawe ry'ubumenyi bwa digitale n'imyigishirize.",
@@ -1022,5 +1022,33 @@
     "assessment_locked_text": "Ishyura iri somo (cyangwa isomo ryaryo) kugira ngo ubikore. Subira ku isomo wishyure.",
     "start_free": "Tangira amasomo y’ubuntu",
     "free_lessons": "Amasomo {n} y’ubuntu"
+  },
+  "search": {
+    "title": "Shakisha mu isomero",
+    "subtitle": "Shaka ijambo cyangwa interuro mu bitabo byose, ibitabo bya Life Sciences, inkuru n’amasomo biri kuri Kingdom Library.",
+    "placeholder": "Shakisha ijambo cyangwa interuro, urugero: ruswa",
+    "button": "Shakisha",
+    "all": "Byose",
+    "type_BOOK": "Ibitabo",
+    "type_LIFE_SCIENCE": "Life Sciences",
+    "type_NEWS": "Amakuru",
+    "type_COURSE": "Amasomo",
+    "type_LESSON": "Amasomo arambuye",
+    "results_for": "Ibisubizo {n} kuri “{q}”",
+    "one_result_for": "Igisubizo 1 kuri “{q}”",
+    "no_results": "Nta kintu kibonetse kuri “{q}”",
+    "no_results_hint": "Reba uko wanditse, gerageza amagambo make, cyangwa ijambo bifitanye isano.",
+    "start_title": "Urashaka iki?",
+    "start_hint": "Andika ijambo ukande Shakisha. Dushakira mu bitabo (paji ku yindi), mu nkuru no mu masomo.",
+    "tip_phrase": "Shyira amagambo mu twuguruzo kugira ngo ubone interuro nyayo: \"kiza ibyangiritse\"",
+    "page_n": "Paji {n}",
+    "places": "Byabonetse ahantu {n}",
+    "one_place": "Byabonetse ahantu 1",
+    "locked": "Fungura isomo kugira ngo usome iri somo.",
+    "open": "Fungura",
+    "prev": "Ibanziriza",
+    "next": "Ikurikira",
+    "page_of": "Urupapuro {p} kuri {t}",
+    "in_lesson": "Isomo ryo muri {course}"
   }
 }

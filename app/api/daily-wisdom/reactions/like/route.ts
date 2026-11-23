@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/client'
 import { withErrorHandling } from '@/lib/api-error-handler'
 import { requireAuth } from '@/lib/auth/require-role'
-import { getWisdomReactions, purgeExpiredWisdomReactions, wisdomExpiry } from '@/lib/data/daily-wisdom-reactions'
+import { getWisdomReactions, purgeExpiredWisdomReactions, reactionExpiry } from '@/lib/data/daily-wisdom-reactions'
 import { assertWisdomDay } from '../_shared'
 
 /** POST /api/daily-wisdom/reactions/like { verseId, date } — like / unlike today's wisdom (signed in). */
@@ -19,7 +19,7 @@ export const POST = withErrorHandling('/api/daily-wisdom/reactions/like', 'POST'
     await prisma.dailyWisdomLike.delete({ where: { id: existing.id } })
   } else {
     // A double tap can race to create twice; the unique index keeps one — ignore the duplicate.
-    await prisma.dailyWisdomLike.create({ data: { verseId, dateKey, userId, expiresAt: wisdomExpiry(dateKey) } }).catch((e) => {
+    await prisma.dailyWisdomLike.create({ data: { verseId, dateKey, userId, expiresAt: reactionExpiry() } }).catch((e) => {
       if ((e as { code?: string }).code !== 'P2002') throw e
     })
   }

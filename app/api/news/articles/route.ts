@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { withArticleStats } from '@/lib/data/news-engagement'
+import { reindexSoon } from '@/lib/search/indexer'
 
 /**
  * Real NewsArticle API, mirrors /api/publications' query-param/status
@@ -141,5 +142,7 @@ export const POST = withErrorHandling('/api/news/articles', 'POST', async (reque
     },
   })
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('NEWS', article.id)
   return NextResponse.json({ data: serializeArticle(article), message: 'Article created successfully', code: 'success', status: 201 }, { status: 201 })
 })

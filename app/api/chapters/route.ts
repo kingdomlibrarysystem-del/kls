@@ -7,6 +7,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { gateChapters, serializeChapter, type ChapterRow } from '@/lib/data/chapters'
+import { reindexSoon } from '@/lib/search/indexer'
 
 // Chapter gating lives in lib/data/chapters.ts (shared with the server-rendered
 // reader page); re-exported here for existing importers.
@@ -104,5 +105,7 @@ export const POST = withErrorHandling('/api/chapters', 'POST', async (request: N
     },
   })
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('BOOK', body.resourceId)
   return NextResponse.json({ data: serializeChapter(chapter, false), message: 'Chapter created successfully', code: 'success', status: 201 }, { status: 201 })
 })

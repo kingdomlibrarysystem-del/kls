@@ -77,7 +77,7 @@
     "publish_book": "Publier un livre"
   },
   "header": {
-    "search_placeholder": "Rechercher des livres par titre ou auteur..."
+    "search_placeholder": "Rechercher livres, articles, leçons…"
   },
   "footer": {
     "tagline": "Votre passerelle vers la connaissance numérique et l’apprentissage.",
@@ -1022,5 +1022,33 @@
     "assessment_locked_text": "Payez ce cours (ou sa leçon) pour le faire. Retournez au cours pour payer.",
     "start_free": "Commencer les leçons gratuites",
     "free_lessons": "{n} leçons gratuites"
+  },
+  "search": {
+    "title": "Rechercher dans la bibliothèque",
+    "subtitle": "Trouvez un mot ou une phrase dans tous les livres, livres Life Sciences, articles et cours de Kingdom Library.",
+    "placeholder": "Cherchez un mot ou une phrase, ex. corruption",
+    "button": "Rechercher",
+    "all": "Tout",
+    "type_BOOK": "Livres",
+    "type_LIFE_SCIENCE": "Life Sciences",
+    "type_NEWS": "Actualités",
+    "type_COURSE": "Cours",
+    "type_LESSON": "Leçons",
+    "results_for": "{n} résultats pour « {q} »",
+    "one_result_for": "1 résultat pour « {q} »",
+    "no_results": "Aucun résultat pour « {q} »",
+    "no_results_hint": "Vérifiez l’orthographe, essayez moins de mots ou un mot proche.",
+    "start_title": "Que cherchez-vous ?",
+    "start_hint": "Tapez un mot et appuyez sur Rechercher. Nous cherchons dans les livres (page par page), les articles et les leçons.",
+    "tip_phrase": "Mettez des guillemets pour une phrase exacte : \"guérir ce qui est corrompu\"",
+    "page_n": "Page {n}",
+    "places": "Trouvé à {n} endroits",
+    "one_place": "Trouvé à 1 endroit",
+    "locked": "Ouvrez le cours pour lire cette leçon.",
+    "open": "Ouvrir",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "page_of": "Page {p} sur {t}",
+    "in_lesson": "Leçon du cours {course}"
   }
 }

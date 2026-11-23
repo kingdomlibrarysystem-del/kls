@@ -7,6 +7,7 @@ import { broadcastToSubscribers } from '@/lib/newsletter-broadcast'
 import { serializeLesson } from '@/lib/data/lessons'
 import { getViewer, loadAccess } from '@/lib/data/course-access'
 import { LESSON_ACCESS, lessonIsOpen } from '@/lib/course-access'
+import { reindexSoon } from '@/lib/search/indexer'
 
 /** Real Lesson API, replacing app/member/_shared/lesson-data.ts's Record<courseId, CourseLessons> �?" already a single store shared by admin and member, so no duplicate-store consolidation was needed here. */
 export async function GET(request: NextRequest) {
@@ -82,5 +83,7 @@ export const POST = withErrorHandling('/api/lessons', 'POST', async (request: Ne
   })
   broadcastToSubscribers({ type: 'new_lesson', title: lesson.title, courseTitle: course.title, courseId: course.id }).catch(() => {})
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('COURSE', body.courseId)
   return NextResponse.json({ data: serializeLesson(lesson), message: 'Lesson created successfully', code: 'success', status: 201 }, { status: 201 })
 })

@@ -9,6 +9,7 @@ import { requireStaff } from '@/lib/auth/require-role'
 import { serializeFolder } from '@/lib/data/book-folders'
 import { uniqueFolderSlug } from '@/lib/server/book-folder-slug'
 import { isObjectId } from '@/lib/server/object-id'
+import { reindexFolderSoon } from '@/lib/search/indexer'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -60,6 +61,8 @@ export const PATCH = withErrorHandling('/api/book-folders/[id]', 'PATCH', async 
   const existing = await prisma.bookFolder.findUnique({ where: { id } })
   if (!existing) throw new ApiError('Folder not found', 404)
 
+  // Site search: an archived (or re-opened) folder hides (or shows) its books (runs after the reply).
+  reindexFolderSoon(id)
   const folder = await prisma.bookFolder.update({
     where: { id },
     data: {

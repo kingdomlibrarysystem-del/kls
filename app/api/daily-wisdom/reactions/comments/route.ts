@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireAuth } from '@/lib/auth/require-role'
-import { getWisdomReactions, notifyWisdomComment, purgeExpiredWisdomReactions, wisdomExpiry, WISDOM_COMMENT_MAX } from '@/lib/data/daily-wisdom-reactions'
+import { getWisdomReactions, notifyWisdomComment, purgeExpiredWisdomReactions, reactionExpiry, WISDOM_COMMENT_MAX } from '@/lib/data/daily-wisdom-reactions'
 import { assertWisdomDay } from '../_shared'
 
 /** POST /api/daily-wisdom/reactions/comments { verseId, date, text } — comment on today's wisdom (signed in). */
@@ -19,7 +19,7 @@ export const POST = withErrorHandling('/api/daily-wisdom/reactions/comments', 'P
   const userName = (user?.name || `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()) || 'Member'
 
   await purgeExpiredWisdomReactions()
-  await prisma.dailyWisdomComment.create({ data: { verseId, dateKey, userId: auth.session.userId, userName, text, expiresAt: wisdomExpiry(dateKey) } })
+  await prisma.dailyWisdomComment.create({ data: { verseId, dateKey, userId: auth.session.userId, userName, text, expiresAt: reactionExpiry() } })
   // Tell the wisdom's writer and the admins (email + in-app). Never blocks or fails the comment itself.
   // after(): runs once the reply is sent (kept alive on Vercel), so the comment never waits for Gmail.
   const notify = () => notifyWisdomComment({ verseId, commenterId: auth.session.userId, commenterName: userName, comment: text }).catch((e) => console.error('Wisdom comment notification failed:', e))

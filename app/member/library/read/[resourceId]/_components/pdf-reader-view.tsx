@@ -9,6 +9,7 @@ import { UniversalButton } from '@/components/ui/universal-button'
 import { usePdfViewMode } from '@/app/member/_shared/use-pdf-view-mode'
 import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
 import { LazyPdfPage, PdfPageSkeleton, PDF_OPTIONS, useArrowKeys } from '@/components/reader/lazy-pdf'
+import { scrollToFirstPdfHit, usePdfSearchHighlighter } from '@/components/reader/search-highlight'
 import { PdfViewModeToggle } from './pdf-view-mode-toggle'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -38,6 +39,10 @@ interface PdfReaderViewProps {
   forcePreview?: boolean
   /** Where the "Back" link goes — see ReaderView's own backHref docstring. */
   backHref?: string
+  /** Open at this page (1-based), e.g. from a search result. */
+  initialPage?: number
+  /** Words from a site search (?q=…) to highlight on the pages. */
+  highlight?: string
 }
 
 interface Entitlement {
@@ -59,7 +64,9 @@ interface Entitlement {
  * the screen (LazyPdfPage). Scroll is the default view; in single / two-page
  * view the ← → keys turn the page.
  */
-export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = false, backHref = '/member/library' }: PdfReaderViewProps) {
+export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = false, backHref = '/member/library', initialPage, highlight }: PdfReaderViewProps) {
+  // Opened from a site search: the searched words are marked on every page.
+  const textRenderer = usePdfSearchHighlighter(highlight)
   const [mode, setMode] = usePdfViewMode()
   const [numPages, setNumPages] = useState<number | null>(null)
   const [ratio, setRatio] = useState(DEFAULT_RATIO)
@@ -110,6 +117,7 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
   // Scroll view: the page in the middle of the screen is the current page.
   const onPageVisible = useCallback((n: number) => setPageIndex(n - 1), [])
 
+
   const backLink = (
     <Link href={backHref} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
       <ChevronLeft size={16} /> {backHref === '/member/library' ? 'Back to Kingdom Library' : 'Back to Book Inventory'}
@@ -157,6 +165,17 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
           setNumPages(pdf.numPages)
           // Size every placeholder like the real pages, so scrolling does not jump.
           pdf.getPage(1).then((p) => { const v = p.getViewport({ scale: 1 }); if (v.width) setRatio(v.height / v.width) }).catch(() => {})
+            .finally(() => {
+              // Opened at a page (?page=12, e.g. from search): go there once the pages have their real size.
+              if (!initialPage || initialPage < 2) return
+              const n = Math.min(initialPage, pdf.numPages)
+              setPageIndex(n - 1)
+              requestAnimationFrame(() => requestAnimationFrame(() => {
+                document.getElementById(`pdf-page-${n}`)?.scrollIntoView({ block: 'start' })
+                // Then bring the first searched word on that page to the middle of the screen.
+                if (highlight) scrollToFirstPdfHit(n)
+              }))
+            })
         }}
         onLoadError={(err) => setLoadError(err.message ?? 'The document failed to load.')}
         loading={
@@ -174,25 +193,25 @@ export function PdfReaderView({ resourceId, bookTitle, priceRwf, forcePreview = 
         {mode === 'scroll' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
             {Array.from({ length: numPages ?? 0 }, (_, i) => (
-              <LazyPdfPage key={i} pageNumber={i + 1} width={pageWidth} ratio={ratio} onVisible={onPageVisible} label={bookTitle} />
+              <LazyPdfPage key={i} pageNumber={i + 1} width={pageWidth} ratio={ratio} onVisible={onPageVisible} label={bookTitle} textRenderer={textRenderer} />
             ))}
           </div>
         )}
 
         {mode === 'single' && numPages && (
           <div className="card" style={{ padding: 8, display: 'flex', justifyContent: 'center' }}>
-            <Page pageNumber={pageIndex + 1} width={pageWidth} renderAnnotationLayer={false} loading={<PdfPageSkeleton width={pageWidth} height={singleHeight} label={`Page ${pageIndex + 1}`} />} />
+            <Page pageNumber={pageIndex + 1} width={pageWidth} renderAnnotationLayer={false} customTextRenderer={textRenderer} loading={<PdfPageSkeleton width={pageWidth} height={singleHeight} label={`Page ${pageIndex + 1}`} />} />
           </div>
         )}
 
         {mode === 'spread' && numPages && (
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <div className="card" style={{ padding: 8 }}>
-              <Page pageNumber={pageIndex + 1} width={spreadPageWidth} renderAnnotationLayer={false} loading={<PdfPageSkeleton width={spreadPageWidth} height={spreadHeight} label={`Page ${pageIndex + 1}`} />} />
+              <Page pageNumber={pageIndex + 1} width={spreadPageWidth} renderAnnotationLayer={false} customTextRenderer={textRenderer} loading={<PdfPageSkeleton width={spreadPageWidth} height={spreadHeight} label={`Page ${pageIndex + 1}`} />} />
             </div>
             {pageIndex + 2 <= numPages && (
               <div className="card" style={{ padding: 8 }}>
-                <Page pageNumber={pageIndex + 2} width={spreadPageWidth} renderAnnotationLayer={false} loading={<PdfPageSkeleton width={spreadPageWidth} height={spreadHeight} label={`Page ${pageIndex + 2}`} />} />
+                <Page pageNumber={pageIndex + 2} width={spreadPageWidth} renderAnnotationLayer={false} customTextRenderer={textRenderer} loading={<PdfPageSkeleton width={spreadPageWidth} height={spreadHeight} label={`Page ${pageIndex + 2}`} />} />
               </div>
             )}
           </div>

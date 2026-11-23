@@ -2867,3 +2867,38 @@ enum FolderBookStatus {
   ACTIVE
   ARCHIVED
 }
+
+/// Site-wide search: the searchable text of the library, one row per page
+/// (uploaded PDF), section (long text split into parts) or short text
+/// (description, article, lesson). Built by lib/search/indexer.ts whenever a
+/// book, Life Sciences book, news article, course or lesson is saved, and by
+/// `npm run search:reindex` for everything at once. Searched through the
+/// Atlas Search index "site_search" (`npm run search:setup`); without that
+/// index lib/search/query.ts falls back to a plain word match.
+///
+/// sourceType: BOOK | LIFE_SCIENCE | NEWS | COURSE | LESSON (what the row
+/// came from — an internal kind, not admin-managed data).
+model SearchDocument {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  sourceType String
+  /// The book / article / course / lesson id the text belongs to.
+  sourceId   String
+  /// For a course and its lessons: the course id (re-indexed together).
+  courseId   String?
+  title      String
+  /// Author, writer or course name shown under the title.
+  subtitle   String   @default("")
+  /// Chapter or part name, e.g. "Chapter 3" or "About this book".
+  section    String   @default("")
+  /// Page number in the uploaded file (null for text without pages).
+  page       Int?
+  text       String
+  /// Where the result opens.
+  url        String
+  /// Paid content the searcher has not opened: the title shows, the text does not.
+  locked     Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+
+  @@index([sourceType, sourceId])
+  @@index([courseId])
+}

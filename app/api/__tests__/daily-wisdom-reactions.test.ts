@@ -5,7 +5,7 @@ import { GET as getReactions } from '../daily-wisdom/reactions/route'
 import { POST as toggleLike } from '../daily-wisdom/reactions/like/route'
 import { POST as addComment } from '../daily-wisdom/reactions/comments/route'
 import { DELETE as deleteComment } from '../daily-wisdom/reactions/comments/[id]/route'
-import { wisdomExpiry } from '@/lib/data/daily-wisdom-reactions'
+import { ensureWisdomTtlIndexes, reactionExpiry, REACTION_LIFETIME_MS, wisdomDayEnd } from '@/lib/data/daily-wisdom-reactions'
 
 /**
  * Likes and comments on the Daily Wisdom last ONE day, then are deleted.
@@ -78,7 +78,7 @@ describe('likes and comments on today\'s wisdom', () => {
     expect((await read('2020-01-01')).status).toBe(400)
   }, 60_000)
 
-  it('when the day is over, the likes and comments are deleted from the database', async () => {
+  it('after 24 hours, the likes and comments are deleted from the database', async () => {
     const past = new Date(Date.now() - 60_000)
     await prisma.dailyWisdomLike.create({ data: { verseId: ids.verse, dateKey: TODAY, userId: ids.bob, expiresAt: past } })
     await prisma.dailyWisdomComment.create({ data: { verseId: ids.verse, dateKey: TODAY, userId: ids.bob, userName: 'Vitest Bob', text: 'old', expiresAt: past } })
@@ -88,8 +88,27 @@ describe('likes and comments on today\'s wisdom', () => {
     expect(await prisma.dailyWisdomComment.count({ where: { verseId: ids.verse, userId: ids.bob } })).toBe(0)
   }, 60_000)
 
-  it('a day ends 36 h after its UTC midnight (after midnight in every time zone)', () => {
-    expect(wisdomExpiry('2026-11-19').toISOString()).toBe('2026-11-20T12:00:00.000Z')
+  it('a like or comment expires exactly 24 h after it is added', async () => {
+    const added = new Date('2026-11-19T23:50:00.000Z')
+    expect(reactionExpiry(added).toISOString()).toBe('2026-11-20T23:50:00.000Z')
+    as('alice')
+    const before = Date.now()
+    await addComment(req('/api/daily-wisdom/reactions/comments', 'POST', { verseId: ids.verse, date: TODAY, text: 'Timed' }))
+    const row = await prisma.dailyWisdomComment.findFirstOrThrow({ where: { verseId: ids.verse, text: 'Timed' } })
+    expect(row.expiresAt.getTime() - row.createdAt.getTime()).toBeGreaterThanOrEqual(REACTION_LIFETIME_MS - 5_000)
+    expect(row.expiresAt.getTime()).toBeLessThanOrEqual(before + REACTION_LIFETIME_MS + 60_000)
+  }, 60_000)
+
+  it('MongoDB has a 24 h TTL index, so rows are removed on time even if nobody visits', async () => {
+    await ensureWisdomTtlIndexes()
+    for (const collection of ['DailyWisdomLike', 'DailyWisdomComment']) {
+      const res = (await prisma.$runCommandRaw({ listIndexes: collection })) as { cursor: { firstBatch: { key: Record<string, number>; expireAfterSeconds?: number }[] } }
+      expect(res.cursor.firstBatch.some((i) => i.key.createdAt === 1 && i.expireAfterSeconds === 86_400)).toBe(true)
+    }
+  }, 60_000)
+
+  it('a day can be reacted to until 36 h after its UTC midnight (after midnight in every time zone)', () => {
+    expect(wisdomDayEnd('2026-11-19').toISOString()).toBe('2026-11-20T12:00:00.000Z')
   })
 })
 
@@ -100,8 +119,10 @@ describe('a comment tells the admins', () => {
     const res = await addComment(req('/api/daily-wisdom/reactions/comments', 'POST', { verseId: ids.verse, date: TODAY, text: 'Blessed <b>day</b>' }))
     expect(res.status).toBe(201)
     // The notification runs after the reply; wait for it.
-    for (let i = 0; i < 40 && !sentMail.some((m) => m.to === `${RUN}-admin@vitest.local`); i++) await new Promise((r) => setTimeout(r, 250))
-    const mail = sentMail.find((m) => m.to === `${RUN}-admin@vitest.local`)
+    // (Earlier comments notify the admin too, possibly late — pick the email about THIS comment.)
+    const forThis = (m: { to: string; html: string }) => m.to === `${RUN}-admin@vitest.local` && m.html.includes("Blessed")
+    for (let i = 0; i < 40 && !sentMail.some(forThis); i++) await new Promise((r) => setTimeout(r, 250))
+    const mail = sentMail.find(forThis)
     expect(mail?.subject).toBe("Vitest Alice commented on today's Daily Wisdom")
     expect(mail?.html).toContain('Hi Grace')
     expect(mail?.html).toContain('Blessed &lt;b&gt;day&lt;/b&gt;')

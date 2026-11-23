@@ -56,11 +56,8 @@ export function MainHeader({ services = [] }: { services?: ServiceNavItem[] }) {
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     setMenuOpen(false);
-    router.push(
-      query.trim()
-        ? `/library?q=${encodeURIComponent(query.trim())}`
-        : "/library",
-    );
+    // Site search: looks inside every book, article and lesson (app/(public)/search).
+    router.push(query.trim() ? `/search?q=${encodeURIComponent(query.trim())}` : "/search");
   };
 
   const navSections = [

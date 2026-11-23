@@ -4,6 +4,7 @@ import prisma from '@/prisma/client'
 import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { serializeChapter } from '../route'
+import { reindexSoon } from '@/lib/search/indexer'
 
 const patchChapterSchema = z.object({
   title: z.string().trim().min(1, 'title is required').optional(),
@@ -29,6 +30,8 @@ export const PATCH = withErrorHandling('/api/chapters/[id]', 'PATCH', async (req
     },
   })
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('BOOK', existing.resourceId)
   return NextResponse.json({ data: serializeChapter(updated, false), message: 'Chapter updated successfully', code: 'success', status: 200 })
 })
 
@@ -49,5 +52,6 @@ export const DELETE = withErrorHandling('/api/chapters/[id]', 'DELETE', async (r
 
   await prisma.chapter.delete({ where: { id } })
 
+  reindexSoon('BOOK', existing.resourceId)
   return NextResponse.json({ data: null, message: 'Chapter deleted successfully', code: 'success', status: 200 })
 })

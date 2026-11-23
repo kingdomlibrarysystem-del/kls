@@ -8,6 +8,7 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { documentTypeFromName, serializeBook } from '@/lib/data/book-folders'
 import { isObjectId } from '@/lib/server/object-id'
+import { reindexSoon } from '@/lib/search/indexer'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -90,6 +91,8 @@ export const PATCH = withErrorHandling('/api/folder-books/[id]', 'PATCH', async 
     include: { folder: { select: { name: true } } },
   })
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('LIFE_SCIENCE', id)
   return NextResponse.json({
     data: serializeBook(book),
     message: body.status === 'archived' ? 'Book archived successfully' : 'Book updated successfully',
@@ -110,5 +113,6 @@ export const DELETE = withErrorHandling('/api/folder-books/[id]', 'DELETE', asyn
 
   await prisma.folderBook.delete({ where: { id } })
 
+  reindexSoon('LIFE_SCIENCE', id)
   return NextResponse.json({ data: null, message: 'Book deleted successfully', code: 'success', status: 200 })
 })

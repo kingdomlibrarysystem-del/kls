@@ -8,6 +8,7 @@ import { withErrorHandling, ApiError } from '@/lib/api-error-handler'
 import { requireStaff } from '@/lib/auth/require-role'
 import { documentTypeFromName, serializeBook } from '@/lib/data/book-folders'
 import { isObjectId } from '@/lib/server/object-id'
+import { reindexSoon } from '@/lib/search/indexer'
 
 async function canManage(): Promise<boolean> {
   const session = await getServerSession(authOptions)
@@ -98,6 +99,8 @@ export const POST = withErrorHandling('/api/folder-books', 'POST', async (reques
     include: { folder: { select: { name: true } } },
   })
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('LIFE_SCIENCE', book.id)
   return NextResponse.json(
     { data: serializeBook(book), message: 'Book added successfully', code: 'success', status: 201 },
     { status: 201 },

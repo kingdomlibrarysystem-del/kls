@@ -5,6 +5,7 @@ import { requirePermission } from '@/lib/auth/permissions'
 import { approveResource, rejectResource, ReviewError, APPROVE_PERMISSION } from '@/lib/data/resource-review'
 import { getResourceDetail } from '@/lib/data/resources'
 import { isValidCollection } from '@/lib/data/klp-register'
+import { reindexSoon } from '@/lib/search/indexer'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -40,6 +41,8 @@ export const POST = withErrorHandling('/api/resources/[id]/review', 'POST', asyn
     throw e
   }
 
+  // Site search: refresh its searchable text after the reply is sent.
+  reindexSoon('BOOK', id)
   const resource = await getResourceDetail(id, { includeDraft: true })
   return NextResponse.json({
     data: resource,

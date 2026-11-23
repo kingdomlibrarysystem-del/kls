@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { ChevronLeft, BookX } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { BuyConfirmModal, type BuyAction } from '@/app/(public)/library/_components/buy-confirm-modal'
@@ -16,10 +17,14 @@ import { HighlightsNotesList } from './highlights-notes-list'
 import { LockedChapterPaywall } from './locked-chapter-paywall'
 import { ChapterNavFooter } from './chapter-nav-footer'
 import { SkippedChaptersCard } from './skipped-chapters-card'
-import { PdfReaderView } from './pdf-reader-view'
 import { PdfViewModeToggle } from './pdf-view-mode-toggle'
 import { ReaderHeader } from './reader-header'
 import { ChapterBody } from './chapter-body'
+import { useTextSearchHighlight } from '@/components/reader/search-highlight'
+import { ReaderLoading } from '@/components/reader/reader-loading'
+
+// pdf.js needs the browser (canvas, DOMMatrix): the PDF reader is loaded in the browser only, never rendered on the server.
+const PdfReaderView = dynamic(() => import('./pdf-reader-view').then((m) => m.PdfReaderView), { ssr: false, loading: () => <ReaderLoading /> })
 import { useArrowKeys } from '@/components/reader/lazy-pdf'
 
 interface ReaderViewProps {
@@ -29,6 +34,10 @@ interface ReaderViewProps {
   /** This book's chapters, gated server-side exactly like GET /api/chapters?resourceId= (null when it has none). */
   readableChapters: Chapter[] | null
   initialChapterId?: string
+  /** PDF books: open at this page (e.g. from a search result, ?page=12). */
+  initialPage?: number
+  /** Words from a site search (?q=…) to highlight in the book. */
+  highlight?: string
   /** Staff-only QA flag — forces the same paywall a non-entitled member would see, instead of the usual staff bypass, so an admin can verify what free-preview readers actually experience. */
   forcePreview?: boolean
   /** Where the "Back" link goes — /member/library by default, or /dashboard/library when this same reader is reached from the admin-side route (app/dashboard/library/read/[id]), so staff stay within dashboard navigation instead of being routed into the member portal. */
@@ -53,12 +62,13 @@ interface ReaderViewProps {
  * level notes both still work (HighlightsNotesList, NotesPanel) since
  * those only read already-stored data, not a live in-body selection.
  */
-export function ReaderView({ resourceId, resource, readableChapters, initialChapterId, forcePreview = false, backHref = '/member/library' }: ReaderViewProps) {
+export function ReaderView({ resourceId, resource, readableChapters, initialChapterId, initialPage, highlight, forcePreview = false, backHref = '/member/library' }: ReaderViewProps) {
   const { user } = useAuth()
   const progressEntries = useReadingProgress(user?.id)
-  // Same hook/localStorage key the PDF reader uses, so one reading
-  // preference follows the member across both kinds of book.
+  // Same hook the PDF reader uses: every book opens in Scroll view.
   const [viewMode, setViewMode] = usePdfViewMode()
+  // Opened from a site search: mark the searched words in the chapter text and go to the first one.
+  const [chaptersBox, setChaptersBox] = useState<HTMLDivElement | null>(null)
 
   // Only this book's chapters arrive from the server — previously the reader
   // pulled the whole library's chapter catalog (every book's text) and the
@@ -70,6 +80,7 @@ export function ReaderView({ resourceId, resource, readableChapters, initialChap
   const startIndex = resumeChapterId ? Math.max(0, chapters.findIndex((c) => c.id === resumeChapterId)) : 0
   const [chapterIndex, setChapterIndex] = useState(startIndex)
   const [buyAction, setBuyAction] = useState<BuyAction>(null)
+  useTextSearchHighlight(chaptersBox, highlight, [chapterIndex, viewMode, chapters.length], !!highlight)
 
   // Which chapters are on screen right now, by view mode. Scroll shows the
   // whole book at once; spread shows a facing-page pair and therefore steps
@@ -123,7 +134,7 @@ export function ReaderView({ resourceId, resource, readableChapters, initialChap
   // chapters stay the primary experience (real highlights/notes/paywall
   // gating) whenever they exist, so this only applies to PDF-only resources.
   if (resource && (!readable || chapters.length === 0) && resource.documentUrl) {
-    return <PdfReaderView resourceId={resourceId} bookTitle={resource.title} priceRwf={resource.price} forcePreview={forcePreview} backHref={backHref} />
+    return <PdfReaderView resourceId={resourceId} bookTitle={resource.title} priceRwf={resource.price} forcePreview={forcePreview} backHref={backHref} initialPage={initialPage} highlight={highlight} />
   }
 
   if (!resource || !readable || chapters.length === 0) {
@@ -215,6 +226,7 @@ export function ReaderView({ resourceId, resource, readableChapters, initialChap
 
       <ChapterSearch chapters={chapters} onJump={goToChapter} />
 
+      <div ref={setChaptersBox}>
       {isScroll ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {visibleIndexes.map(renderChapter)}
@@ -229,6 +241,7 @@ export function ReaderView({ resourceId, resource, readableChapters, initialChap
       ) : (
         renderChapter(chapterIndex)
       )}
+      </div>
 
       {!isScroll && (
         <ChapterNavFooter
